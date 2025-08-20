@@ -3,10 +3,10 @@ database: mainnet
 table: stg_storage_first_access
 partition: block_number
 interval: 10000
-schedule: "@every 1m"
+schedule: "@every 10s"
 backfill:
   enabled: true
-  schedule: "@every 1m"
+  schedule: "@every 10s"
 tags:
   - execution
   - account
@@ -15,6 +15,8 @@ dependencies:
   - mainnet.canonical_execution_storage_diffs
   - mainnet.canonical_execution_storage_reads
 ---
+INSERT INTO
+  `{{ .self.database }}`.`{{ .self.table }}`
 WITH all_storage_data AS (
     SELECT
         lower(address) as address,
@@ -42,6 +44,7 @@ SELECT
     address,
     slot_key AS slot,
     argMin(bn, (bn, transaction_index, internal_index)) AS block_number,
-    argMin(value, (bn, transaction_index, internal_index)) AS value
+    argMin(value, (bn, transaction_index, internal_index)) AS value,
+    null AS `version`
 FROM all_storage_data
 GROUP BY address, slot_key;

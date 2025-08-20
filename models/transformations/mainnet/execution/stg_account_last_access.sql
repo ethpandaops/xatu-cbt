@@ -2,11 +2,11 @@
 database: mainnet
 table: stg_account_last_access
 partition: block_number
-interval: 10000
-schedule: "@every 1m"
+interval: 1000
+schedule: "@every 10s"
 backfill:
   enabled: true
-  schedule: "@every 1m"
+  schedule: "@every 10s"
 tags:
   - execution
   - account

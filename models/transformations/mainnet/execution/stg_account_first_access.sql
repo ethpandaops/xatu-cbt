@@ -2,11 +2,11 @@
 database: mainnet
 table: stg_account_first_access
 partition: block_number
-interval: 10000
-schedule: "@every 1m"
+interval: 1000
+schedule: "@every 10s"
 backfill:
   enabled: true
-  schedule: "@every 1m"
+  schedule: "@every 10s"
 tags:
   - execution
   - account
@@ -22,7 +22,8 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 SELECT 
     address,
-    min(block_number) AS block_number
+    min(block_number) AS block_number,
+    null AS `version`
 FROM (
     SELECT lower(address) as address, block_number FROM mainnet.canonical_execution_nonce_reads 
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
