@@ -1,7 +1,6 @@
 ---
 database: mainnet
 table: canonical_execution_nonce_reads
-partition: block_number
 ttl: 5m
 ---
 SELECT 
