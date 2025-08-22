@@ -1,11 +1,11 @@
 ---
 database: mainnet
 table: stg_storage_first_access
-partition: block_number
-interval: 10000
-schedule: "@every 10s"
+forwardfill:
+  interval: 1000
+  schedule: "@every 10s"
 backfill:
-  enabled: true
+  interval: 1000
   schedule: "@every 10s"
 tags:
   - execution

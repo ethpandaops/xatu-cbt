@@ -1,7 +1,6 @@
 ---
 database: mainnet
 table: canonical_execution_contracts
-partition: block_number
 ttl: 5m
 ---
 SELECT 
