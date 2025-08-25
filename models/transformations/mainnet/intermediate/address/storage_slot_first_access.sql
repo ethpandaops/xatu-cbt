@@ -1,6 +1,6 @@
 ---
 database: mainnet
-table: stg_storage_first_access
+table: int_address__storage_slot_first_access
 forwardfill:
   interval: 1000
   schedule: "@every 10s"
@@ -8,8 +8,8 @@ backfill:
   interval: 1000
   schedule: "@every 10s"
 tags:
-  - execution
-  - account
+  - mainnet
+  - address
   - storage
 dependencies:
   - mainnet.canonical_execution_storage_diffs
