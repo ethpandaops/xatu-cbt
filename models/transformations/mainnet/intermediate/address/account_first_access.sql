@@ -1,14 +1,15 @@
 ---
 database: mainnet
-table: stg_account_last_access
+table: int_address__account_first_access
 forwardfill:
   interval: 1000
   schedule: "@every 10s"
 backfill:
-  interval: 100000
+  interval: 10000
   schedule: "@every 10s"
 tags:
-  - execution
+  - mainnet
+  - address
   - account
 dependencies:
   - mainnet.canonical_execution_balance_diffs
@@ -22,7 +23,8 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 SELECT 
     address,
-    max(block_number) AS block_number
+    min(block_number) AS block_number,
+    null AS `version`
 FROM (
     SELECT lower(address) as address, block_number FROM mainnet.canonical_execution_nonce_reads 
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
