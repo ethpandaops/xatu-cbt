@@ -1,0 +1,135 @@
+---
+database: mainnet
+table: int_slot__block_proposer_head
+forwardfill:
+  interval: 
+  schedule: "@every 5s"
+backfill:
+  interval: 10000
+  schedule: "@every 1m"
+tags:
+  - mainnet
+  - slot
+  - block
+  - proposer
+  - head
+dependencies:
+  - mainnet.beacon_api_eth_v1_events_block_gossip
+  - mainnet.beacon_api_eth_v1_events_block
+  - mainnet.beacon_api_eth_v1_proposer_duty
+  - mainnet.libp2p_gossipsub_beacon_block
+---
+INSERT INTO
+  `{{ .self.database }}`.`{{ .self.table }}`
+WITH proposer_duties AS (
+    SELECT DISTINCT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        proposer_validator_index,
+        proposer_pubkey
+    FROM mainnet.beacon_api_eth_v1_proposer_duty
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+),
+
+block_gossip AS (
+    SELECT DISTINCT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        block as block_root
+    FROM mainnet.beacon_api_eth_v1_events_block_gossip
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+),
+
+block_events AS (
+    SELECT DISTINCT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        block as block_root
+    FROM mainnet.beacon_api_eth_v1_events_block
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+),
+
+gossipsub_blocks AS (
+    SELECT DISTINCT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        block as block_root,
+        proposer_index
+    FROM mainnet.libp2p_gossipsub_beacon_block
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+),
+
+all_blocks AS (
+    SELECT 
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        block_root,
+        NULL as proposer_index
+    FROM block_gossip
+    
+    UNION ALL
+    
+    SELECT 
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        block_root,
+        NULL as proposer_index
+    FROM block_events
+    
+    UNION ALL
+    
+    SELECT 
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        block_root,
+        proposer_index
+    FROM gossipsub_blocks
+),
+
+deduplicated_blocks AS (
+    SELECT 
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        block_root,
+        argMax(proposer_index, proposer_index IS NOT NULL) as proposer_index
+    FROM all_blocks
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
+)
+
+SELECT 
+    fromUnixTimestamp({{ .task.start }}) as updated_date_time,
+    COALESCE(pd.slot, db.slot) as slot,
+    COALESCE(pd.slot_start_date_time, db.slot_start_date_time) as slot_start_date_time,
+    COALESCE(pd.epoch, db.epoch) as epoch,
+    COALESCE(pd.epoch_start_date_time, db.epoch_start_date_time) as epoch_start_date_time,
+    COALESCE(pd.proposer_validator_index, db.proposer_index) as proposer_validator_index,
+    pd.proposer_pubkey as proposer_pubkey,
+    CASE WHEN db.block_root = '' THEN NULL ELSE db.block_root END as block_root
+FROM proposer_duties pd
+FULL OUTER JOIN deduplicated_blocks db ON pd.slot = db.slot;
+
+-- Delete old rows
+DELETE FROM
+  `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
+{{ if .clickhouse.cluster }}
+  ON CLUSTER '{{ .clickhouse.cluster }}'
+{{ end }}
+WHERE
+  slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+  AND updated_date_time != fromUnixTimestamp({{ .task.start }});
