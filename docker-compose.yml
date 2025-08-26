@@ -1,0 +1,169 @@
+volumes:
+  cbt-config:
+  redis_data:
+
+services:
+  cbt-redis:
+    image: redis:7-alpine
+    container_name: cbt-redis
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - xatu_xatu-net
+  
+  # Clickhouse setup container
+  cbt-clickhouse-setup:
+    image: alpine:latest
+    container_name: cbt-clickhouse-setup
+    networks:
+      - xatu_xatu-net
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apk add --no-cache curl
+        
+        # Wait for ClickHouse to be ready
+        echo "Waiting for ClickHouse to be ready..."
+        until echo "SELECT 1" | curl -s "http://xatu-clickhouse-01:8123" \
+          --data-binary @- > /dev/null 2>&1; do
+          echo "ClickHouse is not ready yet. Retrying in 5 seconds..."
+          sleep 5
+        done
+        echo "ClickHouse is ready!"
+        
+        # Create the replication table
+        echo "Creating replication table schema_migrations_cbt_local..."
+        echo """
+        CREATE TABLE IF NOT EXISTS default.schema_migrations_cbt_local ON CLUSTER '{cluster}'
+        (
+            \`version\` Int64,
+            \`dirty\` UInt8,
+            \`sequence\` UInt64
+        ) Engine = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}', '{replica}')
+        ORDER BY sequence
+        """ | curl "http://xatu-clickhouse-01:8123/?database=default" \
+          --data-binary @-
+        
+        # Create the distributed table
+        echo "Creating distributed table schema_migrations_cbt..."
+        echo """
+        CREATE TABLE IF NOT EXISTS schema_migrations_cbt ON CLUSTER '{cluster}' AS schema_migrations_cbt_local
+        ENGINE = Distributed('{cluster}', default, schema_migrations_cbt_local, cityHash64(\`version\`))
+        """ | curl "http://xatu-clickhouse-01:8123/?database=default" \
+          --data-binary @-
+        
+        echo "Schema migration tables created successfully!"
+
+  cbt-clickhouse-migrator:
+    image: migrate/migrate
+    container_name: cbt-clickhouse-migrator
+    volumes:
+      - ./migrations:/migrations
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "clickhouse://xatu-clickhouse-01:9000?database=default&x-migrations-table=schema_migrations_cbt&x-multi-statement=true",
+        "up",
+      ]
+    depends_on:
+      cbt-clickhouse-setup:
+        condition: service_completed_successfully
+    networks:
+      - xatu_xatu-net
+
+  # Config setup container
+  cbt-config-setup:
+    image: busybox:latest
+    container_name: cbt-config-setup
+    volumes:
+      - cbt-config:/config
+    command:
+      - /bin/sh
+      - -c
+      - |
+        cat > /config/config.yaml << 'EOF'
+        logging: debug
+        metricsAddr: ":9090"
+        healthCheckAddr: ":8080"
+        clickhouse:
+          url: http://xatu-clickhouse-01:8123
+          cluster: "{cluster}"
+          localSuffix: "_local"
+        redis:
+          url: "redis://cbt-redis:6379/0"
+        scheduler:
+          concurrency: 10
+          consolidation: "@every 10m"
+        worker:
+          concurrency: 10
+        EOF
+        echo "Config file created successfully"
+
+  # CBT Engine
+  cbt-engine:
+    image: ethpandaops/cbt:latest
+    container_name: cbt-engine
+    depends_on:
+      cbt-redis:
+        condition: service_healthy
+      cbt-config-setup:
+        condition: service_completed_successfully
+      cbt-clickhouse-migrator:
+        condition: service_completed_successfully
+    volumes:
+      - ./models:/models:ro
+      - cbt-config:/config:ro
+    command: ["--config", "/config/config.yaml"]
+    restart: unless-stopped
+    networks:
+      - xatu_xatu-net
+    deploy:
+      replicas: 1
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Asynq monitoring UI for task queue visibility
+  cbt-asynqmon:
+    image: hibiken/asynqmon:latest
+    container_name: cbt-asynqmon
+    ports:
+      - "8181:8080"
+    environment:
+      - REDIS_URL=redis://cbt-redis:6379
+    depends_on:
+      cbt-redis:
+        condition: service_healthy
+    command: ["--redis-url", "redis://cbt-redis:6379", "--enable-metrics-exporter"]
+    networks:
+      - xatu_xatu-net
+
+  # Redis Commander for Redis management
+  cbt-redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: cbt-redis-commander
+    ports:
+      - "8182:8081"
+    environment:
+      - REDIS_HOSTS=local:cbt-redis:6379
+    depends_on:
+      cbt-redis:
+        condition: service_healthy
+    networks:
+      - xatu_xatu-net
+
+networks:
+  xatu_xatu-net:
+    external: true

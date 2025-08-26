@@ -32,3 +32,9 @@ Create the distributed table;
 CREATE TABLE schema_migrations_cbt on cluster '{cluster}' AS schema_migrations_cbt_local
 ENGINE = Distributed('{cluster}', default, schema_migrations_cbt_local, cityHash64(`version`));
 ```
+
+### Run locally
+
+- run [xatu locally via docker compose](https://github.com/ethpandaops/xatu?tab=readme-ov-file#locally-via-docker-compose)
+- run `docker compose up -d` in this directory
+- import data from [xatu-data](https://github.com/ethpandaops/xatu-data?tab=readme-ov-file#working-with-the-data)
