@@ -15,7 +15,7 @@ FROM `default`.`{{ .self.table }}`
 WHERE 
     meta_network_name = 'mainnet'
 {{ if .cache.is_incremental_scan }}
-    (
+    AND (
       block_number <= {{ .cache.previous_min }}
       OR block_number >= {{ .cache.previous_max }}
     )
