@@ -46,6 +46,30 @@ jobs:
             echo "tag=latest" >> $GITHUB_OUTPUT
           fi
 
+      - name: Fetch CBT image digest
+        id: cbt_digest
+        run: |
+          CBT_TAG="${{ steps.cbt_tag.outputs.tag }}"
+          
+          # Get the digest of the CBT image
+          DIGEST=$(docker manifest inspect ethpandaops/cbt:${CBT_TAG} --verbose | jq -r '.Descriptor.digest' | cut -d: -f2 | cut -c1-12)
+          
+          # If we can't get the digest, try a different approach
+          if [ -z "$DIGEST" ] || [ "$DIGEST" = "null" ]; then
+            # Pull the image metadata and get the digest
+            docker pull ethpandaops/cbt:${CBT_TAG} --quiet
+            DIGEST=$(docker inspect ethpandaops/cbt:${CBT_TAG} --format='{{.RepoDigests}}' | grep -oE 'sha256:[a-f0-9]{64}' | head -1 | cut -d: -f2 | cut -c1-12)
+          fi
+          
+          # If still no digest, use a timestamp as fallback
+          if [ -z "$DIGEST" ] || [ "$DIGEST" = "null" ]; then
+            DIGEST=$(date +%Y%m%d%H%M%S)
+            echo "Warning: Could not fetch CBT image digest, using timestamp: $DIGEST"
+          fi
+          
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+          echo "CBT image digest: ${DIGEST}"
+
       - name: Generate Docker metadata
         id: meta
         uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
@@ -57,6 +81,8 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=cbt-${{ steps.cbt_tag.outputs.tag }}
+            type=raw,value=cbt-${{ steps.cbt_tag.outputs.tag }}-${{ steps.cbt_digest.outputs.digest }}
+            type=raw,value={{branch}}-cbt-${{ steps.cbt_digest.outputs.digest }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
