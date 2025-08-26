@@ -1,6 +1,6 @@
 ---
 database: mainnet
-table: beacon_api_eth_v1_proposer_duty
+table: canonical_beacon_proposer_duty
 cache:
   incremental_scan_interval: 2m
   full_scan_interval: 24h

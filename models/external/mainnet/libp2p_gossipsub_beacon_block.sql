@@ -1,6 +1,6 @@
 ---
 database: mainnet
-table: beacon_api_eth_v1_proposer_duty
+table: libp2p_gossipsub_beacon_block
 cache:
   incremental_scan_interval: 5s
   full_scan_interval: 24h
