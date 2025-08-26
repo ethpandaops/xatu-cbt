@@ -1,0 +1,41 @@
+version: '3.8'
+
+networks:
+  xatu-test-net:
+    external: true
+    name: xatu_xatu-net
+
+services:
+  cbt-redis-test:
+    image: redis:7-alpine
+    container_name: cbt-redis-test
+    networks:
+      - xatu-test-net
+
+  cbt-migrator:
+    image: migrate/migrate
+    container_name: cbt-migrator-test
+    volumes:
+      - ./migrations:/migrations
+    environment:
+      - CBT_DATABASE_PREFIX=${CBT_DATABASE_PREFIX}
+    command:
+      - "-path=/migrations"
+      - "-database=clickhouse://xatu-clickhouse-01:9000?database=${CBT_DATABASE_PREFIX}mainnet&x-migrations-table=schema_migrations_cbt"
+      - "up"
+    networks:
+      - xatu-test-net
+
+  cbt-engine:
+    image: ethpandaops/cbt:latest
+    container_name: cbt-engine-test
+    volumes:
+      - ./models:/models:ro
+      - ./tests/config/test-config.yaml:/config.yaml:ro
+    command: ["--config", "/config.yaml"]
+    environment:
+      - LOG_LEVEL=debug
+    depends_on:
+      - cbt-redis-test
+    networks:
+      - xatu-test-net

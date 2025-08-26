@@ -1,0 +1,19 @@
+tests:
+  - name: "validate_canonical_beacon_block_data"
+    data_set: minimal
+    assertions:
+      - query: |
+          SELECT COUNT(*) as total
+          FROM mainnet.canonical_beacon_block
+          WHERE slot BETWEEN 1234567 AND 1234577
+        expected:
+          total: 10
+      
+      - query: |
+          SELECT slot, block_root
+          FROM mainnet.canonical_beacon_block
+          WHERE slot = 1234567
+          LIMIT 1
+        expected:
+          slot: 1234567
+          block_root: "0xabcd..."

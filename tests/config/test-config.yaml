@@ -1,0 +1,28 @@
+logging:
+  level: debug
+  format: json
+
+clickhouse:
+  host: xatu-clickhouse-01
+  port: 9000
+  database: mainnet
+  username: default
+  password: ""
+  max_connections: 10
+  connection_timeout: 30s
+
+redis:
+  host: cbt-redis-test
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+
+engine:
+  workers: 4
+  batch_size: 1000
+  poll_interval: 5s
+  
+models:
+  path: /models
+  watch: false
