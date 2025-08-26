@@ -2,7 +2,7 @@
 database: mainnet
 table: int_slot__block_proposer_head
 forwardfill:
-  interval: 500
+  interval: 12
   schedule: "@every 5s"
 backfill:
   interval: 5000
