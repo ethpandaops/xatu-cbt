@@ -138,6 +138,7 @@ services:
   # Asynq monitoring UI for task queue visibility
   cbt-asynqmon:
     image: hibiken/asynqmon:latest
+    platform: linux/amd64 # arm64 not supported by upstream image
     container_name: cbt-asynqmon
     ports:
       - "8181:8080"
