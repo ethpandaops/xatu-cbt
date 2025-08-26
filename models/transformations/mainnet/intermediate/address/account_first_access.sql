@@ -2,11 +2,11 @@
 database: mainnet
 table: int_address__account_first_access
 forwardfill:
-  interval: 1000
-  schedule: "@every 10s"
+  interval: 10
+  schedule: "@every 5m"
 backfill:
   interval: 10000
-  schedule: "@every 10s"
+  schedule: "@every 1m"
 tags:
   - mainnet
   - address
