@@ -1,11 +1,12 @@
 ---
 database: mainnet
 table: int_slot__block_proposer_head
-interval:
-  max: 5000
-schedules:
-  forwardfill: "@every 5s"
-  backfill: "@every 1m"
+forwardfill:
+  interval: 12
+  schedule: "@every 5s"
+backfill:
+  interval: 5000
+  schedule: "@every 1m"
 tags:
   - mainnet
   - slot
@@ -122,13 +123,3 @@ SELECT
     CASE WHEN db.block_root = '' THEN NULL ELSE db.block_root END as block_root
 FROM proposer_duties pd
 FULL OUTER JOIN deduplicated_blocks db ON pd.slot = db.slot;
-
--- Delete old rows
-DELETE FROM
-  `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
-{{ if .clickhouse.cluster }}
-  ON CLUSTER '{{ .clickhouse.cluster }}'
-{{ end }}
-WHERE
-  slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-  AND updated_date_time != fromUnixTimestamp({{ .task.start }});
