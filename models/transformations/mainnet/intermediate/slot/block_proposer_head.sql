@@ -1,12 +1,11 @@
 ---
 database: mainnet
 table: int_slot__block_proposer_head
-forwardfill:
-  interval: 12
-  schedule: "@every 5s"
-backfill:
-  interval: 5000
-  schedule: "@every 1m"
+interval:
+  max: 5000
+schedules:
+  forwardfill: "@every 5s"
+  backfill: "@every 1m"
 tags:
   - mainnet
   - slot
