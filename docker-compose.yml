@@ -105,6 +105,11 @@ services:
           consolidation: "@every 10m"
         worker:
           concurrency: 10
+        models:
+          external:
+            defaultDatabase: mainnet
+          transformations:
+            defaultDatabase: mainnet
         EOF
         echo "Config file created successfully"
 

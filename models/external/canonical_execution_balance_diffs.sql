@@ -1,6 +1,5 @@
 ---
-database: mainnet
-table: canonical_execution_nonce_reads
+table: canonical_execution_balance_diffs
 cache:
   incremental_scan_interval: 1m
   full_scan_interval: 24h
