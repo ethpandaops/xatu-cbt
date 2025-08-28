@@ -26,7 +26,7 @@ WITH proposer_duties AS (
         epoch_start_date_time,
         proposer_validator_index,
         proposer_pubkey
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "database" }}`.`beacon_api_eth_v1_proposer_duty`
+    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "database" }}`.`beacon_api_eth_v1_proposer_duty`
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -37,7 +37,7 @@ block_gossip AS (
         epoch,
         epoch_start_date_time,
         block as block_root
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "database" }}`.`beacon_api_eth_v1_events_block_gossip`
+    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "database" }}`.`beacon_api_eth_v1_events_block_gossip`
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -48,7 +48,7 @@ block_events AS (
         epoch,
         epoch_start_date_time,
         block as block_root
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "database" }}`.`beacon_api_eth_v1_events_block`
+    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "database" }}`.`beacon_api_eth_v1_events_block`
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -60,7 +60,7 @@ gossipsub_blocks AS (
         epoch_start_date_time,
         block as block_root,
         proposer_index
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "database" }}`.`libp2p_gossipsub_beacon_block`
+    FROM `{{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "database" }}`.`libp2p_gossipsub_beacon_block`
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 

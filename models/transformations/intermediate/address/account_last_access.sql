@@ -13,6 +13,7 @@ dependencies:
   - "{{external}}.canonical_execution_balance_reads"
   - "{{external}}.canonical_execution_contracts"
   - "{{external}}.canonical_execution_nonce_reads"
+  - "{{external}}.canonical_execution_nonce_diffs"
   - "{{external}}.canonical_execution_storage_diffs"
   - "{{external}}.canonical_execution_storage_reads"
 ---
