@@ -1,12 +1,11 @@
 ---
 database: mainnet
 table: int_address__storage_slot_last_access
-forwardfill:
-  interval: 1000
-  schedule: "@every 10s"
-backfill:
-  interval: 1000
-  schedule: "@every 10s"
+interval:
+  max: 1000
+schedules:
+  forwardfill: "@every 1m"
+  backfill: "@every 1m"
 tags:
   - mainnet
   - address

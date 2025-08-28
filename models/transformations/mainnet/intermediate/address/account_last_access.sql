@@ -1,12 +1,11 @@
 ---
 database: mainnet
 table: int_address__account_last_access
-forwardfill:
-  interval: 10
-  schedule: "@every 5m"
-backfill:
-  interval: 10000
-  schedule: "@every 1m"
+interval:
+  max: 10000
+schedules:
+  forwardfill: "@every 1m"
+  backfill: "@every 1m"
 tags:
   - mainnet
   - address
