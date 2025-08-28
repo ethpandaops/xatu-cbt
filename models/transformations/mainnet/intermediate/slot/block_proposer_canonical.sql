@@ -53,13 +53,3 @@ SELECT
     CASE WHEN b.block_root = '' THEN NULL ELSE b.block_root END as block_root
 FROM proposer_duties pd
 FULL OUTER JOIN blocks b ON pd.slot = b.slot;
-
--- Delete old rows
-DELETE FROM
-  `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
-{{ if .clickhouse.cluster }}
-  ON CLUSTER '{{ .clickhouse.cluster }}'
-{{ end }}
-WHERE
-  slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-  AND updated_date_time != fromUnixTimestamp({{ .task.start }});
