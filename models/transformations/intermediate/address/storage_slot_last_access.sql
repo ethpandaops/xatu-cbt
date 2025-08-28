@@ -1,5 +1,4 @@
 ---
-database: mainnet
 table: int_address__storage_slot_last_access
 interval:
   max: 1000
@@ -7,12 +6,11 @@ schedules:
   forwardfill: "@every 1m"
   backfill: "@every 1m"
 tags:
-  - mainnet
   - address
   - storage
 dependencies:
-  - mainnet.canonical_execution_storage_diffs
-  - mainnet.canonical_execution_storage_reads
+  - "{{external}}.canonical_execution_storage_diffs"
+  - "{{external}}.canonical_execution_storage_reads"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -24,7 +22,7 @@ WITH all_storage_data AS (
         transaction_index,
         internal_index,
         to_value AS value
-    FROM mainnet.canonical_execution_storage_diffs
+    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs`
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     
     UNION ALL
@@ -36,7 +34,7 @@ WITH all_storage_data AS (
         transaction_index,
         internal_index,
         value
-    FROM mainnet.canonical_execution_storage_reads
+    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads`
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 )
 SELECT

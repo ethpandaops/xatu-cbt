@@ -1,8 +1,7 @@
 ---
-database: mainnet
-table: canonical_beacon_proposer_duty
+table: canonical_beacon_block
 cache:
-  incremental_scan_interval: 2m
+  incremental_scan_interval: 1m
   full_scan_interval: 24h
 ---
 SELECT 
