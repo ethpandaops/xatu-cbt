@@ -1,7 +1,7 @@
 ---
 table: int_slot__block_proposer_head
 interval:
-  max: 5000
+  max: 500000
 schedules:
   forwardfill: "@every 5s"
   backfill: "@every 1m"
