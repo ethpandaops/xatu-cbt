@@ -17,10 +17,10 @@ services:
     networks:
       - xatu_xatu-net
   
-  # Clickhouse setup container
-  cbt-clickhouse-setup:
+  # Setup container
+  cbt-setup:
     image: alpine:latest
-    container_name: cbt-clickhouse-setup
+    container_name: cbt-setup
     networks:
       - xatu_xatu-net
     command:
@@ -75,7 +75,7 @@ services:
         "up",
       ]
     depends_on:
-      cbt-clickhouse-setup:
+      cbt-setup:
         condition: service_completed_successfully
     networks:
       - xatu_xatu-net

@@ -1,0 +1,4 @@
+- name: "total count"
+  sql: "SELECT COUNT(*) AS 'count' FROM int_slot__block_proposer_canonical"
+  expected:
+    count: 1000000
