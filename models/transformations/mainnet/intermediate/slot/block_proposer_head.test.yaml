@@ -1,0 +1,36 @@
+tests:
+  - name: "validate_block_proposer_mapping"
+    data_set: electra
+    assertions:
+      - query: |
+          SELECT COUNT(*) as total
+          FROM mainnet.int_slot__block_proposer_head
+          WHERE slot BETWEEN 1234567 AND 1234577
+        expected:
+          total: 10
+      
+      - query: |
+          SELECT proposer_validator_index, block_root
+          FROM mainnet.int_slot__block_proposer_head
+          WHERE slot = 1234567
+        expected:
+          proposer_validator_index: 98765
+          block_root: "0xabcd..."
+      
+      - query: |
+          SELECT COUNT(*) as missed_slots
+          FROM mainnet.int_slot__block_proposer_head
+          WHERE slot BETWEEN 1234567 AND 1234577
+            AND block_root IS NULL
+        expected:
+          missed_slots: 2
+
+  - name: "validate_performance_metrics"
+    data_set: minimal
+    assertions:
+      - query: |
+          SELECT AVG(proposer_delay_ms) as avg_delay
+          FROM mainnet.int_slot__block_proposer_head
+          WHERE slot_start_date_time BETWEEN '2024-10-15' AND '2024-10-16'
+        expected:
+          avg_delay: 1234.5

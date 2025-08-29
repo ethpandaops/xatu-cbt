@@ -1,0 +1,3 @@
+[submodule "vendor/xatu"]
+	path = vendor/xatu
+	url = https://github.com/ethpandaops/xatu.git

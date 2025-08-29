@@ -1,0 +1,19 @@
+name: minimal
+description: "Minimal test data for basic validation"
+network: mainnet
+tables:
+  - name: canonical_beacon_block
+    urls:
+      - https://data.ethpandaops.io/xatu/mainnet/databases/default/canonical_beacon_block/2024/10/15.parquet
+    
+  - name: beacon_api_eth_v1_events_block
+    urls:
+      - https://data.ethpandaops.io/xatu/mainnet/databases/default/beacon_api_eth_v1_events_block/2024/10/15.parquet
+
+  - name: beacon_api_eth_v1_proposer_duty
+    urls:
+      - https://data.ethpandaops.io/xatu/mainnet/databases/default/beacon_api_eth_v1_proposer_duty/2024/10/15.parquet
+
+assertions:
+  - slot: 1234567
+    expected_proposer: 98765
