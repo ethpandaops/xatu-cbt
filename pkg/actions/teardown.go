@@ -10,7 +10,7 @@ import (
 )
 
 // Teardown validates config and drops the ClickHouse database for the configured network
-func Teardown(isInteractive, skipConfirm bool) error {
+func Teardown(isInteractive, skipConfirm bool) error { //nolint:gocyclo // Complex logic for database cleanup
 	// Load and validate config
 	cfg, err := config.Load()
 	if err != nil {
@@ -60,22 +60,81 @@ func Teardown(isInteractive, skipConfirm bool) error {
 		return fmt.Errorf("failed to connect: %w", err)
 	}
 	defer func() {
-		if err := conn.Close(); err != nil {
-			fmt.Printf("Warning: failed to close connection: %v\n", err)
+		if closeErr := conn.Close(); closeErr != nil {
+			fmt.Printf("Warning: failed to close connection: %v\n", closeErr)
 		}
 	}()
 
-	// Drop database
-	fmt.Printf("\n🗑️  Dropping database '%s'...\n", cfg.Network)
-	query := fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", cfg.Network)
-	if cfg.ClickhouseCluster != "" && cfg.ClickhouseCluster != "{cluster}" {
-		query = fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER '%s'", cfg.Network, cfg.ClickhouseCluster)
+	// Check if database exists
+	var dbExists uint64
+	checkQuery := fmt.Sprintf("SELECT count() FROM system.databases WHERE name = '%s'", cfg.Network)
+	if checkErr := conn.QueryRow(context.Background(), checkQuery).Scan(&dbExists); checkErr != nil {
+		return fmt.Errorf("failed to check if database exists: %w", checkErr)
 	}
 
-	if err := conn.Exec(context.Background(), query); err != nil {
-		return fmt.Errorf("failed to drop database: %w", err)
+	if dbExists == 0 {
+		fmt.Printf("ℹ️  Database '%s' does not exist, nothing to teardown\n", cfg.Network)
+		fmt.Println("\n✅ Teardown completed successfully!")
+		return nil
 	}
-	fmt.Printf("✅ Database '%s' has been dropped!\n", cfg.Network)
+
+	// Instead of dropping the database, truncate all _local tables except schema_migrations_local
+	// This preserves the database structure and avoids ZooKeeper replica conflicts
+	fmt.Printf("\n🗑️  Cleaning data from database '%s'...\n", cfg.Network)
+
+	// Get all _local tables in the database
+	tablesQuery := fmt.Sprintf(`
+		SELECT name 
+		FROM system.tables 
+		WHERE database = '%s' 
+		AND name LIKE '%%_local' 
+		AND name != 'schema_migrations_local'
+		ORDER BY name
+	`, cfg.Network)
+
+	rows, err := conn.Query(context.Background(), tablesQuery)
+	if err != nil {
+		return fmt.Errorf("failed to list tables: %w", err)
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			fmt.Printf("Warning: failed to close rows: %v\n", closeErr)
+		}
+	}()
+
+	tables := make([]string, 0, 50) // Pre-allocate for typical number of tables
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			return fmt.Errorf("failed to scan table name: %w", err)
+		}
+		tables = append(tables, tableName)
+	}
+
+	if len(tables) == 0 { //nolint:nestif // Clear logic for handling table truncation
+		fmt.Printf("ℹ️  No data tables found in database '%s'\n", cfg.Network)
+	} else {
+		fmt.Printf("📊 Found %d tables to clean\n", len(tables))
+
+		// Truncate each table
+		for _, table := range tables {
+			var truncateQuery string
+			if cfg.ClickhouseCluster != "" && cfg.ClickhouseCluster != "{cluster}" {
+				truncateQuery = fmt.Sprintf("TRUNCATE TABLE `%s`.`%s` ON CLUSTER '%s'",
+					cfg.Network, table, cfg.ClickhouseCluster)
+			} else {
+				truncateQuery = fmt.Sprintf("TRUNCATE TABLE `%s`.`%s`", cfg.Network, table)
+			}
+
+			fmt.Printf("  🗑️  Truncating %s...\n", table)
+			if err := conn.Exec(context.Background(), truncateQuery); err != nil {
+				// Log warning but continue with other tables
+				fmt.Printf("  ⚠️  Warning: failed to truncate %s: %v\n", table, err)
+			}
+		}
+	}
+
+	fmt.Printf("✅ Database '%s' has been cleaned!\n", cfg.Network)
 
 	fmt.Println("\n✅ Teardown completed successfully!")
 	return nil

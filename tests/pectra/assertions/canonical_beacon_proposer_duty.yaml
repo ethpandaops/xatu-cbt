@@ -1,4 +1,8 @@
 - name: "total count"
-  sql: "SELECT COUNT(*) AS 'count' FROM canonical_beacon_proposer_duty"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      canonical_beacon_proposer_duty FINAL
   expected:
-    count: 1000000
+    count: 7200

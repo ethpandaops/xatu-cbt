@@ -17,5 +17,5 @@ coverage.txt
 .env.*
 !example.env
 
-# 
-tmp/**
+# Xatu
+xatu/

@@ -44,5 +44,5 @@ This command will:
 
 func init() {
 	teardownCmd.Flags().BoolVarP(&forceTeardown, "force", "f", false, "Skip confirmation and proceed with teardown")
-	rootCmd.AddCommand(teardownCmd)
+	// Command is added to networkCmd in network.go
 }

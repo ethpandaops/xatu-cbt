@@ -20,6 +20,8 @@ var (
 	ErrExit = errors.New("exit")
 	// ErrInvalidSelection is returned when an invalid menu option is selected
 	ErrInvalidSelection = errors.New("invalid selection")
+	// ErrNoItems is returned when there are no items to select from
+	ErrNoItems = errors.New("no items to select from")
 )
 
 // ShowMainMenu displays the main menu and handles user selection
@@ -64,11 +66,35 @@ func PauseForEnter() {
 
 // Confirm asks for user confirmation
 func Confirm(message string) bool {
-	confirmed := false
+	return ConfirmWithDefault(message, false)
+}
+
+// ConfirmWithDefault asks for user confirmation with a default value
+func ConfirmWithDefault(message string, defaultValue bool) bool {
+	confirmed := defaultValue
 	prompt := &survey.Confirm{
 		Message: message,
-		Default: false,
+		Default: defaultValue,
 	}
 	_ = survey.AskOne(prompt, &confirmed)
 	return confirmed
+}
+
+// SelectFromList displays a selection list and returns the selected item
+func SelectFromList(message string, items []string) (string, error) {
+	if len(items) == 0 {
+		return "", ErrNoItems
+	}
+
+	var selected string
+	prompt := &survey.Select{
+		Message: message,
+		Options: items,
+	}
+
+	if err := survey.AskOne(prompt, &selected); err != nil {
+		return "", err
+	}
+
+	return selected, nil
 }

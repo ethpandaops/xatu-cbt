@@ -42,5 +42,5 @@ This command will:
 
 func init() {
 	setupCmd.Flags().BoolVarP(&forceSetup, "force", "f", false, "Skip confirmation and proceed with setup")
-	rootCmd.AddCommand(setupCmd)
+	// Command is added to networkCmd in network.go
 }
