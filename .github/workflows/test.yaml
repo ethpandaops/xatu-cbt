@@ -91,5 +91,10 @@ jobs:
       - name: Set up env
         run: |
           cp example.env .env
+      - name: Run xatu clickhouse
+        run: |
+          cd xatu
+          docker compose --profile clickhouse up -d
+          docker wait xatu-clickhouse-migrator
       - name: Run test ${{ matrix.test }}
         run: ./bin/xatu-cbt test ${{ matrix.test }}
