@@ -133,24 +133,15 @@ func (d *dockerManager) CloneRepository(ctx context.Context, repoURL, targetDir,
 func (d *dockerManager) WaitForContainerExit(ctx context.Context, containerName string, timeout time.Duration) error {
 	d.log.WithField("container", containerName).Info("Waiting for container to exit")
 
-	// Try to stream logs in background for CI debugging
-	if os.Getenv("CI") != "" {
-		d.log.Debug("CI environment detected, attempting to stream container logs")
-		// Start streaming logs in background (non-blocking)
-		go func() {
-			streamCmd := exec.Command("docker", "logs", "-f", containerName)
-			streamCmd.Stdout = os.Stdout
-			streamCmd.Stderr = os.Stderr
-			_ = streamCmd.Run() // Ignore errors as container might exit
-		}()
-	}
-
 	deadline := time.Now().Add(timeout)
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	// Counter for periodic status updates
 	checkCount := 0
+
+	// Give container a moment to start and generate initial logs
+	time.Sleep(2 * time.Second)
 
 	for {
 		select {
@@ -194,45 +185,71 @@ func (d *dockerManager) WaitForContainerExit(ctx context.Context, containerName 
 
 			// Provide periodic feedback every 10 seconds (5 checks * 2 seconds)
 			if checkCount%5 == 0 {
-				// Get more log lines for better debugging in CI
-				logCmd := exec.CommandContext(ctx, "docker", "logs", containerName, "--tail", "10")
-				logOutput, err := logCmd.CombinedOutput()
-
 				fields := logrus.Fields{
 					"container": containerName,
 					"status":    status,
 					"elapsed":   time.Since(deadline.Add(-timeout)).Round(time.Second),
 				}
 
-				// Also check if container is actually running
-				inspectCmd := exec.CommandContext(ctx, "docker", "inspect", containerName, "--format", "{{.State.Running}}")
-				if inspectOutput, inspectErr := inspectCmd.Output(); inspectErr == nil {
-					fields["running"] = strings.TrimSpace(string(inspectOutput))
-				}
+				// Try multiple methods to get logs in CI
+				// Method 1: Standard docker logs
+				logCmd := exec.CommandContext(ctx, "docker", "logs", containerName)
+				logOutput, logErr := logCmd.CombinedOutput()
 
-				switch {
-				case err != nil:
-					fields["log_error"] = err.Error()
-					// Try alternate method to get logs
-					altLogCmd := exec.CommandContext(ctx, "docker", "logs", containerName, "--tail", "5", "--timestamps")
-					if altOutput, altErr := altLogCmd.Output(); altErr == nil && len(altOutput) > 0 {
-						fields["alt_logs"] = strings.TrimSpace(string(altOutput))
-					}
-				case len(logOutput) > 0:
+				if logErr == nil && len(logOutput) > 0 {
 					logs := strings.TrimSpace(string(logOutput))
 					if logs != "" {
-						// Show last few lines instead of just one
+						// Get last few lines
 						logLines := strings.Split(logs, "\n")
-						if len(logLines) > 3 {
-							fields["recent_logs"] = strings.Join(logLines[len(logLines)-3:], " | ")
-						} else {
-							fields["recent_logs"] = strings.ReplaceAll(logs, "\n", " | ")
+						lastLines := logLines
+						if len(logLines) > 5 {
+							lastLines = logLines[len(logLines)-5:]
 						}
-					} else {
-						fields["last_log"] = "(empty log output)"
+						fields["logs"] = strings.Join(lastLines, " | ")
 					}
-				default:
-					fields["last_log"] = "(no logs captured)"
+				}
+
+				// Method 2: Check if container is actually running and get more info
+				inspectCmd := exec.CommandContext(ctx, "docker", "inspect", containerName)
+				if inspectOutput, inspectErr := inspectCmd.Output(); inspectErr == nil {
+					// Parse key fields from inspect output
+					if strings.Contains(string(inspectOutput), "\"Running\": true") {
+						fields["running"] = "true"
+					} else if strings.Contains(string(inspectOutput), "\"Running\": false") {
+						fields["running"] = "false"
+					}
+
+					// Check exit code if available
+					if strings.Contains(string(inspectOutput), "\"ExitCode\":") {
+						exitCodeCmd := exec.CommandContext(ctx, "docker", "inspect", containerName, "--format", "{{.State.ExitCode}}")
+						if exitCodeOutput, _ := exitCodeCmd.Output(); len(exitCodeOutput) > 0 {
+							fields["exit_code"] = strings.TrimSpace(string(exitCodeOutput))
+						}
+					}
+				}
+
+				// Method 3: In CI, try to explicitly dump all logs to stdout
+				if os.Getenv("CI") != "" && logErr == nil && len(logOutput) > 0 {
+					d.log.Info("=== Container logs dump ===")
+					fmt.Println(string(logOutput))
+					d.log.Info("=== End container logs ===")
+				}
+
+				// If still no logs, try to check what command the container is running
+				if (logErr != nil || len(logOutput) == 0) && os.Getenv("CI") != "" {
+					fields["log_status"] = "no logs available"
+
+					// Check what command the container is running
+					cmdCheckCmd := exec.CommandContext(ctx, "docker", "inspect", containerName, "--format", "{{.Config.Cmd}}")
+					if cmdOutput, _ := cmdCheckCmd.Output(); len(cmdOutput) > 0 {
+						fields["container_cmd"] = strings.TrimSpace(string(cmdOutput))
+					}
+
+					// Check entrypoint
+					entrypointCmd := exec.CommandContext(ctx, "docker", "inspect", containerName, "--format", "{{.Config.Entrypoint}}")
+					if entrypointOutput, _ := entrypointCmd.Output(); len(entrypointOutput) > 0 {
+						fields["container_entrypoint"] = strings.TrimSpace(string(entrypointOutput))
+					}
 				}
 
 				d.log.WithFields(fields).Info("Still waiting for container to finish...")
