@@ -165,20 +165,20 @@ func (s *service) setupCBT(ctx context.Context) error {
 	// 3. Run network teardown to clean up any existing network database
 	// This ensures we have a clean state and avoids replica already exists errors
 	s.log.Debug("Running network teardown to ensure clean state")
-	if err := s.docker.RunCommand(ctx, ".", "./xatu-cbt", "network", "teardown", "--force"); err != nil {
+	if err := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "teardown", "--force"); err != nil {
 		// This might fail if network doesn't exist, which is ok
 		s.log.WithError(err).Debug("Network teardown failed (might not exist)")
 	}
 
 	// 4. Run network setup to create the network database
 	s.log.Debug("Running network setup")
-	if err := s.docker.RunCommand(ctx, ".", "./xatu-cbt", "network", "setup", "--force"); err != nil { //nolint:nestif // Retry logic for handling replica conflicts
+	if err := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "setup", "--force"); err != nil { //nolint:nestif // Retry logic for handling replica conflicts
 		// If setup fails due to replica already exists, try teardown and setup again
 		if strings.Contains(err.Error(), "REPLICA_ALREADY_EXISTS") {
 			s.log.Warn("Replica already exists, attempting cleanup and retry")
 
 			// Force teardown to clean up existing replicas
-			if teardownErr := s.docker.RunCommand(ctx, ".", "./xatu-cbt", "network", "teardown", "--force"); teardownErr != nil {
+			if teardownErr := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "teardown", "--force"); teardownErr != nil {
 				s.log.WithError(teardownErr).Warn("Failed to teardown during retry")
 			}
 
@@ -186,7 +186,7 @@ func (s *service) setupCBT(ctx context.Context) error {
 			time.Sleep(2 * time.Second)
 
 			// Try setup again
-			if retryErr := s.docker.RunCommand(ctx, ".", "./xatu-cbt", "network", "setup", "--force"); retryErr != nil {
+			if retryErr := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "setup", "--force"); retryErr != nil {
 				return fmt.Errorf("failed to run network setup after retry: %w", retryErr)
 			}
 		} else {

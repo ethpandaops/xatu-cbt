@@ -128,7 +128,7 @@ func buildConnectionString(cfg *config.Config) string {
 	}
 
 	// Add cluster configuration if set
-	if cfg.ClickhouseCluster != "" && cfg.ClickhouseCluster != "{cluster}" {
+	if cfg.ClickhouseCluster != "" {
 		// For clustered setup, use ReplicatedMergeTree for migrations table
 		connStr += fmt.Sprintf("&x-cluster-name=%s&x-migrations-table-engine=ReplicatedMergeTree", cfg.ClickhouseCluster)
 	} else {

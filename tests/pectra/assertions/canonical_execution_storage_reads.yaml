@@ -1,0 +1,8 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      canonical_execution_storage_reads FINAL
+  expected:
+    count: 1530582

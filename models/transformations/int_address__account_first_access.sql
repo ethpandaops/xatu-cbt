@@ -13,6 +13,7 @@ dependencies:
   - "{{external}}.canonical_execution_balance_reads"
   - "{{external}}.canonical_execution_contracts"
   - "{{external}}.canonical_execution_nonce_reads"
+  - "{{external}}.canonical_execution_nonce_diffs"
   - "{{external}}.canonical_execution_storage_diffs"
   - "{{external}}.canonical_execution_storage_reads"
 ---
@@ -23,37 +24,37 @@ SELECT
     min(block_number) AS block_number,
     null AS `version`
 FROM (
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_nonce_reads" "database" }}`.`canonical_execution_nonce_reads `
+    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_nonce_reads" "database" }}`.`canonical_execution_nonce_reads` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_nonce_diffs" "database" }}`.`canonical_execution_nonce_diffs`
+    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_nonce_diffs" "database" }}`.`canonical_execution_nonce_diffs` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_balance_diffs" "database" }}`.`canonical_execution_balance_diffs`
+    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_balance_diffs" "database" }}`.`canonical_execution_balance_diffs` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_balance_reads" "database" }}`.`canonical_execution_balance_reads`
+    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_balance_reads" "database" }}`.`canonical_execution_balance_reads` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs`
+    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     
     UNION ALL
     
-    SELECT lower(contract_address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads`
+    SELECT lower(contract_address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     
     UNION ALL
     
-    SELECT lower(contract_address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_contracts" "database" }}`.`canonical_execution_contracts`
+    SELECT lower(contract_address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_contracts" "database" }}`.`canonical_execution_contracts` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 )
 GROUP BY address;

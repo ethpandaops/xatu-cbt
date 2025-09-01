@@ -236,7 +236,7 @@ func (a *assertionRunner) runAssertionFileWithStatus(ctx context.Context, conn d
 	status.Total = len(assertions)
 
 	for _, assertion := range assertions {
-		passed, err := a.runAssertion(ctx, conn, assertion)
+		passed, err := a.runAssertion(ctx, conn, file, assertion)
 		if err != nil {
 			a.log.WithFields(logrus.Fields{
 				"assertion": assertion.Name,
@@ -258,7 +258,7 @@ func (a *assertionRunner) runAssertionFileWithStatus(ctx context.Context, conn d
 	return status.Failed == 0 && status.Pending == 0, status
 }
 
-func (a *assertionRunner) runAssertion(ctx context.Context, conn driver.Conn, assertion Assertion) (bool, error) { //nolint:gocyclo // Complex function handling many database types
+func (a *assertionRunner) runAssertion(ctx context.Context, conn driver.Conn, file string, assertion Assertion) (bool, error) { //nolint:gocyclo // Complex function handling many database types
 	// Get the network name from config to use as database
 	cfg, err := config.Load()
 	if err != nil {
@@ -411,6 +411,8 @@ func (a *assertionRunner) runAssertion(ctx context.Context, conn driver.Conn, as
 				"column":    col,
 				"expected":  expectedVal,
 				"actual":    actualVal,
+				"name":      assertion.Name,
+				"file":      file,
 			}).Debug("Value mismatch detected")
 			return false, nil
 		}

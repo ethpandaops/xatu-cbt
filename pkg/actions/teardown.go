@@ -39,7 +39,7 @@ func Teardown(isInteractive, skipConfirm bool) error { //nolint:gocyclo // Compl
 	// Handle confirmation for both TUI and CLI modes
 	if !skipConfirm {
 		if isInteractive {
-			fmt.Printf("🗑️  You are about to DROP database: %s\n", strings.ToUpper(cfg.Network))
+			fmt.Printf("🗑️  You are about to TRUNCATE all tables in database: %s\n", strings.ToUpper(cfg.Network))
 			fmt.Println("⚠️  WARNING: This will permanently delete ALL data in the database!")
 		}
 		// Return here so the caller can handle confirmation
@@ -102,7 +102,7 @@ func Teardown(isInteractive, skipConfirm bool) error { //nolint:gocyclo // Compl
 		}
 	}()
 
-	tables := make([]string, 0, 50) // Pre-allocate for typical number of tables
+	tables := []string{}
 	for rows.Next() {
 		var tableName string
 		if err := rows.Scan(&tableName); err != nil {
@@ -119,8 +119,8 @@ func Teardown(isInteractive, skipConfirm bool) error { //nolint:gocyclo // Compl
 		// Truncate each table
 		for _, table := range tables {
 			var truncateQuery string
-			if cfg.ClickhouseCluster != "" && cfg.ClickhouseCluster != "{cluster}" {
-				truncateQuery = fmt.Sprintf("TRUNCATE TABLE `%s`.`%s` ON CLUSTER '%s'",
+			if cfg.ClickhouseCluster != "" {
+				truncateQuery = fmt.Sprintf("TRUNCATE TABLE `%s`.`%s` ON CLUSTER '%s' SYNC SETTINGS alter_sync = 2, replication_wait_for_inactive_replica_timeout = 300, distributed_ddl_task_timeout = 300",
 					cfg.Network, table, cfg.ClickhouseCluster)
 			} else {
 				truncateQuery = fmt.Sprintf("TRUNCATE TABLE `%s`.`%s`", cfg.Network, table)

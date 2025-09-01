@@ -22,7 +22,7 @@ WITH all_storage_data AS (
         transaction_index,
         internal_index,
         to_value AS value
-    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs`
+    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     
     UNION ALL
@@ -34,7 +34,7 @@ WITH all_storage_data AS (
         transaction_index,
         internal_index,
         value
-    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads`
+    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 )
 SELECT
