@@ -73,11 +73,6 @@ func (d *dockerManager) ComposeUp(ctx context.Context, dir string, profiles []st
 
 	args = append(args, "up", "-d")
 
-	// In CI, add --no-ansi to avoid terminal control characters
-	if os.Getenv("CI") != "" {
-		args = append(args, "--no-ansi")
-	}
-
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
