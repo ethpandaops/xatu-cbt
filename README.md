@@ -26,19 +26,8 @@ CLICKHOUSE_CLUSTER={cluster}
 XATU_REF=master # what xatu repo ref to use for testing
 
 # Logging configuration
-LOG_LEVEL=info # debug, info, warn, error
-
+LOG_LEVEL=debug # debug, info, warn, error
 ```
-
-### Usage
-
-```bash
-make
-# equivalent to
-go build -o xatu-cbt ./cmd/xatu-
-./bin/xatu-cbt
-```
-
 
 ### Usage
 
@@ -51,7 +40,7 @@ Simply run the binary without arguments to enter interactive mode:
 make
 
 # or manually
-go build -o xatu-cbt ./cmd/xatu-
+go build -o ./bin/xatu-cbt ./cmd/xatu-cbt
 ./bin/xatu-cbt
 ```
 

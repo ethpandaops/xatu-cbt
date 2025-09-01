@@ -6,7 +6,7 @@
 *.test
 *.out
 bin/**
-xatu-cbt
+/xatu-cbt
 
 # Go coverage
 *.coverprofile
