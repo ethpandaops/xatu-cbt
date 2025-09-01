@@ -280,7 +280,7 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 
 	// 3. Wait for xatu-clickhouse-migrator to finish
 	s.log.Info("Waiting for xatu ClickHouse migrations to complete (this may take a few minutes)...")
-	if err := s.docker.WaitForContainerExit(ctx, "xatu-clickhouse-migrator", 5*time.Minute); err != nil {
+	if err := s.docker.WaitForContainerExit(ctx, "xatu-clickhouse-migrator", 60*time.Minute); err != nil {
 		return fmt.Errorf("failed waiting for migrations: %w", err)
 	}
 	s.log.Info("ClickHouse migrations completed successfully")
