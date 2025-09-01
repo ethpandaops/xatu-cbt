@@ -164,17 +164,49 @@ func (d *dockerManager) WaitForContainerExit(ctx context.Context, containerName 
 			}
 
 			if strings.HasPrefix(status, "Exited") {
+				// Get the last log line from the container before it exited
+				logCmd := exec.CommandContext(ctx, "docker", "logs", containerName, "--tail", "1")
+				if logOutput, err := logCmd.Output(); err == nil && len(logOutput) > 0 {
+					lastLog := strings.TrimSpace(string(logOutput))
+					if lastLog != "" {
+						d.log.WithFields(logrus.Fields{
+							"container": containerName,
+							"last_log":  lastLog,
+						}).Info("Container last log")
+					}
+				}
+
 				d.log.WithField("container", containerName).Info("Container has exited successfully")
 				return nil
 			}
 
 			// Provide periodic feedback every 10 seconds (5 checks * 2 seconds)
 			if checkCount%5 == 0 {
-				d.log.WithFields(logrus.Fields{
+				// Get the container's current last log line
+				logCmd := exec.CommandContext(ctx, "docker", "logs", containerName, "--tail", "1")
+				logOutput, err := logCmd.CombinedOutput()
+
+				fields := logrus.Fields{
 					"container": containerName,
 					"status":    status,
 					"elapsed":   time.Since(deadline.Add(-timeout)).Round(time.Second),
-				}).Info("Still waiting for container to finish...")
+				}
+
+				switch {
+				case err != nil:
+					fields["log_error"] = err.Error()
+				case len(logOutput) > 0:
+					lastLog := strings.TrimSpace(string(logOutput))
+					if lastLog != "" {
+						fields["last_log"] = lastLog
+					} else {
+						fields["last_log"] = "(empty log line)"
+					}
+				default:
+					fields["last_log"] = "(no logs yet)"
+				}
+
+				d.log.WithFields(fields).Info("Still waiting for container to finish...")
 			}
 		}
 	}
