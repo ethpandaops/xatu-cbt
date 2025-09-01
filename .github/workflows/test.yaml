@@ -1,8 +1,6 @@
 name: test
 on:
   pull_request:
-permissions:
-  contents: read
 jobs:
   discover-tests:
     name: Discover test directories
