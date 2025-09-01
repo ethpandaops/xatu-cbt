@@ -1,6 +1,8 @@
 name: test
 on:
   pull_request:
+permissions:
+  contents: read
 jobs:
   discover-tests:
     name: Discover test directories
@@ -34,7 +36,7 @@ jobs:
           go-version: '1.24'
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Build xatu-cbt
-        run: make build
+        run: go build -o xatu-cbt ./cmd/xatu-cbt
       - name: Check external models have test data
         run: |
           echo "Checking external models have corresponding test data..."
