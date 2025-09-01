@@ -191,64 +191,57 @@ func (d *dockerManager) WaitForContainerExit(ctx context.Context, containerName 
 					"elapsed":   time.Since(deadline.Add(-timeout)).Round(time.Second),
 				}
 
-				// Try multiple methods to get logs in CI
-				// Method 1: Standard docker logs
-				logCmd := exec.CommandContext(ctx, "docker", "logs", containerName)
-				logOutput, logErr := logCmd.CombinedOutput()
+				// Check if this is the migrator container and query ClickHouse for migration status
+				if containerName == "xatu-clickhouse-migrator" {
+					// Query ClickHouse for current migration version
+					query := "SELECT version, dirty FROM schema_migrations ORDER BY sequence DESC LIMIT 1 FORMAT TabSeparated"
+					curlCmd := exec.CommandContext(ctx, "curl", "-s", "http://localhost:8123", "--data", query)
+					if migrationOutput, err := curlCmd.Output(); err == nil && len(migrationOutput) > 0 {
+						result := strings.TrimSpace(string(migrationOutput))
+						if result != "" && !strings.Contains(result, "DB::Exception") {
+							parts := strings.Split(result, "\t")
+							if len(parts) >= 2 {
+								fields["migration_version"] = parts[0]
+								fields["migration_dirty"] = parts[1]
+							} else if len(parts) == 1 {
+								fields["migration_info"] = result
+							}
+						}
+					}
 
-				if logErr == nil && len(logOutput) > 0 {
+					// Also check how many migrations are in the table
+					countQuery := "SELECT count(*) FROM schema_migrations FORMAT TabSeparated"
+					countCmd := exec.CommandContext(ctx, "curl", "-s", "http://localhost:8123", "--data", countQuery)
+					if countOutput, err := countCmd.Output(); err == nil && len(countOutput) > 0 {
+						result := strings.TrimSpace(string(countOutput))
+						if result != "" && !strings.Contains(result, "DB::Exception") {
+							fields["total_migrations"] = result
+						}
+					}
+
+					// Check if default database exists
+					dbQuery := "SELECT count(*) FROM system.databases WHERE name = 'default' FORMAT TabSeparated"
+					dbCmd := exec.CommandContext(ctx, "curl", "-s", "http://localhost:8123", "--data", dbQuery)
+					if dbOutput, err := dbCmd.Output(); err == nil && len(dbOutput) > 0 {
+						result := strings.TrimSpace(string(dbOutput))
+						if result == "1" {
+							fields["database"] = "ready"
+						} else {
+							fields["database"] = "not_ready"
+						}
+					}
+				}
+
+				// Try to get container logs (simplified)
+				logCmd := exec.CommandContext(ctx, "docker", "logs", containerName, "--tail", "5")
+				if logOutput, err := logCmd.Output(); err == nil && len(logOutput) > 0 {
 					logs := strings.TrimSpace(string(logOutput))
 					if logs != "" {
-						// Get last few lines
+						// Show last line of logs
 						logLines := strings.Split(logs, "\n")
-						lastLines := logLines
-						if len(logLines) > 5 {
-							lastLines = logLines[len(logLines)-5:]
+						if len(logLines) > 0 {
+							fields["last_log"] = logLines[len(logLines)-1]
 						}
-						fields["logs"] = strings.Join(lastLines, " | ")
-					}
-				}
-
-				// Method 2: Check if container is actually running and get more info
-				inspectCmd := exec.CommandContext(ctx, "docker", "inspect", containerName)
-				if inspectOutput, inspectErr := inspectCmd.Output(); inspectErr == nil {
-					// Parse key fields from inspect output
-					if strings.Contains(string(inspectOutput), "\"Running\": true") {
-						fields["running"] = "true"
-					} else if strings.Contains(string(inspectOutput), "\"Running\": false") {
-						fields["running"] = "false"
-					}
-
-					// Check exit code if available
-					if strings.Contains(string(inspectOutput), "\"ExitCode\":") {
-						exitCodeCmd := exec.CommandContext(ctx, "docker", "inspect", containerName, "--format", "{{.State.ExitCode}}")
-						if exitCodeOutput, _ := exitCodeCmd.Output(); len(exitCodeOutput) > 0 {
-							fields["exit_code"] = strings.TrimSpace(string(exitCodeOutput))
-						}
-					}
-				}
-
-				// Method 3: In CI, try to explicitly dump all logs to stdout
-				if os.Getenv("CI") != "" && logErr == nil && len(logOutput) > 0 {
-					d.log.Info("=== Container logs dump ===")
-					fmt.Println(string(logOutput))
-					d.log.Info("=== End container logs ===")
-				}
-
-				// If still no logs, try to check what command the container is running
-				if (logErr != nil || len(logOutput) == 0) && os.Getenv("CI") != "" {
-					fields["log_status"] = "no logs available"
-
-					// Check what command the container is running
-					cmdCheckCmd := exec.CommandContext(ctx, "docker", "inspect", containerName, "--format", "{{.Config.Cmd}}")
-					if cmdOutput, _ := cmdCheckCmd.Output(); len(cmdOutput) > 0 {
-						fields["container_cmd"] = strings.TrimSpace(string(cmdOutput))
-					}
-
-					// Check entrypoint
-					entrypointCmd := exec.CommandContext(ctx, "docker", "inspect", containerName, "--format", "{{.Config.Entrypoint}}")
-					if entrypointOutput, _ := entrypointCmd.Output(); len(entrypointOutput) > 0 {
-						fields["container_entrypoint"] = strings.TrimSpace(string(entrypointOutput))
 					}
 				}
 
