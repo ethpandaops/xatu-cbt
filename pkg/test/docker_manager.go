@@ -392,6 +392,34 @@ func (d *dockerManager) debugMigratorContainer(ctx context.Context) {
 					"clickhouse-client", "-q", "SELECT * FROM default.schema_migrations LIMIT 5")
 				if mOut, mErr := migrationsCmd.Output(); mErr == nil {
 					d.log.WithField("migrations", string(mOut)).Info("[DEBUG] Current migrations state")
+
+					// If migration is dirty, let's understand why
+					if strings.Contains(string(mOut), "\t1\t") {
+						d.log.Warn("[DEBUG] Migration is dirty - testing why it might be failing")
+
+						// Check if cluster is configured properly
+						clusterCheckCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-01",
+							"clickhouse-client", "-q", "SELECT cluster, shard_num, replica_num FROM system.clusters WHERE cluster = 'cluster'")
+						if cOut, cErr := clusterCheckCmd.CombinedOutput(); cErr != nil {
+							d.log.WithError(cErr).WithField("output", string(cOut)).Error("[DEBUG] No 'cluster' cluster found - THIS IS THE PROBLEM!")
+
+							// Show what clusters exist
+							allClustersCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-01",
+								"clickhouse-client", "-q", "SELECT DISTINCT cluster FROM system.clusters")
+							if acOut, _ := allClustersCmd.Output(); len(acOut) > 0 {
+								d.log.WithField("available_clusters", string(acOut)).Info("[DEBUG] Available clusters")
+							}
+						} else {
+							d.log.WithField("cluster_config", string(cOut)).Info("[DEBUG] Cluster 'cluster' exists")
+						}
+
+						// Try to run a simple CREATE TABLE to test the actual error
+						testTableCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-01",
+							"clickhouse-client", "-q", "CREATE TABLE IF NOT EXISTS default.test_cluster ON CLUSTER 'cluster' (id UInt32) ENGINE = MergeTree() ORDER BY id")
+						if tOut, tErr := testTableCmd.CombinedOutput(); tErr != nil {
+							d.log.WithError(tErr).WithField("output", string(tOut)).Error("[DEBUG] CREATE TABLE ON CLUSTER failed - exact error")
+						}
+					}
 				}
 			} else {
 				d.log.Warn("[DEBUG] schema_migrations table does NOT exist - migrations haven't started")

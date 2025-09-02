@@ -275,7 +275,7 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 	// Set default ClickHouse password if not set (migrator needs this)
 	if os.Getenv("CLICKHOUSE_PASSWORD") == "" {
 		s.log.Info("Setting CLICKHOUSE_PASSWORD to 'supersecret' for migrator")
-		os.Setenv("CLICKHOUSE_PASSWORD", "supersecret")
+		_ = os.Setenv("CLICKHOUSE_PASSWORD", "supersecret")
 	}
 
 	if err := s.docker.ComposeDown(ctx, "xatu", true); err != nil {
