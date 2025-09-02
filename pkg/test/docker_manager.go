@@ -176,9 +176,29 @@ func (d *dockerManager) WaitForContainerExit(ctx context.Context, containerName 
 					"elapsed":   time.Since(deadline.Add(-timeout)).Round(time.Second),
 				}).Info("Still waiting for container to finish...")
 
-				c1 := exec.CommandContext(ctx, "docker", "logs", "xatu-clickhouse-migrator") //nolint:gosec // containerName is controlled
-				o1, _ := c1.Output()
-				d.log.Info(string(o1))
+				// Try to get container logs with a timeout
+				if containerName == "xatu-clickhouse-migrator" && checkCount == 10 { // Only on first status update
+					// Use a short timeout context for the logs command
+					logCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+					defer cancel()
+
+					// Try getting just the last 10 lines
+					logCmd := exec.CommandContext(logCtx, "docker", "logs", "--tail", "10", containerName)
+					logOutput, logErr := logCmd.CombinedOutput()
+
+					if logErr != nil {
+						d.log.WithError(logErr).Warn("Failed to get container logs")
+						// Try to check if container is actually running
+						inspectCmd := exec.CommandContext(logCtx, "docker", "inspect", containerName, "--format", "{{.State.Status}}")
+						if inspectOutput, err := inspectCmd.Output(); err == nil {
+							d.log.WithField("container_state", strings.TrimSpace(string(inspectOutput))).Info("Container state from inspect")
+						}
+					} else if len(logOutput) > 0 {
+						d.log.WithField("logs_tail", string(logOutput)).Info("Container logs (last 10 lines)")
+					} else {
+						d.log.Info("Container logs are empty")
+					}
+				}
 			}
 		}
 	}
