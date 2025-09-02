@@ -1,0 +1,44 @@
+---
+table: int_xatu_nodes__active
+interval:
+  max: 60
+schedules:
+  forwardfill: "@every 5s"
+tags:
+  - xatu
+  - active
+  - nodes
+dependencies:
+  - "{{external}}.beacon_api_eth_v1_events_block"
+---
+INSERT INTO
+  `{{ .self.database }}`.`{{ .self.table }}`
+SELECT
+    fromUnixTimestamp({{ .task.start }}) as updated_date_time,
+    max(slot_start_date_time) AS last_seen_date_time,
+    CASE
+        WHEN startsWith(meta_client_name, 'pub-') THEN
+            splitByChar('/', meta_client_name)[2]
+        ELSE
+            'ethpandaops'
+    END AS username,
+    CASE
+        WHEN startsWith(meta_client_name, 'pub-') THEN
+            substring(splitByChar('/', meta_client_name)[3], 8)  -- removes 'hashed-' prefix
+        ELSE
+            splitByChar('/', meta_client_name)[-1]
+    END AS node_id,
+    startsWith(meta_client_name, 'pub-') AS is_public,
+    meta_client_name,
+    argMax(meta_client_version, slot_start_date_time) AS meta_client_version,
+    argMax(meta_client_implementation, slot_start_date_time) AS meta_client_implementation,
+    argMax(meta_client_geo_city, slot_start_date_time) AS meta_client_geo_city,
+    argMax(meta_client_geo_country, slot_start_date_time) AS meta_client_geo_country,
+    argMax(meta_client_geo_country_code, slot_start_date_time) AS meta_client_geo_country_code,
+    argMax(meta_client_geo_continent_code, slot_start_date_time) AS meta_client_geo_continent_code,
+    argMax(meta_consensus_version, slot_start_date_time) AS meta_consensus_version,
+    argMax(meta_consensus_implementation, slot_start_date_time) AS meta_consensus_implementation
+FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "database" }}`.`beacon_api_eth_v1_events_block` FINAL
+WHERE slot_start_date_time >= NOW() - INTERVAL '1 HOUR'
+GROUP BY meta_client_name
+ORDER BY last_seen_date_time DESC;
