@@ -1,0 +1,20 @@
+- name: "Expected size"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      'int_xatu_nodes__active' FINAL
+  expected:
+    count: 0 # expected as the nodes are in the past
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt FINAL
+    WHERE
+      table = 'int_xatu_nodes__active'
+  expected:
+    max: "2025-07-15T23:59:59Z"
+    min: "2025-07-15T23:58:59Z"
