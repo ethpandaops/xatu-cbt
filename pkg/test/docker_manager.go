@@ -78,8 +78,18 @@ func (d *dockerManager) ComposeUp(ctx context.Context, dir string, profiles []st
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// Pass through environment variables, including NETWORK
-	cmd.Env = os.Environ()
+	// Pass through environment variables, but filter out problematic CLICKHOUSE_CLUSTER
+	env := os.Environ()
+	var filteredEnv []string
+	for _, e := range env {
+		// Skip CLICKHOUSE_CLUSTER if it's set to {cluster} as this breaks migrations
+		if strings.HasPrefix(e, "CLICKHOUSE_CLUSTER={cluster}") {
+			d.log.Debug("Filtering out CLICKHOUSE_CLUSTER={cluster} from docker-compose environment")
+			continue
+		}
+		filteredEnv = append(filteredEnv, e)
+	}
+	cmd.Env = filteredEnv
 
 	d.log.WithFields(logrus.Fields{
 		"dir":      dir,
