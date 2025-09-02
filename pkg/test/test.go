@@ -271,6 +271,13 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 
 	// 2. Start xatu docker compose with clickhouse profile
 	s.log.Debug("Starting xatu docker compose")
+
+	// Set default ClickHouse password if not set (migrator needs this)
+	if os.Getenv("CLICKHOUSE_PASSWORD") == "" {
+		s.log.Info("Setting CLICKHOUSE_PASSWORD to 'supersecret' for migrator")
+		os.Setenv("CLICKHOUSE_PASSWORD", "supersecret")
+	}
+
 	if err := s.docker.ComposeDown(ctx, "xatu", true); err != nil {
 		return fmt.Errorf("failed to stop xatu docker compose: %w", err)
 	}
