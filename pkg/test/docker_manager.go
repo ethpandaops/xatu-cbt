@@ -176,32 +176,182 @@ func (d *dockerManager) WaitForContainerExit(ctx context.Context, containerName 
 					"elapsed":   time.Since(deadline.Add(-timeout)).Round(time.Second),
 				}).Info("Still waiting for container to finish...")
 
-				// Try to get container logs with a timeout
-				if containerName == "xatu-clickhouse-migrator" && checkCount == 10 { // Only on first status update
-					// Use a short timeout context for the logs command
-					logCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-					defer cancel()
-
-					// Try getting just the last 10 lines
-					logCmd := exec.CommandContext(logCtx, "docker", "logs", "--tail", "10", containerName)
-					logOutput, logErr := logCmd.CombinedOutput()
-
-					if logErr != nil {
-						d.log.WithError(logErr).Warn("Failed to get container logs")
-						// Try to check if container is actually running
-						inspectCmd := exec.CommandContext(logCtx, "docker", "inspect", containerName, "--format", "{{.State.Status}}")
-						if inspectOutput, err := inspectCmd.Output(); err == nil {
-							d.log.WithField("container_state", strings.TrimSpace(string(inspectOutput))).Info("Container state from inspect")
-						}
-					} else if len(logOutput) > 0 {
-						d.log.WithField("logs_tail", string(logOutput)).Info("Container logs (last 10 lines)")
-					} else {
-						d.log.Info("Container logs are empty")
-					}
+				// Debug the migrator container periodically
+				if containerName == "xatu-clickhouse-migrator" && (checkCount == 10 || checkCount == 30) {
+					d.debugMigratorContainer(ctx)
 				}
 			}
 		}
 	}
+}
+
+func (d *dockerManager) debugMigratorContainer(ctx context.Context) {
+	d.log.Info("=== COMPREHENSIVE MIGRATOR DEBUG START ===")
+
+	// Use a short timeout context for each command
+	makeTimeoutContext := func() (context.Context, context.CancelFunc) {
+		return context.WithTimeout(ctx, 3*time.Second)
+	}
+
+	// 1. Container State
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		stateCmd := exec.CommandContext(debugCtx, "docker", "inspect", "xatu-clickhouse-migrator",
+			"--format", "Status={{.State.Status}} Running={{.State.Running}} ExitCode={{.State.ExitCode}} Pid={{.State.Pid}} StartedAt={{.State.StartedAt}}")
+		if out, err := stateCmd.Output(); err == nil {
+			d.log.WithField("state", strings.TrimSpace(string(out))).Info("[DEBUG] Container state")
+		} else {
+			d.log.WithError(err).Error("[DEBUG] Failed to get container state")
+		}
+	}()
+
+	// 2. Container Command Configuration
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		cmdCmd := exec.CommandContext(debugCtx, "docker", "inspect", "xatu-clickhouse-migrator",
+			"--format", "Cmd={{.Config.Cmd}} Entrypoint={{.Config.Entrypoint}} WorkingDir={{.Config.WorkingDir}}")
+		if out, err := cmdCmd.Output(); err == nil {
+			d.log.WithField("command", strings.TrimSpace(string(out))).Info("[DEBUG] Container command")
+		}
+	}()
+
+	// 3. Container Environment
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		envCmd := exec.CommandContext(debugCtx, "docker", "inspect", "xatu-clickhouse-migrator",
+			"--format", "{{range $index, $value := .Config.Env}}{{if $index}}, {{end}}{{$value}}{{end}}")
+		if out, err := envCmd.Output(); err == nil {
+			d.log.WithField("env", strings.TrimSpace(string(out))).Info("[DEBUG] Container environment")
+		}
+	}()
+
+	// 4. Container Logs (multiple attempts)
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+
+		// Try getting all logs
+		logCmd := exec.CommandContext(debugCtx, "docker", "logs", "xatu-clickhouse-migrator")
+		logOutput, logErr := logCmd.CombinedOutput()
+
+		if logErr != nil {
+			if strings.Contains(logErr.Error(), "context deadline") {
+				d.log.Error("[DEBUG] Docker logs command timed out - container may be hanging")
+			} else {
+				d.log.WithError(logErr).Error("[DEBUG] Failed to get container logs")
+			}
+		} else if len(logOutput) > 0 {
+			// Truncate if too long
+			if len(logOutput) > 5000 {
+				d.log.WithField("logs_truncated", string(logOutput[:5000])+"...[truncated]").Info("[DEBUG] Container logs")
+			} else {
+				d.log.WithField("logs", string(logOutput)).Info("[DEBUG] Container logs")
+			}
+		} else {
+			d.log.Error("[DEBUG] Container logs are completely empty")
+		}
+	}()
+
+	// 5. Container Processes
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		topCmd := exec.CommandContext(debugCtx, "docker", "top", "xatu-clickhouse-migrator")
+		if out, err := topCmd.Output(); err != nil {
+			d.log.WithError(err).Error("[DEBUG] Cannot get container processes")
+		} else {
+			d.log.WithField("processes", string(out)).Info("[DEBUG] Container processes")
+		}
+	}()
+
+	// 6. Test container responsiveness
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		execCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-migrator", "echo", "responsive")
+		if _, err := execCmd.CombinedOutput(); err != nil {
+			if strings.Contains(err.Error(), "context deadline") {
+				d.log.Error("[DEBUG] Container exec timed out - container is unresponsive/hanging")
+			} else {
+				d.log.WithError(err).Error("[DEBUG] Container exec failed")
+			}
+		} else {
+			d.log.Info("[DEBUG] Container is responsive to exec")
+		}
+	}()
+
+	// 7. Check ClickHouse accessibility
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		chCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-01",
+			"clickhouse-client", "-q", "SELECT version()")
+		if out, err := chCmd.Output(); err != nil {
+			d.log.WithError(err).Error("[DEBUG] ClickHouse not accessible")
+		} else {
+			d.log.WithField("version", strings.TrimSpace(string(out))).Info("[DEBUG] ClickHouse is accessible")
+		}
+	}()
+
+	// 8. Container Resource Usage
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		statsCmd := exec.CommandContext(debugCtx, "docker", "stats", "--no-stream", "--format",
+			"CPU={{.CPUPerc}} MEM={{.MemUsage}} NET={{.NetIO}} BLOCK={{.BlockIO}}", "xatu-clickhouse-migrator")
+		if out, err := statsCmd.Output(); err == nil {
+			d.log.WithField("stats", strings.TrimSpace(string(out))).Info("[DEBUG] Container resources")
+		}
+	}()
+
+	// 9. Docker Events (check if container is restarting)
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		eventsCmd := exec.CommandContext(debugCtx, "docker", "events", "--since", "5m", "--until", "0s",
+			"--filter", "container=xatu-clickhouse-migrator", "--format", "{{.Time}} {{.Action}}")
+		if out, err := eventsCmd.Output(); err == nil && len(out) > 0 {
+			d.log.WithField("events", string(out)).Info("[DEBUG] Recent container events")
+		}
+	}()
+
+	// 10. Check compose file for migrator configuration
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		composeCmd := exec.CommandContext(debugCtx, "docker", "compose", "-f", "xatu/docker-compose.yml",
+			"config", "--services")
+		if out, err := composeCmd.Output(); err == nil {
+			d.log.WithField("services", strings.TrimSpace(string(out))).Debug("[DEBUG] Compose services")
+		}
+	}()
+
+	// 11. Network connectivity check
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		netCmd := exec.CommandContext(debugCtx, "docker", "inspect", "xatu-clickhouse-migrator",
+			"--format", "{{range .NetworkSettings.Networks}}{{.NetworkID}} {{.IPAddress}} {{end}}")
+		if out, err := netCmd.Output(); err == nil {
+			d.log.WithField("network", strings.TrimSpace(string(out))).Info("[DEBUG] Container network")
+		}
+	}()
+
+	// 12. Check if migration-related tables exist
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		tablesCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-01",
+			"clickhouse-client", "-q", "SELECT count(*) FROM system.tables WHERE database = 'default'")
+		if out, err := tablesCmd.Output(); err == nil {
+			d.log.WithField("table_count", strings.TrimSpace(string(out))).Info("[DEBUG] Tables in default database")
+		}
+	}()
+
+	d.log.Info("=== COMPREHENSIVE MIGRATOR DEBUG END ===")
 }
 
 func (d *dockerManager) WaitForContainerHealthy(ctx context.Context, containerName string, timeout time.Duration) error {
