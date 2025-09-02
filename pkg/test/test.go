@@ -269,22 +269,22 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 		return fmt.Errorf("failed to clone xatu repository: %w", err)
 	}
 
+	// Create a clean .env file in xatu directory without CLICKHOUSE_CLUSTER
+	// This prevents docker-compose from reading the problematic value from parent .env
+	s.log.Debug("Creating clean .env file for xatu docker-compose")
+	xatuEnvContent := []string{
+		"# ClickHouse password for migrations",
+		"CLICKHOUSE_PASSWORD=supersecret",
+		"# Note: CLICKHOUSE_CLUSTER is intentionally NOT set here",
+		"# The {cluster} macro in SQL is resolved by ClickHouse config, not env vars",
+	}
+	xatuEnvFile := filepath.Join("xatu", ".env")
+	if err := os.WriteFile(xatuEnvFile, []byte(strings.Join(xatuEnvContent, "\n")), 0o600); err != nil {
+		return fmt.Errorf("failed to create xatu .env file: %w", err)
+	}
+
 	// 2. Start xatu docker compose with clickhouse profile
 	s.log.Debug("Starting xatu docker compose")
-
-	// Set default ClickHouse password if not set (migrator needs this)
-	if os.Getenv("CLICKHOUSE_PASSWORD") == "" {
-		s.log.Info("Setting CLICKHOUSE_PASSWORD to 'supersecret' for migrator")
-		_ = os.Setenv("CLICKHOUSE_PASSWORD", "supersecret")
-	}
-
-	// The CLICKHOUSE_CLUSTER env var should be empty for the migrations to work correctly
-	// The {cluster} placeholder in SQL should be handled by ClickHouse macros, not env vars
-	currentCluster := os.Getenv("CLICKHOUSE_CLUSTER")
-	if currentCluster == "{cluster}" {
-		s.log.Info("Unsetting CLICKHOUSE_CLUSTER={cluster} to let ClickHouse handle macros")
-		_ = os.Unsetenv("CLICKHOUSE_CLUSTER")
-	}
 
 	if err := s.docker.ComposeDown(ctx, "xatu", true); err != nil {
 		return fmt.Errorf("failed to stop xatu docker compose: %w", err)
