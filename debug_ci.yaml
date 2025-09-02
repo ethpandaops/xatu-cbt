@@ -1,0 +1,72 @@
+name: debug-ci
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'debug_ci.yaml'
+
+jobs:
+  debug-environment:
+    name: Debug CI Environment
+    runs-on:
+      - self-hosted-ghr
+      - size-s-x64
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check Docker version
+        run: |
+          echo "=== Docker Version ==="
+          docker version
+          echo ""
+          echo "=== Docker Compose Version ==="
+          docker compose version
+      
+      - name: Check Xatu ref
+        run: |
+          echo "=== Checking Xatu Repository ==="
+          git ls-remote https://github.com/ethpandaops/xatu.git HEAD
+          echo ""
+          echo "Input ref: ${{ github.event.inputs.xatu_ref || 'master' }}"
+      
+      - name: Clone and check Xatu migrations
+        run: |
+          git clone https://github.com/ethpandaops/xatu.git xatu-temp
+          cd xatu-temp
+          git checkout ${{ github.event.inputs.xatu_ref || 'master' }}
+          echo "=== Current Xatu commit ==="
+          git log -1 --oneline
+          echo ""
+          echo "=== Checking for beacon_api_eth_v1_events_block in migrations ==="
+          grep -r "beacon_api_eth_v1_events_block" deploy/migrations/ || echo "Not found in migrations"
+          echo ""
+          echo "=== List all migration files ==="
+          find deploy/migrations -name "*.sql" | sort
+          cd ..
+          rm -rf xatu-temp
+      
+      - name: Setup and run minimal test
+        run: |
+          cp example.env .env
+          make build
+          
+          # Clone Xatu
+          git clone https://github.com/ethpandaops/xatu.git xatu
+          cd xatu && git checkout ${{ github.event.inputs.xatu_ref || 'master' }} && cd ..
+          
+          # Start only ClickHouse
+          cd xatu
+          docker compose --profile clickhouse up -d
+          cd ..
+          
+          # Wait for migrations
+          echo "Waiting for migrations..."
+          timeout 600 bash -c 'while docker ps | grep -q xatu-clickhouse-migrator; do sleep 5; done'
+          
+          # Check what tables exist
+          echo "=== Tables in default database ==="
+          docker exec xatu-clickhouse-01 clickhouse-client -q "SELECT name FROM system.tables WHERE database = 'default' AND name LIKE '%beacon_api%' ORDER BY name"
+          
+          # Check migration logs
+          echo "=== Last 20 lines of migration logs ==="
+          docker logs xatu-clickhouse-migrator 2>&1 | tail -20

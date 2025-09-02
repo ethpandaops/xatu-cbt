@@ -285,6 +285,21 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 	}
 	s.log.Info("ClickHouse migrations completed successfully")
 
+	// DEBUG: Check what tables exist after migrations
+	debugCmd := exec.Command("docker", "exec", "xatu-clickhouse-01", "clickhouse-client", "-q",
+		"SELECT database, name FROM system.tables WHERE name LIKE '%beacon_api_eth_v1_events%' ORDER BY database, name")
+	if debugOutput, err := debugCmd.Output(); err == nil {
+		s.log.WithField("tables", string(debugOutput)).Info("DEBUG: Tables matching beacon_api_eth_v1_events after migration")
+	} else {
+		s.log.WithError(err).Warn("DEBUG: Failed to query tables")
+	}
+
+	// Also check Xatu version for debugging
+	xatuVersionCmd := exec.Command("sh", "-c", "cd xatu && git log -1 --oneline")
+	if xatuVersion, err := xatuVersionCmd.Output(); err == nil {
+		s.log.WithField("xatu_commit", strings.TrimSpace(string(xatuVersion))).Info("DEBUG: Xatu version being used")
+	}
+
 	// 4. Ingest test data into ClickHouse
 	s.log.Debug("Ingesting test data")
 	dataDir := filepath.Join(s.cfg.TestsDir, testName, "data")

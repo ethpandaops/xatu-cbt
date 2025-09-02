@@ -105,7 +105,49 @@ func (d *dataLoader) loadDataFile(ctx context.Context, conn driver.Conn, file, n
 	return nil
 }
 
+func (d *dataLoader) checkTableExists(ctx context.Context, conn driver.Conn, tableName string) {
+	checkQuery := fmt.Sprintf("EXISTS TABLE default.%s", tableName)
+	var exists uint8
+	if err := conn.QueryRow(ctx, checkQuery).Scan(&exists); err != nil {
+		d.log.WithFields(logrus.Fields{
+			"table": tableName,
+			"error": err,
+		}).Warn("Failed to check if table exists")
+		return
+	}
+
+	if exists == 0 {
+		// Table doesn't exist, let's see what similar tables do exist
+		similarQuery := fmt.Sprintf("SELECT name FROM system.tables WHERE database = 'default' AND name LIKE '%%%s%%'", tableName[:min(len(tableName)-3, 20)])
+		rows, err := conn.Query(ctx, similarQuery)
+		if err != nil {
+			return
+		}
+		defer func() {
+			if err := rows.Close(); err != nil {
+				d.log.WithError(err).Debug("Failed to close rows")
+			}
+		}()
+
+		var similarTables []string
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err == nil {
+				similarTables = append(similarTables, name)
+			}
+		}
+
+		d.log.WithFields(logrus.Fields{
+			"table":          tableName,
+			"similar_tables": similarTables,
+		}).Error("Table does not exist in default database")
+	}
+}
+
 func (d *dataLoader) ingestParquet(ctx context.Context, conn driver.Conn, url, tableName, networkColumn, network string) error {
+	// First check if the table exists (for better error reporting)
+	d.checkTableExists(ctx, conn, tableName)
+
 	// Build the INSERT query
 	var query string
 	if networkColumn != "" && network != "" {
