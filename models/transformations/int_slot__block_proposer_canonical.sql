@@ -1,9 +1,9 @@
 ---
 table: int_slot__block_proposer_canonical
 interval:
-  max: 5000
+  max: 500000
 schedules:
-  forwardfill: "@every 1m"
+  forwardfill: "@every 30s"
   backfill: "@every 1m"
 tags:
   - slot
@@ -24,7 +24,7 @@ WITH proposer_duties AS (
         epoch_start_date_time,
         proposer_validator_index,
         proposer_pubkey
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "database" }}`.`canonical_beacon_proposer_duty`
+    FROM `{{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "database" }}`.`canonical_beacon_proposer_duty` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -36,7 +36,7 @@ blocks AS (
         epoch_start_date_time,
         block_root,
         proposer_index
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_block" "database" }}`.`canonical_beacon_block`
+    FROM `{{ index .dep "{{external}}" "canonical_beacon_block" "database" }}`.`canonical_beacon_block` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 )
 

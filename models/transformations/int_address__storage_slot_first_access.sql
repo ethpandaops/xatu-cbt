@@ -1,5 +1,5 @@
 ---
-table: int_address__storage_slot_last_access
+table: int_address__storage_slot_first_access
 interval:
   max: 1000
 schedules:
@@ -22,7 +22,7 @@ WITH all_storage_data AS (
         transaction_index,
         internal_index,
         to_value AS value
-    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs`
+    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     
     UNION ALL
@@ -34,13 +34,14 @@ WITH all_storage_data AS (
         transaction_index,
         internal_index,
         value
-    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads`
+    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 )
 SELECT
     address,
     slot_key AS slot,
-    argMax(bn, (bn, transaction_index, internal_index)) AS block_number,
-    argMax(value, (bn, transaction_index, internal_index)) AS value
+    argMin(bn, (bn, transaction_index, internal_index)) AS block_number,
+    argMin(value, (bn, transaction_index, internal_index)) AS value,
+    null AS `version`
 FROM all_storage_data
 GROUP BY address, slot_key;

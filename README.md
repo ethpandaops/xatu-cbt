@@ -2,39 +2,91 @@
 
 This repo contains the clickhouse migrations and the models for [CBT](https://github.com/ethpandaops/cbt) on [xatu](https://github.com/ethpandaops/xatu) data.
 
-## Clickhouse Migrations
+## Getting Started
 
-> **NOTE:** before running migrations for the first time, make sure to run the [Initial setup](#initial-setup-before-migrations).
-
-Use the [golange-migrate](https://github.com/golang-migrate/migrate) tool for simple manual file based migrations. Remember to follow the [Best practices: How to write migrations](https://github.com/golang-migrate/migrate/blob/master/MIGRATIONS.md) when adding new migrations.
+Create a `.env` file:
 
 ```bash
-migrate -database "clickhouse://127.0.0.1:9000?username=admin&password=XXX_PASSWORD_XXX&database=default&x-multi-statement=true&x-cluster-name='{cluster}'&x-migrations-table=schema_migrations_cbt&x-migrations-table-engine=ReplicatedMergeTree" -path migrations up
+cp example.env .env
 ```
 
-### Initial setup before migrations
+Example `.env` file:
+```bash
+# Network configuration
+NETWORK=mainnet
 
-`golang-migrate` doesn't support the distrubted tables in clickhouse so we can do some setup to get it working. This way we can use `golang-migrate` against any of the clickhouse nodes.
+# ClickHouse configuration
+CLICKHOUSE_HOST=localhost
+CLICKHOUSE_NATIVE_PORT=9000
+CLICKHOUSE_USERNAME=default
+CLICKHOUSE_PASSWORD=
+CLICKHOUSE_CLUSTER={cluster}
 
-Create the replication table;
-```sql
-CREATE TABLE default.schema_migrations_cbt_local ON CLUSTER '{cluster}'
-(
-    `version` Int64,
-    `dirty` UInt8,
-    `sequence` UInt64
-) Engine = ReplicatedMergeTree('/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}', '{replica}')
-ORDER BY sequence
+# Xatu configuration
+XATU_REF=master # what xatu repo ref to use for testing
+
+# Logging configuration
+LOG_LEVEL=debug # debug, info, warn, error
 ```
 
-Create the distributed table;
-```sql
-CREATE TABLE schema_migrations_cbt on cluster '{cluster}' AS schema_migrations_cbt_local
-ENGINE = Distributed('{cluster}', default, schema_migrations_cbt_local, cityHash64(`version`));
+### Usage
+
+#### Interactive TUI Mode
+
+Simply run the binary without arguments to enter interactive mode:
+
+```bash
+# use the makefile to build and run the binary
+make
+
+# or manually
+go build -o ./bin/xatu-cbt ./cmd/xatu-cbt
+./bin/xatu-cbt
 ```
 
-### Run locally
+#### CLI Commands
 
-- run [xatu locally via docker compose](https://github.com/ethpandaops/xatu?tab=readme-ov-file#locally-via-docker-compose)
-- run `docker compose up -d` in this directory
-- import data from [xatu-data](https://github.com/ethpandaops/xatu-data?tab=readme-ov-file#working-with-the-data)
+##### Network Commands
+
+These commands will setup cbt admin tables, go-migrate schemas tables and run the migrations relevant for the configured network. You can also teardown the network database.
+
+> **Note:** this can be used against local clickhouse or a remote staging/production clickhouse.
+
+```bash
+# Setup network database (creates tables and migrations)
+./bin/xatu-cbt network setup [--force]
+
+# Teardown network database (truncates tables, preserves structure)
+./bin/xatu-cbt network teardown [--force]
+```
+
+##### Test Commands
+
+```bash
+# Run a specific test suite
+./bin/xatu-cbt test <test-name> [--skip-setup]
+
+# Teardown test environment (cleanup containers and data)
+./bin/xatu-cbt test teardown
+```
+
+### Creating and Running Tests
+
+Tests are organized in the `tests/` directory with the following structure:
+```
+tests/
+├── pectra/
+│   ├── data/                      # Parquet data configuration
+│   │   └── canonical_beacon_block.yaml
+│   └── assertions/                # SQL assertions
+│       └── canonical_beacon_block.yaml
+```
+
+Example test run:
+```bash
+# Run pectra test with full setup
+./bin/xatu-cbt test pectra
+
+# Run pectra test, skip xatu setup if already running
+./bin/xatu-cbt test pectra --skip-setup
+```

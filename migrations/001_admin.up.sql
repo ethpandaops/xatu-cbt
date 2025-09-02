@@ -1,6 +1,4 @@
-CREATE DATABASE IF NOT EXISTS admin ON CLUSTER '{cluster}';
-
-CREATE TABLE IF NOT EXISTS admin.cbt_local ON CLUSTER '{cluster}' (
+CREATE TABLE IF NOT EXISTS `${NETWORK_NAME}`.admin_cbt_local ON CLUSTER '{cluster}' (
     updated_date_time DateTime(3) CODEC(DoubleDelta, ZSTD(1)),
     database LowCardinality(String) COMMENT 'The database name',
     table LowCardinality(String) COMMENT 'The table name',
@@ -14,10 +12,10 @@ CREATE TABLE IF NOT EXISTS admin.cbt_local ON CLUSTER '{cluster}' (
 )
 ORDER BY (database, table, position);
 
-CREATE TABLE IF NOT EXISTS admin.cbt ON CLUSTER '{cluster}' AS admin.cbt_local
+CREATE TABLE IF NOT EXISTS `${NETWORK_NAME}`.admin_cbt ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.admin_cbt_local
 ENGINE = Distributed(
     '{cluster}',
-    'admin',
-    'cbt_local',
+    '${NETWORK_NAME}',
+    'admin_cbt_local',
     cityHash64(database, table)
 );
