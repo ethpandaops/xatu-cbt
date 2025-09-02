@@ -349,6 +349,66 @@ func (d *dockerManager) debugMigratorContainer(ctx context.Context) {
 		if out, err := tablesCmd.Output(); err == nil {
 			d.log.WithField("table_count", strings.TrimSpace(string(out))).Info("[DEBUG] Tables in default database")
 		}
+
+		// List actual table names
+		listCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-01",
+			"clickhouse-client", "-q", "SELECT name FROM system.tables WHERE database = 'default' LIMIT 10")
+		if out, err := listCmd.Output(); err == nil {
+			d.log.WithField("tables", strings.TrimSpace(string(out))).Info("[DEBUG] Table names in default database")
+		}
+	}()
+
+	// 13. Check if migrations directory exists and has files
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		// Check if /migrations exists in the container
+		lsCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-migrator", "ls", "-la", "/migrations")
+		if out, err := lsCmd.CombinedOutput(); err != nil {
+			d.log.WithError(err).Error("[DEBUG] Failed to list /migrations directory")
+		} else {
+			d.log.WithField("migrations_dir", string(out)).Info("[DEBUG] Migration files in container")
+		}
+	}()
+
+	// 14. Try to run migrate with verbose/debug flags to see what it's doing
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		// Try to get migrate version or help
+		versionCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-migrator", "migrate", "-version")
+		if out, err := versionCmd.CombinedOutput(); err == nil {
+			d.log.WithField("version", strings.TrimSpace(string(out))).Info("[DEBUG] Migrate tool version")
+		}
+
+		// Check if there's a schema_migrations table (migrate uses this)
+		schemaCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-01",
+			"clickhouse-client", "-q", "SHOW TABLES FROM default LIKE 'schema_migrations'")
+		if out, err := schemaCmd.Output(); err == nil {
+			if strings.TrimSpace(string(out)) != "" {
+				d.log.Info("[DEBUG] schema_migrations table exists")
+				// Check what's in it
+				migrationsCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-01",
+					"clickhouse-client", "-q", "SELECT * FROM default.schema_migrations LIMIT 5")
+				if mOut, mErr := migrationsCmd.Output(); mErr == nil {
+					d.log.WithField("migrations", string(mOut)).Info("[DEBUG] Current migrations state")
+				}
+			} else {
+				d.log.Warn("[DEBUG] schema_migrations table does NOT exist - migrations haven't started")
+			}
+		}
+	}()
+
+	// 15. Check if the migrate process is stuck on network/DNS
+	func() {
+		debugCtx, cancel := makeTimeoutContext()
+		defer cancel()
+		// Try to resolve the clickhouse host from within the container
+		dnsCmd := exec.CommandContext(debugCtx, "docker", "exec", "xatu-clickhouse-migrator",
+			"sh", "-c", "ping -c 1 xatu-clickhouse-01 || nslookup xatu-clickhouse-01 || echo 'DNS tools not available'")
+		if out, err := dnsCmd.CombinedOutput(); err == nil {
+			d.log.WithField("dns_check", string(out)).Info("[DEBUG] DNS resolution check")
+		}
 	}()
 
 	d.log.Info("=== COMPREHENSIVE MIGRATOR DEBUG END ===")
