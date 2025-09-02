@@ -175,6 +175,10 @@ func (d *dockerManager) WaitForContainerExit(ctx context.Context, containerName 
 					"status":    status,
 					"elapsed":   time.Since(deadline.Add(-timeout)).Round(time.Second),
 				}).Info("Still waiting for container to finish...")
+
+				c1 := exec.CommandContext(ctx, "docker", "logs", "xatu-clickhouse-migrator") //nolint:gosec // containerName is controlled
+				o1, _ := c1.Output()
+				d.log.Info(string(o1))
 			}
 		}
 	}
