@@ -278,6 +278,14 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 		_ = os.Setenv("CLICKHOUSE_PASSWORD", "supersecret")
 	}
 
+	// The CLICKHOUSE_CLUSTER env var should be empty for the migrations to work correctly
+	// The {cluster} placeholder in SQL should be handled by ClickHouse macros, not env vars
+	currentCluster := os.Getenv("CLICKHOUSE_CLUSTER")
+	if currentCluster == "{cluster}" {
+		s.log.Info("Unsetting CLICKHOUSE_CLUSTER={cluster} to let ClickHouse handle macros")
+		_ = os.Unsetenv("CLICKHOUSE_CLUSTER")
+	}
+
 	if err := s.docker.ComposeDown(ctx, "xatu", true); err != nil {
 		return fmt.Errorf("failed to stop xatu docker compose: %w", err)
 	}
