@@ -5,9 +5,9 @@
       MIN(slot_start_date_time) AS min,
       MAX(slot_start_date_time) AS max
     FROM
-      int_slot__block_proposer_canonical FINAL
+      int_block_proposer__head FINAL
   expected:
-    count: 7200
+    count: 7173
     min: "2025-07-15T00:00:11Z"
     max: "2025-07-15T23:59:59Z"
 - name: "Expected admin bounds"
@@ -18,7 +18,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'int_slot__block_proposer_canonical'
+      table = 'int_block_proposer__head'
   expected:
     max: "2025-07-15T23:59:59Z"
     min: "2025-07-15T00:00:11Z"

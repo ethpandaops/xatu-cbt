@@ -1,5 +1,5 @@
 ---
-table: int_slot__block_proposer_canonical
+table: int_block_proposer__canonical
 interval:
   max: 500000
 schedules:

@@ -1,5 +1,5 @@
 ---
-table: int_address__account_last_access
+table: int_address__first_access
 interval:
   max: 10000
 schedules:
@@ -21,7 +21,8 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 SELECT 
     address,
-    max(block_number) AS block_number
+    min(block_number) AS block_number,
+    null AS `version`
 FROM (
     SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_nonce_reads" "database" }}`.`canonical_execution_nonce_reads` FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
