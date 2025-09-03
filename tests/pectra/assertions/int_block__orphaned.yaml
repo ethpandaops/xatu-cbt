@@ -1,0 +1,42 @@
+- name: "no canonical overlap"
+  sql: |
+    SELECT
+      count() AS count
+    FROM
+      int_block__orphaned o
+      INNER JOIN canonical_beacon_block c
+        ON o.slot = c.slot AND o.block_root = c.block_root
+  expected:
+    count: 0
+
+- name: "no duplicates per (slot, block_root)"
+  sql: |
+    SELECT
+      count() AS count
+    FROM (
+      SELECT slot, block_root, count() AS c
+      FROM int_block__orphaned
+      GROUP BY slot, block_root
+      HAVING c > 1
+    )
+  expected:
+    count: 0
+
+- name: "only up to max canonical epoch"
+  sql: |
+    SELECT
+      count() AS count
+    FROM int_block__orphaned
+    WHERE epoch > (SELECT max(epoch) FROM canonical_beacon_block)
+  expected:
+    count: 0
+
+- name: "no null or empty block_root"
+  sql: |
+    SELECT
+      count() AS count
+    FROM int_block__orphaned
+    WHERE block_root IS NULL OR block_root = ''
+  expected:
+    count: 0
+

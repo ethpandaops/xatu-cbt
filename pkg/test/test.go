@@ -239,18 +239,18 @@ func (s *service) setupCBT(ctx context.Context) error {
 	// Verify the container is running
 	cmd := exec.Command("docker", "ps", "--filter", "name=cbt-engine", "--filter", "status=running", "--format", "{{.Names}}")
 	output, err := cmd.Output()
-	if err != nil || strings.TrimSpace(string(output)) != "cbt-engine" {
-		// Get logs for debugging
-		logsCmd := exec.Command("docker", "logs", "cbt-engine", "--tail", "20")
-		if logsOutput, logErr := logsCmd.Output(); logErr == nil {
-			s.log.WithField("logs", string(logsOutput)).Error("CBT engine logs")
-		}
-		return ErrCBTEngineNotRunning
-	}
+    if err != nil || strings.TrimSpace(string(output)) != "cbt-engine" {
+        // Get logs for debugging
+        logsCmd := exec.Command("docker", "logs", "cbt-engine", "--tail", "20")
+        if logsOutput, logErr := logsCmd.Output(); logErr == nil {
+            s.log.WithField("logs", string(logsOutput)).Error("CBT engine logs")
+        }
+        return ErrCBTEngineNotRunning
+    }
 
-	s.log.Info("CBT engine started successfully")
+    s.log.Info("CBT engine started successfully")
 
-	return nil
+    return nil
 }
 
 func (s *service) setupXatu(ctx context.Context, testName string) error {
