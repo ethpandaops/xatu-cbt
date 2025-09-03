@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_xatu_nodes__active_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.int_xatu_nodes__24h_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `last_seen_date_time` DateTime COMMENT 'Timestamp when the node was last seen' CODEC(DoubleDelta, ZSTD(1)),
     `username` String COMMENT 'Username of the node' CODEC(ZSTD(1)),
@@ -20,9 +20,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_xatu_nodes__active_local on cluster '{cluster
 ) ORDER BY
     (`meta_client_name`) COMMENT 'Active nodes for the network';
 
-CREATE TABLE `${NETWORK_NAME}`.int_xatu_nodes__active ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_xatu_nodes__active_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.int_xatu_nodes__24h ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_xatu_nodes__24h_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_xatu_nodes__active_local,
+    int_xatu_nodes__24h_local,
     cityHash64(`meta_client_name`)
 );
