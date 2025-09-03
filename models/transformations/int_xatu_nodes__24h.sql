@@ -1,5 +1,5 @@
 ---
-table: int_xatu_nodes__active
+table: int_xatu_nodes__24h
 interval:
   max: 60
 schedules:
@@ -46,6 +46,6 @@ SELECT
     argMax(meta_consensus_version, slot_start_date_time) AS meta_consensus_version,
     argMax(meta_consensus_implementation, slot_start_date_time) AS meta_consensus_implementation
 FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "database" }}`.`beacon_api_eth_v1_events_block` FINAL
-WHERE slot_start_date_time >= NOW() - INTERVAL '1 HOUR'
+WHERE slot_start_date_time >= NOW() - INTERVAL '24 HOUR'
 GROUP BY meta_client_name
 ORDER BY last_seen_date_time DESC;
