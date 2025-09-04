@@ -51,6 +51,29 @@ deps:
 fmt:
 	go fmt ./...
 
+# Generate protobuf files from ClickHouse tables
+.PHONY: proto
+proto:
+	@echo "Setting up ClickHouse infrastructure first..."
+	@go run $(MAIN_PATH) infra setup
+	@echo "Pulling clickhouse-proto-gen image..."
+	docker pull ethpandaops/clickhouse-proto-gen:latest
+	@echo "Generating protobuf files from ClickHouse tables..."
+	@TABLES=$$(ls models/transformations/*.sql | xargs -n1 basename | sed 's/\.sql$$//' | tr '\n' ',' | sed 's/,$$//'); \
+	HOST=$${CLICKHOUSE_HOST:-xatu-clickhouse-01}; \
+	docker run --rm -v "$$(pwd):/workspace" \
+		--user "$$(id -u):$$(id -g)" \
+		--network xatu_xatu-net \
+		ethpandaops/clickhouse-proto-gen \
+		--dsn "clickhouse://xatu-clickhouse-01:9000/$${NETWORK:-mainnet}" \
+		--tables "$$TABLES" \
+		--out /workspace/pkg/proto/clickhouse \
+		--package cbt \
+		--go-package github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse \
+		--include-comments
+	@echo "Generating Go protobuf code..."
+	buf generate
+
 # Help
 .PHONY: help
 help:
@@ -62,6 +85,7 @@ help:
 	@echo "  make test    - Run tests"
 	@echo "  make deps    - Download and tidy dependencies"
 	@echo "  make fmt     - Format Go code"
+	@echo "  make proto   - Generate protobuf files from ClickHouse tables"
 	@echo "  make help    - Show this help message"
 	@echo ""
 	@echo "Usage:"

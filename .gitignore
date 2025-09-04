@@ -7,6 +7,7 @@
 *.out
 bin/**
 /xatu-cbt
+.gocache/
 
 # Go coverage
 *.coverprofile

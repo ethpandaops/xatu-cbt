@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/savid/xatu-cbt/pkg/actions"
-	"github.com/savid/xatu-cbt/pkg/interactive"
+	"github.com/savid/xatu-cbt/internal/actions"
+	"github.com/savid/xatu-cbt/internal/interactive"
 	"github.com/spf13/cobra"
 )
 
