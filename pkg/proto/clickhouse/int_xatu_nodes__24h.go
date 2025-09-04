@@ -31,6 +31,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 		qb.AddLikeCondition("meta_client_name", "%" + filter.EndsWith)
 	case *StringFilter_Like:
 		qb.AddLikeCondition("meta_client_name", filter.Like)
+	case *StringFilter_NotLike:
+		qb.AddNotLikeCondition("meta_client_name", filter.NotLike)
 	case *StringFilter_In:
 		if len(filter.In.Values) > 0 {
 			qb.AddInCondition("meta_client_name", StringSliceToInterface(filter.In.Values))
@@ -118,6 +120,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("username", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("username", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("username", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("username", StringSliceToInterface(filter.In.Values))
@@ -146,6 +150,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("node_id", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("node_id", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("node_id", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("node_id", StringSliceToInterface(filter.In.Values))
@@ -174,6 +180,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("classification", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("classification", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("classification", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("classification", StringSliceToInterface(filter.In.Values))
@@ -202,6 +210,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("meta_client_version", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_client_version", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("meta_client_version", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_client_version", StringSliceToInterface(filter.In.Values))
@@ -230,6 +240,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("meta_client_implementation", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_client_implementation", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("meta_client_implementation", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_client_implementation", StringSliceToInterface(filter.In.Values))
@@ -258,6 +270,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("meta_client_geo_city", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_client_geo_city", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("meta_client_geo_city", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_client_geo_city", StringSliceToInterface(filter.In.Values))
@@ -286,6 +300,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("meta_client_geo_country", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_client_geo_country", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("meta_client_geo_country", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_client_geo_country", StringSliceToInterface(filter.In.Values))
@@ -314,6 +330,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("meta_client_geo_country_code", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_client_geo_country_code", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("meta_client_geo_country_code", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_client_geo_country_code", StringSliceToInterface(filter.In.Values))
@@ -342,6 +360,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("meta_client_geo_continent_code", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_client_geo_continent_code", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("meta_client_geo_continent_code", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_client_geo_continent_code", StringSliceToInterface(filter.In.Values))
@@ -370,6 +390,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("meta_consensus_version", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_consensus_version", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("meta_consensus_version", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_consensus_version", StringSliceToInterface(filter.In.Values))
@@ -398,6 +420,8 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 			qb.AddLikeCondition("meta_consensus_implementation", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_consensus_implementation", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("meta_consensus_implementation", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_consensus_implementation", StringSliceToInterface(filter.In.Values))

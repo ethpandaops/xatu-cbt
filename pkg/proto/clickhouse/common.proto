@@ -190,10 +190,8 @@ message StringFilter {
     string ends_with = 5;          // Ends with suffix (SQL LIKE '%value')
     string like = 6;               // SQL LIKE pattern (% and _ wildcards)
     string not_like = 7;           // SQL NOT LIKE pattern
-    string regex = 8;              // Regular expression match
-    string not_regex = 9;          // Regular expression not match
-    StringList in = 10;            // In list of values
-    StringList not_in = 11;        // Not in list of values
+    StringList in = 8;             // In list of values
+    StringList not_in = 9;         // Not in list of values
   }
 }
 
@@ -207,12 +205,10 @@ message NullableStringFilter {
     string ends_with = 5;          // Ends with suffix (SQL LIKE '%value')
     string like = 6;               // SQL LIKE pattern (% and _ wildcards)
     string not_like = 7;           // SQL NOT LIKE pattern
-    string regex = 8;              // Regular expression match
-    string not_regex = 9;          // Regular expression not match
-    StringList in = 10;            // In list of values
-    StringList not_in = 11;        // Not in list of values
-    google.protobuf.Empty is_null = 12;     // IS NULL check
-    google.protobuf.Empty is_not_null = 13; // IS NOT NULL check
+    StringList in = 8;             // In list of values
+    StringList not_in = 9;         // Not in list of values
+    google.protobuf.Empty is_null = 10;     // IS NULL check
+    google.protobuf.Empty is_not_null = 11; // IS NOT NULL check
   }
 }
 

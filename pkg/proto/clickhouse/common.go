@@ -86,6 +86,14 @@ func (qb *QueryBuilder) AddLikeCondition(column, pattern string) {
 	qb.argCounter++
 }
 
+// AddNotLikeCondition adds a NOT LIKE condition
+func (qb *QueryBuilder) AddNotLikeCondition(column, pattern string) {
+	placeholder := fmt.Sprintf("$%d", qb.argCounter)
+	qb.conditions = append(qb.conditions, fmt.Sprintf("%s NOT LIKE %s", column, placeholder))
+	qb.args = append(qb.args, pattern)
+	qb.argCounter++
+}
+
 // AddIsNullCondition adds an IS NULL condition
 func (qb *QueryBuilder) AddIsNullCondition(column string) {
 	qb.conditions = append(qb.conditions, fmt.Sprintf("%s IS NULL", column))
