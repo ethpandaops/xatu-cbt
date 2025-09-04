@@ -1,0 +1,73 @@
+name: protobuf
+on:
+  pull_request:
+    paths:
+      - 'models/transformations/**'
+      - 'pkg/proto/clickhouse/**'
+      - 'Makefile'
+      - 'buf.yaml'
+      - 'buf.gen.yaml'
+  push:
+    branches:
+      - master
+    paths:
+      - 'models/transformations/**'
+      - 'pkg/proto/clickhouse/**'
+      - 'Makefile'
+      - 'buf.yaml'
+      - 'buf.gen.yaml'
+permissions:
+  contents: read
+jobs:
+  validate-protobuf:
+    name: Validate protobuf files
+    runs-on:
+      - self-hosted-ghr
+      - size-s-x64
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Check transformation models have protobuf files
+        run: |
+          echo "Checking transformation models have corresponding protobuf files..."
+          missing_protobufs=""
+          if [ -d "models/transformations" ]; then
+            while IFS= read -r model_file; do
+              model_name=$(basename "$model_file" .sql)
+              # Check for all three required protobuf files
+              if [ ! -f "pkg/proto/clickhouse/${model_name}.proto" ] || \
+                 [ ! -f "pkg/proto/clickhouse/${model_name}.go" ] || \
+                 [ ! -f "pkg/proto/clickhouse/${model_name}.pb.go" ]; then
+                missing_protobufs="${missing_protobufs}${model_name} "
+              fi
+            done < <(find models/transformations -type f -name "*.sql")
+          fi
+          if [ -n "$missing_protobufs" ]; then
+            echo "ERROR: Missing protobuf files for transformation models: ${missing_protobufs}"
+            echo ""
+            echo "Please run 'make proto' to generate protobuf files for transformation models"
+            exit 1
+          fi
+          echo "✓ All transformation models have protobuf files"
+      - name: Check for orphaned protobuf files
+        run: |
+          echo "Checking for orphaned protobuf files without corresponding models..."
+          orphaned_protobufs=""
+          if [ -d "pkg/proto/clickhouse" ]; then
+            while IFS= read -r proto_file; do
+              proto_name=$(basename "$proto_file" | sed 's/\.\(proto\|go\|pb\.go\)$//')
+              # Skip common.proto and its generated files
+              if [ "$proto_name" = "common" ]; then
+                continue
+              fi
+              # Check if corresponding transformation model exists
+              if [ ! -f "models/transformations/${proto_name}.sql" ]; then
+                orphaned_protobufs="${orphaned_protobufs}${proto_name} "
+              fi
+            done < <(find pkg/proto/clickhouse -type f -name "*.proto" | grep -v common.proto)
+          fi
+          if [ -n "$orphaned_protobufs" ]; then
+            echo "WARNING: Found orphaned protobuf files without corresponding models: ${orphaned_protobufs}"
+            echo "Consider removing these files if they are no longer needed"
+          else
+            echo "✓ No orphaned protobuf files found"
+          fi

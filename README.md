@@ -90,3 +90,19 @@ Example test run:
 # Run pectra test, skip xatu setup if already running
 ./bin/xatu-cbt test pectra --skip-setup
 ```
+
+### Protobuf Generation
+
+When adding or modifying transformation models, you must generate corresponding protobuf files:
+
+```bash
+# Generate protobuf files for all transformation models
+make proto
+```
+
+**When to run `make proto`:**
+- After adding a new transformation model (`.sql` file in `models/transformations/`)
+- After modifying the schema or columns of an existing transformation model
+- Before committing changes to transformation models
+
+The generated protobuf files in `pkg/proto/clickhouse/` are used by CBT for type safety and schema validation. Each transformation model must have corresponding `.proto`, `.go`, and `.pb.go` files.
