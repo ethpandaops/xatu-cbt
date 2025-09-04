@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/savid/xatu-cbt/internal/clickhouse"
-	"github.com/savid/xatu-cbt/internal/config"
+	"github.com/ethpandaops/xatu-cbt/internal/clickhouse"
+	"github.com/ethpandaops/xatu-cbt/internal/config"
 )
 
 // Teardown validates config and drops the ClickHouse database for the configured network
@@ -84,10 +84,10 @@ func Teardown(isInteractive, skipConfirm bool) error { //nolint:gocyclo // Compl
 
 	// Get all _local tables in the database
 	tablesQuery := fmt.Sprintf(`
-		SELECT name 
-		FROM system.tables 
-		WHERE database = '%s' 
-		AND name LIKE '%%_local' 
+		SELECT name
+		FROM system.tables
+		WHERE database = '%s'
+		AND name LIKE '%%_local'
 		AND name != 'schema_migrations_local'
 		ORDER BY name
 	`, cfg.Network)

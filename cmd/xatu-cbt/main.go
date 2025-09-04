@@ -4,7 +4,7 @@ package main
 import (
 	"os"
 
-	"github.com/savid/xatu-cbt/cmd"
+	"github.com/ethpandaops/xatu-cbt/cmd"
 )
 
 func main() {

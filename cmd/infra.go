@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/savid/xatu-cbt/internal/test"
+	"github.com/ethpandaops/xatu-cbt/internal/test"
 	"github.com/spf13/cobra"
 )
 

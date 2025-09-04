@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/savid/xatu-cbt/internal/actions"
+	"github.com/ethpandaops/xatu-cbt/internal/actions"
 	"github.com/spf13/cobra"
 )
 

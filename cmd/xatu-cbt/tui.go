@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/savid/xatu-cbt/cmd"
-	"github.com/savid/xatu-cbt/internal/actions"
-	"github.com/savid/xatu-cbt/internal/interactive"
-	"github.com/savid/xatu-cbt/internal/test"
+	"github.com/ethpandaops/xatu-cbt/cmd"
+	"github.com/ethpandaops/xatu-cbt/internal/actions"
+	"github.com/ethpandaops/xatu-cbt/internal/interactive"
+	"github.com/ethpandaops/xatu-cbt/internal/test"
 )
 
 func runInteractive() {
