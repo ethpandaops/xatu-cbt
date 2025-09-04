@@ -8,7 +8,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/savid/xatu-cbt/pkg/config"
+	"github.com/savid/xatu-cbt/internal/config"
 )
 
 // Connect establishes a connection to ClickHouse using native protocol

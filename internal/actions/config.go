@@ -3,7 +3,7 @@ package actions
 import (
 	"fmt"
 
-	"github.com/savid/xatu-cbt/pkg/config"
+	"github.com/savid/xatu-cbt/internal/config"
 )
 
 // ShowConfig displays the current configuration
