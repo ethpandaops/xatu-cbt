@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/savid/xatu-cbt/pkg/clickhouse"
-	"github.com/savid/xatu-cbt/pkg/config"
+	"github.com/savid/xatu-cbt/internal/clickhouse"
+	"github.com/savid/xatu-cbt/internal/config"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"

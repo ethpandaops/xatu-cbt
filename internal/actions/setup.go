@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/savid/xatu-cbt/pkg/clickhouse"
-	"github.com/savid/xatu-cbt/pkg/config"
-	"github.com/savid/xatu-cbt/pkg/migrations"
+	"github.com/savid/xatu-cbt/internal/clickhouse"
+	"github.com/savid/xatu-cbt/internal/config"
+	"github.com/savid/xatu-cbt/internal/migrations"
 )
 
 // Setup validates config and sets up ClickHouse database for the configured network

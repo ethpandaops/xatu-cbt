@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/savid/xatu-cbt/pkg/clickhouse"
-	"github.com/savid/xatu-cbt/pkg/config"
+	"github.com/savid/xatu-cbt/internal/clickhouse"
+	"github.com/savid/xatu-cbt/internal/config"
 )
 
 // Teardown validates config and drops the ClickHouse database for the configured network

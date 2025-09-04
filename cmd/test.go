@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/savid/xatu-cbt/pkg/test"
+	"github.com/savid/xatu-cbt/internal/test"
 	"github.com/spf13/cobra"
 )
 
