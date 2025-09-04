@@ -31,6 +31,8 @@ func BuildListIntAddressStorageFirstAccessQuery(req *ListIntAddressStorageFirstA
 		qb.AddLikeCondition("address", "%" + filter.EndsWith)
 	case *StringFilter_Like:
 		qb.AddLikeCondition("address", filter.Like)
+	case *StringFilter_NotLike:
+		qb.AddNotLikeCondition("address", filter.NotLike)
 	case *StringFilter_In:
 		if len(filter.In.Values) > 0 {
 			qb.AddInCondition("address", StringSliceToInterface(filter.In.Values))
@@ -58,6 +60,8 @@ func BuildListIntAddressStorageFirstAccessQuery(req *ListIntAddressStorageFirstA
 			qb.AddLikeCondition("slot_key", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("slot_key", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("slot_key", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("slot_key", StringSliceToInterface(filter.In.Values))
@@ -116,6 +120,8 @@ func BuildListIntAddressStorageFirstAccessQuery(req *ListIntAddressStorageFirstA
 			qb.AddLikeCondition("value", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("value", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("value", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("value", StringSliceToInterface(filter.In.Values))

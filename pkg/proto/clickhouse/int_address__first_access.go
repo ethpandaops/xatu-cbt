@@ -31,6 +31,8 @@ func BuildListIntAddressFirstAccessQuery(req *ListIntAddressFirstAccessRequest) 
 		qb.AddLikeCondition("address", "%" + filter.EndsWith)
 	case *StringFilter_Like:
 		qb.AddLikeCondition("address", filter.Like)
+	case *StringFilter_NotLike:
+		qb.AddNotLikeCondition("address", filter.NotLike)
 	case *StringFilter_In:
 		if len(filter.In.Values) > 0 {
 			qb.AddInCondition("address", StringSliceToInterface(filter.In.Values))

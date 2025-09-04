@@ -210,6 +210,8 @@ func BuildListIntBlockProposerCanonicalQuery(req *ListIntBlockProposerCanonicalR
 			qb.AddLikeCondition("proposer_pubkey", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("proposer_pubkey", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("proposer_pubkey", filter.NotLike)
 		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("proposer_pubkey", StringSliceToInterface(filter.In.Values))
@@ -238,6 +240,8 @@ func BuildListIntBlockProposerCanonicalQuery(req *ListIntBlockProposerCanonicalR
 			qb.AddLikeCondition("block_root", "%" + filter.EndsWith)
 		case *NullableStringFilter_Like:
 			qb.AddLikeCondition("block_root", filter.Like)
+		case *NullableStringFilter_NotLike:
+			qb.AddNotLikeCondition("block_root", filter.NotLike)
 		case *NullableStringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("block_root", StringSliceToInterface(filter.In.Values))
