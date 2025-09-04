@@ -56,6 +56,8 @@ fmt:
 proto:
 	@echo "Setting up ClickHouse infrastructure first..."
 	@go run $(MAIN_PATH) infra setup
+	@echo "Pulling clickhouse-proto-gen image..."
+	docker pull ethpandaops/clickhouse-proto-gen:latest
 	@echo "Generating protobuf files from ClickHouse tables..."
 	@TABLES=$$(ls models/transformations/*.sql | xargs -n1 basename | sed 's/\.sql$$//' | tr '\n' ',' | sed 's/,$$//'); \
 	HOST=$${CLICKHOUSE_HOST:-xatu-clickhouse-01}; \
