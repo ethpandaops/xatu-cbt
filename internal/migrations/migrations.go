@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/clickhouse" // clickhouse driver for migrations
 	_ "github.com/golang-migrate/migrate/v4/source/file"         // file source driver for migrations
-	"github.com/savid/xatu-cbt/internal/config"
 )
 
 // PrepareAndRun prepares migration files by substituting network name and runs migrations

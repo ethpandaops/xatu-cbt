@@ -1,4 +1,4 @@
-module github.com/savid/xatu-cbt
+module github.com/ethpandaops/xatu-cbt
 
 go 1.24.6
 

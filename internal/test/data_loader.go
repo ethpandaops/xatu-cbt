@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/savid/xatu-cbt/internal/clickhouse"
-	"github.com/savid/xatu-cbt/internal/config"
+	"github.com/ethpandaops/xatu-cbt/internal/clickhouse"
+	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
@@ -192,14 +192,14 @@ func (d *dataLoader) ingestParquet(ctx context.Context, conn driver.Conn, url, t
 		// Use REPLACE to override the network column value during insertion
 		// This avoids issues with updating key columns
 		query = fmt.Sprintf(`
-			INSERT INTO default.%s 
+			INSERT INTO default.%s
 			SELECT * REPLACE ('%s' AS %s)
 			FROM url('%s', 'Parquet')
 		`, tableName, network, networkColumn, url)
 	} else {
 		// Standard insert without modification
 		query = fmt.Sprintf(`
-			INSERT INTO default.%s 
+			INSERT INTO default.%s
 			SELECT * FROM url('%s', 'Parquet')
 		`, tableName, url)
 	}

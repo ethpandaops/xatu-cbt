@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/savid/xatu-cbt/internal/clickhouse"
-	"github.com/savid/xatu-cbt/internal/config"
+	"github.com/ethpandaops/xatu-cbt/internal/clickhouse"
+	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
