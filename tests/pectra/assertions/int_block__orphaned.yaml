@@ -8,7 +8,6 @@
         ON o.slot = c.slot AND o.block_root = c.block_root
   expected:
     count: 0
-
 - name: "no duplicates per (slot, block_root)"
   sql: |
     SELECT
@@ -21,7 +20,6 @@
     )
   expected:
     count: 0
-
 - name: "only up to max canonical epoch"
   sql: |
     SELECT
@@ -30,7 +28,6 @@
     WHERE epoch > (SELECT max(epoch) FROM canonical_beacon_block)
   expected:
     count: 0
-
 - name: "no null or empty block_root"
   sql: |
     SELECT
@@ -39,4 +36,28 @@
     WHERE block_root IS NULL OR block_root = ''
   expected:
     count: 0
+- name: "Expected bounds and size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot_start_date_time) AS min,
+      MAX(slot_start_date_time) AS max
+    FROM
+      int_block__orphaned FINAL
+  expected:
+    count: 4
+    min: "2025-07-15T06:57:47Z"
+    max: "2025-07-15T17:17:11Z"
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt FINAL
+    WHERE
+      table = 'int_block__orphaned'
+  expected:
+    max: "2025-07-15T23:59:59Z"
+    min: "2025-07-15T00:00:11Z"
 

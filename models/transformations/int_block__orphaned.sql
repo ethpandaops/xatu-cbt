@@ -23,38 +23,37 @@ WITH canonical AS (
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
-        block_root
+        block_root,
+        max(epoch) OVER () AS max_epoch
     FROM `{{ index .dep "{{external}}" "canonical_beacon_block" "database" }}`.`canonical_beacon_block` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
-max_canonical_epoch AS (
-    SELECT max(epoch) AS max_epoch FROM canonical
-),
-
-block_gossip AS (
+all_blocks AS (
     SELECT DISTINCT
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
-        block AS block_root
+        block AS block_root,
+        NULL AS proposer_index
     FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "database" }}`.`beacon_api_eth_v1_events_block_gossip` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-),
-
-block_events AS (
+    
+    UNION DISTINCT
+    
     SELECT DISTINCT
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
-        block AS block_root
+        block AS block_root,
+        NULL AS proposer_index
     FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "database" }}`.`beacon_api_eth_v1_events_block` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-),
-
-gossipsub_blocks AS (
+    
+    UNION DISTINCT
+    
     SELECT DISTINCT
         slot,
         slot_start_date_time,
@@ -66,40 +65,7 @@ gossipsub_blocks AS (
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
-all_blocks AS (
-    SELECT 
-        slot,
-        slot_start_date_time,
-        epoch,
-        epoch_start_date_time,
-        block_root,
-        NULL AS proposer_index
-    FROM block_gossip
-
-    UNION ALL
-
-    SELECT 
-        slot,
-        slot_start_date_time,
-        epoch,
-        epoch_start_date_time,
-        block_root,
-        NULL AS proposer_index
-    FROM block_events
-
-    UNION ALL
-
-    SELECT 
-        slot,
-        slot_start_date_time,
-        epoch,
-        epoch_start_date_time,
-        block_root,
-        proposer_index
-    FROM gossipsub_blocks
-),
-
-deduplicated_blocks AS (
+orphaned_blocks AS (
     SELECT 
         slot,
         slot_start_date_time,
@@ -108,24 +74,18 @@ deduplicated_blocks AS (
         block_root,
         argMax(proposer_index, proposer_index IS NOT NULL) AS proposer_index
     FROM all_blocks
+    WHERE epoch <= (SELECT any(max_epoch) FROM canonical)
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
-),
-
-filtered_candidates AS (
-    SELECT *
-    FROM deduplicated_blocks
-    WHERE epoch <= (SELECT max_epoch FROM max_canonical_epoch)
 )
 
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
-    db.slot AS slot,
-    db.slot_start_date_time AS slot_start_date_time,
-    db.epoch AS epoch,
-    db.epoch_start_date_time AS epoch_start_date_time,
-    CASE WHEN db.block_root = '' THEN NULL ELSE db.block_root END AS block_root,
-    db.proposer_index AS proposer_index
-FROM filtered_candidates db
+    ob.slot AS slot,
+    ob.slot_start_date_time AS slot_start_date_time,
+    ob.epoch AS epoch,
+    ob.epoch_start_date_time AS epoch_start_date_time,
+    ob.block_root AS block_root,
+    ob.proposer_index AS proposer_index
+FROM orphaned_blocks ob
 LEFT ANTI JOIN canonical c
-    ON db.slot = c.slot AND db.block_root = c.block_root;
-
+    ON ob.slot = c.slot AND ob.block_root = c.block_root;
