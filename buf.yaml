@@ -1,0 +1,12 @@
+version: v2
+modules:
+  - path: pkg/proto/clickhouse
+    name: github.com/ethpandaops/xatu-cbt
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - PACKAGE
+deps:
+  - buf.build/googleapis/googleapis
