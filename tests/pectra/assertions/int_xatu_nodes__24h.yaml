@@ -17,4 +17,4 @@
       table = 'int_xatu_nodes__24h'
   expected:
     max: "2025-07-15T23:59:59Z"
-    min: "2025-07-15T23:58:59Z"
+    min: "2025-07-15T23:54:59Z"

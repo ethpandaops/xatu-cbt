@@ -3,7 +3,7 @@ table: int_xatu_nodes__24h
 interval:
   max: 300
 schedules:
-  forwardfill: "@every 5m"
+  forwardfill: "@every 1m"
 tags:
   - xatu
   - active
