@@ -8,7 +8,7 @@ import (
 )
 
 // BuildListIntXatuNodes24HQuery constructs a parameterized SQL query from a ListIntXatuNodes24HRequest
-func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, error) {
+func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.MetaClientName == nil {
 		return SQLQuery{}, fmt.Errorf("primary key field meta_client_name is required")
@@ -466,11 +466,11 @@ func BuildListIntXatuNodes24HQuery(req *ListIntXatuNodes24HRequest) (SQLQuery, e
 		orderByClause = " ORDER BY meta_client_name"
 	}
 
-	return BuildParameterizedQueryWithOrder("mainnet", "int_xatu_nodes__24h", qb, orderByClause, limit, offset), nil
+	return BuildParameterizedQuery("mainnet", "int_xatu_nodes__24h", qb, orderByClause, limit, offset, options...), nil
 }
 
 // BuildGetIntXatuNodes24HQuery constructs a parameterized SQL query from a GetIntXatuNodes24HRequest
-func BuildGetIntXatuNodes24HQuery(req *GetIntXatuNodes24HRequest) (SQLQuery, error) {
+func BuildGetIntXatuNodes24HQuery(req *GetIntXatuNodes24HRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.MetaClientName == "" {
 		return SQLQuery{}, fmt.Errorf("primary key field meta_client_name is required")
@@ -480,8 +480,9 @@ func BuildGetIntXatuNodes24HQuery(req *GetIntXatuNodes24HRequest) (SQLQuery, err
 	qb := NewQueryBuilder()
 	qb.AddCondition("meta_client_name", "=", req.MetaClientName)
 
-	sortingKeys := []string{"meta_client_name"}
+	// Build ORDER BY clause
+	orderByClause := " ORDER BY meta_client_name"
 
 	// Return single record
-	return BuildParameterizedQuery("mainnet", "int_xatu_nodes__24h", qb, sortingKeys, 1, 0), nil
+	return BuildParameterizedQuery("mainnet", "int_xatu_nodes__24h", qb, orderByClause, 1, 0, options...), nil
 }

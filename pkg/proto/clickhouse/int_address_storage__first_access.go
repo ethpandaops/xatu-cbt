@@ -8,7 +8,7 @@ import (
 )
 
 // BuildListIntAddressStorageFirstAccessQuery constructs a parameterized SQL query from a ListIntAddressStorageFirstAccessRequest
-func BuildListIntAddressStorageFirstAccessQuery(req *ListIntAddressStorageFirstAccessRequest) (SQLQuery, error) {
+func BuildListIntAddressStorageFirstAccessQuery(req *ListIntAddressStorageFirstAccessRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.Address == nil {
 		return SQLQuery{}, fmt.Errorf("primary key field address is required")
@@ -196,11 +196,11 @@ func BuildListIntAddressStorageFirstAccessQuery(req *ListIntAddressStorageFirstA
 		orderByClause = " ORDER BY address" + ", slot_key"
 	}
 
-	return BuildParameterizedQueryWithOrder("mainnet", "int_address_storage__first_access", qb, orderByClause, limit, offset), nil
+	return BuildParameterizedQuery("mainnet", "int_address_storage__first_access", qb, orderByClause, limit, offset, options...), nil
 }
 
 // BuildGetIntAddressStorageFirstAccessQuery constructs a parameterized SQL query from a GetIntAddressStorageFirstAccessRequest
-func BuildGetIntAddressStorageFirstAccessQuery(req *GetIntAddressStorageFirstAccessRequest) (SQLQuery, error) {
+func BuildGetIntAddressStorageFirstAccessQuery(req *GetIntAddressStorageFirstAccessRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.Address == "" {
 		return SQLQuery{}, fmt.Errorf("primary key field address is required")
@@ -210,8 +210,9 @@ func BuildGetIntAddressStorageFirstAccessQuery(req *GetIntAddressStorageFirstAcc
 	qb := NewQueryBuilder()
 	qb.AddCondition("address", "=", req.Address)
 
-	sortingKeys := []string{"address", "slot_key"}
+	// Build ORDER BY clause
+	orderByClause := " ORDER BY address, slot_key"
 
 	// Return single record
-	return BuildParameterizedQuery("mainnet", "int_address_storage__first_access", qb, sortingKeys, 1, 0), nil
+	return BuildParameterizedQuery("mainnet", "int_address_storage__first_access", qb, orderByClause, 1, 0, options...), nil
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // BuildListIntBlockProposerHeadQuery constructs a parameterized SQL query from a ListIntBlockProposerHeadRequest
-func BuildListIntBlockProposerHeadQuery(req *ListIntBlockProposerHeadRequest) (SQLQuery, error) {
+func BuildListIntBlockProposerHeadQuery(req *ListIntBlockProposerHeadRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.SlotStartDateTime == nil {
 		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
@@ -290,11 +290,11 @@ func BuildListIntBlockProposerHeadQuery(req *ListIntBlockProposerHeadRequest) (S
 		orderByClause = " ORDER BY slot_start_date_time" + ", proposer_validator_index"
 	}
 
-	return BuildParameterizedQueryWithOrder("mainnet", "int_block_proposer__head", qb, orderByClause, limit, offset), nil
+	return BuildParameterizedQuery("mainnet", "int_block_proposer__head", qb, orderByClause, limit, offset, options...), nil
 }
 
 // BuildGetIntBlockProposerHeadQuery constructs a parameterized SQL query from a GetIntBlockProposerHeadRequest
-func BuildGetIntBlockProposerHeadQuery(req *GetIntBlockProposerHeadRequest) (SQLQuery, error) {
+func BuildGetIntBlockProposerHeadQuery(req *GetIntBlockProposerHeadRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.SlotStartDateTime == 0 {
 		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
@@ -304,8 +304,9 @@ func BuildGetIntBlockProposerHeadQuery(req *GetIntBlockProposerHeadRequest) (SQL
 	qb := NewQueryBuilder()
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
-	sortingKeys := []string{"slot_start_date_time", "proposer_validator_index"}
+	// Build ORDER BY clause
+	orderByClause := " ORDER BY slot_start_date_time, proposer_validator_index"
 
 	// Return single record
-	return BuildParameterizedQuery("mainnet", "int_block_proposer__head", qb, sortingKeys, 1, 0), nil
+	return BuildParameterizedQuery("mainnet", "int_block_proposer__head", qb, orderByClause, 1, 0, options...), nil
 }

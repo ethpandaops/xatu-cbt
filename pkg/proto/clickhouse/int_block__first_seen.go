@@ -8,7 +8,7 @@ import (
 )
 
 // BuildListIntBlockFirstSeenQuery constructs a parameterized SQL query from a ListIntBlockFirstSeenRequest
-func BuildListIntBlockFirstSeenQuery(req *ListIntBlockFirstSeenRequest) (SQLQuery, error) {
+func BuildListIntBlockFirstSeenQuery(req *ListIntBlockFirstSeenRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.SlotStartDateTime == nil {
 		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
@@ -616,11 +616,11 @@ func BuildListIntBlockFirstSeenQuery(req *ListIntBlockFirstSeenRequest) (SQLQuer
 		orderByClause = " ORDER BY slot_start_date_time" + ", meta_client_name"
 	}
 
-	return BuildParameterizedQueryWithOrder("mainnet", "int_block__first_seen", qb, orderByClause, limit, offset), nil
+	return BuildParameterizedQuery("mainnet", "int_block__first_seen", qb, orderByClause, limit, offset, options...), nil
 }
 
 // BuildGetIntBlockFirstSeenQuery constructs a parameterized SQL query from a GetIntBlockFirstSeenRequest
-func BuildGetIntBlockFirstSeenQuery(req *GetIntBlockFirstSeenRequest) (SQLQuery, error) {
+func BuildGetIntBlockFirstSeenQuery(req *GetIntBlockFirstSeenRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.SlotStartDateTime == 0 {
 		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
@@ -630,8 +630,9 @@ func BuildGetIntBlockFirstSeenQuery(req *GetIntBlockFirstSeenRequest) (SQLQuery,
 	qb := NewQueryBuilder()
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
-	sortingKeys := []string{"slot_start_date_time", "meta_client_name"}
+	// Build ORDER BY clause
+	orderByClause := " ORDER BY slot_start_date_time, meta_client_name"
 
 	// Return single record
-	return BuildParameterizedQuery("mainnet", "int_block__first_seen", qb, sortingKeys, 1, 0), nil
+	return BuildParameterizedQuery("mainnet", "int_block__first_seen", qb, orderByClause, 1, 0, options...), nil
 }

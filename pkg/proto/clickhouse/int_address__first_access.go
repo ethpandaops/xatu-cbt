@@ -8,7 +8,7 @@ import (
 )
 
 // BuildListIntAddressFirstAccessQuery constructs a parameterized SQL query from a ListIntAddressFirstAccessRequest
-func BuildListIntAddressFirstAccessQuery(req *ListIntAddressFirstAccessRequest) (SQLQuery, error) {
+func BuildListIntAddressFirstAccessQuery(req *ListIntAddressFirstAccessRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.Address == nil {
 		return SQLQuery{}, fmt.Errorf("primary key field address is required")
@@ -136,11 +136,11 @@ func BuildListIntAddressFirstAccessQuery(req *ListIntAddressFirstAccessRequest) 
 		orderByClause = " ORDER BY address"
 	}
 
-	return BuildParameterizedQueryWithOrder("mainnet", "int_address__first_access", qb, orderByClause, limit, offset), nil
+	return BuildParameterizedQuery("mainnet", "int_address__first_access", qb, orderByClause, limit, offset, options...), nil
 }
 
 // BuildGetIntAddressFirstAccessQuery constructs a parameterized SQL query from a GetIntAddressFirstAccessRequest
-func BuildGetIntAddressFirstAccessQuery(req *GetIntAddressFirstAccessRequest) (SQLQuery, error) {
+func BuildGetIntAddressFirstAccessQuery(req *GetIntAddressFirstAccessRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.Address == "" {
 		return SQLQuery{}, fmt.Errorf("primary key field address is required")
@@ -150,8 +150,9 @@ func BuildGetIntAddressFirstAccessQuery(req *GetIntAddressFirstAccessRequest) (S
 	qb := NewQueryBuilder()
 	qb.AddCondition("address", "=", req.Address)
 
-	sortingKeys := []string{"address"}
+	// Build ORDER BY clause
+	orderByClause := " ORDER BY address"
 
 	// Return single record
-	return BuildParameterizedQuery("mainnet", "int_address__first_access", qb, sortingKeys, 1, 0), nil
+	return BuildParameterizedQuery("mainnet", "int_address__first_access", qb, orderByClause, 1, 0, options...), nil
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // BuildListIntAddressStorageLastAccessQuery constructs a parameterized SQL query from a ListIntAddressStorageLastAccessRequest
-func BuildListIntAddressStorageLastAccessQuery(req *ListIntAddressStorageLastAccessRequest) (SQLQuery, error) {
+func BuildListIntAddressStorageLastAccessQuery(req *ListIntAddressStorageLastAccessRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.Address == nil {
 		return SQLQuery{}, fmt.Errorf("primary key field address is required")
@@ -166,11 +166,11 @@ func BuildListIntAddressStorageLastAccessQuery(req *ListIntAddressStorageLastAcc
 		orderByClause = " ORDER BY address" + ", slot_key"
 	}
 
-	return BuildParameterizedQueryWithOrder("mainnet", "int_address_storage__last_access", qb, orderByClause, limit, offset), nil
+	return BuildParameterizedQuery("mainnet", "int_address_storage__last_access", qb, orderByClause, limit, offset, options...), nil
 }
 
 // BuildGetIntAddressStorageLastAccessQuery constructs a parameterized SQL query from a GetIntAddressStorageLastAccessRequest
-func BuildGetIntAddressStorageLastAccessQuery(req *GetIntAddressStorageLastAccessRequest) (SQLQuery, error) {
+func BuildGetIntAddressStorageLastAccessQuery(req *GetIntAddressStorageLastAccessRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.Address == "" {
 		return SQLQuery{}, fmt.Errorf("primary key field address is required")
@@ -180,8 +180,9 @@ func BuildGetIntAddressStorageLastAccessQuery(req *GetIntAddressStorageLastAcces
 	qb := NewQueryBuilder()
 	qb.AddCondition("address", "=", req.Address)
 
-	sortingKeys := []string{"address", "slot_key"}
+	// Build ORDER BY clause
+	orderByClause := " ORDER BY address, slot_key"
 
 	// Return single record
-	return BuildParameterizedQuery("mainnet", "int_address_storage__last_access", qb, sortingKeys, 1, 0), nil
+	return BuildParameterizedQuery("mainnet", "int_address_storage__last_access", qb, orderByClause, 1, 0, options...), nil
 }

@@ -35,6 +35,22 @@ func WithVariableSubstitution(style VariableSubstitutionStyle) QueryBuilderOptio
 	}
 }
 
+// QueryOptions configures SQL query generation behavior
+type QueryOptions struct {
+	// AddFinal adds FINAL modifier after table name for ClickHouse MergeTree tables
+	AddFinal bool
+}
+
+// QueryOption is a functional option for query configuration
+type QueryOption func(*QueryOptions)
+
+// WithFinal adds the FINAL modifier to the query
+func WithFinal() QueryOption {
+	return func(opts *QueryOptions) {
+		opts.AddFinal = true
+	}
+}
+
 // SQLQuery represents a parameterized SQL query
 type SQLQuery struct {
 	Query  string
@@ -164,31 +180,6 @@ func (qb *QueryBuilder) GetArgs() []interface{} {
 	return qb.args
 }
 
-// BuildQuery constructs the final parameterized query
-func BuildParameterizedQuery(database, table string, qb *QueryBuilder, sortingKeys []string, limit, offset uint32) SQLQuery {
-	query := fmt.Sprintf("SELECT * FROM %s.%s", database, table)
-
-	// Add WHERE clause
-	query += qb.GetWhereClause()
-
-	// Add ORDER BY
-	if len(sortingKeys) > 0 {
-		query += " ORDER BY " + strings.Join(sortingKeys, ", ")
-	}
-
-	// Add LIMIT and OFFSET
-	if limit > 0 {
-		query += fmt.Sprintf(" LIMIT %d", limit)
-		if offset > 0 {
-			query += fmt.Sprintf(" OFFSET %d", offset)
-		}
-	}
-
-	return SQLQuery{
-		Query: query,
-		Args:  qb.GetArgs(),
-	}
-}
 
 // Helper functions for converting filter values to interface{}
 
@@ -355,9 +346,21 @@ func BuildOrderByClause(fields []OrderByField) string {
 	return " ORDER BY " + strings.Join(parts, ", ")
 }
 
-// BuildParameterizedQueryWithOrder constructs the final parameterized query with custom ordering
-func BuildParameterizedQueryWithOrder(database, table string, qb *QueryBuilder, orderByClause string, limit, offset uint32) SQLQuery {
-	query := fmt.Sprintf("SELECT * FROM %s.%s", database, table)
+// BuildParameterizedQuery constructs the final parameterized query with optional ordering
+func BuildParameterizedQuery(database, table string, qb *QueryBuilder, orderByClause string, limit, offset uint32, options ...QueryOption) SQLQuery {
+	// Apply options
+	opts := &QueryOptions{}
+	for _, opt := range options {
+		opt(opts)
+	}
+
+	// Build FROM clause with optional FINAL
+	fromClause := fmt.Sprintf("%s.%s", database, table)
+	if opts.AddFinal {
+		fromClause += " FINAL"
+	}
+
+	query := fmt.Sprintf("SELECT * FROM %s", fromClause)
 
 	// Add WHERE clause
 	query += qb.GetWhereClause()
