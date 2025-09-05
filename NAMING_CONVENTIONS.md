@@ -29,6 +29,8 @@ stg_xatu__mempool_transactions
 ```
 Pattern: int_<entity>_<derivation/metric>_<context>
 
+Note: <entity> can be a compound entity like block_proposers
+
 Examples:
 int_blocks_first_seen_by_sentries
 int_blocks_first_seen_by_clients
@@ -36,6 +38,8 @@ int_blocks_propagation_latency
 int_transactions_mempool_propagation
 int_attestations_first_seen_by_peers
 int_validators_proposals_with_latency
+int_block_proposers_latency_by_sentries
+int_attestation_proposers_missed_by_region
 ```
 
 ### Fact Models
@@ -72,6 +76,8 @@ dim_regions
 ## Entity Vocabulary
 
 Common entities in Xatu context:
+
+### Simple Entities
 - `blocks` - Beacon/execution blocks
 - `transactions` - Execution layer transactions
 - `attestations` - Validator attestations
@@ -81,6 +87,18 @@ Common entities in Xatu context:
 - `peers` - P2P network peers
 - `slots` - Beacon chain slots
 - `epochs` - Beacon chain epochs
+
+### Compound Entities
+Compound entities represent specific roles or relationships and are treated as single units:
+- `block_proposers` - Validators proposing blocks
+- `attestation_proposers` - Validators proposing attestations
+- `sync_committees` - Validators in sync committees
+- `withdrawal_validators` - Validators with withdrawals
+
+Examples:
+- `int_block_proposers_latency_by_sentries` - Latency of block proposers
+- `int_attestation_proposers_effectiveness_by_region` - Effectiveness of attestation proposers
+- `int_sync_committees_participation_daily` - Daily sync committee participation
 
 ## Transformation Descriptors
 
@@ -97,17 +115,22 @@ Common descriptors for intermediate models:
 ## Component Ordering for Complex Names
 
 For intermediate models with multiple components, follow this order:
-1. **Entity** (`blocks`)
-2. **Metric/Derivation** (`first_seen`)
+1. **Entity** (`blocks` or compound like `block_proposers`)
+2. **Metric/Derivation** (`first_seen`, `latency`)
 3. **Chain State** (`canonical` if needed)
 4. **Observer** (`by_sentries`)
 5. **Time Window** (`daily` if applicable)
 
-Examples:
+Examples with simple entities:
 - `int_blocks_first_seen_by_sentries`
 - `int_blocks_first_seen_canonical_by_sentries`
 - `int_blocks_first_seen_by_sentries_daily`
 - `int_validators_performance_p50_by_region_hourly`
+
+Examples with compound entities:
+- `int_block_proposers_latency_by_sentries`
+- `int_attestation_proposers_effectiveness_canonical_by_region`
+- `int_sync_committees_participation_by_network_daily`
 
 When combining observers: `by_all_nodes` or `by_network` instead of listing multiple.
 
