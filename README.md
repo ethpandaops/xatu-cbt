@@ -15,6 +15,7 @@ cp example.env .env
 ```
 
 Example `.env` file:
+
 ```bash
 # Network configuration
 NETWORK=mainnet
@@ -77,6 +78,7 @@ These commands will setup cbt admin tables, go-migrate schemas tables and run th
 ### Creating and Running Tests
 
 Tests are organized in the `tests/` directory with the following structure:
+
 ```
 tests/
 ├── pectra/
@@ -87,6 +89,7 @@ tests/
 ```
 
 Example test run:
+
 ```bash
 # Run pectra test with full setup
 ./bin/xatu-cbt test pectra
@@ -105,6 +108,7 @@ make proto
 ```
 
 **When to run `make proto`:**
+
 - After adding a new transformation model (`.sql` file in `models/transformations/`)
 - After modifying the schema or columns of an existing transformation model
 - Before committing changes to transformation models
