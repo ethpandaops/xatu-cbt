@@ -1,5 +1,5 @@
 ---
-table: int_xatu_nodes__24h
+table: int_nodes_active_last_24h
 interval:
   max: 300
 schedules:

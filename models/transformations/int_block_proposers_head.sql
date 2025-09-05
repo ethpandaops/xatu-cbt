@@ -1,5 +1,5 @@
 ---
-table: int_block_proposer__head
+table: int_block_proposers_head
 interval:
   max: 500000
 schedules:

@@ -1,5 +1,5 @@
 ---
-table: int_block__orphaned
+table: int_blocks_orphaned
 interval:
   max: 500000
 schedules:

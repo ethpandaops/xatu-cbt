@@ -1,5 +1,5 @@
 ---
-table: int_address__last_access
+table: int_addresses_last_access
 interval:
   max: 10000
 schedules:
