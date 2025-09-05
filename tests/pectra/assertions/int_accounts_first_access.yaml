@@ -5,11 +5,11 @@
       MIN(block_number) AS min,
       MAX(block_number) AS max
     FROM
-      int_address_storage_first_access FINAL
+      int_accounts_first_access FINAL
   expected:
-    count: 353565
+    count: 94577
     min: "20000000"
-    max: "20000999"
+    max: "20000994"
 - name: "Expected admin bounds"
   sql: |
     SELECT
@@ -18,7 +18,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'int_address_storage_first_access'
+      table = 'int_accounts_first_access'
   expected:
     min: "20000000"
-    max: "20000999"
+    max: "20000994"

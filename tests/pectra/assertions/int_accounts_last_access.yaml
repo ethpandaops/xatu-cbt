@@ -5,7 +5,7 @@
       MIN(block_number) AS min,
       MAX(block_number) AS max
     FROM
-      int_addresses_last_access FINAL
+      int_accounts_last_access FINAL
   expected:
     count: 94577
     min: "20000000"
@@ -18,7 +18,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'int_addresses_last_access'
+      table = 'int_accounts_last_access'
   expected:
     min: "20000000"
     max: "20000994"

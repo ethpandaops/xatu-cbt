@@ -1,5 +1,5 @@
 ---
-table: int_address_storage_last_access
+table: int_account_storage_slots_last_access
 interval:
   max: 1000
 schedules:
