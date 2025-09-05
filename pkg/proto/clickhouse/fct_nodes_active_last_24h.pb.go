@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.2
 // 	protoc        (unknown)
-// source: int_nodes_active_last_24h.proto
+// source: fct_nodes_active_last_24h.proto
 
 package clickhouse
 
@@ -20,7 +20,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type IntNodesActiveLast24H struct {
+type FctNodesActiveLast24H struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -55,23 +55,23 @@ type IntNodesActiveLast24H struct {
 	MetaConsensusImplementation string `protobuf:"bytes,24,opt,name=meta_consensus_implementation,json=metaConsensusImplementation,proto3" json:"meta_consensus_implementation,omitempty"`
 }
 
-func (x *IntNodesActiveLast24H) Reset() {
-	*x = IntNodesActiveLast24H{}
+func (x *FctNodesActiveLast24H) Reset() {
+	*x = FctNodesActiveLast24H{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_int_nodes_active_last_24h_proto_msgTypes[0]
+		mi := &file_fct_nodes_active_last_24h_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *IntNodesActiveLast24H) String() string {
+func (x *FctNodesActiveLast24H) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*IntNodesActiveLast24H) ProtoMessage() {}
+func (*FctNodesActiveLast24H) ProtoMessage() {}
 
-func (x *IntNodesActiveLast24H) ProtoReflect() protoreflect.Message {
-	mi := &file_int_nodes_active_last_24h_proto_msgTypes[0]
+func (x *FctNodesActiveLast24H) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_nodes_active_last_24h_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -82,111 +82,111 @@ func (x *IntNodesActiveLast24H) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use IntNodesActiveLast24H.ProtoReflect.Descriptor instead.
-func (*IntNodesActiveLast24H) Descriptor() ([]byte, []int) {
-	return file_int_nodes_active_last_24h_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use FctNodesActiveLast24H.ProtoReflect.Descriptor instead.
+func (*FctNodesActiveLast24H) Descriptor() ([]byte, []int) {
+	return file_fct_nodes_active_last_24h_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *IntNodesActiveLast24H) GetUpdatedDateTime() uint32 {
+func (x *FctNodesActiveLast24H) GetUpdatedDateTime() uint32 {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return 0
 }
 
-func (x *IntNodesActiveLast24H) GetLastSeenDateTime() uint32 {
+func (x *FctNodesActiveLast24H) GetLastSeenDateTime() uint32 {
 	if x != nil {
 		return x.LastSeenDateTime
 	}
 	return 0
 }
 
-func (x *IntNodesActiveLast24H) GetUsername() string {
+func (x *FctNodesActiveLast24H) GetUsername() string {
 	if x != nil {
 		return x.Username
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetNodeId() string {
+func (x *FctNodesActiveLast24H) GetNodeId() string {
 	if x != nil {
 		return x.NodeId
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetClassification() string {
+func (x *FctNodesActiveLast24H) GetClassification() string {
 	if x != nil {
 		return x.Classification
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetMetaClientName() string {
+func (x *FctNodesActiveLast24H) GetMetaClientName() string {
 	if x != nil {
 		return x.MetaClientName
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetMetaClientVersion() string {
+func (x *FctNodesActiveLast24H) GetMetaClientVersion() string {
 	if x != nil {
 		return x.MetaClientVersion
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetMetaClientImplementation() string {
+func (x *FctNodesActiveLast24H) GetMetaClientImplementation() string {
 	if x != nil {
 		return x.MetaClientImplementation
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetMetaClientGeoCity() string {
+func (x *FctNodesActiveLast24H) GetMetaClientGeoCity() string {
 	if x != nil {
 		return x.MetaClientGeoCity
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetMetaClientGeoCountry() string {
+func (x *FctNodesActiveLast24H) GetMetaClientGeoCountry() string {
 	if x != nil {
 		return x.MetaClientGeoCountry
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetMetaClientGeoCountryCode() string {
+func (x *FctNodesActiveLast24H) GetMetaClientGeoCountryCode() string {
 	if x != nil {
 		return x.MetaClientGeoCountryCode
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetMetaClientGeoContinentCode() string {
+func (x *FctNodesActiveLast24H) GetMetaClientGeoContinentCode() string {
 	if x != nil {
 		return x.MetaClientGeoContinentCode
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetMetaConsensusVersion() string {
+func (x *FctNodesActiveLast24H) GetMetaConsensusVersion() string {
 	if x != nil {
 		return x.MetaConsensusVersion
 	}
 	return ""
 }
 
-func (x *IntNodesActiveLast24H) GetMetaConsensusImplementation() string {
+func (x *FctNodesActiveLast24H) GetMetaConsensusImplementation() string {
 	if x != nil {
 		return x.MetaConsensusImplementation
 	}
 	return ""
 }
 
-// ListIntNodesActiveLast24hRequest is the request message for listing int_nodes_active_last_24h records
-type ListIntNodesActiveLast24HRequest struct {
+// ListFctNodesActiveLast24hRequest is the request message for listing fct_nodes_active_last_24h records
+type ListFctNodesActiveLast24HRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -219,11 +219,11 @@ type ListIntNodesActiveLast24HRequest struct {
 	MetaConsensusVersion *StringFilter `protobuf:"bytes,13,opt,name=meta_consensus_version,json=metaConsensusVersion,proto3" json:"meta_consensus_version,omitempty"`
 	// Filter by meta_consensus_implementation (optional)
 	MetaConsensusImplementation *StringFilter `protobuf:"bytes,14,opt,name=meta_consensus_implementation,json=metaConsensusImplementation,proto3" json:"meta_consensus_implementation,omitempty"`
-	// The maximum number of int_nodes_active_last_24h to return.
+	// The maximum number of fct_nodes_active_last_24h to return.
 	// If unspecified, at most 100 items will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,15,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListIntNodesActiveLast24h` call.
+	// A page token, received from a previous `ListFctNodesActiveLast24h` call.
 	// Provide this to retrieve the subsequent page.
 	PageToken string `protobuf:"bytes,16,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// The order of results. Format: comma-separated list of fields.
@@ -232,23 +232,23 @@ type ListIntNodesActiveLast24HRequest struct {
 	OrderBy string `protobuf:"bytes,17,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 }
 
-func (x *ListIntNodesActiveLast24HRequest) Reset() {
-	*x = ListIntNodesActiveLast24HRequest{}
+func (x *ListFctNodesActiveLast24HRequest) Reset() {
+	*x = ListFctNodesActiveLast24HRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_int_nodes_active_last_24h_proto_msgTypes[1]
+		mi := &file_fct_nodes_active_last_24h_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListIntNodesActiveLast24HRequest) String() string {
+func (x *ListFctNodesActiveLast24HRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListIntNodesActiveLast24HRequest) ProtoMessage() {}
+func (*ListFctNodesActiveLast24HRequest) ProtoMessage() {}
 
-func (x *ListIntNodesActiveLast24HRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_int_nodes_active_last_24h_proto_msgTypes[1]
+func (x *ListFctNodesActiveLast24HRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_nodes_active_last_24h_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -259,160 +259,160 @@ func (x *ListIntNodesActiveLast24HRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListIntNodesActiveLast24HRequest.ProtoReflect.Descriptor instead.
-func (*ListIntNodesActiveLast24HRequest) Descriptor() ([]byte, []int) {
-	return file_int_nodes_active_last_24h_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use ListFctNodesActiveLast24HRequest.ProtoReflect.Descriptor instead.
+func (*ListFctNodesActiveLast24HRequest) Descriptor() ([]byte, []int) {
+	return file_fct_nodes_active_last_24h_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetMetaClientName() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetMetaClientName() *StringFilter {
 	if x != nil {
 		return x.MetaClientName
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetUpdatedDateTime() *UInt32Filter {
+func (x *ListFctNodesActiveLast24HRequest) GetUpdatedDateTime() *UInt32Filter {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetLastSeenDateTime() *UInt32Filter {
+func (x *ListFctNodesActiveLast24HRequest) GetLastSeenDateTime() *UInt32Filter {
 	if x != nil {
 		return x.LastSeenDateTime
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetUsername() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetUsername() *StringFilter {
 	if x != nil {
 		return x.Username
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetNodeId() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetNodeId() *StringFilter {
 	if x != nil {
 		return x.NodeId
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetClassification() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetClassification() *StringFilter {
 	if x != nil {
 		return x.Classification
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetMetaClientVersion() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetMetaClientVersion() *StringFilter {
 	if x != nil {
 		return x.MetaClientVersion
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetMetaClientImplementation() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetMetaClientImplementation() *StringFilter {
 	if x != nil {
 		return x.MetaClientImplementation
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetMetaClientGeoCity() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetMetaClientGeoCity() *StringFilter {
 	if x != nil {
 		return x.MetaClientGeoCity
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetMetaClientGeoCountry() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetMetaClientGeoCountry() *StringFilter {
 	if x != nil {
 		return x.MetaClientGeoCountry
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetMetaClientGeoCountryCode() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetMetaClientGeoCountryCode() *StringFilter {
 	if x != nil {
 		return x.MetaClientGeoCountryCode
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetMetaClientGeoContinentCode() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetMetaClientGeoContinentCode() *StringFilter {
 	if x != nil {
 		return x.MetaClientGeoContinentCode
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetMetaConsensusVersion() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetMetaConsensusVersion() *StringFilter {
 	if x != nil {
 		return x.MetaConsensusVersion
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetMetaConsensusImplementation() *StringFilter {
+func (x *ListFctNodesActiveLast24HRequest) GetMetaConsensusImplementation() *StringFilter {
 	if x != nil {
 		return x.MetaConsensusImplementation
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetPageSize() int32 {
+func (x *ListFctNodesActiveLast24HRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetPageToken() string {
+func (x *ListFctNodesActiveLast24HRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
 	}
 	return ""
 }
 
-func (x *ListIntNodesActiveLast24HRequest) GetOrderBy() string {
+func (x *ListFctNodesActiveLast24HRequest) GetOrderBy() string {
 	if x != nil {
 		return x.OrderBy
 	}
 	return ""
 }
 
-// ListIntNodesActiveLast24hResponse is the response message for listing int_nodes_active_last_24h records
-type ListIntNodesActiveLast24HResponse struct {
+// ListFctNodesActiveLast24hResponse is the response message for listing fct_nodes_active_last_24h records
+type ListFctNodesActiveLast24HResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The list of int_nodes_active_last_24h.
-	IntNodesActiveLast_24H []*IntNodesActiveLast24H `protobuf:"bytes,1,rep,name=int_nodes_active_last_24h,json=intNodesActiveLast24h,proto3" json:"int_nodes_active_last_24h,omitempty"`
+	// The list of fct_nodes_active_last_24h.
+	FctNodesActiveLast_24H []*FctNodesActiveLast24H `protobuf:"bytes,1,rep,name=fct_nodes_active_last_24h,json=fctNodesActiveLast24h,proto3" json:"fct_nodes_active_last_24h,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 }
 
-func (x *ListIntNodesActiveLast24HResponse) Reset() {
-	*x = ListIntNodesActiveLast24HResponse{}
+func (x *ListFctNodesActiveLast24HResponse) Reset() {
+	*x = ListFctNodesActiveLast24HResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_int_nodes_active_last_24h_proto_msgTypes[2]
+		mi := &file_fct_nodes_active_last_24h_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListIntNodesActiveLast24HResponse) String() string {
+func (x *ListFctNodesActiveLast24HResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListIntNodesActiveLast24HResponse) ProtoMessage() {}
+func (*ListFctNodesActiveLast24HResponse) ProtoMessage() {}
 
-func (x *ListIntNodesActiveLast24HResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_int_nodes_active_last_24h_proto_msgTypes[2]
+func (x *ListFctNodesActiveLast24HResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_nodes_active_last_24h_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -423,27 +423,27 @@ func (x *ListIntNodesActiveLast24HResponse) ProtoReflect() protoreflect.Message 
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListIntNodesActiveLast24HResponse.ProtoReflect.Descriptor instead.
-func (*ListIntNodesActiveLast24HResponse) Descriptor() ([]byte, []int) {
-	return file_int_nodes_active_last_24h_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use ListFctNodesActiveLast24HResponse.ProtoReflect.Descriptor instead.
+func (*ListFctNodesActiveLast24HResponse) Descriptor() ([]byte, []int) {
+	return file_fct_nodes_active_last_24h_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListIntNodesActiveLast24HResponse) GetIntNodesActiveLast_24H() []*IntNodesActiveLast24H {
+func (x *ListFctNodesActiveLast24HResponse) GetFctNodesActiveLast_24H() []*FctNodesActiveLast24H {
 	if x != nil {
-		return x.IntNodesActiveLast_24H
+		return x.FctNodesActiveLast_24H
 	}
 	return nil
 }
 
-func (x *ListIntNodesActiveLast24HResponse) GetNextPageToken() string {
+func (x *ListFctNodesActiveLast24HResponse) GetNextPageToken() string {
 	if x != nil {
 		return x.NextPageToken
 	}
 	return ""
 }
 
-// GetIntNodesActiveLast24hRequest is the request message for getting a single int_nodes_active_last_24h record by primary key
-type GetIntNodesActiveLast24HRequest struct {
+// GetFctNodesActiveLast24hRequest is the request message for getting a single fct_nodes_active_last_24h record by primary key
+type GetFctNodesActiveLast24HRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -452,23 +452,23 @@ type GetIntNodesActiveLast24HRequest struct {
 	MetaClientName string `protobuf:"bytes,1,opt,name=meta_client_name,json=metaClientName,proto3" json:"meta_client_name,omitempty"` // Primary key (required)
 }
 
-func (x *GetIntNodesActiveLast24HRequest) Reset() {
-	*x = GetIntNodesActiveLast24HRequest{}
+func (x *GetFctNodesActiveLast24HRequest) Reset() {
+	*x = GetFctNodesActiveLast24HRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_int_nodes_active_last_24h_proto_msgTypes[3]
+		mi := &file_fct_nodes_active_last_24h_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetIntNodesActiveLast24HRequest) String() string {
+func (x *GetFctNodesActiveLast24HRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetIntNodesActiveLast24HRequest) ProtoMessage() {}
+func (*GetFctNodesActiveLast24HRequest) ProtoMessage() {}
 
-func (x *GetIntNodesActiveLast24HRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_int_nodes_active_last_24h_proto_msgTypes[3]
+func (x *GetFctNodesActiveLast24HRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_nodes_active_last_24h_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -479,44 +479,44 @@ func (x *GetIntNodesActiveLast24HRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetIntNodesActiveLast24HRequest.ProtoReflect.Descriptor instead.
-func (*GetIntNodesActiveLast24HRequest) Descriptor() ([]byte, []int) {
-	return file_int_nodes_active_last_24h_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use GetFctNodesActiveLast24HRequest.ProtoReflect.Descriptor instead.
+func (*GetFctNodesActiveLast24HRequest) Descriptor() ([]byte, []int) {
+	return file_fct_nodes_active_last_24h_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetIntNodesActiveLast24HRequest) GetMetaClientName() string {
+func (x *GetFctNodesActiveLast24HRequest) GetMetaClientName() string {
 	if x != nil {
 		return x.MetaClientName
 	}
 	return ""
 }
 
-// GetIntNodesActiveLast24hResponse is the response message for getting a single int_nodes_active_last_24h record
-type GetIntNodesActiveLast24HResponse struct {
+// GetFctNodesActiveLast24hResponse is the response message for getting a single fct_nodes_active_last_24h record
+type GetFctNodesActiveLast24HResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Item *IntNodesActiveLast24H `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	Item *FctNodesActiveLast24H `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
 }
 
-func (x *GetIntNodesActiveLast24HResponse) Reset() {
-	*x = GetIntNodesActiveLast24HResponse{}
+func (x *GetFctNodesActiveLast24HResponse) Reset() {
+	*x = GetFctNodesActiveLast24HResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_int_nodes_active_last_24h_proto_msgTypes[4]
+		mi := &file_fct_nodes_active_last_24h_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetIntNodesActiveLast24HResponse) String() string {
+func (x *GetFctNodesActiveLast24HResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetIntNodesActiveLast24HResponse) ProtoMessage() {}
+func (*GetFctNodesActiveLast24HResponse) ProtoMessage() {}
 
-func (x *GetIntNodesActiveLast24HResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_int_nodes_active_last_24h_proto_msgTypes[4]
+func (x *GetFctNodesActiveLast24HResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_nodes_active_last_24h_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -527,25 +527,25 @@ func (x *GetIntNodesActiveLast24HResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetIntNodesActiveLast24HResponse.ProtoReflect.Descriptor instead.
-func (*GetIntNodesActiveLast24HResponse) Descriptor() ([]byte, []int) {
-	return file_int_nodes_active_last_24h_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use GetFctNodesActiveLast24HResponse.ProtoReflect.Descriptor instead.
+func (*GetFctNodesActiveLast24HResponse) Descriptor() ([]byte, []int) {
+	return file_fct_nodes_active_last_24h_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetIntNodesActiveLast24HResponse) GetItem() *IntNodesActiveLast24H {
+func (x *GetFctNodesActiveLast24HResponse) GetItem() *FctNodesActiveLast24H {
 	if x != nil {
 		return x.Item
 	}
 	return nil
 }
 
-var File_int_nodes_active_last_24h_proto protoreflect.FileDescriptor
+var File_fct_nodes_active_last_24h_proto protoreflect.FileDescriptor
 
-var file_int_nodes_active_last_24h_proto_rawDesc = []byte{
-	0x0a, 0x1f, 0x69, 0x6e, 0x74, 0x5f, 0x6e, 0x6f, 0x64, 0x65, 0x73, 0x5f, 0x61, 0x63, 0x74, 0x69,
+var file_fct_nodes_active_last_24h_proto_rawDesc = []byte{
+	0x0a, 0x1f, 0x66, 0x63, 0x74, 0x5f, 0x6e, 0x6f, 0x64, 0x65, 0x73, 0x5f, 0x61, 0x63, 0x74, 0x69,
 	0x76, 0x65, 0x5f, 0x6c, 0x61, 0x73, 0x74, 0x5f, 0x32, 0x34, 0x68, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x12, 0x03, 0x63, 0x62, 0x74, 0x1a, 0x0c, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x22, 0xcd, 0x05, 0x0a, 0x15, 0x49, 0x6e, 0x74, 0x4e, 0x6f, 0x64, 0x65,
+	0x72, 0x6f, 0x74, 0x6f, 0x22, 0xcd, 0x05, 0x0a, 0x15, 0x46, 0x63, 0x74, 0x4e, 0x6f, 0x64, 0x65,
 	0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32, 0x34, 0x68, 0x12, 0x2a,
 	0x0a, 0x11, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x74,
 	0x69, 0x6d, 0x65, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0f, 0x75, 0x70, 0x64, 0x61, 0x74,
@@ -590,7 +590,7 @@ var file_int_nodes_active_last_24h_proto_rawDesc = []byte{
 	0x75, 0x73, 0x5f, 0x69, 0x6d, 0x70, 0x6c, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f,
 	0x6e, 0x18, 0x18, 0x20, 0x01, 0x28, 0x09, 0x52, 0x1b, 0x6d, 0x65, 0x74, 0x61, 0x43, 0x6f, 0x6e,
 	0x73, 0x65, 0x6e, 0x73, 0x75, 0x73, 0x49, 0x6d, 0x70, 0x6c, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x61,
-	0x74, 0x69, 0x6f, 0x6e, 0x22, 0xb9, 0x08, 0x0a, 0x20, 0x4c, 0x69, 0x73, 0x74, 0x49, 0x6e, 0x74,
+	0x74, 0x69, 0x6f, 0x6e, 0x22, 0xb9, 0x08, 0x0a, 0x20, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x63, 0x74,
 	0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32,
 	0x34, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x3b, 0x0a, 0x10, 0x6d, 0x65, 0x74,
 	0x61, 0x5f, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20,
@@ -658,38 +658,38 @@ var file_int_nodes_active_last_24h_proto_rawDesc = []byte{
 	0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x10, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x70, 0x61, 0x67, 0x65,
 	0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x12, 0x19, 0x0a, 0x08, 0x6f, 0x72, 0x64, 0x65, 0x72, 0x5f, 0x62,
 	0x79, 0x18, 0x11, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6f, 0x72, 0x64, 0x65, 0x72, 0x42, 0x79,
-	0x22, 0xa1, 0x01, 0x0a, 0x21, 0x4c, 0x69, 0x73, 0x74, 0x49, 0x6e, 0x74, 0x4e, 0x6f, 0x64, 0x65,
+	0x22, 0xa1, 0x01, 0x0a, 0x21, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x63, 0x74, 0x4e, 0x6f, 0x64, 0x65,
 	0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32, 0x34, 0x68, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x54, 0x0a, 0x19, 0x69, 0x6e, 0x74, 0x5f, 0x6e, 0x6f,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x54, 0x0a, 0x19, 0x66, 0x63, 0x74, 0x5f, 0x6e, 0x6f,
 	0x64, 0x65, 0x73, 0x5f, 0x61, 0x63, 0x74, 0x69, 0x76, 0x65, 0x5f, 0x6c, 0x61, 0x73, 0x74, 0x5f,
 	0x32, 0x34, 0x68, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x63, 0x62, 0x74, 0x2e,
-	0x49, 0x6e, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61,
-	0x73, 0x74, 0x32, 0x34, 0x68, 0x52, 0x15, 0x69, 0x6e, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41,
+	0x46, 0x63, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61,
+	0x73, 0x74, 0x32, 0x34, 0x68, 0x52, 0x15, 0x66, 0x63, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41,
 	0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32, 0x34, 0x68, 0x12, 0x26, 0x0a, 0x0f,
 	0x6e, 0x65, 0x78, 0x74, 0x5f, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x6e, 0x65, 0x78, 0x74, 0x50, 0x61, 0x67, 0x65, 0x54,
-	0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x4b, 0x0a, 0x1f, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x74, 0x4e, 0x6f,
+	0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x4b, 0x0a, 0x1f, 0x47, 0x65, 0x74, 0x46, 0x63, 0x74, 0x4e, 0x6f,
 	0x64, 0x65, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32, 0x34, 0x68,
 	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x28, 0x0a, 0x10, 0x6d, 0x65, 0x74, 0x61, 0x5f,
 	0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x0e, 0x6d, 0x65, 0x74, 0x61, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x4e, 0x61, 0x6d,
-	0x65, 0x22, 0x52, 0x0a, 0x20, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73,
+	0x65, 0x22, 0x52, 0x0a, 0x20, 0x47, 0x65, 0x74, 0x46, 0x63, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73,
 	0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32, 0x34, 0x68, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2e, 0x0a, 0x04, 0x69, 0x74, 0x65, 0x6d, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x49, 0x6e, 0x74, 0x4e, 0x6f, 0x64,
+	0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x46, 0x63, 0x74, 0x4e, 0x6f, 0x64,
 	0x65, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32, 0x34, 0x68, 0x52,
-	0x04, 0x69, 0x74, 0x65, 0x6d, 0x32, 0xc9, 0x01, 0x0a, 0x1c, 0x49, 0x6e, 0x74, 0x4e, 0x6f, 0x64,
+	0x04, 0x69, 0x74, 0x65, 0x6d, 0x32, 0xc9, 0x01, 0x0a, 0x1c, 0x46, 0x63, 0x74, 0x4e, 0x6f, 0x64,
 	0x65, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32, 0x34, 0x68, 0x53,
 	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x55, 0x0a, 0x04, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x25,
-	0x2e, 0x63, 0x62, 0x74, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x49, 0x6e, 0x74, 0x4e, 0x6f, 0x64, 0x65,
+	0x2e, 0x63, 0x62, 0x74, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x63, 0x74, 0x4e, 0x6f, 0x64, 0x65,
 	0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32, 0x34, 0x68, 0x52, 0x65,
 	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x4c, 0x69, 0x73, 0x74,
-	0x49, 0x6e, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61,
+	0x46, 0x63, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61,
 	0x73, 0x74, 0x32, 0x34, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x52, 0x0a,
-	0x03, 0x47, 0x65, 0x74, 0x12, 0x24, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x49, 0x6e,
+	0x03, 0x47, 0x65, 0x74, 0x12, 0x24, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x46, 0x63,
 	0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x4c, 0x61, 0x73, 0x74,
 	0x32, 0x34, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x63, 0x62, 0x74,
-	0x2e, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41, 0x63, 0x74, 0x69,
+	0x2e, 0x47, 0x65, 0x74, 0x46, 0x63, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x41, 0x63, 0x74, 0x69,
 	0x76, 0x65, 0x4c, 0x61, 0x73, 0x74, 0x32, 0x34, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
 	0x65, 0x42, 0x36, 0x5a, 0x34, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
 	0x65, 0x74, 0x68, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x6f, 0x70, 0x73, 0x2f, 0x78, 0x61, 0x74, 0x75,
@@ -699,48 +699,48 @@ var file_int_nodes_active_last_24h_proto_rawDesc = []byte{
 }
 
 var (
-	file_int_nodes_active_last_24h_proto_rawDescOnce sync.Once
-	file_int_nodes_active_last_24h_proto_rawDescData = file_int_nodes_active_last_24h_proto_rawDesc
+	file_fct_nodes_active_last_24h_proto_rawDescOnce sync.Once
+	file_fct_nodes_active_last_24h_proto_rawDescData = file_fct_nodes_active_last_24h_proto_rawDesc
 )
 
-func file_int_nodes_active_last_24h_proto_rawDescGZIP() []byte {
-	file_int_nodes_active_last_24h_proto_rawDescOnce.Do(func() {
-		file_int_nodes_active_last_24h_proto_rawDescData = protoimpl.X.CompressGZIP(file_int_nodes_active_last_24h_proto_rawDescData)
+func file_fct_nodes_active_last_24h_proto_rawDescGZIP() []byte {
+	file_fct_nodes_active_last_24h_proto_rawDescOnce.Do(func() {
+		file_fct_nodes_active_last_24h_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_nodes_active_last_24h_proto_rawDescData)
 	})
-	return file_int_nodes_active_last_24h_proto_rawDescData
+	return file_fct_nodes_active_last_24h_proto_rawDescData
 }
 
-var file_int_nodes_active_last_24h_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_int_nodes_active_last_24h_proto_goTypes = []any{
-	(*IntNodesActiveLast24H)(nil),             // 0: cbt.IntNodesActiveLast24h
-	(*ListIntNodesActiveLast24HRequest)(nil),  // 1: cbt.ListIntNodesActiveLast24hRequest
-	(*ListIntNodesActiveLast24HResponse)(nil), // 2: cbt.ListIntNodesActiveLast24hResponse
-	(*GetIntNodesActiveLast24HRequest)(nil),   // 3: cbt.GetIntNodesActiveLast24hRequest
-	(*GetIntNodesActiveLast24HResponse)(nil),  // 4: cbt.GetIntNodesActiveLast24hResponse
+var file_fct_nodes_active_last_24h_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_fct_nodes_active_last_24h_proto_goTypes = []any{
+	(*FctNodesActiveLast24H)(nil),             // 0: cbt.FctNodesActiveLast24h
+	(*ListFctNodesActiveLast24HRequest)(nil),  // 1: cbt.ListFctNodesActiveLast24hRequest
+	(*ListFctNodesActiveLast24HResponse)(nil), // 2: cbt.ListFctNodesActiveLast24hResponse
+	(*GetFctNodesActiveLast24HRequest)(nil),   // 3: cbt.GetFctNodesActiveLast24hRequest
+	(*GetFctNodesActiveLast24HResponse)(nil),  // 4: cbt.GetFctNodesActiveLast24hResponse
 	(*StringFilter)(nil),                      // 5: cbt.StringFilter
 	(*UInt32Filter)(nil),                      // 6: cbt.UInt32Filter
 }
-var file_int_nodes_active_last_24h_proto_depIdxs = []int32{
-	5,  // 0: cbt.ListIntNodesActiveLast24hRequest.meta_client_name:type_name -> cbt.StringFilter
-	6,  // 1: cbt.ListIntNodesActiveLast24hRequest.updated_date_time:type_name -> cbt.UInt32Filter
-	6,  // 2: cbt.ListIntNodesActiveLast24hRequest.last_seen_date_time:type_name -> cbt.UInt32Filter
-	5,  // 3: cbt.ListIntNodesActiveLast24hRequest.username:type_name -> cbt.StringFilter
-	5,  // 4: cbt.ListIntNodesActiveLast24hRequest.node_id:type_name -> cbt.StringFilter
-	5,  // 5: cbt.ListIntNodesActiveLast24hRequest.classification:type_name -> cbt.StringFilter
-	5,  // 6: cbt.ListIntNodesActiveLast24hRequest.meta_client_version:type_name -> cbt.StringFilter
-	5,  // 7: cbt.ListIntNodesActiveLast24hRequest.meta_client_implementation:type_name -> cbt.StringFilter
-	5,  // 8: cbt.ListIntNodesActiveLast24hRequest.meta_client_geo_city:type_name -> cbt.StringFilter
-	5,  // 9: cbt.ListIntNodesActiveLast24hRequest.meta_client_geo_country:type_name -> cbt.StringFilter
-	5,  // 10: cbt.ListIntNodesActiveLast24hRequest.meta_client_geo_country_code:type_name -> cbt.StringFilter
-	5,  // 11: cbt.ListIntNodesActiveLast24hRequest.meta_client_geo_continent_code:type_name -> cbt.StringFilter
-	5,  // 12: cbt.ListIntNodesActiveLast24hRequest.meta_consensus_version:type_name -> cbt.StringFilter
-	5,  // 13: cbt.ListIntNodesActiveLast24hRequest.meta_consensus_implementation:type_name -> cbt.StringFilter
-	0,  // 14: cbt.ListIntNodesActiveLast24hResponse.int_nodes_active_last_24h:type_name -> cbt.IntNodesActiveLast24h
-	0,  // 15: cbt.GetIntNodesActiveLast24hResponse.item:type_name -> cbt.IntNodesActiveLast24h
-	1,  // 16: cbt.IntNodesActiveLast24hService.List:input_type -> cbt.ListIntNodesActiveLast24hRequest
-	3,  // 17: cbt.IntNodesActiveLast24hService.Get:input_type -> cbt.GetIntNodesActiveLast24hRequest
-	2,  // 18: cbt.IntNodesActiveLast24hService.List:output_type -> cbt.ListIntNodesActiveLast24hResponse
-	4,  // 19: cbt.IntNodesActiveLast24hService.Get:output_type -> cbt.GetIntNodesActiveLast24hResponse
+var file_fct_nodes_active_last_24h_proto_depIdxs = []int32{
+	5,  // 0: cbt.ListFctNodesActiveLast24hRequest.meta_client_name:type_name -> cbt.StringFilter
+	6,  // 1: cbt.ListFctNodesActiveLast24hRequest.updated_date_time:type_name -> cbt.UInt32Filter
+	6,  // 2: cbt.ListFctNodesActiveLast24hRequest.last_seen_date_time:type_name -> cbt.UInt32Filter
+	5,  // 3: cbt.ListFctNodesActiveLast24hRequest.username:type_name -> cbt.StringFilter
+	5,  // 4: cbt.ListFctNodesActiveLast24hRequest.node_id:type_name -> cbt.StringFilter
+	5,  // 5: cbt.ListFctNodesActiveLast24hRequest.classification:type_name -> cbt.StringFilter
+	5,  // 6: cbt.ListFctNodesActiveLast24hRequest.meta_client_version:type_name -> cbt.StringFilter
+	5,  // 7: cbt.ListFctNodesActiveLast24hRequest.meta_client_implementation:type_name -> cbt.StringFilter
+	5,  // 8: cbt.ListFctNodesActiveLast24hRequest.meta_client_geo_city:type_name -> cbt.StringFilter
+	5,  // 9: cbt.ListFctNodesActiveLast24hRequest.meta_client_geo_country:type_name -> cbt.StringFilter
+	5,  // 10: cbt.ListFctNodesActiveLast24hRequest.meta_client_geo_country_code:type_name -> cbt.StringFilter
+	5,  // 11: cbt.ListFctNodesActiveLast24hRequest.meta_client_geo_continent_code:type_name -> cbt.StringFilter
+	5,  // 12: cbt.ListFctNodesActiveLast24hRequest.meta_consensus_version:type_name -> cbt.StringFilter
+	5,  // 13: cbt.ListFctNodesActiveLast24hRequest.meta_consensus_implementation:type_name -> cbt.StringFilter
+	0,  // 14: cbt.ListFctNodesActiveLast24hResponse.fct_nodes_active_last_24h:type_name -> cbt.FctNodesActiveLast24h
+	0,  // 15: cbt.GetFctNodesActiveLast24hResponse.item:type_name -> cbt.FctNodesActiveLast24h
+	1,  // 16: cbt.FctNodesActiveLast24hService.List:input_type -> cbt.ListFctNodesActiveLast24hRequest
+	3,  // 17: cbt.FctNodesActiveLast24hService.Get:input_type -> cbt.GetFctNodesActiveLast24hRequest
+	2,  // 18: cbt.FctNodesActiveLast24hService.List:output_type -> cbt.ListFctNodesActiveLast24hResponse
+	4,  // 19: cbt.FctNodesActiveLast24hService.Get:output_type -> cbt.GetFctNodesActiveLast24hResponse
 	18, // [18:20] is the sub-list for method output_type
 	16, // [16:18] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
@@ -748,15 +748,15 @@ var file_int_nodes_active_last_24h_proto_depIdxs = []int32{
 	0,  // [0:16] is the sub-list for field type_name
 }
 
-func init() { file_int_nodes_active_last_24h_proto_init() }
-func file_int_nodes_active_last_24h_proto_init() {
-	if File_int_nodes_active_last_24h_proto != nil {
+func init() { file_fct_nodes_active_last_24h_proto_init() }
+func file_fct_nodes_active_last_24h_proto_init() {
+	if File_fct_nodes_active_last_24h_proto != nil {
 		return
 	}
 	file_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_int_nodes_active_last_24h_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*IntNodesActiveLast24H); i {
+		file_fct_nodes_active_last_24h_proto_msgTypes[0].Exporter = func(v any, i int) any {
+			switch v := v.(*FctNodesActiveLast24H); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -767,8 +767,8 @@ func file_int_nodes_active_last_24h_proto_init() {
 				return nil
 			}
 		}
-		file_int_nodes_active_last_24h_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*ListIntNodesActiveLast24HRequest); i {
+		file_fct_nodes_active_last_24h_proto_msgTypes[1].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctNodesActiveLast24HRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -779,8 +779,8 @@ func file_int_nodes_active_last_24h_proto_init() {
 				return nil
 			}
 		}
-		file_int_nodes_active_last_24h_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*ListIntNodesActiveLast24HResponse); i {
+		file_fct_nodes_active_last_24h_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctNodesActiveLast24HResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -791,8 +791,8 @@ func file_int_nodes_active_last_24h_proto_init() {
 				return nil
 			}
 		}
-		file_int_nodes_active_last_24h_proto_msgTypes[3].Exporter = func(v any, i int) any {
-			switch v := v.(*GetIntNodesActiveLast24HRequest); i {
+		file_fct_nodes_active_last_24h_proto_msgTypes[3].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctNodesActiveLast24HRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -803,8 +803,8 @@ func file_int_nodes_active_last_24h_proto_init() {
 				return nil
 			}
 		}
-		file_int_nodes_active_last_24h_proto_msgTypes[4].Exporter = func(v any, i int) any {
-			switch v := v.(*GetIntNodesActiveLast24HResponse); i {
+		file_fct_nodes_active_last_24h_proto_msgTypes[4].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctNodesActiveLast24HResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -820,18 +820,18 @@ func file_int_nodes_active_last_24h_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_int_nodes_active_last_24h_proto_rawDesc,
+			RawDescriptor: file_fct_nodes_active_last_24h_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_int_nodes_active_last_24h_proto_goTypes,
-		DependencyIndexes: file_int_nodes_active_last_24h_proto_depIdxs,
-		MessageInfos:      file_int_nodes_active_last_24h_proto_msgTypes,
+		GoTypes:           file_fct_nodes_active_last_24h_proto_goTypes,
+		DependencyIndexes: file_fct_nodes_active_last_24h_proto_depIdxs,
+		MessageInfos:      file_fct_nodes_active_last_24h_proto_msgTypes,
 	}.Build()
-	File_int_nodes_active_last_24h_proto = out.File
-	file_int_nodes_active_last_24h_proto_rawDesc = nil
-	file_int_nodes_active_last_24h_proto_goTypes = nil
-	file_int_nodes_active_last_24h_proto_depIdxs = nil
+	File_fct_nodes_active_last_24h_proto = out.File
+	file_fct_nodes_active_last_24h_proto_rawDesc = nil
+	file_fct_nodes_active_last_24h_proto_goTypes = nil
+	file_fct_nodes_active_last_24h_proto_depIdxs = nil
 }
