@@ -112,6 +112,7 @@ For all transformation models (int, fct) with multiple components, follow this o
 ## Naming Patterns by Layer
 
 **Pattern Notation:**
+
 - `<component>` = Required component
 - `[component]` = Optional component
 
@@ -194,8 +195,7 @@ dim_regions
 
 For models where finality matters:
 
-- Default to canonical (finalized) data for facts/dimensions
-- Include `canonical` or `head` in intermediate model names when distinction matters
+- Include `canonical` or `head` in model names when distinction matters
 - Example: `int_blocks_canonical_by_nodes` vs `int_blocks_head_by_nodes`
 
 ## Best Practices
