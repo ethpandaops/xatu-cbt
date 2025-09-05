@@ -7,7 +7,7 @@ import "common.proto";
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Active nodes for the network
 
-message FctNodesActiveLast24h {
+message FctNodeActiveLast24h {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Timestamp when the node was last seen
@@ -38,8 +38,8 @@ message FctNodesActiveLast24h {
   string meta_consensus_implementation = 24;
 }
 
-// ListFctNodesActiveLast24hRequest is the request message for listing fct_nodes_active_last_24h records
-message ListFctNodesActiveLast24hRequest {
+// ListFctNodeActiveLast24hRequest is the request message for listing fct_node_active_last_24h records
+message ListFctNodeActiveLast24hRequest {
   // Filter by meta_client_name (PRIMARY KEY - required)
   StringFilter meta_client_name = 1;
 
@@ -70,11 +70,11 @@ message ListFctNodesActiveLast24hRequest {
   // Filter by meta_consensus_implementation (optional)
   StringFilter meta_consensus_implementation = 14;
 
-  // The maximum number of fct_nodes_active_last_24h to return.
+  // The maximum number of fct_node_active_last_24h to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 15;
-  // A page token, received from a previous `ListFctNodesActiveLast24h` call.
+  // A page token, received from a previous `ListFctNodeActiveLast24h` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 16;
   // The order of results. Format: comma-separated list of fields.
@@ -83,30 +83,30 @@ message ListFctNodesActiveLast24hRequest {
   string order_by = 17;
 }
 
-// ListFctNodesActiveLast24hResponse is the response message for listing fct_nodes_active_last_24h records
-message ListFctNodesActiveLast24hResponse {
-  // The list of fct_nodes_active_last_24h.
-  repeated FctNodesActiveLast24h fct_nodes_active_last_24h = 1;
+// ListFctNodeActiveLast24hResponse is the response message for listing fct_node_active_last_24h records
+message ListFctNodeActiveLast24hResponse {
+  // The list of fct_node_active_last_24h.
+  repeated FctNodeActiveLast24h fct_node_active_last_24h = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// GetFctNodesActiveLast24hRequest is the request message for getting a single fct_nodes_active_last_24h record by primary key
-message GetFctNodesActiveLast24hRequest {
+// GetFctNodeActiveLast24hRequest is the request message for getting a single fct_node_active_last_24h record by primary key
+message GetFctNodeActiveLast24hRequest {
   // Name of the client
   string meta_client_name = 1; // Primary key (required)
 }
 
-// GetFctNodesActiveLast24hResponse is the response message for getting a single fct_nodes_active_last_24h record
-message GetFctNodesActiveLast24hResponse {
-  FctNodesActiveLast24h item = 1;
+// GetFctNodeActiveLast24hResponse is the response message for getting a single fct_node_active_last_24h record
+message GetFctNodeActiveLast24hResponse {
+  FctNodeActiveLast24h item = 1;
 }
 
-// FctNodesActiveLast24hService provides RPC methods for querying fct_nodes_active_last_24h data
-service FctNodesActiveLast24hService {
-  // List returns paginated fct_nodes_active_last_24h records
-  rpc List(ListFctNodesActiveLast24hRequest) returns (ListFctNodesActiveLast24hResponse);
-  // Get returns a single fct_nodes_active_last_24h record by primary key
-  rpc Get(GetFctNodesActiveLast24hRequest) returns (GetFctNodesActiveLast24hResponse);
+// FctNodeActiveLast24hService provides RPC methods for querying fct_node_active_last_24h data
+service FctNodeActiveLast24hService {
+  // List returns paginated fct_node_active_last_24h records
+  rpc List(ListFctNodeActiveLast24hRequest) returns (ListFctNodeActiveLast24hResponse);
+  // Get returns a single fct_node_active_last_24h record by primary key
+  rpc Get(GetFctNodeActiveLast24hRequest) returns (GetFctNodeActiveLast24hResponse);
 }

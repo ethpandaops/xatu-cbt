@@ -8,7 +8,7 @@ import "google/protobuf/wrappers.proto";
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Blocks that were seen but are not part of the canonical chain up to the latest canonical epoch
 
-message IntBlocksOrphaned {
+message IntBlockOrphaned {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Slot of the orphaned (reorged) block
@@ -25,8 +25,8 @@ message IntBlocksOrphaned {
   google.protobuf.UInt32Value proposer_index = 17;
 }
 
-// ListIntBlocksOrphanedRequest is the request message for listing int_blocks_orphaned records
-message ListIntBlocksOrphanedRequest {
+// ListIntBlockOrphanedRequest is the request message for listing int_block_orphaned records
+message ListIntBlockOrphanedRequest {
   // Filter by slot_start_date_time (PRIMARY KEY - required)
   UInt32Filter slot_start_date_time = 1;
 
@@ -44,11 +44,11 @@ message ListIntBlocksOrphanedRequest {
   // Filter by proposer_index (optional)
   NullableUInt32Filter proposer_index = 7;
 
-  // The maximum number of int_blocks_orphaned to return.
+  // The maximum number of int_block_orphaned to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 8;
-  // A page token, received from a previous `ListIntBlocksOrphaned` call.
+  // A page token, received from a previous `ListIntBlockOrphaned` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 9;
   // The order of results. Format: comma-separated list of fields.
@@ -57,30 +57,30 @@ message ListIntBlocksOrphanedRequest {
   string order_by = 10;
 }
 
-// ListIntBlocksOrphanedResponse is the response message for listing int_blocks_orphaned records
-message ListIntBlocksOrphanedResponse {
-  // The list of int_blocks_orphaned.
-  repeated IntBlocksOrphaned int_blocks_orphaned = 1;
+// ListIntBlockOrphanedResponse is the response message for listing int_block_orphaned records
+message ListIntBlockOrphanedResponse {
+  // The list of int_block_orphaned.
+  repeated IntBlockOrphaned int_block_orphaned = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// GetIntBlocksOrphanedRequest is the request message for getting a single int_blocks_orphaned record by primary key
-message GetIntBlocksOrphanedRequest {
+// GetIntBlockOrphanedRequest is the request message for getting a single int_block_orphaned record by primary key
+message GetIntBlockOrphanedRequest {
   // The wall clock time when the slot started
   uint32 slot_start_date_time = 1; // Primary key (required)
 }
 
-// GetIntBlocksOrphanedResponse is the response message for getting a single int_blocks_orphaned record
-message GetIntBlocksOrphanedResponse {
-  IntBlocksOrphaned item = 1;
+// GetIntBlockOrphanedResponse is the response message for getting a single int_block_orphaned record
+message GetIntBlockOrphanedResponse {
+  IntBlockOrphaned item = 1;
 }
 
-// IntBlocksOrphanedService provides RPC methods for querying int_blocks_orphaned data
-service IntBlocksOrphanedService {
-  // List returns paginated int_blocks_orphaned records
-  rpc List(ListIntBlocksOrphanedRequest) returns (ListIntBlocksOrphanedResponse);
-  // Get returns a single int_blocks_orphaned record by primary key
-  rpc Get(GetIntBlocksOrphanedRequest) returns (GetIntBlocksOrphanedResponse);
+// IntBlockOrphanedService provides RPC methods for querying int_block_orphaned data
+service IntBlockOrphanedService {
+  // List returns paginated int_block_orphaned records
+  rpc List(ListIntBlockOrphanedRequest) returns (ListIntBlockOrphanedResponse);
+  // Get returns a single int_block_orphaned record by primary key
+  rpc Get(GetIntBlockOrphanedRequest) returns (GetIntBlockOrphanedResponse);
 }
