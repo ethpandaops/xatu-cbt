@@ -8,7 +8,7 @@ import (
 )
 
 // BuildListIntBlockProposerCanonicalQuery constructs a parameterized SQL query from a ListIntBlockProposerCanonicalRequest
-func BuildListIntBlockProposerCanonicalQuery(req *ListIntBlockProposerCanonicalRequest) (SQLQuery, error) {
+func BuildListIntBlockProposerCanonicalQuery(req *ListIntBlockProposerCanonicalRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.SlotStartDateTime == nil {
 		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
@@ -290,11 +290,11 @@ func BuildListIntBlockProposerCanonicalQuery(req *ListIntBlockProposerCanonicalR
 		orderByClause = " ORDER BY slot_start_date_time"
 	}
 
-	return BuildParameterizedQueryWithOrder("mainnet", "int_block_proposer__canonical", qb, orderByClause, limit, offset), nil
+	return BuildParameterizedQuery("mainnet", "int_block_proposer__canonical", qb, orderByClause, limit, offset, options...), nil
 }
 
 // BuildGetIntBlockProposerCanonicalQuery constructs a parameterized SQL query from a GetIntBlockProposerCanonicalRequest
-func BuildGetIntBlockProposerCanonicalQuery(req *GetIntBlockProposerCanonicalRequest) (SQLQuery, error) {
+func BuildGetIntBlockProposerCanonicalQuery(req *GetIntBlockProposerCanonicalRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.SlotStartDateTime == 0 {
 		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
@@ -304,8 +304,9 @@ func BuildGetIntBlockProposerCanonicalQuery(req *GetIntBlockProposerCanonicalReq
 	qb := NewQueryBuilder()
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
-	sortingKeys := []string{"slot_start_date_time"}
+	// Build ORDER BY clause
+	orderByClause := " ORDER BY slot_start_date_time"
 
 	// Return single record
-	return BuildParameterizedQuery("mainnet", "int_block_proposer__canonical", qb, sortingKeys, 1, 0), nil
+	return BuildParameterizedQuery("mainnet", "int_block_proposer__canonical", qb, orderByClause, 1, 0, options...), nil
 }

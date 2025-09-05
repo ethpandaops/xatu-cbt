@@ -8,7 +8,7 @@ import (
 )
 
 // BuildListIntBlockOrphanedQuery constructs a parameterized SQL query from a ListIntBlockOrphanedRequest
-func BuildListIntBlockOrphanedQuery(req *ListIntBlockOrphanedRequest) (SQLQuery, error) {
+func BuildListIntBlockOrphanedQuery(req *ListIntBlockOrphanedRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.SlotStartDateTime == nil {
 		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
@@ -260,11 +260,11 @@ func BuildListIntBlockOrphanedQuery(req *ListIntBlockOrphanedRequest) (SQLQuery,
 		orderByClause = " ORDER BY slot_start_date_time" + ", block_root"
 	}
 
-	return BuildParameterizedQueryWithOrder("mainnet", "int_block__orphaned", qb, orderByClause, limit, offset), nil
+	return BuildParameterizedQuery("mainnet", "int_block__orphaned", qb, orderByClause, limit, offset, options...), nil
 }
 
 // BuildGetIntBlockOrphanedQuery constructs a parameterized SQL query from a GetIntBlockOrphanedRequest
-func BuildGetIntBlockOrphanedQuery(req *GetIntBlockOrphanedRequest) (SQLQuery, error) {
+func BuildGetIntBlockOrphanedQuery(req *GetIntBlockOrphanedRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
 	if req.SlotStartDateTime == 0 {
 		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
@@ -274,8 +274,9 @@ func BuildGetIntBlockOrphanedQuery(req *GetIntBlockOrphanedRequest) (SQLQuery, e
 	qb := NewQueryBuilder()
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
-	sortingKeys := []string{"slot_start_date_time", "block_root"}
+	// Build ORDER BY clause
+	orderByClause := " ORDER BY slot_start_date_time, block_root"
 
 	// Return single record
-	return BuildParameterizedQuery("mainnet", "int_block__orphaned", qb, sortingKeys, 1, 0), nil
+	return BuildParameterizedQuery("mainnet", "int_block__orphaned", qb, orderByClause, 1, 0, options...), nil
 }
