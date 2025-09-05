@@ -3,7 +3,7 @@
     SELECT
       COUNT(*) AS count
     FROM
-      'int_nodes_active_last_24h' FINAL
+      'fct_nodes_active_last_24h' FINAL
   expected:
     count: 0 # expected as the nodes are in the past
 - name: "Expected admin bounds"
@@ -14,7 +14,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'int_nodes_active_last_24h'
+      table = 'fct_nodes_active_last_24h'
   expected:
     max: "2025-07-15T23:59:59Z"
     min: "2025-07-15T23:54:59Z"
