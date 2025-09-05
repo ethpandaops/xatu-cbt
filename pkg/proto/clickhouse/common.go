@@ -10,6 +10,31 @@ import (
 	"strings"
 )
 
+// VariableSubstitutionStyle defines the placeholder style for SQL parameters
+type VariableSubstitutionStyle int
+
+const (
+	// VariableSubstitutionStandard uses ? placeholders.
+	VariableSubstitutionStandard VariableSubstitutionStyle = iota
+	// VariableSubstitutionPositional uses $1, $2, $3... placeholders.
+	VariableSubstitutionPositional
+)
+
+// QueryBuilderOptions configures QueryBuilder behavior
+type QueryBuilderOptions struct {
+	VariableSubstitution VariableSubstitutionStyle
+}
+
+// QueryBuilderOption is a functional option for QueryBuilder configuration
+type QueryBuilderOption func(*QueryBuilderOptions)
+
+// WithVariableSubstitution sets the variable substitution style
+func WithVariableSubstitution(style VariableSubstitutionStyle) QueryBuilderOption {
+	return func(opts *QueryBuilderOptions) {
+		opts.VariableSubstitution = style
+	}
+}
+
 // SQLQuery represents a parameterized SQL query
 type SQLQuery struct {
 	Query  string
@@ -21,33 +46,55 @@ type QueryBuilder struct {
 	conditions []string
 	args       []interface{}
 	argCounter int
+	options    *QueryBuilderOptions
 }
 
-// NewQueryBuilder creates a new query builder
-func NewQueryBuilder() *QueryBuilder {
+// NewQueryBuilder creates a new query builder with optional configuration
+func NewQueryBuilder(options ...QueryBuilderOption) *QueryBuilder {
+	opts := &QueryBuilderOptions{
+		VariableSubstitution: VariableSubstitutionStandard, // Default to ? style
+	}
+
+	for _, opt := range options {
+		opt(opts)
+	}
+
 	return &QueryBuilder{
 		conditions: make([]string, 0),
 		args:       make([]interface{}, 0),
 		argCounter: 1,
+		options:    opts,
+	}
+}
+
+// formatVariable returns the appropriate placeholder for the given argument index
+func (qb *QueryBuilder) formatVariable(index int) string {
+	switch qb.options.VariableSubstitution {
+	case VariableSubstitutionPositional:
+		return fmt.Sprintf("$%d", index)
+	case VariableSubstitutionStandard:
+		return "?"
+	default:
+		return "?" // Default to standard style
 	}
 }
 
 // AddCondition adds a condition with a parameterized value
 func (qb *QueryBuilder) AddCondition(column, operator string, value interface{}) {
-	placeholder := fmt.Sprintf("$%d", qb.argCounter)
+	placeholder := qb.formatVariable(qb.argCounter)
 	qb.conditions = append(qb.conditions, fmt.Sprintf("%s %s %s", column, operator, placeholder))
 	qb.args = append(qb.args, value)
 	qb.argCounter++
 }
 
 // AddBetweenCondition adds a BETWEEN condition
-func (qb *QueryBuilder) AddBetweenCondition(column string, min, max interface{}) {
-	placeholderMin := fmt.Sprintf("$%d", qb.argCounter)
+func (qb *QueryBuilder) AddBetweenCondition(column string, minValue, maxValue interface{}) {
+	placeholderMin := qb.formatVariable(qb.argCounter)
 	qb.argCounter++
-	placeholderMax := fmt.Sprintf("$%d", qb.argCounter)
+	placeholderMax := qb.formatVariable(qb.argCounter)
 	qb.argCounter++
 	qb.conditions = append(qb.conditions, fmt.Sprintf("%s BETWEEN %s AND %s", column, placeholderMin, placeholderMax))
-	qb.args = append(qb.args, min, max)
+	qb.args = append(qb.args, minValue, maxValue)
 }
 
 // AddInCondition adds an IN condition
@@ -57,7 +104,7 @@ func (qb *QueryBuilder) AddInCondition(column string, values []interface{}) {
 	}
 	placeholders := make([]string, len(values))
 	for i, v := range values {
-		placeholders[i] = fmt.Sprintf("$%d", qb.argCounter)
+		placeholders[i] = qb.formatVariable(qb.argCounter)
 		qb.args = append(qb.args, v)
 		qb.argCounter++
 	}
@@ -71,7 +118,7 @@ func (qb *QueryBuilder) AddNotInCondition(column string, values []interface{}) {
 	}
 	placeholders := make([]string, len(values))
 	for i, v := range values {
-		placeholders[i] = fmt.Sprintf("$%d", qb.argCounter)
+		placeholders[i] = qb.formatVariable(qb.argCounter)
 		qb.args = append(qb.args, v)
 		qb.argCounter++
 	}
@@ -80,7 +127,7 @@ func (qb *QueryBuilder) AddNotInCondition(column string, values []interface{}) {
 
 // AddLikeCondition adds a LIKE condition with proper escaping
 func (qb *QueryBuilder) AddLikeCondition(column, pattern string) {
-	placeholder := fmt.Sprintf("$%d", qb.argCounter)
+	placeholder := qb.formatVariable(qb.argCounter)
 	qb.conditions = append(qb.conditions, fmt.Sprintf("%s LIKE %s", column, placeholder))
 	qb.args = append(qb.args, pattern)
 	qb.argCounter++
@@ -88,7 +135,7 @@ func (qb *QueryBuilder) AddLikeCondition(column, pattern string) {
 
 // AddNotLikeCondition adds a NOT LIKE condition
 func (qb *QueryBuilder) AddNotLikeCondition(column, pattern string) {
-	placeholder := fmt.Sprintf("$%d", qb.argCounter)
+	placeholder := qb.formatVariable(qb.argCounter)
 	qb.conditions = append(qb.conditions, fmt.Sprintf("%s NOT LIKE %s", column, placeholder))
 	qb.args = append(qb.args, pattern)
 	qb.argCounter++
@@ -120,15 +167,15 @@ func (qb *QueryBuilder) GetArgs() []interface{} {
 // BuildQuery constructs the final parameterized query
 func BuildParameterizedQuery(database, table string, qb *QueryBuilder, sortingKeys []string, limit, offset uint32) SQLQuery {
 	query := fmt.Sprintf("SELECT * FROM %s.%s", database, table)
-	
+
 	// Add WHERE clause
 	query += qb.GetWhereClause()
-	
+
 	// Add ORDER BY
 	if len(sortingKeys) > 0 {
 		query += " ORDER BY " + strings.Join(sortingKeys, ", ")
 	}
-	
+
 	// Add LIMIT and OFFSET
 	if limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", limit)
@@ -136,7 +183,7 @@ func BuildParameterizedQuery(database, table string, qb *QueryBuilder, sortingKe
 			query += fmt.Sprintf(" OFFSET %d", offset)
 		}
 	}
-	
+
 	return SQLQuery{
 		Query: query,
 		Args:  qb.GetArgs(),
@@ -241,7 +288,7 @@ func ParseOrderBy(orderBy string, validFields []string) ([]OrderByField, error) 
 	}
 
 	var result []OrderByField
-	
+
 	// Split by comma
 	parts := strings.Split(orderBy, ",")
 	for _, part := range parts {
@@ -311,13 +358,13 @@ func BuildOrderByClause(fields []OrderByField) string {
 // BuildParameterizedQueryWithOrder constructs the final parameterized query with custom ordering
 func BuildParameterizedQueryWithOrder(database, table string, qb *QueryBuilder, orderByClause string, limit, offset uint32) SQLQuery {
 	query := fmt.Sprintf("SELECT * FROM %s.%s", database, table)
-	
+
 	// Add WHERE clause
 	query += qb.GetWhereClause()
-	
+
 	// Add ORDER BY clause
 	query += orderByClause
-	
+
 	// Add LIMIT and OFFSET
 	if limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", limit)
@@ -325,7 +372,7 @@ func BuildParameterizedQueryWithOrder(database, table string, qb *QueryBuilder, 
 			query += fmt.Sprintf(" OFFSET %d", offset)
 		}
 	}
-	
+
 	return SQLQuery{
 		Query: query,
 		Args:  qb.GetArgs(),
