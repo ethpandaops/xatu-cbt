@@ -1,5 +1,5 @@
 ---
-table: int_blocks_first_seen_by_nodes
+table: int_block_first_seen_by_node
 interval:
   max: 500000
 schedules:

@@ -1,5 +1,5 @@
 ---
-table: fct_nodes_active_last_24h
+table: fct_node_active_last_24h
 interval:
   max: 300
 schedules:

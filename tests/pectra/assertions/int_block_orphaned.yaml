@@ -3,7 +3,7 @@
     SELECT
       count() AS count
     FROM
-      int_blocks_orphaned o
+      int_block_orphaned o
       INNER JOIN canonical_beacon_block c
         ON o.slot = c.slot AND o.block_root = c.block_root
   expected:
@@ -14,7 +14,7 @@
       count() AS count
     FROM (
       SELECT slot, block_root, count() AS c
-      FROM int_blocks_orphaned
+      FROM int_block_orphaned
       GROUP BY slot, block_root
       HAVING c > 1
     )
@@ -24,7 +24,7 @@
   sql: |
     SELECT
       count() AS count
-    FROM int_blocks_orphaned
+    FROM int_block_orphaned
     WHERE epoch > (SELECT max(epoch) FROM canonical_beacon_block)
   expected:
     count: 0
@@ -32,7 +32,7 @@
   sql: |
     SELECT
       count() AS count
-    FROM int_blocks_orphaned
+    FROM int_block_orphaned
     WHERE block_root IS NULL OR block_root = ''
   expected:
     count: 0
@@ -43,7 +43,7 @@
       MIN(slot_start_date_time) AS min,
       MAX(slot_start_date_time) AS max
     FROM
-      int_blocks_orphaned FINAL
+      int_block_orphaned FINAL
   expected:
     count: 4
     min: "2025-07-15T06:57:47Z"
@@ -56,7 +56,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'int_blocks_orphaned'
+      table = 'int_block_orphaned'
   expected:
     max: "2025-07-15T23:59:59Z"
     min: "2025-07-15T00:00:11Z"
