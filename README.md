@@ -2,6 +2,10 @@
 
 This repo contains the clickhouse migrations and the models for [CBT](https://github.com/ethpandaops/cbt) on [xatu](https://github.com/ethpandaops/xatu) data.
 
+## Documentation
+
+- **[NAMING_CONVENTIONS.md](./NAMING_CONVENTIONS.md)** - Model naming conventions and patterns
+
 ## Getting Started
 
 Create a `.env` file:
