@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_block__orphaned_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.int_blocks_orphaned_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot of the orphaned (reorged) block' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -14,9 +14,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_block__orphaned_local on cluster '{cluster}' 
 ORDER BY
     (`slot_start_date_time`, `block_root`) COMMENT 'Blocks that were seen but are not part of the canonical chain up to the latest canonical epoch';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block__orphaned ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block__orphaned_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.int_blocks_orphaned ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_blocks_orphaned_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_block__orphaned_local,
+    int_blocks_orphaned_local,
     cityHash64(`slot_start_date_time`, `block_root`)
 );

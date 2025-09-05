@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_block__first_seen_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.int_blocks_first_seen_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `source` LowCardinality(String) COMMENT 'Source of the event' CODEC(ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number for which the proposer duty is assigned' CODEC(DoubleDelta, ZSTD(1)),
@@ -26,9 +26,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_block__first_seen_local on cluster '{cluster}
 ORDER BY
     (`slot_start_date_time`, `meta_client_name`) COMMENT 'Block proposers for the unfinalized chain. Forks in the chain may cause mulitple proposers for the same slot to be present';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block__first_seen ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block__first_seen_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.int_blocks_first_seen ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_blocks_first_seen_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_block__first_seen_local,
+    int_blocks_first_seen_local,
     cityHash64(`slot_start_date_time`, `meta_client_name`)
 );

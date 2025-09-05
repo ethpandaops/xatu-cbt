@@ -1,0 +1,24 @@
+- name: "Expected bounds and size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot_start_date_time) AS min,
+      MAX(slot_start_date_time) AS max
+    FROM
+      int_block_proposers_head FINAL
+  expected:
+    count: 7173
+    min: "2025-07-15T00:00:11Z"
+    max: "2025-07-15T23:59:59Z"
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt FINAL
+    WHERE
+      table = 'int_block_proposers_head'
+  expected:
+    max: "2025-07-15T23:59:59Z"
+    min: "2025-07-15T00:00:11Z"
