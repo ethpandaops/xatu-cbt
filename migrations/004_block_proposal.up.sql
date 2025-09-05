@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_block_proposer__head_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_head_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number for which the proposer duty is assigned' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -15,14 +15,14 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_proposer__head_local on cluster '{clust
 ORDER BY
     (`slot_start_date_time`, `proposer_validator_index`) COMMENT 'Block proposers for the unfinalized chain. Forks in the chain may cause mulitple proposers for the same slot to be present';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_proposer__head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_proposer__head_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_proposer_head_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_block_proposer__head_local,
+    int_block_proposer_head_local,
     cityHash64(`slot_start_date_time`, `proposer_validator_index`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_proposer__canonical_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_canonical_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number for which the proposer duty is assigned' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -39,9 +39,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_proposer__canonical_local on cluster '{
 ORDER BY
     (`slot_start_date_time`) COMMENT 'Block proposers for the finalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_proposer__canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_proposer__canonical_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_proposer_canonical_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_block_proposer__canonical_local,
+    int_block_proposer_canonical_local,
     cityHash64(`slot_start_date_time`)
 );

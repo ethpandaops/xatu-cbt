@@ -1,0 +1,24 @@
+- name: "Expected bounds and size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(block_number) AS min,
+      MAX(block_number) AS max
+    FROM
+      int_address_storage_slot_last_access FINAL
+  expected:
+    count: 353565
+    min: "20000000"
+    max: "20000999"
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      MAX(position + interval) AS max,
+      MIN(position) AS min
+    FROM
+      admin_cbt FINAL
+    WHERE
+      table = 'int_address_storage_slot_last_access'
+  expected:
+    min: "20000000"
+    max: "20000999"
