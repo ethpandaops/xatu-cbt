@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      beacon_api_eth_v1_proposer_duty FINAL
+      libp2p_gossipsub_beacon_attestation FINAL
   expected:
-    count: 14080
+    count: 2312394

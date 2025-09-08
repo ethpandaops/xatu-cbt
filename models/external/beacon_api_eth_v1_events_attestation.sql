@@ -1,12 +1,12 @@
 ---
-table: canonical_execution_balance_diffs
+table: beacon_api_eth_v1_events_attestation
 cache:
-  incremental_scan_interval: 1m
+  incremental_scan_interval: 5s
   full_scan_interval: 24h
 ---
 SELECT 
-    min(block_number) as min,
-    max(block_number) as max
+    toUnixTimestamp(min(slot_start_date_time)) as min,
+    toUnixTimestamp(max(slot_start_date_time)) as max
 -- Use the default database as predicate pushdown does not work with views.
 -- This gives 2-3x the performance.
 -- Once we move the data into the mainnet database, we no longer need this.
@@ -15,7 +15,7 @@ WHERE
     meta_network_name = '{{ .self.database }}'
 {{ if .cache.is_incremental_scan }}
     AND (
-      block_number <= {{ .cache.previous_min }}
-      OR block_number >= {{ .cache.previous_max }}
+      slot_start_date_time <= fromUnixTimestamp({{ .cache.previous_min }})
+      OR slot_start_date_time >= fromUnixTimestamp({{ .cache.previous_max }})
     )
 {{ end }}

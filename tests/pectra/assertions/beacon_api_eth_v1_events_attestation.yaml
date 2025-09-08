@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      beacon_api_eth_v1_proposer_duty FINAL
+      beacon_api_eth_v1_events_attestation FINAL
   expected:
-    count: 14080
+    count: 3633269
