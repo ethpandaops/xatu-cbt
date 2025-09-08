@@ -1,7 +1,7 @@
 ---
 table: int_attestation_first_seen
 interval:
-  max: 5000
+  max: 384
 schedules:
   forwardfill: "@every 5s"
 tags:
