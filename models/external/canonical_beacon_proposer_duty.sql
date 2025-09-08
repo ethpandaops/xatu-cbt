@@ -12,7 +12,7 @@ SELECT
 -- Once we move the data into the mainnet database, we no longer need this.
 FROM `default`.`{{ .self.table }}`
 WHERE 
-    meta_network_name = 'mainnet'
+    meta_network_name = '{{ .self.database }}'
 {{ if .cache.is_incremental_scan }}
     AND (
       slot_start_date_time <= fromUnixTimestamp({{ .cache.previous_min }})
