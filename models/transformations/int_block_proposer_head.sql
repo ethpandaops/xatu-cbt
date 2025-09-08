@@ -116,6 +116,7 @@ SELECT
     COALESCE(pd.epoch_start_date_time, db.epoch_start_date_time) as epoch_start_date_time,
     COALESCE(pd.proposer_validator_index, db.proposer_index) as proposer_validator_index,
     pd.proposer_pubkey as proposer_pubkey,
-    CASE WHEN db.block_root = '' THEN NULL ELSE db.block_root END as block_root
+    NULLIF(db.block_root, '') AS block_root
 FROM proposer_duties pd
-FULL OUTER JOIN deduplicated_blocks db ON pd.slot = db.slot;
+FULL OUTER JOIN deduplicated_blocks db ON pd.slot = db.slot
+SETTINGS join_use_nulls = 1;

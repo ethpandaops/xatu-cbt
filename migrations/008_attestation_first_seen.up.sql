@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_block_first_seen_by_node_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.int_attestation_first_seen_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `source` LowCardinality(String) COMMENT 'Source of the event' CODEC(ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number for which the proposer duty is assigned' CODEC(DoubleDelta, ZSTD(1)),
@@ -7,6 +7,8 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_first_seen_by_node_local on cluster '{c
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
     `seen_slot_start_diff` UInt32 COMMENT 'The time from slot start for the client to see the block' CODEC(DoubleDelta, ZSTD(1)),
     `block_root` String COMMENT 'The beacon block root hash' CODEC(ZSTD(1)),
+    `attesting_validator_index` UInt32 COMMENT 'The index of the validator attesting' CODEC(ZSTD(1)),
+    `attesting_validator_committee_index` LowCardinality(String) COMMENT 'The committee index of the attesting validator',
     `username` LowCardinality(String) COMMENT 'Username of the node' CODEC(ZSTD(1)),
     `node_id` String COMMENT 'ID of the node' CODEC(ZSTD(1)),
     `classification` LowCardinality(String) COMMENT 'Classification of the node, e.g. "individual", "institution", "internal" (aka ethPandaOps) or "unclassified"' CODEC(ZSTD(1)),
@@ -25,11 +27,11 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_first_seen_by_node_local on cluster '{c
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `meta_client_name`) COMMENT 'When the block was first seen on the network by a sentry node';
+    (`slot_start_date_time`, `attesting_validator_index`) COMMENT 'When the attestation was first seen on the network by a sentry node';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_first_seen_by_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_first_seen_by_node_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.int_attestation_first_seen ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_attestation_first_seen_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_block_first_seen_by_node_local,
-    cityHash64(`slot_start_date_time`, `meta_client_name`)
+    int_attestation_first_seen_local,
+    cityHash64(`slot_start_date_time`, `attesting_validator_index`)
 );
