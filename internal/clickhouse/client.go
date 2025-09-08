@@ -23,7 +23,7 @@ func Connect(cfg *config.Config) (driver.Conn, error) {
 			Password: cfg.ClickhousePassword,
 		},
 		Settings: clickhouse.Settings{
-			"max_execution_time": 60,
+			"max_execution_time": 600,
 		},
 		DialTimeout:     time.Second * 30,
 		MaxOpenConns:    5,
