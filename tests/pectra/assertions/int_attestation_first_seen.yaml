@@ -7,9 +7,9 @@
     FROM
       int_attestation_first_seen FINAL
   expected:
-    count: 717752
-    min: "2025-07-15T10:40:23Z"
-    max: "2025-07-15T10:44:23Z"
+    count: 717669
+    min: "2025-07-15T08:34:23Z"
+    max: "2025-07-15T08:38:23Z"
 - name: "Expected admin bounds"
   sql: |
     SELECT
@@ -20,5 +20,5 @@
     WHERE
       table = 'int_attestation_first_seen'
   expected:
-    max: "2025-07-15T10:44:23Z"
-    min: "2025-07-15T10:40:23Z"
+    max: "2025-07-15T08:38:23Z"
+    min: "2025-07-15T08:34:23Z"

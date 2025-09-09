@@ -5,4 +5,4 @@
     FROM
       canonical_execution_nonce_diffs FINAL
   expected:
-    count: 4137
+    count: 4157

@@ -5,4 +5,4 @@
     FROM
       beacon_api_eth_v1_events_head FINAL
   expected:
-    count: 2105
+    count: 2178

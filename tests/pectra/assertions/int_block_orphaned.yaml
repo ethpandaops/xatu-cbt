@@ -46,9 +46,9 @@
       int_block_orphaned FINAL
   expected:
     # TODO: get a good block range
-    count: 0
-    # min: "2025-07-15T06:57:47Z"
-    # max: "2025-07-15T17:17:11Z"
+    count: 1
+    min: "2025-07-15T08:34:47Z"
+    max: "2025-07-15T08:34:47Z"
 - name: "Expected admin bounds"
   sql: |
     SELECT
@@ -59,6 +59,6 @@
     WHERE
       table = 'int_block_orphaned'
   expected:
-    max: "2025-07-15T10:44:23Z"
-    min: "2025-07-15T10:40:23Z"
+    max: "2025-07-15T08:38:23Z"
+    min: "2025-07-15T08:34:23Z"
 

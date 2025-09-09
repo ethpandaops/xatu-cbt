@@ -5,4 +5,4 @@
     FROM
       libp2p_gossipsub_beacon_block FINAL
   expected:
-    count: 280
+    count: 294

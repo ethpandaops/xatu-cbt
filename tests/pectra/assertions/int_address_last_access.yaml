@@ -7,9 +7,9 @@
     FROM
       int_address_last_access FINAL
   expected:
-    count: 5859
-    min: "22924045"
-    max: "22924064"
+    count: 5824
+    min: "22923418"
+    max: "22923437"
 - name: "Expected admin bounds"
   sql: |
     SELECT
@@ -20,5 +20,5 @@
     WHERE
       table = 'int_address_last_access'
   expected:
-    min: "22924045"
-    max: "22924064"
+    min: "22923418"
+    max: "22923437"
