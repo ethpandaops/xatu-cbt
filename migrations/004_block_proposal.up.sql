@@ -1,6 +1,6 @@
 CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_head_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `slot` UInt32 COMMENT 'The slot number for which the proposer duty is assigned' CODEC(DoubleDelta, ZSTD(1)),
+    `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
     `epoch` UInt32 COMMENT 'The epoch number containing the slot' CODEC(DoubleDelta, ZSTD(1)),
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
@@ -24,7 +24,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_head ON CLUSTER '{cluster}' AS
 
 CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_canonical_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `slot` UInt32 COMMENT 'The slot number for which the proposer duty is assigned' CODEC(DoubleDelta, ZSTD(1)),
+    `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
     `epoch` UInt32 COMMENT 'The epoch number containing the slot' CODEC(DoubleDelta, ZSTD(1)),
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),

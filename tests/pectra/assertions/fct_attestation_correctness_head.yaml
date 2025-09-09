@@ -1,0 +1,24 @@
+- name: "Expected size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot) AS min,
+      MAX(slot) AS max
+    FROM
+      'fct_attestation_correctness_head' FINAL
+  expected:
+    count: 11
+    min: "12146400"
+    max: "12146410"
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt FINAL
+    WHERE
+      table = 'fct_attestation_correctness_head'
+  expected:
+    max: "2025-07-15T12:02:23Z"
+    min: "2025-07-15T12:00:23Z"

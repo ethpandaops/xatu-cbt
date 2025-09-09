@@ -1,0 +1,4 @@
+network_column: meta_network_name
+urls:
+  # https://data.ethpandaops.io/xatu/mainnet/databases/default/libp2p_gossipsub_blob_sidecar/2025/7/15.parquet
+  - https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_blob_sidecar.parquet
