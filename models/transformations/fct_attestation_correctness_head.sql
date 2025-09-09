@@ -9,10 +9,10 @@ tags:
   - attestation
   - head
 dependencies:
-  - "{{external}}.int_attestation_attested_head"
-  - "{{external}}.int_block_first_seen_by_node"
-  - "{{external}}.int_attestation_first_seen"
-  - "{{external}}.int_block_blob_count_head"
+  - "{{transformation}}.int_attestation_attested_head"
+  - "{{transformation}}.int_block_first_seen_by_node"
+  - "{{transformation}}.int_attestation_first_seen"
+  - "{{transformation}}.int_block_blob_count_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -22,7 +22,7 @@ WITH votes_per_block_root AS (
         epoch,
         block_root,
         COUNT(*) as votes
-    FROM `{{ index .dep "{{external}}" "int_attestation_attested_head" "database" }}`.`int_attestation_attested_head` FINAL
+    FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_head" "database" }}`.`int_attestation_attested_head` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, epoch, block_root
 ),
@@ -44,7 +44,7 @@ blobs_per_block_root AS (
     epoch,
     block_root,
     blob_count
-  FROM `{{ index .dep "{{external}}" "int_block_blob_count_head" "database" }}`.`int_block_blob_count_head` FINAL
+  FROM `{{ index .dep "{{transformation}}" "int_block_blob_count_head" "database" }}`.`int_block_blob_count_head` FINAL
   WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -58,7 +58,7 @@ first_seen_block AS (
     argMin(meta_client_geo_country, seen_slot_start_diff) AS first_seen_geo_country,
     argMin(meta_client_geo_country_code, seen_slot_start_diff) AS first_seen_geo_country_code,
     argMin(meta_client_geo_continent_code, seen_slot_start_diff) AS first_seen_geo_continent_code
-  FROM `{{ index .dep "{{external}}" "int_block_first_seen_by_node" "database" }}`.`int_block_first_seen_by_node` FINAL
+  FROM `{{ index .dep "{{transformation}}" "int_block_first_seen_by_node" "database" }}`.`int_block_first_seen_by_node` FINAL
   WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
   GROUP BY slot, epoch, block_root
 ),
@@ -73,7 +73,7 @@ first_seen_attestation AS (
     argMin(meta_client_geo_country, seen_slot_start_diff) AS first_seen_geo_country,
     argMin(meta_client_geo_country_code, seen_slot_start_diff) AS first_seen_geo_country_code,
     argMin(meta_client_geo_continent_code, seen_slot_start_diff) AS first_seen_geo_continent_code
-  FROM `{{ index .dep "{{external}}" "int_attestation_first_seen" "database" }}`.`int_attestation_first_seen` FINAL
+  FROM `{{ index .dep "{{transformation}}" "int_attestation_first_seen" "database" }}`.`int_attestation_first_seen` FINAL
   WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
   GROUP BY slot, epoch, block_root
 ),
