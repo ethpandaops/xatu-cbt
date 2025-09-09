@@ -5,4 +5,4 @@
     FROM
       canonical_beacon_committee FINAL
   expected:
-    count: 704
+    count: 1344

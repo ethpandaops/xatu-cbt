@@ -66,6 +66,8 @@ for TABLE in "${TABLE_ARRAY[@]}"; do
   
   QUERY="SELECT * FROM $TABLE WHERE $PRIMARY_KEY BETWEEN $RANGE_START AND $RANGE_END AND meta_network_name = '$NETWORK' FORMAT Parquet"
   
+  echo "  Query: $QUERY"
+  
   curl -sS "$CLICKHOUSE_HOST" \
     --data-binary "$QUERY" \
     -o "$OUTPUT_FILE"

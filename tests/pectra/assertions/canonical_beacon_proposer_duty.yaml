@@ -5,4 +5,4 @@
     FROM
       canonical_beacon_proposer_duty FINAL
   expected:
-    count: 7200
+    count: 21

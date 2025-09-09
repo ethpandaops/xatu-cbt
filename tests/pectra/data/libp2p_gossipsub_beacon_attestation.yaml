@@ -1,4 +1,3 @@
 network_column: meta_network_name
 urls:
-  # slots 12146400 - 12146410 of https://data.ethpandaops.io/xatu/mainnet/databases/default/libp2p_gossipsub_beacon_attestation/2025/7/15/12.parquet
   - https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_beacon_attestation.parquet

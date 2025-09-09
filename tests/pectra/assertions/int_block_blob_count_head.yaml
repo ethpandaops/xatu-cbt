@@ -7,9 +7,9 @@
     FROM
       int_block_blob_count_head FINAL
   expected:
-    count: 4877
-    min: "2025-07-15T00:00:23Z"
-    max: "2025-07-15T23:59:59Z"
+    count: 14
+    min: "2025-07-15T10:40:23Z"
+    max: "2025-07-15T10:44:11Z"
 - name: "Expected admin bounds"
   sql: |
     SELECT
@@ -20,5 +20,5 @@
     WHERE
       table = 'int_block_blob_count_head'
   expected:
-    max: "2025-07-15T23:59:59Z"
-    min: "2025-07-15T00:00:23Z"
+    max: "2025-07-15T10:44:11Z"
+    min: "2025-07-15T10:40:23Z"

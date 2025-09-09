@@ -5,4 +5,4 @@
     FROM
       beacon_api_eth_v1_events_blob_sidecar FINAL
   expected:
-    count: 3064475
+    count: 7262

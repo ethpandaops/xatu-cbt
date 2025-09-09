@@ -7,9 +7,9 @@
     FROM
       'fct_attestation_correctness_head' FINAL
   expected:
-    count: 11
-    min: "12146400"
-    max: "12146410"
+    count: 20
+    min: "12146000"
+    max: "12146019"
 - name: "Expected admin bounds"
   sql: |
     SELECT
@@ -20,5 +20,5 @@
     WHERE
       table = 'fct_attestation_correctness_head'
   expected:
-    max: "2025-07-15T12:02:23Z"
-    min: "2025-07-15T12:00:23Z"
+    max: "2025-07-15T10:44:11Z"
+    min: "2025-07-15T10:40:23Z"
