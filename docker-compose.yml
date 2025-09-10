@@ -4,7 +4,7 @@ volumes:
 services:
   cbt-redis:
     image: redis:7-alpine
-    container_name: cbt-redis
+    container_name: cbt-redis-${NETWORK}
     # No volume mount - Redis data should not persist across test runs
     # This ensures a clean state when containers are restarted
     command: redis-server
@@ -19,25 +19,25 @@ services:
   # Config setup container
   cbt-config-setup:
     image: busybox:latest
-    container_name: cbt-config-setup
+    container_name: cbt-config-setup-${NETWORK}
     volumes:
       - cbt-config:/config
     command:
       - /bin/sh
       - -c
       - |
-        cat > /config/config.yaml << EOF
+        cat > /config/${NETWORK}.yaml << EOF
         logging: debug
         metricsAddr: ":9090"
         healthCheckAddr: ":8080"
         clickhouse:
-          url: http://xatu-clickhouse-01:8123
+          url: http://${CLICKHOUSE_USERNAME}:${CLICKHOUSE_PASSWORD}@xatu-clickhouse-01:8123
           cluster: "{cluster}"
           localSuffix: "_local"
-          adminDatabase: ${NETWORK:-mainnet}
+          adminDatabase: ${NETWORK}
           adminTable: admin_cbt
         redis:
-          url: "redis://cbt-redis:6379/0"
+          url: "redis://cbt-redis-${NETWORK}:6379/0"
         scheduler:
           concurrency: 10
           consolidation: "@every 10m"
@@ -45,16 +45,16 @@ services:
           concurrency: 10
         models:
           external:
-            defaultDatabase: ${NETWORK:-mainnet}
+            defaultDatabase: ${NETWORK}
           transformations:
-            defaultDatabase: ${NETWORK:-mainnet}
+            defaultDatabase: ${NETWORK}
         EOF
         echo "Config file created successfully"
 
   # CBT Engine
   cbt-engine:
     image: ethpandaops/cbt:latest
-    container_name: cbt-engine
+    container_name: cbt-engine-${NETWORK}
     depends_on:
       cbt-redis:
         condition: service_healthy
@@ -65,7 +65,7 @@ services:
     volumes:
       - ./models:/models:ro
       - cbt-config:/config:ro
-    command: ["--config", "/config/config.yaml"]
+    command: ["--config", "/config/${NETWORK}.yaml"]
     restart: unless-stopped
     networks:
       - xatu_xatu-net

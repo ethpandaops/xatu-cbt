@@ -54,6 +54,16 @@ fmt:
 # Generate protobuf files from ClickHouse tables
 .PHONY: proto
 proto:
+	@# Load .env file and check NETWORK is set
+	@if [ -f .env ]; then \
+		export $$(grep -v '^#' .env | xargs); \
+	fi; \
+	if [ -z "$$NETWORK" ]; then \
+		echo "Error: NETWORK environment variable is not set"; \
+		echo "Please set NETWORK in your .env file"; \
+		exit 1; \
+	fi
+	@echo "Using network: $$NETWORK"
 	@echo "Setting up ClickHouse infrastructure first..."
 	@go run $(MAIN_PATH) infra setup
 	@echo "Pulling clickhouse-proto-gen image..."
@@ -61,13 +71,18 @@ proto:
 	@echo "Removing existing protobuf files..."
 	rm -rf pkg/proto/clickhouse
 	@echo "Generating protobuf files from ClickHouse tables..."
-	@TABLES=$$(ls models/transformations/*.sql | xargs -n1 basename | sed 's/\.sql$$//' | tr '\n' ',' | sed 's/,$$//'); \
+	@if [ -f .env ]; then export $$(grep -v '^#' .env | xargs); fi; \
+	if [ -z "$$NETWORK" ]; then \
+		echo "Error: NETWORK environment variable is not set"; \
+		exit 1; \
+	fi; \
+	TABLES=$$(ls models/transformations/*.sql | xargs -n1 basename | sed 's/\.sql$$//' | tr '\n' ',' | sed 's/,$$//'); \
 	HOST=$${CLICKHOUSE_HOST:-xatu-clickhouse-01}; \
 	docker run --rm -v "$$(pwd):/workspace" \
 		--user "$$(id -u):$$(id -g)" \
 		--network xatu_xatu-net \
 		ethpandaops/clickhouse-proto-gen \
-		--dsn "clickhouse://xatu-clickhouse-01:9000/$${NETWORK:-mainnet}" \
+		--dsn "clickhouse://xatu-clickhouse-01:9000/$$NETWORK" \
 		--tables "$$TABLES" \
 		--out /workspace/pkg/proto/clickhouse \
 		--package cbt \
@@ -75,6 +90,45 @@ proto:
 		--include-comments
 	@echo "Generating Go protobuf code..."
 	buf generate
+
+# Docker compose commands
+# Usage: make docker compose up mainnet
+.PHONY: docker
+docker:
+	@if [ "$(word 2,$(MAKECMDGOALS))" = "compose" ] && [ "$(word 3,$(MAKECMDGOALS))" = "up" ] && [ -n "$(word 4,$(MAKECMDGOALS))" ]; then \
+		NETWORK=$(word 4,$(MAKECMDGOALS)); \
+		if [ ! -f ".env.$$NETWORK" ]; then \
+			echo "Error: .env.$$NETWORK file does not exist"; \
+			echo "Please create .env.$$NETWORK before running this command"; \
+			exit 1; \
+		fi; \
+		echo "Starting docker compose for network: $$NETWORK"; \
+		$(MAKE) build; \
+		$(BINARY_PATH) network setup -f --env .env.$$NETWORK; \
+		docker compose --env-file .env.$$NETWORK -p cbt-$$NETWORK up -d; \
+	elif [ "$(word 2,$(MAKECMDGOALS))" = "compose" ] && [ "$(word 3,$(MAKECMDGOALS))" = "down" ] && [ -n "$(word 4,$(MAKECMDGOALS))" ]; then \
+		NETWORK=$(word 4,$(MAKECMDGOALS)); \
+		if [ ! -f ".env.$$NETWORK" ]; then \
+			echo "Error: .env.$$NETWORK file does not exist"; \
+			echo "Please create .env.$$NETWORK before running this command"; \
+			exit 1; \
+		fi; \
+		echo "Stopping docker compose for network: $$NETWORK"; \
+		docker compose --env-file .env.$$NETWORK -p cbt-$$NETWORK down -v; \
+	else \
+		echo "Usage: make docker compose up <network> OR make docker compose down <network>"; \
+		exit 1; \
+	fi
+
+# Catch-all targets for docker compose commands
+compose:
+	@:
+up:
+	@:
+down:
+	@:
+%:
+	@:
 
 # Help
 .PHONY: help
@@ -88,9 +142,15 @@ help:
 	@echo "  make deps    - Download and tidy dependencies"
 	@echo "  make fmt     - Format Go code"
 	@echo "  make proto   - Generate protobuf files from ClickHouse tables"
+	@echo "  make docker compose up <network>   - Start CBT for specified network"
+	@echo "  make docker compose down <network> - Stop CBT for specified network"
 	@echo "  make help    - Show this help message"
 	@echo ""
 	@echo "Usage:"
 	@echo "  ./bin/xatu-cbt              # Launch interactive TUI"
 	@echo "  ./bin/xatu-cbt show-config  # Show config via CLI"
 	@echo "  ./bin/xatu-cbt --help       # Show CLI help"
+	@echo ""
+	@echo "Docker Compose examples:"
+	@echo "  make docker compose up mainnet"
+	@echo "  make docker compose down mainnet"

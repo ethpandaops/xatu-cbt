@@ -13,12 +13,19 @@ var (
 	// Logger is the shared logger instance for all commands
 	Logger *logrus.Logger
 
+	// envFile is the path to the environment file to load
+	envFile string
+
 	rootCmd = &cobra.Command{
 		Use:   "xatu-cbt",
 		Short: "Xatu CBT - ClickHouse Blockchain Tool",
 		Long: `Xatu CBT is a tool for managing and querying blockchain data in ClickHouse.
 	
 Run without arguments to launch interactive mode, or use subcommands for direct operations.`,
+		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+			// Load the specified env file
+			return loadEnvFile(envFile)
+		},
 	}
 )
 
@@ -30,12 +37,31 @@ func Execute() {
 	}
 }
 
-func init() {
-	// Load .env file if it exists
-	_ = godotenv.Load()
+// loadEnvFile loads the specified environment file
+func loadEnvFile(file string) error {
+	if file == "" {
+		file = ".env"
+	}
 
-	// Initialize the shared logger
-	Logger = logrus.New()
+	// Try to load the specified env file
+	if err := godotenv.Load(file); err != nil {
+		// If it's the default .env file and it doesn't exist, that's okay
+		if file == ".env" && os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to load env file '%s': %w", file, err)
+	}
+
+	// Reinitialize logger with new settings
+	InitLogger()
+	return nil
+}
+
+// InitLogger initializes or reinitializes the logger based on environment variables
+func InitLogger() {
+	if Logger == nil {
+		Logger = logrus.New()
+	}
 
 	// Set log level from environment variable
 	logLevel := os.Getenv("LOG_LEVEL")
@@ -45,9 +71,16 @@ func init() {
 
 	level, err := logrus.ParseLevel(logLevel)
 	if err != nil {
-		// Can't use Logger here since it might not be set up yet
 		fmt.Printf("Invalid LOG_LEVEL '%s', defaulting to 'info'\n", logLevel)
 		level = logrus.InfoLevel
 	}
 	Logger.SetLevel(level)
+}
+
+func init() {
+	// Add persistent flags
+	rootCmd.PersistentFlags().StringVar(&envFile, "env", "", "Path to environment file (default: .env)")
+
+	// Initialize logger with defaults (will be reinitialized after env file is loaded)
+	InitLogger()
 }

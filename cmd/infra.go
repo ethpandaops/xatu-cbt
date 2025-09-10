@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,6 +15,8 @@ import (
 
 var (
 	cleanInfra bool
+	// ErrNetworkNotSet is returned when NETWORK environment variable is not set
+	ErrNetworkNotSet = errors.New("NETWORK environment variable is not set")
 )
 
 var infraCmd = &cobra.Command{
@@ -125,11 +128,18 @@ The infrastructure will be ready for development but without the CBT engine runn
 			}
 		}
 
+		// Get NETWORK env var for display
+		network := os.Getenv("NETWORK")
+		if network == "" {
+			return ErrNetworkNotSet
+		}
+
 		fmt.Println("\n✅ ClickHouse infrastructure setup completed successfully!")
 		fmt.Println("\nYou can now:")
 		fmt.Println("  - Connect to ClickHouse at http://localhost:8123")
 		fmt.Println("  - Run CBT models using: ./bin/xatu-cbt")
-		fmt.Println("  - Start CBT engine if needed: docker compose up -d cbt-engine")
+		fmt.Printf("  - Start CBT engine if needed: docker compose up -d cbt-engine\n")
+		fmt.Printf("  - Note: Containers are suffixed with '-%s' (from NETWORK env var)\n", network)
 		fmt.Println("\nTo teardown the infrastructure, run: ./bin/xatu-cbt infra teardown")
 
 		return nil
