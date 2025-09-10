@@ -46,6 +46,7 @@ combined_events AS (
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND aggregation_bits = ''
         AND attesting_validator_index IS NOT NULL
+        AND propagation_slot_start_diff <= 12000 -- keep only attestations that were propagated within the same slot as their duty was assigned, while anything > 8000 most likely would never have been included its still a valid signal for head
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, beacon_block_root, source_epoch, source_epoch_start_date_time, source_root, target_epoch, target_epoch_start_date_time, target_root, attesting_validator_index
 
     UNION ALL
@@ -67,6 +68,7 @@ combined_events AS (
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND aggregation_bits = ''
         AND attesting_validator_index IS NOT NULL
+        AND propagation_slot_start_diff <= 12000 -- keep only attestations that were propagated within the same slot as their duty was assigned, while anything > 8000 most likely would never have been included its still a valid signal for head
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, beacon_block_root, source_epoch, source_epoch_start_date_time, source_root, target_epoch, target_epoch_start_date_time, target_root, attesting_validator_index
 ),
 

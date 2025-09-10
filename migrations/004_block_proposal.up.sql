@@ -13,7 +13,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_head_local on cluster '{cluste
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `proposer_validator_index`) COMMENT 'Block proposers for the unfinalized chain. Forks in the chain may cause mulitple proposers for the same slot to be present';
+    (`slot_start_date_time`, `proposer_validator_index`) COMMENT 'Block proposers for the unfinalized chain. Block root can be null if the the block was never seen by a sentry';
 
 CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_proposer_head_local ENGINE = Distributed(
     '{cluster}',
