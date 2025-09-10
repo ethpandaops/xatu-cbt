@@ -16,5 +16,5 @@
     WHERE
       table = 'fct_node_active_last_24h'
   expected:
-    max: "2025-07-15T23:59:59Z"
-    min: "2025-07-15T23:54:59Z"
+    max: "2025-07-15T08:38:23Z"
+    min: "2025-07-15T08:34:23Z"

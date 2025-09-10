@@ -1,0 +1,8 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      canonical_beacon_committee FINAL
+  expected:
+    count: 1344

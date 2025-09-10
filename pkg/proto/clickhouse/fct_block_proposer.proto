@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Block proposers for the finalized chain including orphaned blocks
+
+message FctBlockProposer {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The slot number
+  uint32 slot = 12;
+  // The epoch number containing the slot
+  uint32 epoch = 13;
+  // The validator index of the proposer for the slot
+  uint32 proposer_validator_index = 14;
+  // The public key of the validator proposer
+  string proposer_pubkey = 15;
+  // The beacon block root hash. Null if a block was never seen by a sentry, aka "missed"
+  google.protobuf.StringValue block_root = 16;
+  // Can be "canonical", "orphaned" or "missed"
+  string status = 17;
+}
+
+// ListFctBlockProposerRequest is the request message for listing fct_block_proposer records
+message ListFctBlockProposerRequest {
+  // Filter by slot (PRIMARY KEY - required)
+  UInt32Filter slot = 1;
+
+  // Filter by updated_date_time (optional)
+  UInt32Filter updated_date_time = 2;
+  // Filter by epoch (optional)
+  UInt32Filter epoch = 3;
+  // Filter by proposer_validator_index (optional)
+  UInt32Filter proposer_validator_index = 4;
+  // Filter by proposer_pubkey (optional)
+  StringFilter proposer_pubkey = 5;
+  // Filter by block_root (optional)
+  NullableStringFilter block_root = 6;
+  // Filter by status (optional)
+  StringFilter status = 7;
+
+  // The maximum number of fct_block_proposer to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 8;
+  // A page token, received from a previous `ListFctBlockProposer` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 9;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 10;
+}
+
+// ListFctBlockProposerResponse is the response message for listing fct_block_proposer records
+message ListFctBlockProposerResponse {
+  // The list of fct_block_proposer.
+  repeated FctBlockProposer fct_block_proposer = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// GetFctBlockProposerRequest is the request message for getting a single fct_block_proposer record by primary key
+message GetFctBlockProposerRequest {
+  // The slot number
+  uint32 slot = 1; // Primary key (required)
+}
+
+// GetFctBlockProposerResponse is the response message for getting a single fct_block_proposer record
+message GetFctBlockProposerResponse {
+  FctBlockProposer item = 1;
+}
+
+// FctBlockProposerService provides RPC methods for querying fct_block_proposer data
+service FctBlockProposerService {
+  // List returns paginated fct_block_proposer records
+  rpc List(ListFctBlockProposerRequest) returns (ListFctBlockProposerResponse);
+  // Get returns a single fct_block_proposer record by primary key
+  rpc Get(GetFctBlockProposerRequest) returns (GetFctBlockProposerResponse);
+}
