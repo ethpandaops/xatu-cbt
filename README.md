@@ -17,7 +17,7 @@ cp example.env .env
 Example `.env` file:
 
 ```bash
-# Network configuration
+# Network configuration (REQUIRED - used for container suffixes)
 NETWORK=mainnet
 
 # ClickHouse configuration
@@ -32,6 +32,18 @@ XATU_REF=master # what xatu repo ref to use for testing
 
 # Logging configuration
 LOG_LEVEL=debug # debug, info, warn, error
+```
+
+#### Using Custom Environment Files
+
+Use the `--env` flag to load a different environment file:
+
+```bash
+# CLI mode
+./bin/xatu-cbt --env .env.production show-config
+
+# TUI mode
+./bin/xatu-cbt --env=.env.production
 ```
 
 ### Usage

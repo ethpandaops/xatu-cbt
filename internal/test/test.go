@@ -18,6 +18,7 @@ var (
 	ErrTestDirNotExist     = errors.New("test directory does not exist")
 	ErrCBTEngineNotRunning = errors.New("CBT engine is not running")
 	ErrAssertionTimeout    = errors.New("timeout reached while running assertions")
+	ErrNetworkNotSet       = errors.New("NETWORK environment variable is not set")
 )
 
 // Service provides test orchestration functionality
@@ -146,18 +147,35 @@ func (s *service) checkXatuExists(_ context.Context) bool {
 	return strings.TrimSpace(string(output)) != ""
 }
 
+// getNetworkName returns the network name from environment variable
+func (s *service) getNetworkName() (string, error) {
+	network := os.Getenv("NETWORK")
+	if network == "" {
+		return "", ErrNetworkNotSet
+	}
+	return network, nil
+}
+
 func (s *service) setupCBT(ctx context.Context) error {
 	s.log.Info("Setting up CBT environment")
 
+	// Get network name for container suffixes
+	network, err := s.getNetworkName()
+	if err != nil {
+		return fmt.Errorf("failed to get network name: %w", err)
+	}
+	cbtEngine := fmt.Sprintf("cbt-engine-%s", network)
+	cbtConfigSetup := fmt.Sprintf("cbt-config-setup-%s", network)
+
 	// 1. Stop cbt-engine container (keep redis running for faster restart)
-	s.log.Debug("Stopping cbt-engine container")
-	stopCmd := exec.Command("docker", "stop", "cbt-engine")
+	s.log.WithField("container", cbtEngine).Debug("Stopping cbt-engine container")
+	stopCmd := exec.Command("docker", "stop", cbtEngine) //nolint:gosec // cbtEngine is controlled input from env var
 	if err := stopCmd.Run(); err != nil {
 		s.log.WithError(err).Debug("Failed to stop cbt-engine (might not be running)")
 	}
 
 	// 2. Remove the old cbt-config-setup container if it exists
-	removeCmd := exec.Command("docker", "rm", "-f", "cbt-config-setup")
+	removeCmd := exec.Command("docker", "rm", "-f", cbtConfigSetup) //nolint:gosec // cbtConfigSetup is controlled input from env var
 	if err := removeCmd.Run(); err != nil {
 		s.log.WithError(err).Debug("Failed to remove cbt-config-setup (might not exist)")
 	}
@@ -225,7 +243,7 @@ func (s *service) setupCBT(ctx context.Context) error {
 	}
 
 	// Ensure the container actually starts (sometimes it's just created)
-	startCmd := exec.Command("docker", "start", "cbt-engine")
+	startCmd := exec.Command("docker", "start", cbtEngine) //nolint:gosec // cbtEngine is controlled input from env var
 	if err := startCmd.Run(); err != nil {
 		s.log.WithError(err).Debug("Failed to ensure cbt-engine is started")
 	}
@@ -237,20 +255,20 @@ func (s *service) setupCBT(ctx context.Context) error {
 	time.Sleep(5 * time.Second)
 
 	// Verify the container is running
-	cmd := exec.Command("docker", "ps", "--filter", "name=cbt-engine", "--filter", "status=running", "--format", "{{.Names}}")
+	cmd := exec.Command("docker", "ps", "--filter", fmt.Sprintf("name=%s", cbtEngine), "--filter", "status=running", "--format", "{{.Names}}") //nolint:gosec // cbtEngine is controlled input from env var
 	output, err := cmd.Output()
-    if err != nil || strings.TrimSpace(string(output)) != "cbt-engine" {
-        // Get logs for debugging
-        logsCmd := exec.Command("docker", "logs", "cbt-engine", "--tail", "20")
-        if logsOutput, logErr := logsCmd.Output(); logErr == nil {
-            s.log.WithField("logs", string(logsOutput)).Error("CBT engine logs")
-        }
-        return ErrCBTEngineNotRunning
-    }
+	if err != nil || strings.TrimSpace(string(output)) != cbtEngine {
+		// Get logs for debugging
+		logsCmd := exec.Command("docker", "logs", cbtEngine, "--tail", "20") //nolint:gosec // cbtEngine is controlled input from env var
+		if logsOutput, logErr := logsCmd.Output(); logErr == nil {
+			s.log.WithField("logs", string(logsOutput)).Error("CBT engine logs")
+		}
+		return ErrCBTEngineNotRunning
+	}
 
-    s.log.Info("CBT engine started successfully")
+	s.log.Info("CBT engine started successfully")
 
-    return nil
+	return nil
 }
 
 func (s *service) setupXatu(ctx context.Context, testName string) error {
