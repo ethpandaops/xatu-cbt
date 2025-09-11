@@ -19,7 +19,9 @@ INSERT INTO
 WITH canonical AS (
     SELECT DISTINCT
         slot,
+        slot_start_date_time,
         epoch,
+        epoch_start_date_time,
         block_root,
         proposer_validator_index,
         proposer_pubkey
@@ -39,7 +41,9 @@ head_blocks AS (
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
     c.slot,
+    c.slot_start_date_time,
     c.epoch,
+    c.epoch_start_date_time,
     c.proposer_validator_index,
     c.proposer_pubkey,
     CASE
