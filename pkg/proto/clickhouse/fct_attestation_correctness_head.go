@@ -8,10 +8,16 @@ import (
 )
 
 // BuildListFctAttestationCorrectnessHeadQuery constructs a parameterized SQL query from a ListFctAttestationCorrectnessHeadRequest
+//
+// Available projections:
+//   - p_by_slot (primary key: slot)
+//
+// Use WithProjection() option to select a specific projection.
 func BuildListFctAttestationCorrectnessHeadQuery(req *ListFctAttestationCorrectnessHeadRequest, options ...QueryOption) (SQLQuery, error) {
-	// Validate primary key is provided
-	if req.SlotStartDateTime == nil {
-		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
+	// Validate that at least one primary key is provided
+	// Primary keys can come from base table or projections
+	if req.SlotStartDateTime == nil && req.Slot == nil {
+		return SQLQuery{}, fmt.Errorf("at least one primary key field is required: slot_start_date_time, slot")
 	}
 
 	// Build query using QueryBuilder
