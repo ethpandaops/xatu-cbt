@@ -8,38 +8,44 @@ import (
 )
 
 // BuildListFctBlockProposerQuery constructs a parameterized SQL query from a ListFctBlockProposerRequest
+//
+// Available projections:
+//   - p_by_slot (primary key: slot)
+//
+// Use WithProjection() option to select a specific projection.
 func BuildListFctBlockProposerQuery(req *ListFctBlockProposerRequest, options ...QueryOption) (SQLQuery, error) {
-	// Validate primary key is provided
-	if req.Slot == nil {
-		return SQLQuery{}, fmt.Errorf("primary key field slot is required")
+	// Validate that at least one primary key is provided
+	// Primary keys can come from base table or projections
+	if req.SlotStartDateTime == nil && req.Slot == nil {
+		return SQLQuery{}, fmt.Errorf("at least one primary key field is required: slot_start_date_time, slot")
 	}
 
 	// Build query using QueryBuilder
 	qb := NewQueryBuilder()
 
 	// Add primary key filter
-	switch filter := req.Slot.Filter.(type) {
+	switch filter := req.SlotStartDateTime.Filter.(type) {
 	case *UInt32Filter_Eq:
-		qb.AddCondition("slot", "=", filter.Eq)
+		qb.AddCondition("slot_start_date_time", "=", filter.Eq)
 	case *UInt32Filter_Ne:
-		qb.AddCondition("slot", "!=", filter.Ne)
+		qb.AddCondition("slot_start_date_time", "!=", filter.Ne)
 	case *UInt32Filter_Lt:
-		qb.AddCondition("slot", "<", filter.Lt)
+		qb.AddCondition("slot_start_date_time", "<", filter.Lt)
 	case *UInt32Filter_Lte:
-		qb.AddCondition("slot", "<=", filter.Lte)
+		qb.AddCondition("slot_start_date_time", "<=", filter.Lte)
 	case *UInt32Filter_Gt:
-		qb.AddCondition("slot", ">", filter.Gt)
+		qb.AddCondition("slot_start_date_time", ">", filter.Gt)
 	case *UInt32Filter_Gte:
-		qb.AddCondition("slot", ">=", filter.Gte)
+		qb.AddCondition("slot_start_date_time", ">=", filter.Gte)
 	case *UInt32Filter_Between:
-		qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max)
+		qb.AddBetweenCondition("slot_start_date_time", filter.Between.Min, filter.Between.Max)
 	case *UInt32Filter_In:
 		if len(filter.In.Values) > 0 {
-			qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
+			qb.AddInCondition("slot_start_date_time", UInt32SliceToInterface(filter.In.Values))
 		}
 	case *UInt32Filter_NotIn:
 		if len(filter.NotIn.Values) > 0 {
-			qb.AddNotInCondition("slot", UInt32SliceToInterface(filter.NotIn.Values))
+			qb.AddNotInCondition("slot_start_date_time", UInt32SliceToInterface(filter.NotIn.Values))
 		}
 	default:
 		// Unsupported filter type
@@ -75,6 +81,36 @@ func BuildListFctBlockProposerQuery(req *ListFctBlockProposerRequest, options ..
 		}
 	}
 
+	// Add filter for column: slot
+	if req.Slot != nil {
+		switch filter := req.Slot.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("slot", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("slot", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("slot", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("slot", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("slot", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("slot", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max)
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("slot", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: epoch
 	if req.Epoch != nil {
 		switch filter := req.Epoch.Filter.(type) {
@@ -99,6 +135,36 @@ func BuildListFctBlockProposerQuery(req *ListFctBlockProposerRequest, options ..
 		case *UInt32Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
 				qb.AddNotInCondition("epoch", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: epoch_start_date_time
+	if req.EpochStartDateTime != nil {
+		switch filter := req.EpochStartDateTime.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("epoch_start_date_time", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("epoch_start_date_time", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("epoch_start_date_time", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("epoch_start_date_time", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("epoch_start_date_time", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("epoch_start_date_time", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("epoch_start_date_time", filter.Between.Min, filter.Between.Max)
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("epoch_start_date_time", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("epoch_start_date_time", UInt32SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -249,7 +315,7 @@ func BuildListFctBlockProposerQuery(req *ListFctBlockProposerRequest, options ..
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "epoch", "proposer_validator_index", "proposer_pubkey", "block_root", "status"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "proposer_validator_index", "proposer_pubkey", "block_root", "status"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -257,7 +323,7 @@ func BuildListFctBlockProposerQuery(req *ListFctBlockProposerRequest, options ..
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot"
+		orderByClause = " ORDER BY slot_start_date_time"
 	}
 
 	return BuildParameterizedQuery("fct_block_proposer", qb, orderByClause, limit, offset, options...), nil
@@ -266,16 +332,16 @@ func BuildListFctBlockProposerQuery(req *ListFctBlockProposerRequest, options ..
 // BuildGetFctBlockProposerQuery constructs a parameterized SQL query from a GetFctBlockProposerRequest
 func BuildGetFctBlockProposerQuery(req *GetFctBlockProposerRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
-	if req.Slot == 0 {
-		return SQLQuery{}, fmt.Errorf("primary key field slot is required")
+	if req.SlotStartDateTime == 0 {
+		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
 	}
 
 	// Build query with primary key condition
 	qb := NewQueryBuilder()
-	qb.AddCondition("slot", "=", req.Slot)
+	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot"
+	orderByClause := " ORDER BY slot_start_date_time"
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_proposer", qb, orderByClause, 1, 0, options...), nil

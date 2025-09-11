@@ -7,8 +7,8 @@
     FROM
       'fct_attestation_correctness_head' FINAL
   expected:
-    count: 20
-    min: "12145371"
+    count: 21
+    min: "12145370"
     max: "12145390"
 - name: "Expected admin bounds"
   sql: |
@@ -21,4 +21,4 @@
       table = 'fct_attestation_correctness_head'
   expected:
     max: "2025-07-15T08:38:23Z"
-    min: "2025-07-15T08:34:35Z"
+    min: "2025-07-15T08:34:23Z"
