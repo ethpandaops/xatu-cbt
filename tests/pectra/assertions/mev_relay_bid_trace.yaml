@@ -1,0 +1,8 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      mev_relay_bid_trace FINAL
+  expected:
+    count: 329038
