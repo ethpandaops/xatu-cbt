@@ -1,0 +1,8 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      mev_relay_proposer_payload_delivered FINAL
+  expected:
+    count: 25533
