@@ -17,7 +17,7 @@ func BuildListFctAttestationCorrectnessHeadQuery(req *ListFctAttestationCorrectn
 	// Validate that at least one primary key is provided
 	// Primary keys can come from base table or projections
 	if req.SlotStartDateTime == nil && req.Slot == nil {
-		return SQLQuery{}, fmt.Errorf("at least one primary key field is required: slot_start_date_time, slot")
+		return SQLQuery{}, fmt.Errorf("at least one primary key field is required: slot, slot_start_date_time")
 	}
 
 	// Build query using QueryBuilder
