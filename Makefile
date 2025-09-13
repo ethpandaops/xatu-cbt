@@ -83,7 +83,7 @@ proto:
 		--network xatu_xatu-net \
 		ethpandaops/clickhouse-proto-gen \
 		--dsn "clickhouse://xatu-clickhouse-01:9000/$$NETWORK" \
-		--tables "$$TABLES" \
+		--tables "admin_cbt,$$TABLES" \
 		--out /workspace/pkg/proto/clickhouse \
 		--package cbt \
 		--go-package github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse \
