@@ -67,7 +67,7 @@ SELECT
      duties.slot - blocks.slot, 
      NULL) AS slot_distance,
   attestations.inclusion_distance,
-  blocks.status
+  if (blocks.status IS NOT NULL, blocks.status, 'missed') AS status
 FROM duties
 LEFT JOIN attestations ON 
     duties.slot = attestations.slot 
