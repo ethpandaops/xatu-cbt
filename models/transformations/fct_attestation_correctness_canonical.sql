@@ -59,7 +59,7 @@ votes_per_slot AS (
         s.epoch_start_date_time as epoch_start_date_time,
         s.block_root as block_root,
         COALESCE(vm.votes_max, 0) as votes_max,
-        COALESCE(v.votes_actual, 0) as votes_actual
+        COALESCE(v.votes_actual, NULL) as votes_actual
     FROM slots s
     LEFT JOIN votes_per_block_root v 
         ON s.slot = v.slot 
@@ -84,3 +84,4 @@ SELECT
   votes_max,
   votes_actual
 FROM votes_per_slot
+SETTINGS join_use_nulls = 1
