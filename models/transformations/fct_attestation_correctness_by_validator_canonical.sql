@@ -3,7 +3,7 @@ table: fct_attestation_correctness_by_validator_canonical
 interval:
   max: 384
 schedules:
-  forwardfill: "@every 5s"
+  forwardfill: "@every 30s"
 tags:
   - slot
   - attestation
