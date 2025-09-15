@@ -318,32 +318,35 @@ func (a *assertionRunner) runAssertion(ctx context.Context, conn driver.Conn, fi
 	for i, colType := range columnTypes {
 		// Based on the ClickHouse type, create appropriate scan variable
 		// We'll handle the most common types and scan them properly
-		switch colType.DatabaseTypeName() {
-		case "String", "FixedString", "UUID", "Enum8", "Enum16":
+		// Use Contains to handle Nullable and other type variations
+		typeName := colType.DatabaseTypeName()
+
+		switch {
+		case strings.Contains(typeName, "String") || strings.Contains(typeName, "UUID") || strings.Contains(typeName, "Enum"):
 			scanArgs[i] = new(string)
-		case "UInt8":
+		case strings.Contains(typeName, "UInt8"):
 			scanArgs[i] = new(uint8)
-		case "UInt16":
+		case strings.Contains(typeName, "UInt16"):
 			scanArgs[i] = new(uint16)
-		case "UInt32":
+		case strings.Contains(typeName, "UInt32"):
 			scanArgs[i] = new(uint32)
-		case "UInt64":
+		case strings.Contains(typeName, "UInt64"):
 			scanArgs[i] = new(uint64)
-		case "Int8":
+		case strings.Contains(typeName, "Int8"):
 			scanArgs[i] = new(int8)
-		case "Int16":
+		case strings.Contains(typeName, "Int16"):
 			scanArgs[i] = new(int16)
-		case "Int32":
+		case strings.Contains(typeName, "Int32"):
 			scanArgs[i] = new(int32)
-		case "Int64":
+		case strings.Contains(typeName, "Int64"):
 			scanArgs[i] = new(int64)
-		case "Float32":
+		case strings.Contains(typeName, "Float32"):
 			scanArgs[i] = new(float32)
-		case "Float64":
+		case strings.Contains(typeName, "Float64"):
 			scanArgs[i] = new(float64)
-		case "Bool":
+		case strings.Contains(typeName, "Bool"):
 			scanArgs[i] = new(bool)
-		case "Date", "Date32", "DateTime", "DateTime64":
+		case strings.Contains(typeName, "Date") || strings.Contains(typeName, "DateTime"):
 			scanArgs[i] = new(time.Time)
 		default:
 			// For any unknown type, try string

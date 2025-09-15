@@ -12,13 +12,14 @@ CREATE TABLE `${NETWORK_NAME}`.int_attestation_attested_head_local on cluster '{
     `target_root` FixedString(66) COMMENT 'The target beacon block root hash in the attestation group',
     `block_root` String COMMENT 'The beacon block root hash' CODEC(ZSTD(1)),
     `attesting_validator_index` UInt32 COMMENT 'The index of the validator attesting' CODEC(ZSTD(1)),
+    `propagation_distance` UInt32 COMMENT 'The distance from the slot when the attestation was propagated. 0 means the attestation was propagated within the same slot as its duty was assigned, 1 means the attestation was propagated within the next slot, etc.' CODEC(DoubleDelta, ZSTD(1)),
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `block_root`, `attesting_validator_index`) COMMENT 'Attested head of a block for the unfinalized chain. Only includes attestations by validators propagated within the same slot as their duty was assigned.';
+    (`slot_start_date_time`, `block_root`, `attesting_validator_index`) COMMENT 'Attested head of a block for the unfinalized chain.';
 
 CREATE TABLE `${NETWORK_NAME}`.int_attestation_attested_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_attestation_attested_head_local ENGINE = Distributed(
     '{cluster}',

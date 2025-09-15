@@ -5,7 +5,7 @@
       MIN(slot) AS min,
       MAX(slot) AS max
     FROM
-      fct_attestation_correctness_head FINAL
+      fct_attestation_correctness_canonical FINAL
   expected:
     count: 21
     min: "12145370"
@@ -18,7 +18,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'fct_attestation_correctness_head'
+      table = 'fct_attestation_correctness_canonical'
   expected:
     max: "2025-07-15T08:38:23Z"
     min: "2025-07-15T08:34:23Z"
