@@ -7,7 +7,7 @@
     FROM
       int_attestation_attested_head FINAL
   expected:
-    count: 717623
+    count: 717669
     min: "2025-07-15T08:34:23Z"
     max: "2025-07-15T08:38:23Z"
 - name: "Expected admin bounds"

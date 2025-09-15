@@ -41,12 +41,12 @@ combined_events AS (
         target_epoch,
         target_epoch_start_date_time,
         target_root,
-        attesting_validator_index
+        attesting_validator_index,
+        floor(min(propagation_slot_start_diff) / 12000) AS propagation_distance
     FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_attestation" "database" }}`.`beacon_api_eth_v1_events_attestation`
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND aggregation_bits = ''
         AND attesting_validator_index IS NOT NULL
-        AND propagation_slot_start_diff <= 12000 -- keep only attestations that were propagated within the same slot as their duty was assigned, while anything > 8000 most likely would never have been included its still a valid signal for head
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, beacon_block_root, source_epoch, source_epoch_start_date_time, source_root, target_epoch, target_epoch_start_date_time, target_root, attesting_validator_index
 
     UNION ALL
@@ -63,12 +63,12 @@ combined_events AS (
         target_epoch,
         target_epoch_start_date_time,
         target_root,
-        attesting_validator_index
+        attesting_validator_index,
+        floor(min(propagation_slot_start_diff) / 12000) AS propagation_distance
     FROM `{{ index .dep "{{external}}" "libp2p_gossipsub_beacon_attestation" "database" }}`.`libp2p_gossipsub_beacon_attestation` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND aggregation_bits = ''
         AND attesting_validator_index IS NOT NULL
-        AND propagation_slot_start_diff <= 12000 -- keep only attestations that were propagated within the same slot as their duty was assigned, while anything > 8000 most likely would never have been included its still a valid signal for head
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, beacon_block_root, source_epoch, source_epoch_start_date_time, source_root, target_epoch, target_epoch_start_date_time, target_root, attesting_validator_index
 ),
 
@@ -86,7 +86,8 @@ filtered_events AS (
         ce.target_epoch,
         ce.target_epoch_start_date_time,
         ce.target_root,
-        ce.attesting_validator_index
+        ce.attesting_validator_index,
+        ce.propagation_distance
     FROM combined_events ce
     INNER JOIN validator_indices vi ON ce.slot = vi.slot AND ce.attesting_validator_index = vi.validator_index
 )
@@ -104,6 +105,7 @@ SELECT
     target_epoch_start_date_time,
     target_root,
     beacon_block_root AS block_root,
-    attesting_validator_index
+    attesting_validator_index,
+    min(propagation_distance) AS propagation_distance
 FROM filtered_events
 GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, beacon_block_root, source_epoch, source_epoch_start_date_time, source_root, target_epoch, target_epoch_start_date_time, target_root, attesting_validator_index
