@@ -1,10 +1,10 @@
 ---
 table: int_block_blob_count_head
 interval:
-  max: 500000
+  max: 5000
 schedules:
   forwardfill: "@every 5s"
-  backfill: "@every 1m"
+  backfill: "@every 30s"
 tags:
   - slot
   - block

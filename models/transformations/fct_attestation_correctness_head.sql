@@ -4,6 +4,7 @@ interval:
   max: 384
 schedules:
   forwardfill: "@every 5s"
+  backfill: "@every 30s"
 tags:
   - slot
   - attestation
