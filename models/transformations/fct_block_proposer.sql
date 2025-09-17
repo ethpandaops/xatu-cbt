@@ -1,7 +1,7 @@
 ---
 table: fct_block_proposer
 interval:
-  max: 500000
+  max: 5000
 schedules:
   forwardfill: "@every 30s"
   backfill: "@every 1m"
