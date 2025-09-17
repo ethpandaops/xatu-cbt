@@ -20,3 +20,6 @@ coverage.txt
 
 # Xatu
 xatu/
+
+# Python
+__pycache__
