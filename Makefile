@@ -76,7 +76,7 @@ proto:
 		echo "Error: NETWORK environment variable is not set"; \
 		exit 1; \
 	fi; \
-	TABLES=$$(ls models/transformations/*.sql | xargs -n1 basename | sed 's/\.sql$$//' | tr '\n' ',' | sed 's/,$$//'); \
+	TABLES=$$(ls models/transformations/*.{sql,yml,yaml} 2>/dev/null | xargs -n1 basename | sed -E 's/\.(sql|yml|yaml)$$//' | tr '\n' ',' | sed 's/,$$//'); \
 	HOST=$${CLICKHOUSE_HOST:-xatu-clickhouse-01}; \
 	docker run --rm -v "$$(pwd):/workspace" \
 		--user "$$(id -u):$$(id -g)" \
