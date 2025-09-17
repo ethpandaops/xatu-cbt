@@ -16,8 +16,8 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
-    slot_start_date_time,
     slot,
+    slot_start_date_time,
     epoch,
     epoch_start_date_time,
     relay_name,

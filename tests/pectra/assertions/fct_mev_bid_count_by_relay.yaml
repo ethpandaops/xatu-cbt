@@ -5,7 +5,7 @@
       MIN(slot) AS min,
       MAX(slot) AS max
     FROM
-      fct_mev_bid_highest_value_by_relay FINAL
+      fct_mev_bid_count_by_relay FINAL
   expected:
     count: 101
     min: "12145370"
@@ -18,7 +18,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'fct_mev_bid_highest_value_by_relay'
+      table = 'fct_mev_bid_count_by_relay'
   expected:
     max: "2025-07-15T08:38:23Z"
     min: "2025-07-15T08:34:23Z"
