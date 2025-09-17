@@ -1,0 +1,13 @@
+table: dim_node
+# TODO: doesn't actually need this, but here until we have the CBT update with scheduled transformations
+interval:
+  max: 10
+schedules:
+  forwardfill: "@every 10s"
+tags:
+  - validator
+  - node
+# TODO: doesn't actually need this, but here until we have the CBT update with scheduled transformations
+dependencies:
+  - "{{external}}.beacon_api_eth_v2_beacon_block"
+exec: "python3 /models/scripts/dim_node.py"

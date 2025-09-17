@@ -1,7 +1,0 @@
-table: int_entity
-schedules:
-  forwardfill: "@every 5m"
-tags:
-  - validator
-  - entity
-exec: "python3 /models/scripts/int_entity.py"
