@@ -6,9 +6,9 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Attestation correctness of a block for the unfinalized chain. Forks in the chain may cause multiple block roots for the same slot to be present
+// Attestation correctness of a block for the finalized chain
 
-message FctAttestationCorrectnessHead {
+message FctAttestationCorrectnessCanonical {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // The slot number
@@ -27,8 +27,8 @@ message FctAttestationCorrectnessHead {
   google.protobuf.UInt32Value votes_actual = 18;
 }
 
-// ListFctAttestationCorrectnessHeadRequest is the request message for listing fct_attestation_correctness_head records
-message ListFctAttestationCorrectnessHeadRequest {
+// ListFctAttestationCorrectnessCanonicalRequest is the request message for listing fct_attestation_correctness_canonical records
+message ListFctAttestationCorrectnessCanonicalRequest {
   // Filter by slot_start_date_time (PRIMARY KEY - required)
   UInt32Filter slot_start_date_time = 1;
 
@@ -47,11 +47,11 @@ message ListFctAttestationCorrectnessHeadRequest {
   // Filter by votes_actual (optional)
   NullableUInt32Filter votes_actual = 8;
 
-  // The maximum number of fct_attestation_correctness_head to return.
+  // The maximum number of fct_attestation_correctness_canonical to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 9;
-  // A page token, received from a previous `ListFctAttestationCorrectnessHead` call.
+  // A page token, received from a previous `ListFctAttestationCorrectnessCanonical` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 10;
   // The order of results. Format: comma-separated list of fields.
@@ -60,30 +60,30 @@ message ListFctAttestationCorrectnessHeadRequest {
   string order_by = 11;
 }
 
-// ListFctAttestationCorrectnessHeadResponse is the response message for listing fct_attestation_correctness_head records
-message ListFctAttestationCorrectnessHeadResponse {
-  // The list of fct_attestation_correctness_head.
-  repeated FctAttestationCorrectnessHead fct_attestation_correctness_head = 1;
+// ListFctAttestationCorrectnessCanonicalResponse is the response message for listing fct_attestation_correctness_canonical records
+message ListFctAttestationCorrectnessCanonicalResponse {
+  // The list of fct_attestation_correctness_canonical.
+  repeated FctAttestationCorrectnessCanonical fct_attestation_correctness_canonical = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// GetFctAttestationCorrectnessHeadRequest is the request message for getting a single fct_attestation_correctness_head record by primary key
-message GetFctAttestationCorrectnessHeadRequest {
+// GetFctAttestationCorrectnessCanonicalRequest is the request message for getting a single fct_attestation_correctness_canonical record by primary key
+message GetFctAttestationCorrectnessCanonicalRequest {
   // The wall clock time when the slot started
   uint32 slot_start_date_time = 1; // Primary key (required)
 }
 
-// GetFctAttestationCorrectnessHeadResponse is the response message for getting a single fct_attestation_correctness_head record
-message GetFctAttestationCorrectnessHeadResponse {
-  FctAttestationCorrectnessHead item = 1;
+// GetFctAttestationCorrectnessCanonicalResponse is the response message for getting a single fct_attestation_correctness_canonical record
+message GetFctAttestationCorrectnessCanonicalResponse {
+  FctAttestationCorrectnessCanonical item = 1;
 }
 
-// FctAttestationCorrectnessHeadService provides RPC methods for querying fct_attestation_correctness_head data
-service FctAttestationCorrectnessHeadService {
-  // List returns paginated fct_attestation_correctness_head records
-  rpc List(ListFctAttestationCorrectnessHeadRequest) returns (ListFctAttestationCorrectnessHeadResponse);
-  // Get returns a single fct_attestation_correctness_head record by primary key
-  rpc Get(GetFctAttestationCorrectnessHeadRequest) returns (GetFctAttestationCorrectnessHeadResponse);
+// FctAttestationCorrectnessCanonicalService provides RPC methods for querying fct_attestation_correctness_canonical data
+service FctAttestationCorrectnessCanonicalService {
+  // List returns paginated fct_attestation_correctness_canonical records
+  rpc List(ListFctAttestationCorrectnessCanonicalRequest) returns (ListFctAttestationCorrectnessCanonicalResponse);
+  // Get returns a single fct_attestation_correctness_canonical record by primary key
+  rpc Get(GetFctAttestationCorrectnessCanonicalRequest) returns (GetFctAttestationCorrectnessCanonicalResponse);
 }

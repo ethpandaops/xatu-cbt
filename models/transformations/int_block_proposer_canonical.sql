@@ -1,7 +1,7 @@
 ---
 table: int_block_proposer_canonical
 interval:
-  max: 500000
+  max: 50000
 schedules:
   forwardfill: "@every 30s"
   backfill: "@every 1m"

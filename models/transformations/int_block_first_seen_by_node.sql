@@ -1,10 +1,10 @@
 ---
 table: int_block_first_seen_by_node
 interval:
-  max: 500000
+  max: 50000
 schedules:
   forwardfill: "@every 5s"
-  backfill: "@every 1m"
+  backfill: "@every 30s"
 tags:
   - slot
   - block

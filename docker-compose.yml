@@ -53,7 +53,7 @@ services:
 
   # CBT Engine
   cbt-engine:
-    image: ethpandaops/cbt:latest
+    image: ethpandaops/cbt:debian-latest
     container_name: cbt-engine-${NETWORK}
     depends_on:
       cbt-redis:

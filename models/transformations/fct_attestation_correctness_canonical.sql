@@ -1,18 +1,18 @@
 ---
-table: fct_attestation_correctness_head
+table: fct_attestation_correctness_canonical
 interval:
   max: 384
 schedules:
-  forwardfill: "@every 5s"
-  backfill: "@every 30s"
+  forwardfill: "@every 30s"
+  backfill: "@every 1m"
 tags:
   - slot
   - attestation
-  - head
+  - canonical
 dependencies:
-  - "{{transformation}}.int_attestation_attested_head"
-  - "{{transformation}}.int_block_proposer_head"
-  - "{{external}}.beacon_api_eth_v1_beacon_committee"
+  - "{{transformation}}.int_attestation_attested_canonical"
+  - "{{transformation}}.int_block_proposer_canonical"
+  - "{{external}}.canonical_beacon_committee"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -23,7 +23,7 @@ WITH slots AS (
         epoch,
         epoch_start_date_time,
         block_root
-    FROM `{{ index .dep "{{transformation}}" "int_block_proposer_head" "database" }}`.`int_block_proposer_head` FINAL
+    FROM `{{ index .dep "{{transformation}}" "int_block_proposer_canonical" "database" }}`.`int_block_proposer_canonical` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -35,7 +35,7 @@ votes_per_block_root AS (
         epoch_start_date_time,
         block_root,
         COUNT(*) as votes_actual
-    FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_head" "database" }}`.`int_attestation_attested_head` FINAL
+    FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "database" }}`.`int_attestation_attested_canonical` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
 ),
@@ -47,7 +47,7 @@ votes_max AS (
         epoch,
         epoch_start_date_time,
         COUNT(DISTINCT arrayJoin(validators)) as votes_max
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "database" }}`.`beacon_api_eth_v1_beacon_committee` FINAL
+    FROM `{{ index .dep "{{external}}" "canonical_beacon_committee" "database" }}`.`canonical_beacon_committee` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time
 ),
