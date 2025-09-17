@@ -12,7 +12,7 @@ CREATE TABLE `${NETWORK_NAME}`.dim_node_local on cluster '{cluster}' (
     `updated_date_time`
 )
 ORDER BY
-    (`validator_index`, `name`) COMMENT 'Node information for validators';
+    (`validator_index`) COMMENT 'Node information for validators';
 
 CREATE TABLE `${NETWORK_NAME}`.dim_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.dim_node_local ENGINE = Distributed(
     '{cluster}',
