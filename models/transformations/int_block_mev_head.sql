@@ -97,7 +97,7 @@ SELECT
     WHEN bt.min_timestamp_ms != 0 
     THEN toDateTime64(bt.min_timestamp_ms / 1000, 3) 
     ELSE NULL 
-  END AS bid_date_time,
+  END AS earliest_bid_date_time,
   pa.relay_names,
   pa.parent_hash,
   pa.block_number,
