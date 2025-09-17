@@ -1,7 +1,7 @@
 ---
 table: int_block_head
 interval:
-  max: 5000
+  max: 50000
 schedules:
   forwardfill: "@every 5s"
   backfill: "@every 30s"
