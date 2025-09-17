@@ -13,15 +13,37 @@ import os
 import sys
 import urllib.request
 import urllib.error
+import urllib.parse
 import json
+import base64
 from datetime import datetime
 
 def execute_clickhouse_query(url, query):
-    """Execute a query via ClickHouse HTTP interface"""
+    """Execute a query via ClickHouse HTTP interface with proper auth handling"""
     try:
-        req = urllib.request.Request(url, 
+        # Parse URL to extract auth and build clean URL
+        parsed = urllib.parse.urlparse(url)
+        
+        # Build URL without auth credentials
+        if parsed.port:
+            clean_url = f"{parsed.scheme}://{parsed.hostname}:{parsed.port}{parsed.path}"
+        else:
+            clean_url = f"{parsed.scheme}://{parsed.hostname}{parsed.path}"
+        
+        if parsed.query:
+            clean_url += f"?{parsed.query}"
+        
+        req = urllib.request.Request(clean_url, 
                                     data=query.encode('utf-8'),
                                     method='POST')
+        
+        # Add Basic Auth header if credentials exist
+        if parsed.username:
+            password = parsed.password or ''
+            auth_str = f"{parsed.username}:{password}"
+            b64_auth = base64.b64encode(auth_str.encode()).decode()
+            req.add_header("Authorization", f"Basic {b64_auth}")
+        
         response = urllib.request.urlopen(req)
         result = response.read().decode('utf-8')
         
@@ -90,15 +112,6 @@ def parse_validator_ranges_data(json_data, database_name):
 def main():
     # Get environment variables
     ch_url = os.environ['CLICKHOUSE_URL']
-    
-    # Python urllib has a quirk where it can't handle URLs with empty passwords (user:@host)
-    # even though curl and other tools handle them fine. Remove default auth entirely.
-    if 'default:@' in ch_url:
-        ch_url = ch_url.replace('default:@', '')
-        print(f"Removed empty default auth from URL (Python urllib quirk)")
-    elif 'default@' in ch_url:
-        ch_url = ch_url.replace('default@', '')
-        print(f"Removed default auth from URL")
     
     # Model info
     target_db = os.environ['SELF_DATABASE']
