@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_block_first_seen_by_node_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `source` LowCardinality(String) COMMENT 'Source of the event' CODEC(ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
@@ -25,11 +25,20 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_first_seen_by_node_local on cluster '{c
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `meta_client_name`) COMMENT 'When the block was first seen on the network by a sentry node';
+    (`slot_start_date_time`, `meta_client_name`)
+SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+COMMENT 'When the block was first seen on the network by a sentry node';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_first_seen_by_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_first_seen_by_node_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_first_seen_by_node_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_block_first_seen_by_node_local,
+    fct_block_first_seen_by_node_local,
     cityHash64(`slot_start_date_time`, `meta_client_name`)
+);
+
+ALTER TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_local
+ADD PROJECTION p_by_slot
+(
+    SELECT *
+    ORDER BY (`slot`, `meta_client_name`)
 );

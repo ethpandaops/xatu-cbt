@@ -1,5 +1,5 @@
 ---
-table: int_block_first_seen_by_node
+table: fct_block_first_seen_by_node
 interval:
   max: 50000
 schedules:

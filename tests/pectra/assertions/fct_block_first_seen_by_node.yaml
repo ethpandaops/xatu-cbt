@@ -5,7 +5,7 @@
       MIN(slot_start_date_time) AS min,
       MAX(slot_start_date_time) AS max
     FROM
-      int_block_first_seen_by_node FINAL
+      fct_block_first_seen_by_node FINAL
   expected:
     count: 2499
     min: "2025-07-15T08:34:23Z"
@@ -18,7 +18,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'int_block_first_seen_by_node'
+      table = 'fct_block_first_seen_by_node'
   expected:
     max: "2025-07-15T08:38:23Z"
     min: "2025-07-15T08:34:23Z"
