@@ -437,16 +437,16 @@ func BuildParameterizedQuery(table string, qb *QueryBuilder, orderByClause strin
 	// Build FROM clause with optional database and FINAL
 	var fromClause string
 	if opts.Database != "" {
-		fromClause = fmt.Sprintf("%s.%s", opts.Database, table)
+		fromClause = fmt.Sprintf("`%s`.%s", opts.Database, table)
 	} else {
 		fromClause = table
 	}
-	
+
 	// Add projection if specified
 	if opts.Projection != "" {
 		fromClause = fmt.Sprintf("%s PROJECTION %s", fromClause, opts.Projection)
 	}
-	
+
 	if opts.AddFinal {
 		fromClause += " FINAL"
 	}
