@@ -1,0 +1,8 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      ethseer_validator_entity FINAL
+  expected:
+    count: 1

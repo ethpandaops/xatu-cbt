@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
 Node Data Collection for Validators
-Collects validator node data from ethpandaops cartographoor
+Collects validator node data from ethpandaops cartographer and ethseer
 
 This script:
-1. Downloads validator ranges data from cartographoor for the network
-2. Expands validator ranges into individual validator rows
-3. Inserts data into dim_node table
+1. Downloads validator ranges data from cartographer for the network
+2. Queries ethseer_validator_entity table for additional validator mappings
+3. Expands validator ranges into individual validator rows
+4. Merges data from both sources, with cartographer taking precedence
+5. Inserts combined data into dim_node table
 """
 
 import os
@@ -79,7 +81,7 @@ def fetch_url(url):
 
 def parse_validator_ranges_data(json_data, database_name):
     """Parse validator ranges JSON and expand into individual validator rows"""
-    validators = []
+    validators = {}
     
     data = json.loads(json_data)
     nodes = data.get('nodes', {})
@@ -98,16 +100,68 @@ def parse_validator_ranges_data(json_data, database_name):
             
             # Create a row for each validator index in the range (inclusive)
             for validator_index in range(start, end + 1):
-                validators.append({
+                validators[validator_index] = {
                     'name': node_name,
                     'groups': groups,
-                    'tags': tags,
+                    'tags': tags + ['source:cartographer'],
                     'attributes': attributes,
                     'validator_index': validator_index,
                     'source': source
-                })
+                }
     
     return validators
+
+def fetch_ethseer_validators(ch_url, database_name):
+    """Fetch validator data from ethseer_validator_entity table"""
+    query = f"""
+    SELECT 
+        `index` AS validator_index,
+        entity AS source
+    FROM `{database_name}`.ethseer_validator_entity
+    FINAL
+    FORMAT JSONCompact
+    """
+    
+    try:
+        result = execute_clickhouse_query(ch_url, query)
+        validators = {}
+        
+        if result and 'data' in result:
+            for row in result['data']:
+                validator_index = int(row[0])
+                source = row[1]
+                
+                validators[validator_index] = {
+                    'name': None,  # No name from ethseer
+                    'groups': [],
+                    'tags': ['source:ethseer'],
+                    'attributes': {},
+                    'validator_index': validator_index,
+                    'source': source
+                }
+        
+        return validators
+    except Exception as e:
+        print(f"Warning: Failed to fetch ethseer validators: {e}", file=sys.stderr)
+        return {}
+
+def merge_validator_data(cartographer_validators, ethseer_validators):
+    """Merge validator data from both sources, with cartographer taking precedence"""
+    # Start with all cartographer validators (they have richer metadata)
+    merged = dict(cartographer_validators)
+    
+    # Add ethseer validators that are not in cartographer
+    ethseer_only_count = 0
+    for validator_index, ethseer_data in ethseer_validators.items():
+        if validator_index not in merged:
+            merged[validator_index] = ethseer_data
+            ethseer_only_count += 1
+    
+    print(f"  Validators from cartographer: {len(cartographer_validators)}")
+    print(f"  Validators from ethseer only (gap-filled): {ethseer_only_count}")
+    print(f"  Total unique validators: {len(merged)}")
+    
+    return merged
 
 def main():
     # Get environment variables
@@ -149,12 +203,22 @@ def main():
                 return 1
             raise
         
-        # Step 3: Parse the data
-        validators_to_insert = parse_validator_ranges_data(json_content, target_db)
-        print(f"Found {len(validators_to_insert)} validator entries")
+        # Step 3: Parse the cartographer data
+        cartographer_validators = parse_validator_ranges_data(json_content, target_db)
+        print(f"Found {len(cartographer_validators)} validator entries from cartographer")
+        
+        # Step 4: Fetch ethseer validators
+        print(f"\nFetching validators from ethseer_validator_entity table...")
+        ethseer_validators = fetch_ethseer_validators(ch_url, target_db)
+        print(f"Found {len(ethseer_validators)} validator entries from ethseer")
+        
+        # Step 5: Merge data from both sources
+        print(f"\nMerging validator data from both sources...")
+        merged_validators = merge_validator_data(cartographer_validators, ethseer_validators)
+        validators_to_insert = list(merged_validators.values())
         
         if not validators_to_insert:
-            print("No validator data found in the JSON")
+            print("No validator data found from either source")
             return 0
         
         # Show summary of what we found
@@ -164,7 +228,8 @@ def main():
         
         for v in validators_to_insert:
             node_name = v['name']
-            node_counts[node_name] = node_counts.get(node_name, 0) + 1
+            if node_name:
+                node_counts[node_name] = node_counts.get(node_name, 0) + 1
             unique_groups.update(v['groups'])
             unique_tags.update(v['tags'])
         
@@ -175,12 +240,13 @@ def main():
         print(f"  Unique tags: {len(unique_tags)}")
         
         # Show top nodes by validator count
-        top_nodes = sorted(node_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-        print(f"\n  Top 5 nodes by validator count:")
-        for node_name, count in top_nodes:
-            print(f"    - {node_name}: {count} validators")
+        if node_counts:
+            top_nodes = sorted(node_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+            print(f"\n  Top 5 nodes by validator count:")
+            for node_name, count in top_nodes:
+                print(f"    - {node_name}: {count} validators")
         
-        # Step 4: Create table if it doesn't exist
+        # Step 6: Create table if it doesn't exist
         print(f"\nPreparing to insert data into ClickHouse...")
         create_table_query = f"""
         CREATE TABLE IF NOT EXISTS `{target_db}`.`{target_table}` (
@@ -204,11 +270,11 @@ def main():
             print(f"\nNote: Successfully fetched {len(validators_to_insert)} validator entries but cannot insert them", file=sys.stderr)
             return 1
         
-        # Step 5: Prepare and insert data
+        # Step 7: Prepare and insert data
         values = []
         for validator in validators_to_insert:
             # Escape strings properly
-            name_escaped = validator['name'].replace("'", "''")
+            name_escaped = validator['name'].replace("'", "''") if validator['name'] else 'NULL'
             source_escaped = validator['source'].replace("'", "''")
             
             # Format arrays
@@ -230,10 +296,17 @@ def main():
                 map_items.append(f"'{k_escaped}':'{v_escaped}'")
             attributes_map = "{" + ",".join(map_items) + "}"
             
-            values.append(f"""
-                (now(), '{name_escaped}', {groups_array}, {tags_array}, 
-                 {attributes_map}, {validator['validator_index']}, '{source_escaped}')
-            """)
+            # Handle NULL name for ethseer-only validators
+            if validator['name'] is None:
+                values.append(f"""
+                    (now(), NULL, {groups_array}, {tags_array}, 
+                     {attributes_map}, {validator['validator_index']}, '{source_escaped}')
+                """)
+            else:
+                values.append(f"""
+                    (now(), '{name_escaped}', {groups_array}, {tags_array}, 
+                     {attributes_map}, {validator['validator_index']}, '{source_escaped}')
+                """)
         
         # Batch insert (in chunks to avoid too large queries)
         chunk_size = 1000

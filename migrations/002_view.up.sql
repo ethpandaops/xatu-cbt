@@ -392,6 +392,14 @@ FROM
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
+CREATE VIEW `${NETWORK_NAME}`.ethseer_validator_entity ON CLUSTER '{cluster}' AS
+SELECT
+    *
+FROM
+    default.ethseer_validator_entity
+WHERE
+    meta_network_name = '${NETWORK_NAME}';
+
 CREATE VIEW `${NETWORK_NAME}`.libp2p_add_peer ON CLUSTER '{cluster}' AS
 SELECT
     *
