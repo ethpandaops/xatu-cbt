@@ -81,6 +81,10 @@ func (d *dockerManager) ComposeUp(ctx context.Context, dir string, profiles []st
 	// Pass through environment variables, including NETWORK
 	cmd.Env = os.Environ()
 
+	// Set TESTING=true for test environments
+	cmd.Env = append(cmd.Env, "TESTING=true")
+	d.log.Debug("Setting TESTING=true for test environment")
+
 	// If CLICKHOUSE_VERSION is set, also pass it as CHVER for the xatu docker-compose
 	if clickhouseVersion := os.Getenv("CLICKHOUSE_VERSION"); clickhouseVersion != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("CHVER=%s", clickhouseVersion))

@@ -194,18 +194,23 @@ def main():
         print(f"Fetching validator ranges data from {validator_ranges_url}")
         
         # Step 2: Fetch the data
+        cartographoor_validators = {}
         try:
             json_content = fetch_url(validator_ranges_url)
+            # Step 3: Parse the cartographoor data
+            cartographoor_validators = parse_validator_ranges_data(json_content, target_db)
+            print(f"Found {len(cartographoor_validators)} validator entries from cartographoor")
         except urllib.error.HTTPError as e:
             if e.code == 404:
-                print(f"ERROR: Validator ranges data not found for network '{target_db}'", file=sys.stderr)
+                print(f"WARNING: Validator ranges data not found for network '{target_db}'", file=sys.stderr)
                 print(f"The URL {validator_ranges_url} returned 404", file=sys.stderr)
-                return 1
-            raise
-        
-        # Step 3: Parse the cartographoor data
-        cartographoor_validators = parse_validator_ranges_data(json_content, target_db)
-        print(f"Found {len(cartographoor_validators)} validator entries from cartographoor")
+                print("Continuing with ethseer data only...", file=sys.stderr)
+            else:
+                print(f"WARNING: Failed to fetch cartographoor data: {e}", file=sys.stderr)
+                print("Continuing with ethseer data only...", file=sys.stderr)
+        except Exception as e:
+            print(f"WARNING: Failed to fetch/parse cartographoor data: {e}", file=sys.stderr)
+            print("Continuing with ethseer data only...", file=sys.stderr)
         
         # Step 4: Fetch ethseer validators
         print(f"\nFetching validators from ethseer_validator_entity table...")

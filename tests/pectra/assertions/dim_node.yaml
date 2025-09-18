@@ -1,1 +1,8 @@
-[]
+- name: "Expected size"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      dim_node FINAL
+  expected:
+    count: 1
