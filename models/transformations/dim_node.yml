@@ -3,7 +3,7 @@ table: dim_node
 interval:
   max: 10
 schedules:
-  forwardfill: "@every 1m"
+  forwardfill: "@every 5m"
 tags:
   - validator
   - node
