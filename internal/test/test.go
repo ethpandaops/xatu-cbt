@@ -215,32 +215,64 @@ func (s *service) setupCBT(ctx context.Context) error {
 	// 5. Start/restart only the necessary containers
 	s.log.Debug("Starting CBT containers")
 
+	// Stop cbt-engine first to ensure it will reload the new config
+	s.log.WithField("container", cbtEngine).Debug("Stopping cbt-engine container")
+	stopEngineCmd := exec.Command("docker", "stop", cbtEngine) //nolint:gosec // cbtEngine is controlled input from env var
+	if stopErr := stopEngineCmd.Run(); stopErr != nil {
+		s.log.WithError(stopErr).Debug("cbt-engine might not be running")
+	} else {
+		s.log.WithField("container", cbtEngine).Debug("cbt-engine stopped successfully")
+	}
+
+	// Remove the old config container to ensure a fresh one is created
+	configContainerName := fmt.Sprintf("cbt-config-setup-%s", network)
+	s.log.WithField("container", configContainerName).Debug("Removing old config container")
+	rmConfigCmd := exec.Command("docker", "rm", "-f", configContainerName) //nolint:gosec // network is controlled input from env var
+	if rmErr := rmConfigCmd.Run(); rmErr != nil {
+		s.log.WithError(rmErr).Debug("Config container might not exist")
+	} else {
+		s.log.WithField("container", configContainerName).Debug("Config container removed")
+	}
+
 	// First, ensure redis is running (it should already be running)
+	redisContainerName := fmt.Sprintf("cbt-redis-%s", network)
+	s.log.WithField("container", redisContainerName).Debug("Ensuring redis is running")
 	redisCmd := exec.Command("docker", "compose", "up", "-d", "cbt-redis")
 	redisCmd.Dir = "."
 	redisCmd.Env = os.Environ()
+	redisCmd.Env = append(redisCmd.Env, "TESTING=true")
 	if err := redisCmd.Run(); err != nil {
 		s.log.WithError(err).Debug("Failed to ensure redis is running")
+	} else {
+		s.log.WithField("container", redisContainerName).Debug("Redis container is running")
 	}
 
-	// Create the config by running cbt-config-setup
-	configCmd := exec.Command("docker", "compose", "up", "-d", "cbt-config-setup")
+	// Force recreate the config by running cbt-config-setup
+	// This ensures the config is regenerated with the latest overrides
+	// Use 'run' instead of 'up' to force execution even if container already ran
+	s.log.WithField("container", configContainerName).Debug("Creating new config with TESTING=true")
+	configCmd := exec.Command("docker", "compose", "run", "--rm", "cbt-config-setup")
 	configCmd.Dir = "."
 	configCmd.Env = os.Environ()
+	configCmd.Env = append(configCmd.Env, "TESTING=true")
 	if err := configCmd.Run(); err != nil {
 		return fmt.Errorf("failed to create config: %w", err)
 	}
+	s.log.WithField("container", configContainerName).Debug("Config created successfully with test overrides")
 
 	// Wait for config creation to complete
 	time.Sleep(2 * time.Second)
 
-	// Start cbt-engine
-	engineCmd := exec.Command("docker", "compose", "up", "-d", "--no-recreate", "cbt-engine")
+	// Force recreate cbt-engine to ensure it picks up the new config
+	s.log.WithField("container", cbtEngine).Debug("Starting cbt-engine with new config")
+	engineCmd := exec.Command("docker", "compose", "up", "-d", "--force-recreate", "cbt-engine")
 	engineCmd.Dir = "."
 	engineCmd.Env = os.Environ()
+	engineCmd.Env = append(engineCmd.Env, "TESTING=true")
 	if err := engineCmd.Run(); err != nil {
 		return fmt.Errorf("failed to start cbt-engine: %w", err)
 	}
+	s.log.WithField("container", cbtEngine).Debug("cbt-engine started with force-recreate")
 
 	// Ensure the container actually starts (sometimes it's just created)
 	startCmd := exec.Command("docker", "start", cbtEngine) //nolint:gosec // cbtEngine is controlled input from env var

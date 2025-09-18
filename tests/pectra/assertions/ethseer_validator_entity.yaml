@@ -1,8 +1,8 @@
-- name: "Expected size"
+- name: "total count"
   sql: |
     SELECT
       COUNT(*) AS count
     FROM
-      dim_node FINAL
+      ethseer_validator_entity FINAL
   expected:
     count: 1
