@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
 Node Data Collection for Validators
-Collects validator node data from ethpandaops cartographer and ethseer
+Collects validator node data from ethpandaops cartographoor and ethseer
 
 This script:
-1. Downloads validator ranges data from cartographer for the network
+1. Downloads validator ranges data from cartographoor for the network
 2. Queries ethseer_validator_entity table for additional validator mappings
 3. Expands validator ranges into individual validator rows
-4. Merges data from both sources, with cartographer taking precedence
+4. Merges data from both sources, with cartographoor taking precedence
 5. Inserts combined data into dim_node table
 """
 
@@ -103,7 +103,7 @@ def parse_validator_ranges_data(json_data, database_name):
                 validators[validator_index] = {
                     'name': node_name,
                     'groups': groups,
-                    'tags': tags + ['source:cartographer'],
+                    'tags': tags + ['source:cartographoor'],
                     'attributes': attributes,
                     'validator_index': validator_index,
                     'source': source
@@ -145,19 +145,19 @@ def fetch_ethseer_validators(ch_url, database_name):
         print(f"Warning: Failed to fetch ethseer validators: {e}", file=sys.stderr)
         return {}
 
-def merge_validator_data(cartographer_validators, ethseer_validators):
-    """Merge validator data from both sources, with cartographer taking precedence"""
-    # Start with all cartographer validators (they have richer metadata)
-    merged = dict(cartographer_validators)
+def merge_validator_data(cartographoor_validators, ethseer_validators):
+    """Merge validator data from both sources, with cartographoor taking precedence"""
+    # Start with all cartographoor validators (they have richer metadata)
+    merged = dict(cartographoor_validators)
     
-    # Add ethseer validators that are not in cartographer
+    # Add ethseer validators that are not in cartographoor
     ethseer_only_count = 0
     for validator_index, ethseer_data in ethseer_validators.items():
         if validator_index not in merged:
             merged[validator_index] = ethseer_data
             ethseer_only_count += 1
     
-    print(f"  Validators from cartographer: {len(cartographer_validators)}")
+    print(f"  Validators from cartographoor: {len(cartographoor_validators)}")
     print(f"  Validators from ethseer only (gap-filled): {ethseer_only_count}")
     print(f"  Total unique validators: {len(merged)}")
     
@@ -203,9 +203,9 @@ def main():
                 return 1
             raise
         
-        # Step 3: Parse the cartographer data
-        cartographer_validators = parse_validator_ranges_data(json_content, target_db)
-        print(f"Found {len(cartographer_validators)} validator entries from cartographer")
+        # Step 3: Parse the cartographoor data
+        cartographoor_validators = parse_validator_ranges_data(json_content, target_db)
+        print(f"Found {len(cartographoor_validators)} validator entries from cartographoor")
         
         # Step 4: Fetch ethseer validators
         print(f"\nFetching validators from ethseer_validator_entity table...")
@@ -214,7 +214,7 @@ def main():
         
         # Step 5: Merge data from both sources
         print(f"\nMerging validator data from both sources...")
-        merged_validators = merge_validator_data(cartographer_validators, ethseer_validators)
+        merged_validators = merge_validator_data(cartographoor_validators, ethseer_validators)
         validators_to_insert = list(merged_validators.values())
         
         if not validators_to_insert:
