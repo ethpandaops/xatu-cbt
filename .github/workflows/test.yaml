@@ -36,7 +36,7 @@ jobs:
     if: needs.discover-tests.outputs.tests != '[]'
     runs-on:
       - self-hosted-ghr
-      - size-s-x64
+      - size-m-x64
     strategy:
       fail-fast: false
       matrix:
