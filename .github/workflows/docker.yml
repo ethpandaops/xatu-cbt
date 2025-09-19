@@ -9,7 +9,7 @@ on:
       cbt_tag:
         description: 'CBT Docker image tag to use (e.g., latest, v1.0.0)'
         required: false
-        default: 'latest'
+        default: 'debian-latest'
         type: string
 
 env:
