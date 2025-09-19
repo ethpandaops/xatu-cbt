@@ -1,7 +1,7 @@
 ---
 table: fct_mev_bid_count_by_relay
 interval:
-  max: 5000
+  max: 384
 schedules:
   forwardfill: "@every 5s"
   backfill: "@every 1m"

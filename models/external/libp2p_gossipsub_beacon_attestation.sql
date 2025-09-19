@@ -13,6 +13,10 @@ SELECT
 FROM `default`.`{{ .self.table }}`
 WHERE 
     meta_network_name = '{{ .self.database }}'
+-- Hardcoded min date for mainnet to avoid querying the full table.
+{{ if eq .self.database "mainnet" }}
+    AND slot_start_date_time > '2025-06-01 00:00:00'
+{{ end }}
 {{ if .cache.is_incremental_scan }}
     AND (
       slot_start_date_time <= fromUnixTimestamp({{ .cache.previous_min }})
