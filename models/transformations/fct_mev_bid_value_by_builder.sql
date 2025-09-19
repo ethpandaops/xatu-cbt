@@ -25,6 +25,7 @@ WITH max_value AS (
       block_hash,
       max(value) AS transaction_value
   FROM `{{ index .dep "{{external}}" "mev_relay_bid_trace" "database" }}`.`mev_relay_bid_trace` FINAL
+  WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
   GROUP BY slot_start_date_time, slot, epoch,  epoch_start_date_time,  block_hash
 )
 
