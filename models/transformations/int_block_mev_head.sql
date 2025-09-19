@@ -1,7 +1,7 @@
 ---
 table: int_block_mev_head
 interval:
-  max: 50000
+  max: 384
 schedules:
   forwardfill: "@every 5s"
   backfill: "@every 1m"

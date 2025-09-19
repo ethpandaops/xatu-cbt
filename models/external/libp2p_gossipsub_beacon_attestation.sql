@@ -18,4 +18,9 @@ WHERE
       slot_start_date_time <= fromUnixTimestamp({{ .cache.previous_min }})
       OR slot_start_date_time >= fromUnixTimestamp({{ .cache.previous_max }})
     )
+{{ else }}
+    -- Hardcoded min date for mainnet to avoid querying the full table on full scans.
+    {{ if eq .self.database "mainnet" }}
+    AND slot_start_date_time > '2025-06-01 00:00:00'
+    {{ end }}
 {{ end }}

@@ -1,7 +1,7 @@
 ---
 table: fct_mev_bid_value_by_builder
 interval:
-  max: 5000
+  max: 384
 schedules:
   forwardfill: "@every 5s"
   backfill: "@every 1m"
