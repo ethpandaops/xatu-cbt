@@ -12,6 +12,7 @@ tags:
   - head
 dependencies:
   - "{{external}}.beacon_api_eth_v2_beacon_block"
+lag: 12
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`

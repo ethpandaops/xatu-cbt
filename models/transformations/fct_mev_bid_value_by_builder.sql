@@ -11,6 +11,7 @@ tags:
   - bid
 dependencies:
   - "{{external}}.mev_relay_bid_trace"
+lag: 12
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`

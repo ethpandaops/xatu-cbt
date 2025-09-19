@@ -13,6 +13,7 @@ dependencies:
   - "{{transformation}}.int_attestation_attested_head"
   - "{{transformation}}.int_block_proposer_head"
   - "{{external}}.beacon_api_eth_v1_beacon_committee"
+lag: 12
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`

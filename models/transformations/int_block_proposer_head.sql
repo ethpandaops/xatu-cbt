@@ -15,6 +15,7 @@ dependencies:
   - "{{external}}.beacon_api_eth_v1_events_block"
   - "{{external}}.beacon_api_eth_v1_proposer_duty"
   - "{{external}}.libp2p_gossipsub_beacon_block"
+lag: 12
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
