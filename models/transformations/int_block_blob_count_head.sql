@@ -18,6 +18,7 @@ dependencies:
     # "{{external}}.libp2p_gossipsub_data_column_sidecar",
     # "{{external}}.libp2p_gossipsub_blob_sidecar"
   ]
+lag: 12
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`

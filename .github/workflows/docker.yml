@@ -45,7 +45,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "tag=${{ github.event.inputs.cbt_tag }}" >> $GITHUB_OUTPUT
           else
-            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "tag=debian-latest" >> $GITHUB_OUTPUT
           fi
 
       - name: Fetch CBT image digest

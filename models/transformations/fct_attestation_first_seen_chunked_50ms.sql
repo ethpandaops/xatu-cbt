@@ -11,6 +11,7 @@ tags:
 dependencies:
   - "{{transformation}}.int_attestation_first_seen"
   - "{{transformation}}.int_block_proposer_head"
+lag: 12
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
