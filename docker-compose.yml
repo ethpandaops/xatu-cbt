@@ -18,7 +18,7 @@ services:
 
   # Config setup container
   cbt-config-setup:
-    image: busybox:latest
+    image: python:3.12-alpine
     container_name: cbt-config-setup-${NETWORK}
     volumes:
       - cbt-config:/config
@@ -26,48 +26,77 @@ services:
       - ./overrides.tests.yaml:/overrides.tests.yaml:ro
     environment:
       - TESTING=${TESTING:-false}
+      - NETWORK=${NETWORK}
+      - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
     command:
       - /bin/sh
       - -c
       - |
-        cat > /config/${NETWORK}.yaml << EOF
-        logging: debug
-        metricsAddr: ":9090"
-        healthCheckAddr: ":8080"
-        clickhouse:
-          url: http://${CLICKHOUSE_USERNAME}:${CLICKHOUSE_PASSWORD}@xatu-clickhouse-01:8123
-          cluster: "{cluster}"
-          localSuffix: "_local"
-          adminDatabase: ${NETWORK}
-          adminTable: admin_cbt
-        redis:
-          url: "redis://cbt-redis-${NETWORK}:6379/0"
-        scheduler:
-          concurrency: 10
-          consolidation: "@every 10m"
-        worker:
-          concurrency: 10
-        models:
-          external:
-            defaultDatabase: ${NETWORK}
-          transformations:
-            defaultDatabase: ${NETWORK}
-        EOF
-        # Apply appropriate overrides based on TESTING environment variable
-        if [ "$TESTING" = "true" ]; then
-          if [ -f /overrides.tests.yaml ] && [ -s /overrides.tests.yaml ]; then
-            echo "# Overrides from overrides.tests.yaml (TESTING mode)" >> /config/${NETWORK}.yaml
-            cat /overrides.tests.yaml >> /config/${NETWORK}.yaml
-            echo "Test overrides appended to config file"
-          fi
-        else
-          if [ -f /overrides.yaml ] && [ -s /overrides.yaml ]; then
-            echo "# Overrides from overrides.yaml" >> /config/${NETWORK}.yaml
-            cat /overrides.yaml >> /config/${NETWORK}.yaml
-            echo "Overrides appended to config file"
-          fi
-        fi
-        echo "Config file created successfully"
+        pip install pyyaml > /dev/null 2>&1
+        python3 << 'PYTHON_SCRIPT'
+        import yaml
+        import os
+        
+        network = os.environ.get('NETWORK', 'mainnet')
+        testing = os.environ.get('TESTING', 'false').lower() == 'true'
+        clickhouse_user = os.environ.get('CLICKHOUSE_USERNAME', 'default')
+        clickhouse_pass = os.environ.get('CLICKHOUSE_PASSWORD', '')
+        
+        # Base configuration
+        config = {
+            'logging': 'debug',
+            'metricsAddr': ':9090',
+            'healthCheckAddr': ':8080',
+            'clickhouse': {
+                'url': f'http://{clickhouse_user}:{clickhouse_pass}@xatu-clickhouse-01:8123',
+                'cluster': '{cluster}',
+                'localSuffix': '_local',
+                'adminDatabase': network,
+                'adminTable': 'admin_cbt'
+            },
+            'redis': {
+                'url': f'redis://cbt-redis-{network}:6379/0'
+            },
+            'scheduler': {
+                'concurrency': 10,
+                'consolidation': '@every 10m'
+            },
+            'worker': {
+                'concurrency': 10
+            },
+            'models': {
+                'external': {
+                    'defaultDatabase': network
+                },
+                'transformations': {
+                    'defaultDatabase': network
+                }
+            }
+        }
+        
+        # Merge with overrides if they exist
+        override_file = '/overrides.tests.yaml' if testing else '/overrides.yaml'
+        if os.path.exists(override_file) and os.path.getsize(override_file) > 0:
+            with open(override_file, 'r') as f:
+                overrides = yaml.safe_load(f)
+                if overrides:
+                    # Deep merge the configurations
+                    def deep_merge(base, override):
+                        for key, value in override.items():
+                            if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+                                deep_merge(base[key], value)
+                            else:
+                                base[key] = value
+                    deep_merge(config, overrides)
+                    print(f"Merged {'test' if testing else 'production'} overrides")
+        
+        # Write the final configuration
+        with open(f'/config/{network}.yaml', 'w') as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+        
+        print("Config file created successfully")
+        PYTHON_SCRIPT
 
   # CBT Engine
   cbt-engine:

@@ -1,7 +1,8 @@
-# Add testing related overrides here
+# Testing overrides - merged with base config
 # docs: https://github.com/ethpandaops/cbt?tab=readme-ov-file#model-overrides
-overrides:
-  dim_node:
-    config:
-      schedules:
-        forwardfill: "@every 5s"
+models:
+  overrides:
+    dim_node:
+      config:
+        schedules:
+          forwardfill: "@every 5s"
