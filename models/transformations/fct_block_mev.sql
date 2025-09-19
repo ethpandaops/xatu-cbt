@@ -1,7 +1,7 @@
 ---
 table: fct_block_mev
 interval:
-  max: 50000
+  max: 384
 schedules:
   forwardfill: "@every 30s"
   backfill: "@every 1m"
