@@ -1,2 +1,7 @@
-# Add overrides here
+# Production overrides - merged with base config
 # docs: https://github.com/ethpandaops/cbt?tab=readme-ov-file#model-overrides
+# Example:
+# models:
+#   overrides:
+#     some_model:
+#       enabled: false
