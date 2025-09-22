@@ -3,6 +3,7 @@ table: mev_relay_proposer_payload_delivered
 cache:
   incremental_scan_interval: 5s
   full_scan_interval: 24h
+lag: 12
 ---
 SELECT 
     toUnixTimestamp(min(slot_start_date_time)) as min,

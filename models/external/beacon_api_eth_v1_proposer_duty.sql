@@ -3,6 +3,7 @@ table: beacon_api_eth_v1_proposer_duty
 cache:
   incremental_scan_interval: 30s
   full_scan_interval: 24h
+lag: 12
 ---
 SELECT 
     toUnixTimestamp(min(slot_start_date_time)) as min,
