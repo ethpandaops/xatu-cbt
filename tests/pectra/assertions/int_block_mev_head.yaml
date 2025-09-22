@@ -7,9 +7,9 @@
     FROM
       int_block_mev_head FINAL
   expected:
-    count: 19
+    count: 18
     min: "2025-07-15T08:34:23Z"
-    max: "2025-07-15T08:38:23Z"
+    max: "2025-07-15T08:38:11Z"
 - name: "Expected admin bounds"
   sql: |
     SELECT
@@ -20,5 +20,5 @@
     WHERE
       table = 'int_block_mev_head'
   expected:
-    max: "2025-07-15T08:38:23Z"
+    max: "2025-07-15T08:38:11Z"
     min: "2025-07-15T08:34:23Z"

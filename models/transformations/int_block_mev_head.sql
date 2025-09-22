@@ -14,7 +14,6 @@ dependencies:
   - "{{transformation}}.int_block_head"
   - "{{external}}.mev_relay_bid_trace"
   - "{{external}}.mev_relay_proposer_payload_delivered"
-lag: 12
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
