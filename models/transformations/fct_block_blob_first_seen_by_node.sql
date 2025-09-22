@@ -11,7 +11,6 @@ tags:
   - blob
 dependencies:
   - "{{external}}.beacon_api_eth_v1_events_blob_sidecar"
-lag: 12
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
