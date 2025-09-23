@@ -196,7 +196,7 @@ dim_region
 For models where finality matters:
 
 - Include `canonical` or `head` in model names when distinction matters
-- Example: `int_block_canonical_by_node` vs `fct_block_head_by_node`
+- Example: `fct_attestation_correctness_head` vs `fct_attestation_correctness_canonical`
 
 ## Best Practices
 
