@@ -12,7 +12,7 @@ tags:
 dependencies:
   - "{{external}}.beacon_api_eth_v1_events_attestation"
   - "{{external}}.libp2p_gossipsub_beacon_attestation"
-  - "{{external}}.beacon_api_eth_v1_beacon_committee"
+  - "{{transformation}}.int_beacon_committee_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -24,7 +24,7 @@ WITH validator_indices AS (
         epoch,
         epoch_start_date_time,
         arrayJoin(validators) AS validator_index
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "database" }}`.`beacon_api_eth_v1_beacon_committee` FINAL
+    FROM `{{ index .dep "{{transformation}}" "int_beacon_committee_head" "database" }}`.`int_beacon_committee_head` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 

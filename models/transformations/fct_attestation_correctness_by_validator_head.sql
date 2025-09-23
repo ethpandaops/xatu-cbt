@@ -12,7 +12,7 @@ tags:
 dependencies:
   - "{{transformation}}.int_attestation_attested_head"
   - "{{transformation}}.int_block_proposer_head"
-  - "{{external}}.beacon_api_eth_v1_beacon_committee"
+  - "{{transformation}}.int_beacon_committee_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -48,7 +48,7 @@ duties AS (
         epoch,
         epoch_start_date_time,
         arrayJoin(validators) AS attesting_validator_index
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "database" }}`.`beacon_api_eth_v1_beacon_committee` FINAL
+    FROM `{{ index .dep "{{transformation}}" "int_beacon_committee_head" "database" }}`.`int_beacon_committee_head` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 )
 
