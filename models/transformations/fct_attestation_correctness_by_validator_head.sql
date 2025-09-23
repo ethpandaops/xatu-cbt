@@ -11,7 +11,7 @@ tags:
   - head
 dependencies:
   - "{{transformation}}.int_attestation_attested_head"
-  - "{{transformation}}.int_block_proposer_head"
+  - "{{transformation}}.fct_block_proposer_head"
   - "{{transformation}}.int_beacon_committee_head"
 ---
 INSERT INTO
@@ -23,7 +23,7 @@ WITH blocks AS (
         epoch,
         epoch_start_date_time,
         block_root
-    FROM `{{ index .dep "{{transformation}}" "int_block_proposer_head" "database" }}`.`int_block_proposer_head` FINAL
+    FROM `{{ index .dep "{{transformation}}" "fct_block_proposer_head" "database" }}`.`fct_block_proposer_head` FINAL
     WHERE slot_start_date_time >= fromUnixTimestamp({{ .bounds.start }}) - INTERVAL '768 SECOND' -- look back 64 slots to get what block was attested to
         AND slot_start_date_time <= fromUnixTimestamp({{ .bounds.end }})
 ),

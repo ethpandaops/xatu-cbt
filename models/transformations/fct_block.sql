@@ -11,7 +11,7 @@ tags:
   - canonical
 dependencies:
   - "{{transformation}}.int_block_canonical"
-  - "{{transformation}}.int_block_head"
+  - "{{transformation}}.fct_block_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -76,7 +76,7 @@ orphaned_blocks AS (
         h.execution_payload_transactions_total_bytes AS execution_payload_transactions_total_bytes,
         h.execution_payload_transactions_total_bytes_compressed AS execution_payload_transactions_total_bytes_compressed,
         'orphaned' AS `status`
-    FROM `{{ index .dep "{{transformation}}" "int_block_head" "database" }}`.`int_block_head` AS h FINAL
+    FROM `{{ index .dep "{{transformation}}" "fct_block_head" "database" }}`.`fct_block_head` AS h FINAL
     GLOBAL LEFT ANTI JOIN canonical_blocks c 
         ON h.slot_start_date_time = c.slot_start_date_time 
         AND h.block_root = c.block_root

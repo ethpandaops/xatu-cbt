@@ -1,5 +1,5 @@
 ---
-table: int_block_mev_head
+table: fct_block_mev_head
 interval:
   max: 384
 schedules:
@@ -11,7 +11,7 @@ tags:
   - mev
   - head
 dependencies:
-  - "{{transformation}}.int_block_head"
+  - "{{transformation}}.fct_block_head"
   - "{{external}}.mev_relay_bid_trace"
   - "{{external}}.mev_relay_proposer_payload_delivered"
 ---
@@ -27,7 +27,7 @@ WITH blocks AS (
         execution_payload_block_hash AS block_hash,
         execution_payload_parent_hash AS parent_hash,
         execution_payload_block_number AS block_number
-    FROM `{{ index .dep "{{transformation}}" "int_block_head" "database" }}`.`int_block_head` FINAL
+    FROM `{{ index .dep "{{transformation}}" "fct_block_head" "database" }}`.`fct_block_head` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 proposer_payloads_raw AS (

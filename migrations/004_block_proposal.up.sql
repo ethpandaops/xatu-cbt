@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_head_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_head_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -13,13 +13,22 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_head_local on cluster '{cluste
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `proposer_validator_index`) COMMENT 'Block proposers for the unfinalized chain';
+    (`slot_start_date_time`, `proposer_validator_index`)
+SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+COMMENT 'Block proposers for the unfinalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_proposer_head_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_proposer_head_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_block_proposer_head_local,
+    fct_block_proposer_head_local,
     cityHash64(`slot_start_date_time`, `proposer_validator_index`)
+);
+
+ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_head_local
+ADD PROJECTION p_by_slot
+(
+    SELECT *
+    ORDER BY (`slot`, `proposer_validator_index`)
 );
 
 CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_canonical_local on cluster '{cluster}' (

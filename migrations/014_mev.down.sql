@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_block_mev_head_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_block_mev_head ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_block_mev_head_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_block_mev_head ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_block_mev_canonical_local ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_block_mev_canonical ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_block_mev_local ON CLUSTER '{cluster}';
