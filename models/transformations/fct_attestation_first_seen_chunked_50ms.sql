@@ -10,7 +10,6 @@ tags:
   - attestation
 dependencies:
   - "{{transformation}}.int_attestation_first_seen"
-  - "{{transformation}}.int_block_proposer_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -43,28 +42,27 @@ attestations_chunked AS (
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root, chunk_slot_start_diff
 ),
 
--- Get all slots with their proposed blocks
-slots AS (
-    SELECT
+-- Get all unique slot/block combinations from attestations
+unique_slot_blocks AS (
+    SELECT DISTINCT
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
         block_root
-    FROM `{{ index .dep "{{transformation}}" "int_block_proposer_head" "database" }}`.`int_block_proposer_head` FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    FROM attestations
 ),
 
--- Generate all possible chunk combinations for each slot (0ms to 12000ms in 50ms chunks)
+-- Generate all possible chunk combinations for each slot/block (0ms to 12000ms in 50ms chunks)
 slot_chunks AS (
     SELECT
-        s.slot,
-        s.slot_start_date_time,
-        s.epoch,
-        s.epoch_start_date_time,
-        s.block_root,
+        usb.slot,
+        usb.slot_start_date_time,
+        usb.epoch,
+        usb.epoch_start_date_time,
+        usb.block_root,
         arrayJoin(range(0, 12000, 50)) AS chunk_slot_start_diff
-    FROM slots s
+    FROM unique_slot_blocks usb
 ),
 
 -- Join with actual attestation data

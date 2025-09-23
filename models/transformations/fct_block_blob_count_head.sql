@@ -1,5 +1,5 @@
 ---
-table: int_block_blob_count_head
+table: fct_block_blob_count_head
 interval:
   max: 50000
 schedules:

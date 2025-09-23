@@ -12,7 +12,7 @@ tags:
   - canonical
 dependencies:
   - "{{transformation}}.int_block_proposer_canonical"
-  - "{{transformation}}.int_block_proposer_head"
+  - "{{transformation}}.fct_block_proposer_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -33,7 +33,7 @@ head_blocks AS (
     SELECT DISTINCT
         slot,
         block_root
-    FROM `{{ index .dep "{{transformation}}" "int_block_proposer_head" "database" }}`.`int_block_proposer_head` FINAL
+    FROM `{{ index .dep "{{transformation}}" "fct_block_proposer_head" "database" }}`.`fct_block_proposer_head` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND block_root IS NOT NULL
 )

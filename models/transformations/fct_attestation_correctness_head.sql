@@ -11,7 +11,7 @@ tags:
   - head
 dependencies:
   - "{{transformation}}.int_attestation_attested_head"
-  - "{{transformation}}.int_block_proposer_head"
+  - "{{transformation}}.fct_block_proposer_head"
   - "{{transformation}}.int_beacon_committee_head"
 ---
 INSERT INTO
@@ -23,7 +23,7 @@ WITH slots AS (
         epoch,
         epoch_start_date_time,
         block_root
-    FROM `{{ index .dep "{{transformation}}" "int_block_proposer_head" "database" }}`.`int_block_proposer_head` FINAL
+    FROM `{{ index .dep "{{transformation}}" "fct_block_proposer_head" "database" }}`.`fct_block_proposer_head` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -34,7 +34,7 @@ votes_per_block_root AS (
         epoch,
         epoch_start_date_time,
         block_root,
-        COUNT(*) as votes_actual
+        COUNT(*) as votes_head
     FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_head" "database" }}`.`int_attestation_attested_head` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
@@ -72,11 +72,11 @@ votes_per_slot AS (
         s.epoch_start_date_time as epoch_start_date_time,
         s.block_root as block_root,
         COALESCE(vm.votes_max, 0) as votes_max,
-        COALESCE(v.votes_actual, NULL) as votes_actual,
+        COALESCE(v.votes_head, NULL) as votes_head,
         CASE 
             WHEN tv.total_votes IS NULL THEN NULL
-            WHEN v.votes_actual IS NULL THEN toUInt64(tv.total_votes)
-            ELSE toUInt64(tv.total_votes - v.votes_actual)
+            WHEN v.votes_head IS NULL THEN toUInt64(tv.total_votes)
+            ELSE toUInt64(tv.total_votes - v.votes_head)
         END as votes_other
     FROM slots s
     LEFT JOIN votes_per_block_root v 
@@ -105,7 +105,7 @@ SELECT
   epoch_start_date_time,
   block_root,
   votes_max,
-  votes_actual,
+  votes_head,
   votes_other
 FROM votes_per_slot
 SETTINGS join_use_nulls = 1

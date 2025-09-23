@@ -34,10 +34,22 @@ votes_per_block_root AS (
         epoch,
         epoch_start_date_time,
         block_root,
-        COUNT(*) as votes_actual
+        COUNT(*) as votes_head
     FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "database" }}`.`int_attestation_attested_canonical` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
+),
+
+total_votes_per_slot AS (
+    SELECT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        COUNT(*) as total_votes
+    FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "database" }}`.`int_attestation_attested_canonical` FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time
 ),
 
 votes_max AS (
@@ -60,7 +72,12 @@ votes_per_slot AS (
         s.epoch_start_date_time as epoch_start_date_time,
         s.block_root as block_root,
         COALESCE(vm.votes_max, 0) as votes_max,
-        COALESCE(v.votes_actual, NULL) as votes_actual
+        COALESCE(v.votes_head, NULL) as votes_head,
+        CASE 
+            WHEN tv.total_votes IS NULL THEN NULL
+            WHEN v.votes_head IS NULL THEN toUInt64(tv.total_votes)
+            ELSE toUInt64(tv.total_votes - v.votes_head)
+        END as votes_other
     FROM slots s
     LEFT JOIN votes_per_block_root v 
         ON s.slot = v.slot 
@@ -73,6 +90,11 @@ votes_per_slot AS (
         AND s.slot_start_date_time = vm.slot_start_date_time
         AND s.epoch = vm.epoch
         AND s.epoch_start_date_time = vm.epoch_start_date_time
+    LEFT JOIN total_votes_per_slot tv
+        ON s.slot = tv.slot 
+        AND s.slot_start_date_time = tv.slot_start_date_time
+        AND s.epoch = tv.epoch
+        AND s.epoch_start_date_time = tv.epoch_start_date_time
 )
 
 SELECT
@@ -83,6 +105,7 @@ SELECT
   epoch_start_date_time,
   block_root,
   votes_max,
-  votes_actual
+  votes_head,
+  votes_other
 FROM votes_per_slot
 SETTINGS join_use_nulls = 1

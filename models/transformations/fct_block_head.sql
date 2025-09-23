@@ -1,5 +1,5 @@
 ---
-table: int_block_head
+table: fct_block_head
 interval:
   max: 50000
 schedules:

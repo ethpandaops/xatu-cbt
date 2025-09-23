@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_block_mev_head_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_head_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number within the block proposer payload' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The start time for the slot that the proposer payload is for' CODEC(DoubleDelta, ZSTD(1)),
@@ -27,14 +27,14 @@ ORDER BY
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'MEV relay proposer payload delivered for a block on the unfinalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_mev_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_mev_head_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_mev_head_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_block_mev_head_local,
+    fct_block_mev_head_local,
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.int_block_mev_head_local
+ALTER TABLE `${NETWORK_NAME}`.fct_block_mev_head_local
 ADD PROJECTION p_by_slot
 (
     SELECT *
@@ -75,13 +75,6 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_mev_canonical ON CLUSTER '{cluster}' AS
     '${NETWORK_NAME}',
     int_block_mev_canonical_local,
     cityHash64(`slot_start_date_time`, `block_root`)
-);
-
-ALTER TABLE `${NETWORK_NAME}`.int_block_mev_canonical_local
-ADD PROJECTION p_by_slot
-(
-    SELECT *
-    ORDER BY (`slot`, `block_root`)
 );
 
 CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_local on cluster '{cluster}' (

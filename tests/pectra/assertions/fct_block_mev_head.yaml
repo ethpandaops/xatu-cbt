@@ -5,11 +5,11 @@
       MIN(slot_start_date_time) AS min,
       MAX(slot_start_date_time) AS max
     FROM
-      int_block_blob_count_head FINAL
+      fct_block_mev_head FINAL
   expected:
-    count: 10
-    min: "2025-07-15T08:34:35Z"
-    max: "2025-07-15T08:37:59Z"
+    count: 18
+    min: "2025-07-15T08:34:23Z"
+    max: "2025-07-15T08:38:11Z"
 - name: "Expected admin bounds"
   sql: |
     SELECT
@@ -18,7 +18,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'int_block_blob_count_head'
+      table = 'fct_block_mev_head'
   expected:
     max: "2025-07-15T08:38:11Z"
-    min: "2025-07-15T08:34:35Z"
+    min: "2025-07-15T08:34:23Z"
