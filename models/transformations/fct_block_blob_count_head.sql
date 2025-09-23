@@ -42,7 +42,7 @@ WITH combined_events AS (
         epoch_start_date_time,
         block_root,
         max(blob_index) + 1 AS `blob_count`
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_data_column_sidecar" "database" }}`.`beacon_api_eth_v1_events_blob_sidecar` FINAL
+    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_blob_sidecar" "database" }}`.`beacon_api_eth_v1_events_blob_sidecar` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
 )
