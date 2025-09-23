@@ -6,7 +6,8 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_head_local on cluster
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
     `block_root` Nullable(String) COMMENT 'The beacon block root hash' CODEC(ZSTD(1)),
     `votes_max` UInt32 COMMENT 'The maximum number of scheduled votes for the block' CODEC(ZSTD(1)),
-    `votes_actual` Nullable(UInt32) COMMENT 'The number of actual votes for the block' CODEC(ZSTD(1))
+    `votes_actual` Nullable(UInt32) COMMENT 'The number of actual votes for the block' CODEC(ZSTD(1)),
+    `votes_other` Nullable(UInt32) COMMENT 'The number of other votes for alternative block' CODEC(ZSTD(1))
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',
