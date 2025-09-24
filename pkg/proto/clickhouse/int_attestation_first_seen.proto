@@ -105,7 +105,7 @@ message ListIntAttestationFirstSeenRequest {
 
   // The maximum number of int_attestation_first_seen to return.
   // If unspecified, at most 100 items will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 23;
   // A page token, received from a previous `ListIntAttestationFirstSeen` call.
   // Provide this to retrieve the subsequent page.

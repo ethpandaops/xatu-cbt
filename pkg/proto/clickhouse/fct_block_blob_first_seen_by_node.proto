@@ -57,25 +57,27 @@ message ListFctBlockBlobFirstSeenByNodeRequest {
   // Filter by slot_start_date_time (PRIMARY KEY - required)
   UInt32Filter slot_start_date_time = 1;
 
-  // Filter by meta_client_name (ORDER BY column 2 - optional)
-  StringFilter meta_client_name = 2;
+  // Filter by block_root (ORDER BY column 2 - optional)
+  StringFilter block_root = 2;
+
+  // Filter by blob_index (ORDER BY column 3 - optional)
+  UInt32Filter blob_index = 3;
+
+  // Filter by meta_client_name (ORDER BY column 4 - optional)
+  StringFilter meta_client_name = 4;
 
   // Filter by updated_date_time (optional)
-  UInt32Filter updated_date_time = 3;
+  UInt32Filter updated_date_time = 5;
   // Filter by source (optional)
-  StringFilter source = 4;
+  StringFilter source = 6;
   // Filter by slot (optional)
-  UInt32Filter slot = 5;
+  UInt32Filter slot = 7;
   // Filter by epoch (optional)
-  UInt32Filter epoch = 6;
+  UInt32Filter epoch = 8;
   // Filter by epoch_start_date_time (optional)
-  UInt32Filter epoch_start_date_time = 7;
+  UInt32Filter epoch_start_date_time = 9;
   // Filter by seen_slot_start_diff (optional)
-  UInt32Filter seen_slot_start_diff = 8;
-  // Filter by block_root (optional)
-  StringFilter block_root = 9;
-  // Filter by blob_index (optional)
-  UInt32Filter blob_index = 10;
+  UInt32Filter seen_slot_start_diff = 10;
   // Filter by username (optional)
   StringFilter username = 11;
   // Filter by node_id (optional)
@@ -101,7 +103,7 @@ message ListFctBlockBlobFirstSeenByNodeRequest {
 
   // The maximum number of fct_block_blob_first_seen_by_node to return.
   // If unspecified, at most 100 items will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 22;
   // A page token, received from a previous `ListFctBlockBlobFirstSeenByNode` call.
   // Provide this to retrieve the subsequent page.

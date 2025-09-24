@@ -652,13 +652,18 @@ func BuildListFctBlockBlobFirstSeenByNodeQuery(req *ListFctBlockBlobFirstSeenByN
 	}
 
 	// Handle pagination per AIP-132
+	// Validate page size
+	if req.PageSize < 0 {
+		return SQLQuery{}, fmt.Errorf("page_size must be non-negative, got %d", req.PageSize)
+	}
+	if req.PageSize > 10000 {
+		return SQLQuery{}, fmt.Errorf("page_size must not exceed %d, got %d", 10000, req.PageSize)
+	}
+
 	var limit, offset uint32
 	limit = 100 // Default page size
 	if req.PageSize > 0 {
 		limit = uint32(req.PageSize)
-		if limit > 1000 {
-			limit = 1000 // Maximum allowed
-		}
 	}
 	if req.PageToken != "" {
 		decodedOffset, err := DecodePageToken(req.PageToken)
@@ -679,7 +684,7 @@ func BuildListFctBlockBlobFirstSeenByNodeQuery(req *ListFctBlockBlobFirstSeenByN
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", meta_client_name"
+		orderByClause = " ORDER BY slot_start_date_time" + ", block_root" + ", blob_index" + ", meta_client_name"
 	}
 
 	return BuildParameterizedQuery("fct_block_blob_first_seen_by_node", qb, orderByClause, limit, offset, options...), nil
@@ -697,7 +702,7 @@ func BuildGetFctBlockBlobFirstSeenByNodeQuery(req *GetFctBlockBlobFirstSeenByNod
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, meta_client_name"
+	orderByClause := " ORDER BY slot_start_date_time, block_root, blob_index, meta_client_name"
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_blob_first_seen_by_node", qb, orderByClause, 1, 0, options...), nil
