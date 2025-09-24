@@ -44,8 +44,8 @@ SELECT
     argMin(epoch, propagation_slot_start_diff) AS epoch,
     argMin(epoch_start_date_time, propagation_slot_start_diff) AS epoch_start_date_time,
     MIN(propagation_slot_start_diff) as seen_slot_start_diff,
-    argMin(block_root, propagation_slot_start_diff) AS block_root,
-    argMin(blob_index, propagation_slot_start_diff) AS blob_index,
+    block_root,
+    blob_index,
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
             splitByChar('/', meta_client_name)[2]
@@ -76,4 +76,4 @@ SELECT
     argMin(meta_consensus_version, propagation_slot_start_diff) AS meta_consensus_version,
     argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation
 FROM combined_events
-GROUP BY slot_start_date_time, meta_client_name
+GROUP BY slot_start_date_time, meta_client_name, block_root, blob_index
