@@ -31,6 +31,10 @@ WITH combined_events AS (
         meta_client_geo_country,
         meta_client_geo_country_code,
         meta_client_geo_continent_code,
+        meta_client_geo_longitude,
+        meta_client_geo_latitude,
+        meta_client_geo_autonomous_system_number,
+        meta_client_geo_autonomous_system_organization,
         meta_consensus_version,
         meta_consensus_implementation
     FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_blob_sidecar" "database" }}`.`beacon_api_eth_v1_events_blob_sidecar` FINAL
@@ -73,6 +77,10 @@ SELECT
     argMin(meta_client_geo_country, propagation_slot_start_diff) AS meta_client_geo_country,
     argMin(meta_client_geo_country_code, propagation_slot_start_diff) AS meta_client_geo_country_code,
     argMin(meta_client_geo_continent_code, propagation_slot_start_diff) AS meta_client_geo_continent_code,
+    argMin(meta_client_geo_longitude, propagation_slot_start_diff) AS meta_client_geo_longitude,
+    argMin(meta_client_geo_latitude, propagation_slot_start_diff) AS meta_client_geo_latitude,
+    argMin(meta_client_geo_autonomous_system_number, propagation_slot_start_diff) AS meta_client_geo_autonomous_system_number,
+    argMin(meta_client_geo_autonomous_system_organization, propagation_slot_start_diff) AS meta_client_geo_autonomous_system_organization,
     argMin(meta_consensus_version, propagation_slot_start_diff) AS meta_consensus_version,
     argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation
 FROM combined_events
