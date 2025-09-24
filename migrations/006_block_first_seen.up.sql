@@ -25,7 +25,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_local on cluster '{c
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `meta_client_name`)
+    (`slot_start_date_time`, `block_root`, `meta_client_name`)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'When the block was first seen on the network by a sentry node';
 
@@ -40,5 +40,5 @@ ALTER TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_local
 ADD PROJECTION p_by_slot
 (
     SELECT *
-    ORDER BY (`slot`, `meta_client_name`)
+    ORDER BY (`slot`, `block_root`, `meta_client_name`)
 );
