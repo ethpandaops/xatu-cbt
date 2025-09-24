@@ -43,6 +43,10 @@ SELECT
     argMax(meta_client_geo_country, slot_start_date_time) AS meta_client_geo_country,
     argMax(meta_client_geo_country_code, slot_start_date_time) AS meta_client_geo_country_code,
     argMax(meta_client_geo_continent_code, slot_start_date_time) AS meta_client_geo_continent_code,
+    argMax(meta_client_geo_longitude, slot_start_date_time) AS meta_client_geo_longitude,
+    argMax(meta_client_geo_latitude, slot_start_date_time) AS meta_client_geo_latitude,
+    argMax(meta_client_geo_autonomous_system_number, slot_start_date_time) AS meta_client_geo_autonomous_system_number,
+    argMax(meta_client_geo_autonomous_system_organization, slot_start_date_time) AS meta_client_geo_autonomous_system_organization,
     argMax(meta_consensus_version, slot_start_date_time) AS meta_consensus_version,
     argMax(meta_consensus_implementation, slot_start_date_time) AS meta_consensus_implementation
 FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "database" }}`.`beacon_api_eth_v1_events_block` FINAL
