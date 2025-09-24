@@ -7,7 +7,7 @@
     FROM
       fct_block_blob_first_seen_by_node FINAL
   expected:
-    count: 1050
+    count: 8190
     min: "2025-07-15T08:34:35Z"
     max: "2025-07-15T08:37:59Z"
 - name: "Expected admin bounds"
