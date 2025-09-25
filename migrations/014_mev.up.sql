@@ -130,6 +130,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local on cluster '{c
     `earliest_bid_date_time` DateTime64(3) COMMENT 'The timestamp of the earliest bid in milliseconds' CODEC(DoubleDelta, ZSTD(1)),
     `relay_names` Array(String) COMMENT 'The relay that the bid was fetched from' CODEC(ZSTD(1)),
     `block_hash` FixedString(66) COMMENT 'The execution block hash of the bid' CODEC(ZSTD(1)),
+    `builder_pubkey` String COMMENT 'The builder pubkey of the bid' CODEC(ZSTD(1)),
     `value` UInt128 COMMENT 'The transaction value in wei' CODEC(ZSTD(1))
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
@@ -137,7 +138,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local on cluster '{c
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `block_hash`)
+    (`slot_start_date_time`, `block_hash`, `builder_pubkey`)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Highest value MEV relay bid for a slot by relay';
 
@@ -152,7 +153,7 @@ ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local
 ADD PROJECTION p_by_slot
 (
     SELECT *
-    ORDER BY (`slot`, `block_hash`)
+    ORDER BY (`slot`, `block_hash`, `builder_pubkey`)
 );
 
 CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local on cluster '{cluster}' (

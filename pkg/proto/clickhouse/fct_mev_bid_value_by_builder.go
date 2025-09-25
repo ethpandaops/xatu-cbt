@@ -233,6 +233,36 @@ func BuildListFctMevBidValueByBuilderQuery(req *ListFctMevBidValueByBuilderReque
 		}
 	}
 
+	// Add filter for column: builder_pubkey
+	if req.BuilderPubkey != nil {
+		switch filter := req.BuilderPubkey.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("builder_pubkey", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("builder_pubkey", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("builder_pubkey", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("builder_pubkey", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("builder_pubkey", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("builder_pubkey", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("builder_pubkey", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("builder_pubkey", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("builder_pubkey", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: value
 	if req.Value != nil {
 		switch filter := req.Value.Filter.(type) {
@@ -288,7 +318,7 @@ func BuildListFctMevBidValueByBuilderQuery(req *ListFctMevBidValueByBuilderReque
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "earliest_bid_date_time", "relay_names", "block_hash", "value"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "earliest_bid_date_time", "relay_names", "block_hash", "builder_pubkey", "value"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -296,7 +326,7 @@ func BuildListFctMevBidValueByBuilderQuery(req *ListFctMevBidValueByBuilderReque
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", block_hash"
+		orderByClause = " ORDER BY slot_start_date_time" + ", block_hash" + ", builder_pubkey"
 	}
 
 	return BuildParameterizedQuery("fct_mev_bid_value_by_builder", qb, orderByClause, limit, offset, options...), nil
@@ -314,7 +344,7 @@ func BuildGetFctMevBidValueByBuilderQuery(req *GetFctMevBidValueByBuilderRequest
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, block_hash"
+	orderByClause := " ORDER BY slot_start_date_time, block_hash, builder_pubkey"
 
 	// Return single record
 	return BuildParameterizedQuery("fct_mev_bid_value_by_builder", qb, orderByClause, 1, 0, options...), nil
