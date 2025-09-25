@@ -7,7 +7,7 @@
     FROM
       fct_mev_bid_value_by_builder FINAL
   expected:
-    count: 59234
+    count: 62404
     min: "12145370"
     max: "12145389"
 - name: "Expected admin bounds"
