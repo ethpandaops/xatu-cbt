@@ -21,7 +21,7 @@ SELECT
     epoch,
     epoch_start_date_time,
     builder_pubkey,
-    count(*) AS bid_total
+    COUNT(DISTINCT block_hash) AS bid_total
 FROM `{{ index .dep "{{external}}" "mev_relay_bid_trace" "database" }}`.`mev_relay_bid_trace` FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 GROUP BY slot_start_date_time, slot, epoch, epoch_start_date_time, builder_pubkey
