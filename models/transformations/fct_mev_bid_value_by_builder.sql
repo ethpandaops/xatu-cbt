@@ -14,20 +14,47 @@ dependencies:
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
-WITH max_value AS (
+WITH max_bids AS (
+  -- First, get the max value and corresponding block_hash for each builder/slot
   SELECT
       slot_start_date_time,
       slot,
       epoch,
       epoch_start_date_time,
-      min(toDateTime64(timestamp_ms / 1000, 3)) AS earliest_bid_date_time,
-      groupArray(DISTINCT relay_name) AS relay_names,
-      block_hash,
       builder_pubkey,
-      max(value) AS transaction_value
+      max(value) AS max_value,
+      argMax(block_hash, value) AS max_value_block_hash
   FROM `{{ index .dep "{{external}}" "mev_relay_bid_trace" "database" }}`.`mev_relay_bid_trace` FINAL
   WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-  GROUP BY slot_start_date_time, slot, epoch,  epoch_start_date_time, block_hash, builder_pubkey
+  GROUP BY slot_start_date_time, slot, epoch, epoch_start_date_time, builder_pubkey
+),
+max_value AS (
+  -- Then get the earliest timestamp for that specific max value and block_hash, plus relay names
+  SELECT
+      mb.slot_start_date_time,
+      mb.slot,
+      mb.epoch,
+      mb.epoch_start_date_time,
+      mb.builder_pubkey,
+      mb.max_value AS transaction_value,
+      mb.max_value_block_hash AS block_hash,
+      min(toDateTime64(t.timestamp_ms / 1000, 3)) AS earliest_bid_date_time,
+      groupArray(DISTINCT t.relay_name) AS relay_names
+  FROM max_bids AS mb
+  INNER JOIN `{{ index .dep "{{external}}" "mev_relay_bid_trace" "database" }}`.`mev_relay_bid_trace` AS t FINAL
+    ON mb.slot = t.slot
+    AND mb.builder_pubkey = t.builder_pubkey
+    AND mb.max_value = t.value
+    AND mb.max_value_block_hash = t.block_hash
+  WHERE t.slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+  GROUP BY 
+      mb.slot_start_date_time,
+      mb.slot,
+      mb.epoch,
+      mb.epoch_start_date_time,
+      mb.builder_pubkey,
+      mb.max_value,
+      mb.max_value_block_hash
 )
 
 SELECT

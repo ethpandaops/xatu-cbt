@@ -138,7 +138,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local on cluster '{c
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `block_hash`, `builder_pubkey`)
+    (`slot_start_date_time`, `builder_pubkey`)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Highest value MEV relay bid for a slot by relay';
 
@@ -146,14 +146,14 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder ON CLUSTER '{cluster
     '{cluster}',
     '${NETWORK_NAME}',
     fct_mev_bid_value_by_builder_local,
-    cityHash64(`slot_start_date_time`, `block_hash`)
+    cityHash64(`slot_start_date_time`, `builder_pubkey`)
 );
 
 ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local
 ADD PROJECTION p_by_slot
 (
     SELECT *
-    ORDER BY (`slot`, `block_hash`, `builder_pubkey`)
+    ORDER BY (`slot`, `builder_pubkey`)
 );
 
 CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local on cluster '{cluster}' (
