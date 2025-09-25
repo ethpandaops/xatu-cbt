@@ -1,0 +1,24 @@
+- name: "Expected bounds and size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot) AS min,
+      MAX(slot) AS max
+    FROM
+      fct_mev_bid_count_by_builder FINAL
+  expected:
+    count: 975
+    min: "12145370"
+    max: "12145389"
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt FINAL
+    WHERE
+      table = 'fct_mev_bid_count_by_builder'
+  expected:
+    max: "2025-07-15T08:38:11Z"
+    min: "2025-07-15T08:34:23Z"

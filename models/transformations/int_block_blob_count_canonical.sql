@@ -12,7 +12,6 @@ tags:
   - canonical
 dependencies:
   - "{{external}}.canonical_beacon_blob_sidecar"
-  # TODO: this is broken as canonical_beacon_blob_sidecar has the wrong block_root
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`

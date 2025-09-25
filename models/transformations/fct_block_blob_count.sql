@@ -12,7 +12,6 @@ tags:
 dependencies:
   - "{{transformation}}.int_block_blob_count_canonical"
   - "{{transformation}}.fct_block_blob_count_head"
-  # TODO: this is broken as int_block_blob_count_canonical has the wrong block_root
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
