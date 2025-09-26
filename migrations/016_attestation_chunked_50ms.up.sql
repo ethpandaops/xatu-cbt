@@ -24,7 +24,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms ON CLUSTE
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms_local
+ALTER TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

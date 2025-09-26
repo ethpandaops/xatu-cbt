@@ -26,7 +26,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_head ON CLUSTER '{clu
     cityHash64(`slot_start_date_time`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_attestation_correctness_head_local
+ALTER TABLE `${NETWORK_NAME}`.fct_attestation_correctness_head_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
