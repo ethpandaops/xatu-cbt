@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_block_mev_canonical_local ON CLUSTER 
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_block_mev_canonical ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_block_mev_local ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_block_mev ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_mev_bid_value_by_builder ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_mev_bid_by_builder_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_mev_bid_by_builder ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_mev_bid_count_by_relay ON CLUSTER '{cluster}';
