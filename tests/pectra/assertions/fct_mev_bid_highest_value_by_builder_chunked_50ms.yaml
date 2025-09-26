@@ -5,9 +5,9 @@
       MIN(slot) AS min,
       MAX(slot) AS max
     FROM
-      fct_mev_bid_by_builder FINAL
+      fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
   expected:
-    count: 62404
+    count: 28883
     min: "12145370"
     max: "12145389"
 - name: "Expected admin bounds"
@@ -18,7 +18,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'fct_mev_bid_by_builder'
+      table = 'fct_mev_bid_highest_value_by_builder_chunked_50ms'
   expected:
     max: "2025-07-15T08:38:11Z"
     min: "2025-07-15T08:34:23Z"
