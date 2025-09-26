@@ -121,7 +121,7 @@ ADD PROJECTION p_by_slot
     ORDER BY (`slot`, `block_root`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_by_builder_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number within the block bid' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The start time for the slot that the bid is for' CODEC(DoubleDelta, ZSTD(1)),
@@ -138,22 +138,22 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local on cluster '{c
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `builder_pubkey`)
+    (`slot_start_date_time`, `block_hash`, `builder_pubkey`)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Highest value MEV relay bid for a slot by relay';
+COMMENT 'All unique bids from builders for a slot';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_by_builder ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_mev_bid_by_builder_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_mev_bid_value_by_builder_local,
-    cityHash64(`slot_start_date_time`, `builder_pubkey`)
+    fct_mev_bid_by_builder_local,
+    cityHash64(`slot_start_date_time`, `block_hash`, `builder_pubkey`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_value_by_builder_local
+ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_by_builder_local
 ADD PROJECTION p_by_slot
 (
     SELECT *
-    ORDER BY (`slot`, `builder_pubkey`)
+    ORDER BY (`slot`, `block_hash`, `builder_pubkey`)
 );
 
 CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local on cluster '{cluster}' (
