@@ -23,7 +23,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_blob_count_head ON CLUSTER '{cluster}' 
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_blob_count_head_local
+ALTER TABLE `${NETWORK_NAME}`.fct_block_blob_count_head_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
@@ -79,7 +79,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_blob_count ON CLUSTER '{cluster}' AS `$
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_blob_count_local
+ALTER TABLE `${NETWORK_NAME}`.fct_block_blob_count_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

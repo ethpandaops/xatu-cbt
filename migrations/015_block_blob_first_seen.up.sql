@@ -41,7 +41,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_blob_first_seen_by_node ON CLUSTER '{cl
     cityHash64(`slot_start_date_time`, `meta_client_name`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_blob_first_seen_by_node_local
+ALTER TABLE `${NETWORK_NAME}`.fct_block_blob_first_seen_by_node_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

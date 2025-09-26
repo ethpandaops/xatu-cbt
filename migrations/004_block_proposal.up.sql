@@ -24,7 +24,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_head ON CLUSTER '{cluster}' AS
     cityHash64(`slot_start_date_time`, `proposer_validator_index`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_head_local
+ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_head_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
@@ -82,7 +82,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer ON CLUSTER '{cluster}' AS `${N
     cityHash64(`slot_start_date_time`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_local
+ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

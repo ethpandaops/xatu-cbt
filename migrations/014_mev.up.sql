@@ -34,7 +34,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_head ON CLUSTER '{cluster}' AS `${N
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_mev_head_local
+ALTER TABLE `${NETWORK_NAME}`.fct_block_mev_head_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
@@ -114,7 +114,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_mev ON CLUSTER '{cluster}' AS `${NETWOR
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_mev_local
+ALTER TABLE `${NETWORK_NAME}`.fct_block_mev_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
@@ -150,7 +150,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms
     cityHash64(`slot_start_date_time`, `chunk_slot_start_diff`, `builder_pubkey`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms_local
+ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
@@ -182,7 +182,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay ON CLUSTER '{cluster}'
     cityHash64(`slot_start_date_time`, `relay_name`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local
+ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

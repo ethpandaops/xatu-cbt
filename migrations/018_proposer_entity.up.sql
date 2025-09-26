@@ -22,7 +22,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_entity ON CLUSTER '{cluster}' 
     cityHash64(`slot_start_date_time`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_entity_local
+ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_entity_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

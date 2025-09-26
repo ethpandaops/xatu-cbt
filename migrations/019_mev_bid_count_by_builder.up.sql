@@ -23,7 +23,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_builder ON CLUSTER '{cluster
     cityHash64(`slot_start_date_time`, `builder_pubkey`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_builder_local
+ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_builder_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
