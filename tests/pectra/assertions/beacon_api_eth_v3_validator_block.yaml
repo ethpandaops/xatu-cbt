@@ -1,0 +1,82 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
+  expected:
+    count: 172  # Actual count from test data
+
+- name: "unique clients"
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_client_name) AS unique_clients
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
+  expected:
+    unique_clients: 10  # 10 unique validator client nodes
+
+- name: "slot range"
+  sql: |
+    SELECT
+      MIN(slot) AS min_slot,
+      MAX(slot) AS max_slot
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
+  expected:
+    min_slot: 12145370  # First slot in test data
+    max_slot: 12145390  # Last slot in test data
+
+- name: "has execution and consensus clients"
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_client_implementation) AS execution_clients,
+      COUNT(DISTINCT meta_consensus_implementation) AS consensus_clients
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
+  expected:
+    execution_clients: 1  # Xatu
+    consensus_clients: 5  # lighthouse, prysm, teku, nimbus, lodestar
+
+- name: "block version consistency"
+  sql: |
+    SELECT
+      COUNT(DISTINCT block_version) AS versions,
+      MIN(block_version) AS version_name
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
+  expected:
+    versions: 1  # Single version
+    version_name: "electra"  # Electra fork
+
+- name: "execution payload data present"
+  sql: |
+    SELECT
+      COUNT(*) AS blocks_with_exec_data
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
+    WHERE
+      execution_payload_block_number > 0
+  expected:
+    blocks_with_exec_data: 172  # All blocks have execution payload data
+
+- name: "consensus implementations detail"
+  sql: |
+    SELECT
+      meta_consensus_implementation,
+      COUNT(*) AS count
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
+    GROUP BY meta_consensus_implementation
+    ORDER BY meta_consensus_implementation
+  expected:
+    - meta_consensus_implementation: "lighthouse"
+      count: ">0"
+    - meta_consensus_implementation: "lodestar"
+      count: ">0"
+    - meta_consensus_implementation: "nimbus"
+      count: ">0"
+    - meta_consensus_implementation: "prysm"
+      count: ">0"
+    - meta_consensus_implementation: "teku"
+      count: ">0"

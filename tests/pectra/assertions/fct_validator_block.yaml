@@ -1,0 +1,113 @@
+- name: "Expected size"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      fct_validator_block FINAL
+  expected:
+    count: 172  # Should match source data count
+
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt FINAL
+    WHERE
+      table = 'fct_validator_block'
+  expected:
+    max: ">2024-01-01T00:00:00Z"  # Should have recent data
+    min: "<2025-12-31T23:59:59Z"  # Within reasonable bounds
+
+- name: "Slot range"
+  sql: |
+    SELECT
+      MIN(slot) AS min_slot,
+      MAX(slot) AS max_slot,
+      COUNT(DISTINCT slot) AS unique_slots
+    FROM
+      fct_validator_block FINAL
+  expected:
+    min_slot: 12145370
+    max_slot: 12145390
+    unique_slots: "<=21"  # 21 slots in range
+
+- name: "Client diversity"
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_client_name) AS unique_client_names,
+      COUNT(DISTINCT meta_client_implementation) AS unique_execution_clients,
+      COUNT(DISTINCT meta_consensus_implementation) AS unique_consensus_clients
+    FROM
+      fct_validator_block FINAL
+  expected:
+    unique_client_names: 10  # 10 unique validator nodes
+    unique_execution_clients: 1  # Xatu
+    unique_consensus_clients: 5  # lighthouse, prysm, teku, nimbus, lodestar
+
+- name: "Block values populated"
+  sql: |
+    SELECT
+      COUNT(*) AS blocks_with_exec_data
+    FROM
+      fct_validator_block FINAL
+    WHERE
+      execution_payload_block_number > 0
+  expected:
+    blocks_with_exec_data: 172  # All blocks have execution data
+
+- name: "Block version verification"
+  sql: |
+    SELECT
+      DISTINCT block_version
+    FROM
+      fct_validator_block FINAL
+    ORDER BY block_version
+  expected:
+    - block_version: "electra"
+
+- name: "Consensus client distribution"
+  sql: |
+    SELECT
+      meta_consensus_implementation,
+      COUNT(*) AS count
+    FROM
+      fct_validator_block FINAL
+    GROUP BY meta_consensus_implementation
+    HAVING count > 0
+    ORDER BY meta_consensus_implementation
+  expected:
+    - meta_consensus_implementation: "lighthouse"
+      count: ">0"
+    - meta_consensus_implementation: "lodestar"
+      count: ">0"
+    - meta_consensus_implementation: "nimbus"
+      count: ">0"
+    - meta_consensus_implementation: "prysm"
+      count: ">0"
+    - meta_consensus_implementation: "teku"
+      count: ">0"
+
+- name: "Network name present"
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_network_name) AS networks
+    FROM
+      fct_validator_block FINAL
+    WHERE meta_network_name IS NOT NULL
+  expected:
+    networks: 1  # Should only have single network
+
+- name: "Date time fields populated"
+  sql: |
+    SELECT
+      COUNT(*) AS complete_records
+    FROM
+      fct_validator_block FINAL
+    WHERE
+      slot_start_date_time IS NOT NULL
+      AND event_date_time IS NOT NULL
+      AND updated_date_time IS NOT NULL
+  expected:
+    complete_records: 172  # All records should have date time fields
