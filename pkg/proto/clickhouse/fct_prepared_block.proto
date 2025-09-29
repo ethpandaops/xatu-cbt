@@ -53,8 +53,6 @@ message FctPreparedBlock {
   google.protobuf.UInt32Value execution_payload_transactions_count = 31;
   // The transaction total bytes of the execution payload
   google.protobuf.UInt32Value execution_payload_transactions_total_bytes = 32;
-  // Ethereum network name
-  string meta_network_name = 33;
 }
 
 // ListFctPreparedBlockRequest is the request message for listing fct_prepared_block records
@@ -107,20 +105,18 @@ message ListFctPreparedBlockRequest {
   NullableUInt32Filter execution_payload_transactions_count = 21;
   // Filter by execution_payload_transactions_total_bytes (optional)
   NullableUInt32Filter execution_payload_transactions_total_bytes = 22;
-  // Filter by meta_network_name (optional)
-  StringFilter meta_network_name = 23;
 
   // The maximum number of fct_prepared_block to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 24;
+  int32 page_size = 23;
   // A page token, received from a previous `ListFctPreparedBlock` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 25;
+  string page_token = 24;
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 26;
+  string order_by = 25;
 }
 
 // ListFctPreparedBlockResponse is the response message for listing fct_prepared_block records

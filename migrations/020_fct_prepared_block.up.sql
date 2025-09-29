@@ -20,8 +20,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_prepared_block_local on cluster '{cluster}' (
     `execution_payload_gas_limit` Nullable(UInt64) COMMENT 'Gas limit for execution payload',
     `execution_payload_gas_used` Nullable(UInt64) COMMENT 'Gas used for execution payload',
     `execution_payload_transactions_count` Nullable(UInt32) COMMENT 'The transaction count of the execution payload',
-    `execution_payload_transactions_total_bytes` Nullable(UInt32) COMMENT 'The transaction total bytes of the execution payload',
-    `meta_network_name` String COMMENT 'Ethereum network name'
+    `execution_payload_transactions_total_bytes` Nullable(UInt32) COMMENT 'The transaction total bytes of the execution payload'
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',

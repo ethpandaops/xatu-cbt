@@ -37,8 +37,7 @@ SELECT
     execution_payload_gas_limit,
     execution_payload_gas_used,
     execution_payload_transactions_count,
-    execution_payload_transactions_total_bytes,
-    meta_network_name
+    execution_payload_transactions_total_bytes
 FROM `{{ index .dep "{{external}}" "beacon_api_eth_v3_validator_block" "database" }}`.`beacon_api_eth_v3_validator_block` FINAL
 WHERE
     slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})

@@ -714,36 +714,6 @@ func BuildListFctPreparedBlockQuery(req *ListFctPreparedBlockRequest, options ..
 		}
 	}
 
-	// Add filter for column: meta_network_name
-	if req.MetaNetworkName != nil {
-		switch filter := req.MetaNetworkName.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("meta_network_name", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("meta_network_name", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("meta_network_name", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("meta_network_name", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("meta_network_name", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("meta_network_name", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("meta_network_name", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("meta_network_name", StringSliceToInterface(filter.In.Values))
-			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("meta_network_name", StringSliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -769,7 +739,7 @@ func BuildListFctPreparedBlockQuery(req *ListFctPreparedBlockRequest, options ..
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "event_date_time", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "execution_payload_value", "consensus_payload_value", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes", "meta_network_name"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "event_date_time", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "execution_payload_value", "consensus_payload_value", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -781,7 +751,7 @@ func BuildListFctPreparedBlockQuery(req *ListFctPreparedBlockRequest, options ..
 	}
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "event_date_time", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "execution_payload_value", "consensus_payload_value", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes", "meta_network_name"}
+	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "event_date_time", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "execution_payload_value", "consensus_payload_value", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes"}
 
 	return BuildParameterizedQuery("fct_prepared_block", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -801,7 +771,7 @@ func BuildGetFctPreparedBlockQuery(req *GetFctPreparedBlockRequest, options ...Q
 	orderByClause := " ORDER BY slot_start_date_time, slot, meta_client_name, event_date_time"
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "event_date_time", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "execution_payload_value", "consensus_payload_value", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes", "meta_network_name"}
+	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "event_date_time", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "execution_payload_value", "consensus_payload_value", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_prepared_block", columns, qb, orderByClause, 1, 0, options...)

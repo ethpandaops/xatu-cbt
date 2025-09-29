@@ -68,16 +68,6 @@
   expected:
     total_implementations: 5
 
-- name: "Network name present"
-  sql: |
-    SELECT
-      COUNT(DISTINCT meta_network_name) AS networks
-    FROM
-      fct_prepared_block FINAL
-    WHERE meta_network_name IS NOT NULL
-  expected:
-    networks: 1  # Should only have single network
-
 - name: "Date time fields populated"
   sql: |
     SELECT
