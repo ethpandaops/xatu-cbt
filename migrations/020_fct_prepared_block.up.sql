@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_validator_block_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_prepared_block_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number from beacon block',
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started',
@@ -30,24 +30,24 @@ CREATE TABLE `${NETWORK_NAME}`.fct_validator_block_local on cluster '{cluster}' 
 ORDER BY
     (`slot_start_date_time`, `slot`, `meta_client_name`, `event_date_time`)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Validator block proposals showing what would have been built if the validator had been selected as proposer';
+COMMENT 'Prepared block proposals showing what would have been built if the validator had been selected as proposer';
 
 
-CREATE TABLE `${NETWORK_NAME}`.fct_validator_block ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_validator_block_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_prepared_block ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_prepared_block_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_validator_block_local,
+    fct_prepared_block_local,
     cityHash64(`slot_start_date_time`, `slot`, `meta_client_name`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_validator_block_local ON CLUSTER '{cluster}'
+ALTER TABLE `${NETWORK_NAME}`.fct_prepared_block_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
     ORDER BY (`slot`, `meta_client_name`, `event_date_time`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_validator_block_local ON CLUSTER '{cluster}'
+ALTER TABLE `${NETWORK_NAME}`.fct_prepared_block_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_client
 (
     SELECT *

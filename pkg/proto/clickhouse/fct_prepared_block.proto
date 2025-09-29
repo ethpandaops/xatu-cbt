@@ -6,9 +6,9 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Validator block proposals showing what would have been built if the validator had been selected as proposer
+// Prepared block proposals showing what would have been built if the validator had been selected as proposer
 
-message FctValidatorBlock {
+message FctPreparedBlock {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // The slot number from beacon block
@@ -57,8 +57,8 @@ message FctValidatorBlock {
   string meta_network_name = 33;
 }
 
-// ListFctValidatorBlockRequest is the request message for listing fct_validator_block records
-message ListFctValidatorBlockRequest {
+// ListFctPreparedBlockRequest is the request message for listing fct_prepared_block records
+message ListFctPreparedBlockRequest {
   // Filter by slot_start_date_time (PRIMARY KEY - required)
   UInt32Filter slot_start_date_time = 1;
 
@@ -110,11 +110,11 @@ message ListFctValidatorBlockRequest {
   // Filter by meta_network_name (optional)
   StringFilter meta_network_name = 23;
 
-  // The maximum number of fct_validator_block to return.
+  // The maximum number of fct_prepared_block to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 24;
-  // A page token, received from a previous `ListFctValidatorBlock` call.
+  // A page token, received from a previous `ListFctPreparedBlock` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 25;
   // The order of results. Format: comma-separated list of fields.
@@ -123,30 +123,30 @@ message ListFctValidatorBlockRequest {
   string order_by = 26;
 }
 
-// ListFctValidatorBlockResponse is the response message for listing fct_validator_block records
-message ListFctValidatorBlockResponse {
-  // The list of fct_validator_block.
-  repeated FctValidatorBlock fct_validator_block = 1;
+// ListFctPreparedBlockResponse is the response message for listing fct_prepared_block records
+message ListFctPreparedBlockResponse {
+  // The list of fct_prepared_block.
+  repeated FctPreparedBlock fct_prepared_block = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// GetFctValidatorBlockRequest is the request message for getting a single fct_validator_block record by primary key
-message GetFctValidatorBlockRequest {
+// GetFctPreparedBlockRequest is the request message for getting a single fct_prepared_block record by primary key
+message GetFctPreparedBlockRequest {
   // The wall clock time when the slot started
   uint32 slot_start_date_time = 1; // Primary key (required)
 }
 
-// GetFctValidatorBlockResponse is the response message for getting a single fct_validator_block record
-message GetFctValidatorBlockResponse {
-  FctValidatorBlock item = 1;
+// GetFctPreparedBlockResponse is the response message for getting a single fct_prepared_block record
+message GetFctPreparedBlockResponse {
+  FctPreparedBlock item = 1;
 }
 
-// FctValidatorBlockService provides RPC methods for querying fct_validator_block data
-service FctValidatorBlockService {
-  // List returns paginated fct_validator_block records
-  rpc List(ListFctValidatorBlockRequest) returns (ListFctValidatorBlockResponse);
-  // Get returns a single fct_validator_block record by primary key
-  rpc Get(GetFctValidatorBlockRequest) returns (GetFctValidatorBlockResponse);
+// FctPreparedBlockService provides RPC methods for querying fct_prepared_block data
+service FctPreparedBlockService {
+  // List returns paginated fct_prepared_block records
+  rpc List(ListFctPreparedBlockRequest) returns (ListFctPreparedBlockResponse);
+  // Get returns a single fct_prepared_block record by primary key
+  rpc Get(GetFctPreparedBlockRequest) returns (GetFctPreparedBlockResponse);
 }

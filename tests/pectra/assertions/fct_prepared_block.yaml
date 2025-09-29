@@ -5,7 +5,7 @@
       MIN(slot) AS min,
       MAX(slot) AS max
     FROM
-      fct_validator_block FINAL
+      fct_prepared_block FINAL
   expected:
     count: 171
     min: "12145370"
@@ -19,7 +19,7 @@
     FROM
       admin_cbt FINAL
     WHERE
-      table = 'fct_validator_block'
+      table = 'fct_prepared_block'
   expected:
     max: "2025-07-15T08:38:23Z"
     min: "2025-07-15T08:34:23Z"
@@ -31,7 +31,7 @@
       COUNT(DISTINCT meta_client_implementation) AS unique_execution_clients,
       COUNT(DISTINCT meta_consensus_implementation) AS unique_consensus_clients
     FROM
-      fct_validator_block FINAL
+      fct_prepared_block FINAL
   expected:
     unique_client_names: 10  # 10 unique validator nodes
     unique_execution_clients: 1  # Xatu
@@ -42,7 +42,7 @@
     SELECT
       COUNT(*) AS blocks_with_exec_data
     FROM
-      fct_validator_block FINAL
+      fct_prepared_block FINAL
     WHERE
       execution_payload_block_number > 0
   expected:
@@ -54,7 +54,7 @@
       COUNT(DISTINCT block_version) AS versions,
       MIN(block_version) AS version_name
     FROM
-      fct_validator_block FINAL
+      fct_prepared_block FINAL
   expected:
     versions: 1
     version_name: "electra"
@@ -64,7 +64,7 @@
     SELECT
       COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
     FROM
-      fct_validator_block FINAL
+      fct_prepared_block FINAL
   expected:
     total_implementations: 5
 
@@ -73,7 +73,7 @@
     SELECT
       COUNT(DISTINCT meta_network_name) AS networks
     FROM
-      fct_validator_block FINAL
+      fct_prepared_block FINAL
     WHERE meta_network_name IS NOT NULL
   expected:
     networks: 1  # Should only have single network
@@ -83,7 +83,7 @@
     SELECT
       COUNT(*) AS complete_records
     FROM
-      fct_validator_block FINAL
+      fct_prepared_block FINAL
     WHERE
       slot_start_date_time IS NOT NULL
       AND event_date_time IS NOT NULL

@@ -1,5 +1,5 @@
 ---
-table: fct_validator_block
+table: fct_prepared_block
 interval:
   max: 384
 schedules:
@@ -7,7 +7,7 @@ schedules:
   backfill: "@every 1m"
 tags:
   - slot
-  - validator
+  - prepared
   - block
   - locally-built
 dependencies:
