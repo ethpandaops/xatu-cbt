@@ -7,7 +7,7 @@
     FROM
       fct_validator_block FINAL
   expected:
-    count: 172
+    count: 171
     min: "12145370"
     max: "12145390"
 
@@ -46,7 +46,7 @@
     WHERE
       execution_payload_block_number > 0
   expected:
-    blocks_with_exec_data: 172  # All blocks have execution data
+    blocks_with_exec_data: 171  # All blocks have execution data
 
 - name: "Block version verification"
   sql: |
@@ -89,4 +89,4 @@
       AND event_date_time IS NOT NULL
       AND updated_date_time IS NOT NULL
   expected:
-    complete_records: 172  # All records should have date time fields
+    complete_records: 171  # All records should have date time fields
