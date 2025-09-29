@@ -1,0 +1,73 @@
+---
+table: fct_address_access_total
+interval:
+  max: 86400
+  min: 86400
+schedules:
+  forwardfill: "@every 1m"
+tags:
+  - address
+  - access
+  - total
+dependencies:
+  - "{{transformation}}.fct_block"
+  # TODO: should be added with scheduled transformations
+  # - "{{external}}.canonical_execution_contracts"
+  # - "{{transformation}}.int_address_last_access"
+  # - "{{transformation}}.int_contract"
+---
+INSERT INTO
+  `{{ .self.database }}`.`{{ .self.table }}`
+WITH latest_block AS (
+    SELECT max(slot_start_date_time) as slot_start_date_time
+    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`fct_block` FINAL
+    WHERE `status` = 'canonical'
+),
+block_range AS (
+    -- Get the block range for last 365 days
+    SELECT
+        max(execution_payload_block_number) as max_block_number,
+        min(execution_payload_block_number) as min_block_number
+    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`fct_block` FINAL
+    WHERE `status` = 'canonical'
+        AND execution_payload_block_number IS NOT NULL
+        AND slot_start_date_time >= (SELECT slot_start_date_time - INTERVAL 365 DAY FROM latest_block)
+),
+total_contracts AS (
+    SELECT count() AS count
+    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`canonical_execution_contracts` FINAL
+),
+total_accounts AS (
+    SELECT count() AS count
+    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`int_address_last_access` FINAL
+),
+expired_accounts AS (
+    -- Expired accounts (not accessed in last 365 days)
+    SELECT count() AS count
+    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`int_address_last_access` FINAL
+    WHERE block_number < (SELECT min_block_number FROM block_range)
+),
+expired_contracts AS (
+    -- Expired contracts (not accessed in last 365 days)
+    SELECT count() AS count
+    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`int_address_last_access` AS a FINAL
+    GLOBAL INNER JOIN (
+    SELECT DISTINCT lower(contract_address) AS contract_address
+    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`canonical_execution_contracts` FINAL
+    ) AS c
+    ON a.address = c.contract_address
+    WHERE a.block_number < (SELECT min_block_number FROM block_range)
+)
+SELECT
+    fromUnixTimestamp({{ .task.start }}) as updated_date_time,
+    (SELECT count FROM total_accounts) as total_accounts,
+    (SELECT count FROM expired_accounts) as expired_accounts,
+    (SELECT count FROM total_contracts) as total_contracts,
+    (SELECT count FROM expired_contracts) as expired_contracts;
+
+DELETE FROM
+  `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
+{{ if .clickhouse.cluster }}
+  ON CLUSTER '{{ .clickhouse.cluster }}'
+{{ end }}
+WHERE updated_date_time != fromUnixTimestamp({{ .task.start }});
