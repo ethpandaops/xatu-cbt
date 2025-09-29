@@ -42,5 +42,4 @@ SELECT
 FROM `{{ index .dep "{{external}}" "beacon_api_eth_v3_validator_block" "database" }}`.`beacon_api_eth_v3_validator_block` FINAL
 WHERE
     slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-    AND meta_network_name = '{{ .network }}'
 ORDER BY slot_start_date_time, slot, meta_client_name, event_date_time

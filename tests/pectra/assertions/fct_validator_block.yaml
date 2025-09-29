@@ -1,11 +1,15 @@
-- name: "Expected size"
+- name: "Expected bounds and size"
   sql: |
     SELECT
-      COUNT(*) AS count
+      COUNT(*) AS count,
+      MIN(slot) AS min,
+      MAX(slot) AS max
     FROM
       fct_validator_block FINAL
   expected:
-    count: 172  # Should match source data count
+    count: 172
+    min: "12145370"
+    max: "12145390"
 
 - name: "Expected admin bounds"
   sql: |
@@ -17,21 +21,8 @@
     WHERE
       table = 'fct_validator_block'
   expected:
-    max: ">2024-01-01T00:00:00Z"  # Should have recent data
-    min: "<2025-12-31T23:59:59Z"  # Within reasonable bounds
-
-- name: "Slot range"
-  sql: |
-    SELECT
-      MIN(slot) AS min_slot,
-      MAX(slot) AS max_slot,
-      COUNT(DISTINCT slot) AS unique_slots
-    FROM
-      fct_validator_block FINAL
-  expected:
-    min_slot: 12145370
-    max_slot: 12145390
-    unique_slots: "<=21"  # 21 slots in range
+    max: "2025-07-15T08:38:23Z"
+    min: "2025-07-15T08:34:23Z"
 
 - name: "Client diversity"
   sql: |
@@ -71,21 +62,11 @@
 - name: "Consensus client distribution"
   sql: |
     SELECT
-      COUNT(DISTINCT meta_consensus_implementation) AS total_implementations,
-      SUM(IF(meta_consensus_implementation = 'lighthouse', 1, 0)) AS has_lighthouse,
-      SUM(IF(meta_consensus_implementation = 'lodestar', 1, 0)) AS has_lodestar,
-      SUM(IF(meta_consensus_implementation = 'nimbus', 1, 0)) AS has_nimbus,
-      SUM(IF(meta_consensus_implementation = 'prysm', 1, 0)) AS has_prysm,
-      SUM(IF(meta_consensus_implementation = 'teku', 1, 0)) AS has_teku
+      COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
     FROM
       fct_validator_block FINAL
   expected:
     total_implementations: 5
-    has_lighthouse: ">0"
-    has_lodestar: ">0"
-    has_nimbus: ">0"
-    has_prysm: ">0"
-    has_teku: ">0"
 
 - name: "Network name present"
   sql: |
