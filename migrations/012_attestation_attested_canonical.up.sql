@@ -99,7 +99,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_canonica
     `block_root` Nullable(String) COMMENT 'The beacon block root hash that was attested' CODEC(ZSTD(1)),
     `slot_distance` Nullable(UInt32) COMMENT 'The distance from the slot to the attested block. If the attested block is the same as the slot, the distance is 0, if the attested block is the previous slot, the distance is 1, etc. If null, the attestation was missed, the block was orphaned and never seen by a sentry or the block was more than 64 slots ago' CODEC(DoubleDelta, ZSTD(1)),
     `inclusion_distance` Nullable(UInt32) COMMENT 'The distance from the slot when the attestation was included in a block' CODEC(DoubleDelta, ZSTD(1)),
-    `status` LowCardinality(String) COMMENT 'Can be "canonical", "orphaned" or "missed"',
+    `status` LowCardinality(String) COMMENT 'Can be "canonical", "orphaned", "missed" or "unknown" (validator attested but block data not available)',
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',

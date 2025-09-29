@@ -68,7 +68,11 @@ SELECT
      duties.slot - blocks.slot, 
      NULL) AS slot_distance,
   attestations.inclusion_distance,
-  if (blocks.status IS NOT NULL, blocks.status, 'missed') AS status
+  CASE
+      WHEN attestations.block_root IS NULL THEN 'missed'
+      WHEN blocks.status IS NOT NULL THEN blocks.status
+      ELSE 'unknown'  -- validator attested but block data not available
+  END AS status
 FROM duties
 LEFT JOIN attestations ON 
     duties.slot = attestations.slot 
