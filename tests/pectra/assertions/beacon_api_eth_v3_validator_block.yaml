@@ -63,20 +63,18 @@
 - name: "consensus implementations detail"
   sql: |
     SELECT
-      meta_consensus_implementation,
-      COUNT(*) AS count
+      COUNT(DISTINCT meta_consensus_implementation) AS total_implementations,
+      SUM(IF(meta_consensus_implementation = 'lighthouse', 1, 0)) AS has_lighthouse,
+      SUM(IF(meta_consensus_implementation = 'lodestar', 1, 0)) AS has_lodestar,
+      SUM(IF(meta_consensus_implementation = 'nimbus', 1, 0)) AS has_nimbus,
+      SUM(IF(meta_consensus_implementation = 'prysm', 1, 0)) AS has_prysm,
+      SUM(IF(meta_consensus_implementation = 'teku', 1, 0)) AS has_teku
     FROM
       beacon_api_eth_v3_validator_block FINAL
-    GROUP BY meta_consensus_implementation
-    ORDER BY meta_consensus_implementation
   expected:
-    - meta_consensus_implementation: "lighthouse"
-      count: ">0"
-    - meta_consensus_implementation: "lodestar"
-      count: ">0"
-    - meta_consensus_implementation: "nimbus"
-      count: ">0"
-    - meta_consensus_implementation: "prysm"
-      count: ">0"
-    - meta_consensus_implementation: "teku"
-      count: ">0"
+    total_implementations: 5
+    has_lighthouse: ">0"
+    has_lodestar: ">0"
+    has_nimbus: ">0"
+    has_prysm: ">0"
+    has_teku: ">0"
