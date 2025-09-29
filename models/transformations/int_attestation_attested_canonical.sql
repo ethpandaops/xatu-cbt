@@ -82,4 +82,4 @@ SELECT
     beacon_block_root AS block_root,
     attesting_validator_index,
     inclusion_distance
-FROM attestations
+FROM filtered_events
