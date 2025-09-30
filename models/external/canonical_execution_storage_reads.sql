@@ -3,6 +3,7 @@ table: canonical_execution_storage_reads
 cache:
   incremental_scan_interval: 1m
   full_scan_interval: 24h
+lag: 384
 ---
 SELECT 
     min(block_number) as min,
