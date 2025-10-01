@@ -38,40 +38,40 @@ models:
         lag: 0
     canonical_beacon_blob_sidecar:
       config:
-        lag: 12
+        lag: 0
     canonical_beacon_block:
       config:
-        lag: 12
+        lag: 0
     canonical_beacon_committee:
       config:
-        lag: 12
+        lag: 0
     canonical_beacon_elaborated_attestation:
       config:
-        lag: 12
+        lag: 0
     canonical_beacon_proposer_duty:
       config:
-        lag: 12
+        lag: 0
     canonical_execution_balance_diffs:
       config:
-        lag: 12
+        lag: 0
     canonical_execution_balance_reads:
       config:
-        lag: 12
+        lag: 0
     canonical_execution_contracts:
       config:
-        lag: 12
+        lag: 0
     canonical_execution_nonce_diffs:
       config:
-        lag: 12
+        lag: 0
     canonical_execution_nonce_reads:
       config:
-        lag: 12
+        lag: 0
     canonical_execution_storage_diffs:
       config:
-        lag: 12
+        lag: 0
     canonical_execution_storage_reads:
       config:
-        lag: 12
+        lag: 0
     libp2p_gossipsub_beacon_attestation:
       config:
         lag: 12
