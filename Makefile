@@ -56,7 +56,7 @@ fmt:
 proto:
 	@# Load .env file and check NETWORK is set
 	@if [ -f .env ]; then \
-		export $$(grep -v '^#' .env | xargs); \
+		export $$(grep -v '^#' .env | grep -v '^$$' | sed 's/#.*//' | xargs); \
 	fi; \
 	if [ -z "$$NETWORK" ]; then \
 		echo "Error: NETWORK environment variable is not set"; \
@@ -71,7 +71,7 @@ proto:
 	@echo "Removing existing protobuf files..."
 	rm -rf pkg/proto/clickhouse
 	@echo "Generating protobuf files from ClickHouse tables..."
-	@if [ -f .env ]; then export $$(grep -v '^#' .env | xargs); fi; \
+	@if [ -f .env ]; then export $$(grep -v '^#' .env | grep -v '^$$' | sed 's/#.*//' | xargs); fi; \
 	if [ -z "$$NETWORK" ]; then \
 		echo "Error: NETWORK environment variable is not set"; \
 		exit 1; \
