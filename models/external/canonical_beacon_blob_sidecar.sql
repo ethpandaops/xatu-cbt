@@ -3,6 +3,7 @@ table: canonical_beacon_blob_sidecar
 cache:
   incremental_scan_interval: 1m
   full_scan_interval: 24h
+lag: 384
 ---
 SELECT 
     toUnixTimestamp(min(slot_start_date_time)) as min,
