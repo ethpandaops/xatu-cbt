@@ -53,3 +53,10 @@ FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "database" }
 WHERE slot_start_date_time >= NOW() - INTERVAL '24 HOUR'
 GROUP BY meta_client_name
 ORDER BY last_seen_date_time DESC;
+
+DELETE FROM
+  `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
+{{ if .clickhouse.cluster }}
+  ON CLUSTER '{{ .clickhouse.cluster }}'
+{{ end }}
+WHERE updated_date_time != fromUnixTimestamp({{ .task.start }});
