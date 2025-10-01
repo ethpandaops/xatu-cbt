@@ -35,7 +35,7 @@ models:
         lag: 12
     beacon_api_eth_v3_validator_block:
       config:
-        lag: 12
+        lag: 0
     canonical_beacon_blob_sidecar:
       config:
         lag: 12

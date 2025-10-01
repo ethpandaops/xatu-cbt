@@ -3,7 +3,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_node_active_last_24h_local on cluster '{clust
     `last_seen_date_time` DateTime COMMENT 'Timestamp when the node was last seen' CODEC(DoubleDelta, ZSTD(1)),
     `username` String COMMENT 'Username of the node' CODEC(ZSTD(1)),
     `node_id` String COMMENT 'ID of the node' CODEC(ZSTD(1)),
-    `classification` String COMMENT 'Classification of the node, e.g. "individual", "institution", "internal" (aka ethPandaOps) or "unclassified"' CODEC(ZSTD(1)),
+    `classification` String COMMENT 'Classification of the node, e.g. "individual", "corporate", "internal" (aka ethPandaOps) or "unclassified"' CODEC(ZSTD(1)),
     `meta_client_name` LowCardinality(String) COMMENT 'Name of the client',
     `meta_client_version` LowCardinality(String) COMMENT 'Version of the client',
     `meta_client_implementation` LowCardinality(String) COMMENT 'Implementation of the client',

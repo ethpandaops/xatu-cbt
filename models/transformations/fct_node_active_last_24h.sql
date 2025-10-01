@@ -19,11 +19,15 @@ SELECT
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
             splitByChar('/', meta_client_name)[2]
+        WHEN startsWith(meta_client_name, 'corp-') THEN
+            splitByChar('/', meta_client_name)[2]
         ELSE
             'ethpandaops'
     END AS username,
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
+            splitByChar('/', meta_client_name)[3]
+        WHEN startsWith(meta_client_name, 'corp-') THEN
             splitByChar('/', meta_client_name)[3]
         ELSE
             splitByChar('/', meta_client_name)[-1]
@@ -31,6 +35,8 @@ SELECT
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
             'individual'
+        WHEN startsWith(meta_client_name, 'corp-') THEN
+            'corporate'
         WHEN startsWith(meta_client_name, 'ethpandaops') THEN
             'internal'
         ELSE
@@ -53,3 +59,10 @@ FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "database" }
 WHERE slot_start_date_time >= NOW() - INTERVAL '24 HOUR'
 GROUP BY meta_client_name
 ORDER BY last_seen_date_time DESC;
+
+DELETE FROM
+  `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
+{{ if .clickhouse.cluster }}
+  ON CLUSTER '{{ .clickhouse.cluster }}'
+{{ end }}
+WHERE updated_date_time != fromUnixTimestamp({{ .task.start }});

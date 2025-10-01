@@ -27,7 +27,7 @@ WITH combined_events AS (
         epoch,
         epoch_start_date_time,
         block_root,
-        max(length(kzg_commitments)) AS `blob_count`
+        max(kzg_commitments_count) AS `blob_count`
     FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_data_column_sidecar" "database" }}`.`beacon_api_eth_v1_events_data_column_sidecar` FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root

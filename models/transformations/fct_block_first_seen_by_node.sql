@@ -140,11 +140,15 @@ SELECT
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
             splitByChar('/', meta_client_name)[2]
+        WHEN startsWith(meta_client_name, 'corp-') THEN
+            splitByChar('/', meta_client_name)[2]
         ELSE
             'ethpandaops'
     END AS username,
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
+            splitByChar('/', meta_client_name)[3]
+        WHEN startsWith(meta_client_name, 'corp-') THEN
             splitByChar('/', meta_client_name)[3]
         ELSE
             splitByChar('/', meta_client_name)[-1]
@@ -152,6 +156,8 @@ SELECT
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
             'individual'
+        WHEN startsWith(meta_client_name, 'corp-') THEN
+            'corporate'
         WHEN startsWith(meta_client_name, 'ethpandaops') THEN
             'internal'
         ELSE
