@@ -10,7 +10,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_blob_first_seen_by_node_local on cluste
     `blob_index` UInt32 COMMENT 'The blob index' CODEC(DoubleDelta, ZSTD(1)),
     `username` LowCardinality(String) COMMENT 'Username of the node' CODEC(ZSTD(1)),
     `node_id` String COMMENT 'ID of the node' CODEC(ZSTD(1)),
-    `classification` LowCardinality(String) COMMENT 'Classification of the node, e.g. "individual", "institution", "internal" (aka ethPandaOps) or "unclassified"' CODEC(ZSTD(1)),
+    `classification` LowCardinality(String) COMMENT 'Classification of the node, e.g. "individual", "corporate", "internal" (aka ethPandaOps) or "unclassified"' CODEC(ZSTD(1)),
     `meta_client_name` LowCardinality(String) COMMENT 'Name of the client',
     `meta_client_version` LowCardinality(String) COMMENT 'Version of the client',
     `meta_client_implementation` LowCardinality(String) COMMENT 'Implementation of the client',

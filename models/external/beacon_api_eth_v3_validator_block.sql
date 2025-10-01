@@ -3,6 +3,7 @@ table: beacon_api_eth_v3_validator_block
 cache:
   incremental_scan_interval: 5s
   full_scan_interval: 24h
+lag: 24
 ---
 SELECT
     toUnixTimestamp(min(slot_start_date_time)) as min,

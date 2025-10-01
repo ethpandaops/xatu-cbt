@@ -26,3 +26,87 @@ models:
         interval:
           max: 86400
           min: 1
+    beacon_api_eth_v1_beacon_committee:
+      config:
+        lag: 12
+    beacon_api_eth_v1_events_attestation:
+      config:
+        lag: 12
+    beacon_api_eth_v1_events_blob_sidecar:
+      config:
+        lag: 12
+    beacon_api_eth_v1_events_block:
+      config:
+        lag: 12
+    beacon_api_eth_v1_events_block_gossip:
+      config:
+        lag: 12
+    beacon_api_eth_v1_events_data_column_sidecar:
+      config:
+        lag: 12
+    beacon_api_eth_v1_events_head:
+      config:
+        lag: 12
+    beacon_api_eth_v1_proposer_duty:
+      config:
+        lag: 12
+    beacon_api_eth_v2_beacon_block:
+      config:
+        lag: 12
+    beacon_api_eth_v3_validator_block:
+      config:
+        lag: 0
+    canonical_beacon_blob_sidecar:
+      config:
+        lag: 0
+    canonical_beacon_block:
+      config:
+        lag: 0
+    canonical_beacon_committee:
+      config:
+        lag: 0
+    canonical_beacon_elaborated_attestation:
+      config:
+        lag: 0
+    canonical_beacon_proposer_duty:
+      config:
+        lag: 0
+    canonical_execution_balance_diffs:
+      config:
+        lag: 0
+    canonical_execution_balance_reads:
+      config:
+        lag: 0
+    canonical_execution_contracts:
+      config:
+        lag: 0
+    canonical_execution_nonce_diffs:
+      config:
+        lag: 0
+    canonical_execution_nonce_reads:
+      config:
+        lag: 0
+    canonical_execution_storage_diffs:
+      config:
+        lag: 0
+    canonical_execution_storage_reads:
+      config:
+        lag: 0
+    libp2p_gossipsub_beacon_attestation:
+      config:
+        lag: 12
+    libp2p_gossipsub_beacon_block:
+      config:
+        lag: 12
+    libp2p_gossipsub_blob_sidecar:
+      config:
+        lag: 12
+    libp2p_gossipsub_data_column_sidecar:
+      config:
+        lag: 12
+    mev_relay_bid_trace:
+      config:
+        lag: 12
+    mev_relay_proposer_payload_delivered:
+      config:
+        lag: 12
