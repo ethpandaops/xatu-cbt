@@ -51,3 +51,6 @@ models:
     mev_relay_proposer_payload_delivered:
       config:
         lag: 12
+    beacon_api_eth_v3_validator_block:
+      config:
+        lag: 0
