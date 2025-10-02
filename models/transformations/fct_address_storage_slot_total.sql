@@ -4,7 +4,7 @@ interval:
   max: 86400
   min: 86400
 schedules:
-  forwardfill: "@every 1m"
+  forwardfill: "@every 2m"
 tags:
   - address
   - storage
