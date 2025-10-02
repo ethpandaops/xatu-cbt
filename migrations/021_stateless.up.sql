@@ -49,7 +49,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_access_total_local on cluster '{clust
     '{replica}',
     `updated_date_time`
 ) PARTITION BY tuple()
-ORDER BY tuple()
+ORDER BY (`updated_date_time`)
 COMMENT 'Address access totals and expiry statistics';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_address_access_total ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_address_access_total_local ENGINE = Distributed(
@@ -68,7 +68,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_total_local on cluster '
     '{replica}',
     `updated_date_time`
 ) PARTITION BY tuple()
-ORDER BY tuple()
+ORDER BY (`updated_date_time`)
 COMMENT 'Storage slot totals and expiry statistics';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_total ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_address_storage_slot_total_local ENGINE = Distributed(
