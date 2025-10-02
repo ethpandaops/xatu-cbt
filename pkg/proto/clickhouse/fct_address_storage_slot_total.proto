@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package cbt;
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Storage slot totals and expiry statistics
+
+message FctAddressStorageSlotTotal {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Total number of storage slots accessed in last 365 days
+  uint64 total_storage_slots = 12;
+  // Number of expired storage slots (not accessed in last 365 days)
+  uint64 expired_storage_slots = 13;
+}

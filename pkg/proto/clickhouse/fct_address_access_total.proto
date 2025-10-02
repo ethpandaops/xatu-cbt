@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package cbt;
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Address access totals and expiry statistics
+
+message FctAddressAccessTotal {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Total number of accounts accessed in last 365 days
+  uint64 total_accounts = 12;
+  // Number of expired accounts (not accessed in last 365 days)
+  uint64 expired_accounts = 13;
+  // Total number of contract accounts accessed in last 365 days
+  uint64 total_contract_accounts = 14;
+  // Number of expired contracts (not accessed in last 365 days)
+  uint64 expired_contracts = 15;
+}

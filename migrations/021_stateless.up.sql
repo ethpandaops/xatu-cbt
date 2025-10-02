@@ -50,7 +50,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_access_total_local on cluster '{clust
     `updated_date_time`
 ) PARTITION BY tuple()
 ORDER BY tuple()
-COMMENT 'Address access totals and expiry statistics for the last 365 days';
+COMMENT 'Address access totals and expiry statistics';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_address_access_total ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_address_access_total_local ENGINE = Distributed(
     '{cluster}',
@@ -69,11 +69,51 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_total_local on cluster '
     `updated_date_time`
 ) PARTITION BY tuple()
 ORDER BY tuple()
-COMMENT 'Storage slot totals and expiry statistics for the last 365 days';
+COMMENT 'Storage slot totals and expiry statistics';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_total ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_address_storage_slot_total_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_address_storage_slot_total_local,
+    rand()
+);
+
+CREATE TABLE `${NETWORK_NAME}`.fct_address_access_chunked_10000_local on cluster '{cluster}' (
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+    `chunk_start_block_number` UInt32 COMMENT 'Start block number of the chunk' CODEC(ZSTD(1)),
+    `first_accessed_accounts` UInt32 COMMENT 'Number of accounts first accessed in the chunk' CODEC(ZSTD(1)),
+    `last_accessed_accounts` UInt32 COMMENT 'Number of accounts last accessed in the chunk' CODEC(ZSTD(1))
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY tuple()
+ORDER BY (`chunk_start_block_number`)
+COMMENT 'Address access totals chunked by 10000 blocks';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_address_access_chunked_10000 ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_address_access_chunked_10000_local ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_address_access_chunked_10000_local,
+    rand()
+);
+
+CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_chunked_10000_local on cluster '{cluster}' (
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+    `chunk_start_block_number` UInt32 COMMENT 'Start block number of the chunk' CODEC(ZSTD(1)),
+    `first_accessed_slots` UInt32 COMMENT 'Number of slots first accessed in the chunk' CODEC(ZSTD(1)),
+    `last_accessed_slots` UInt32 COMMENT 'Number of slots last accessed in the chunk' CODEC(ZSTD(1))
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY tuple()
+ORDER BY (`chunk_start_block_number`)
+COMMENT 'Storage slot totals chunked by 10000 blocks';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_chunked_10000 ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_address_storage_slot_chunked_10000_local ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_address_storage_slot_chunked_10000_local,
     rand()
 );
