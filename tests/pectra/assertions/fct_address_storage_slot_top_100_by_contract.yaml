@@ -2,14 +2,18 @@
   sql: |
     SELECT
       COUNT(*) AS count,
-      MIN(slot_start_date_time) AS min,
-      MAX(slot_start_date_time) AS max
+      argMin(contract_address, rank) AS top_contract_address,
+      argMin(total_storage_slots, rank) AS top_total_storage_slots,
+      argMax(contract_address, rank) AS bottom_contract_address,
+      argMax(total_storage_slots, rank) AS bottom_total_storage_slots
     FROM
       fct_address_storage_slot_top_100_by_contract FINAL
   expected:
-    count: 10
-    min: "2025-07-15T08:34:35Z"
-    max: "2025-07-15T08:37:59Z"
+    count: 100
+    top_contract_address: "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    top_total_storage_slots: 1769
+    bottom_contract_address: "0x03b59bd1c8b9f6c265ba0c3421923b93f15036fa"
+    bottom_total_storage_slots: 22
 - name: "Expected admin bounds"
   sql: |
     SELECT
