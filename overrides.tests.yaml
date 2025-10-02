@@ -6,6 +6,36 @@ models:
       config:
         schedules:
           forwardfill: "@every 5s"
+    fct_address_access_chunked_10000:
+      config:
+        interval:
+          max: 86400
+          min: 1
+    fct_address_access_total:
+      config:
+        interval:
+          max: 86400
+          min: 1
+    fct_address_storage_slot_chunked_10000:
+      config:
+        interval:
+          max: 86400
+          min: 1
+    fct_address_storage_slot_expired_top_100_by_contract:
+      config:
+        interval:
+          max: 86400
+          min: 1
+    fct_address_storage_slot_top_100_by_contract:
+      config:
+        interval:
+          max: 86400
+          min: 1
+    fct_address_storage_slot_total:
+      config:
+        interval:
+          max: 86400
+          min: 1
     beacon_api_eth_v1_beacon_committee:
       config:
         lag: 12
