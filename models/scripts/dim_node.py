@@ -166,10 +166,17 @@ def merge_validator_data(cartographoor_validators, ethseer_validators):
 def main():
     # Get environment variables
     ch_url = os.environ['CLICKHOUSE_URL']
-    
+
     # Model info
     target_db = os.environ['SELF_DATABASE']
     target_table = os.environ['SELF_TABLE']
+
+    # Task execution timestamp (Unix timestamp)
+    task_start = os.environ.get('TASK_START', str(int(datetime.now().timestamp())))
+
+    # Cluster configuration (optional)
+    cluster = os.environ.get('CLICKHOUSE_CLUSTER', '')
+    local_suffix = os.environ.get('CLICKHOUSE_LOCAL_SUFFIX', '')
     
     print(f"=== Node Data Collection ===")
     print(f"Target: {target_db}.{target_table}")
@@ -251,31 +258,8 @@ def main():
             for node_name, count in top_nodes:
                 print(f"    - {node_name}: {count} validators")
         
-        # Step 6: Create table if it doesn't exist
+        # Step 6: Prepare and insert data
         print(f"\nPreparing to insert data into ClickHouse...")
-        create_table_query = f"""
-        CREATE TABLE IF NOT EXISTS `{target_db}`.`{target_table}` (
-            updated_date_time DateTime,
-            name String,
-            groups Array(String),
-            tags Array(String),
-            attributes Map(String, String),
-            validator_index UInt32,
-            source String
-        ) ENGINE = ReplacingMergeTree(updated_date_time)
-        ORDER BY (validator_index, name)
-        """
-        
-        try:
-            execute_clickhouse_query(ch_url, create_table_query)
-            print(f"✓ Ensured target table exists")
-        except Exception as e:
-            print(f"ERROR: Failed to create/verify table in ClickHouse", file=sys.stderr)
-            print(f"Error: {e}", file=sys.stderr)
-            print(f"\nNote: Successfully fetched {len(validators_to_insert)} validator entries but cannot insert them", file=sys.stderr)
-            return 1
-        
-        # Step 7: Prepare and insert data
         values = []
         for validator in validators_to_insert:
             # Escape strings properly
@@ -304,12 +288,12 @@ def main():
             # Handle NULL name for ethseer-only validators
             if validator['name'] is None:
                 values.append(f"""
-                    (now(), NULL, {groups_array}, {tags_array}, 
+                    (fromUnixTimestamp({task_start}), NULL, {groups_array}, {tags_array},
                      {attributes_map}, {validator['validator_index']}, '{source_escaped}')
                 """)
             else:
                 values.append(f"""
-                    (now(), '{name_escaped}', {groups_array}, {tags_array}, 
+                    (fromUnixTimestamp({task_start}), '{name_escaped}', {groups_array}, {tags_array},
                      {attributes_map}, {validator['validator_index']}, '{source_escaped}')
                 """)
         
@@ -330,13 +314,37 @@ def main():
                     print(f"  Progress: {inserted_count}/{len(validators_to_insert)} rows inserted...")
             
             print(f"✓ Successfully inserted {inserted_count} validator node entries")
+
+            # Delete old rows (rows with different updated_date_time)
+            # This allows re-processing of the same data with newer timestamps
+            print(f"Cleaning up old entries...")
+
+            # Build DELETE query with ON CLUSTER if needed
+            if cluster:
+                delete_query = f"""
+                DELETE FROM `{target_db}`.`{target_table}{local_suffix}` ON CLUSTER '{cluster}'
+                WHERE updated_date_time != fromUnixTimestamp({task_start})
+                """
+            else:
+                delete_query = f"""
+                DELETE FROM `{target_db}`.`{target_table}`
+                WHERE updated_date_time != fromUnixTimestamp({task_start})
+                """
+
+            try:
+                execute_clickhouse_query(ch_url, delete_query)
+                print(f"✓ Cleaned up old entries")
+            except Exception as e:
+                print(f"WARNING: Failed to clean up old entries: {e}", file=sys.stderr)
+                # Non-fatal - we still succeeded in inserting the new data
+
             print("\n✅ Node data collection completed successfully")
         except Exception as e:
             print(f"ERROR: Failed to insert data into ClickHouse", file=sys.stderr)
             print(f"Error: {e}", file=sys.stderr)
             print(f"Inserted {inserted_count} out of {len(validators_to_insert)} rows before failure", file=sys.stderr)
             return 1
-        
+
         return 0
         
     except Exception as e:
