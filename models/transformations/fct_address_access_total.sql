@@ -26,30 +26,30 @@ WITH latest_block AS (
 block_range AS (
     -- Get the block range for last 365 days
     SELECT
-        max(execution_payload_block_number) as max_block_number,
-        min(execution_payload_block_number) as min_block_number
+        max(execution_payload_block_number) AS max_block_number,
+        min(execution_payload_block_number) AS min_block_number
     FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`fct_block` FINAL
     WHERE `status` = 'canonical'
         AND execution_payload_block_number IS NOT NULL
         AND slot_start_date_time >= (SELECT slot_start_date_time - INTERVAL 365 DAY FROM latest_block)
 ),
 total_contracts AS (
-    SELECT count() AS count
+    SELECT COUNT(DISTINCT contract_address) AS count
     FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`canonical_execution_contracts` FINAL
 ),
 total_accounts AS (
-    SELECT count() AS count
+    SELECT COUNT(*) AS count
     FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`int_address_last_access` FINAL
 ),
 expired_accounts AS (
     -- Expired accounts (not accessed in last 365 days)
-    SELECT count() AS count
+    SELECT COUNT(*) AS count
     FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`int_address_last_access` FINAL
     WHERE block_number < (SELECT min_block_number FROM block_range)
 ),
 expired_contracts AS (
     -- Expired contracts (not accessed in last 365 days)
-    SELECT count() AS count
+    SELECT COUNT(*) AS count
     FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`int_address_last_access` AS a FINAL
     GLOBAL INNER JOIN (
     SELECT DISTINCT lower(contract_address) AS contract_address
@@ -59,11 +59,11 @@ expired_contracts AS (
     WHERE a.block_number < (SELECT min_block_number FROM block_range)
 )
 SELECT
-    fromUnixTimestamp({{ .task.start }}) as updated_date_time,
-    (SELECT count FROM total_accounts) as total_accounts,
-    (SELECT count FROM expired_accounts) as expired_accounts,
-    (SELECT count FROM total_contracts) as total_contracts,
-    (SELECT count FROM expired_contracts) as expired_contracts;
+    fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
+    (SELECT count FROM total_accounts) AS total_accounts,
+    (SELECT count FROM expired_accounts) AS expired_accounts,
+    (SELECT count FROM total_contracts) AS total_contracts,
+    (SELECT count FROM expired_contracts) AS expired_contracts;
 
 DELETE FROM
   `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
