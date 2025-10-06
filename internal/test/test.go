@@ -170,49 +170,75 @@ func (s *service) setupCBT(ctx context.Context) error {
 	// 1. Stop cbt-engine container (keep redis running for faster restart)
 	s.log.WithField("container", cbtEngine).Debug("Stopping cbt-engine container")
 	stopCmd := exec.Command("docker", "stop", cbtEngine) //nolint:gosec // cbtEngine is controlled input from env var
-	if err := stopCmd.Run(); err != nil {
-		s.log.WithError(err).Debug("Failed to stop cbt-engine (might not be running)")
+	if stopErr := stopCmd.Run(); stopErr != nil {
+		s.log.WithError(stopErr).Debug("Failed to stop cbt-engine (might not be running)")
 	}
 
 	// 2. Remove the old cbt-config-setup container if it exists
 	removeCmd := exec.Command("docker", "rm", "-f", cbtConfigSetup) //nolint:gosec // cbtConfigSetup is controlled input from env var
-	if err := removeCmd.Run(); err != nil {
-		s.log.WithError(err).Debug("Failed to remove cbt-config-setup (might not exist)")
+	if removeErr := removeCmd.Run(); removeErr != nil {
+		s.log.WithError(removeErr).Debug("Failed to remove cbt-config-setup (might not exist)")
 	}
 
 	// 3. Run network teardown to clean up any existing network database
 	// This ensures we have a clean state and avoids replica already exists errors
 	s.log.Debug("Running network teardown to ensure clean state")
-	if err := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "teardown", "--force"); err != nil {
+	if teardownErr := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "teardown", "--force"); teardownErr != nil {
 		// This might fail if network doesn't exist, which is ok
-		s.log.WithError(err).Debug("Network teardown failed (might not exist)")
+		s.log.WithError(teardownErr).Debug("Network teardown failed (might not exist)")
 	}
 
 	// 4. Run network setup to create the network database
-	s.log.Debug("Running network setup")
-	if err := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "setup", "--force"); err != nil { //nolint:nestif // Retry logic for handling replica conflicts
-		// If setup fails due to replica already exists, try teardown and setup again
-		if strings.Contains(err.Error(), "REPLICA_ALREADY_EXISTS") {
-			s.log.Warn("Replica already exists, attempting cleanup and retry")
-
-			// Force teardown to clean up existing replicas
-			if teardownErr := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "teardown", "--force"); teardownErr != nil {
-				s.log.WithError(teardownErr).Warn("Failed to teardown during retry")
-			}
-
-			// Wait a moment for cleanup to complete
-			time.Sleep(2 * time.Second)
-
-			// Try setup again
-			if retryErr := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "setup", "--force"); retryErr != nil {
-				return fmt.Errorf("failed to run network setup after retry: %w", retryErr)
-			}
-		} else {
-			return fmt.Errorf("failed to run network setup: %w", err)
-		}
+	if err := s.setupCBTNetwork(ctx); err != nil {
+		return err
 	}
 
 	// 5. Start/restart only the necessary containers
+	if err := s.startCBTContainers(ctx, network, cbtEngine); err != nil {
+		return err
+	}
+
+	// 6. Wait for CBT engine to start
+	if err := s.waitForCBTEngine(cbtEngine); err != nil {
+		return err
+	}
+
+	s.log.Info("CBT engine started successfully")
+
+	return nil
+}
+
+func (s *service) setupCBTNetwork(ctx context.Context) error {
+	s.log.Debug("Running network setup")
+	setupErr := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "setup", "--force")
+	if setupErr == nil {
+		return nil
+	}
+
+	// If setup fails due to replica already exists, try teardown and setup again
+	if !strings.Contains(setupErr.Error(), "REPLICA_ALREADY_EXISTS") {
+		return fmt.Errorf("failed to run network setup: %w", setupErr)
+	}
+
+	s.log.Warn("Replica already exists, attempting cleanup and retry")
+
+	// Force teardown to clean up existing replicas
+	if teardownErr := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "teardown", "--force"); teardownErr != nil {
+		s.log.WithError(teardownErr).Warn("Failed to teardown during retry")
+	}
+
+	// Wait a moment for cleanup to complete
+	time.Sleep(2 * time.Second)
+
+	// Try setup again
+	if retryErr := s.docker.RunCommand(ctx, ".", "./bin/xatu-cbt", "network", "setup", "--force"); retryErr != nil {
+		return fmt.Errorf("failed to run network setup after retry: %w", retryErr)
+	}
+
+	return nil
+}
+
+func (s *service) startCBTContainers(_ context.Context, network, cbtEngine string) error {
 	s.log.Debug("Starting CBT containers")
 
 	// Stop cbt-engine first to ensure it will reload the new config
@@ -241,8 +267,8 @@ func (s *service) setupCBT(ctx context.Context) error {
 	redisCmd.Dir = "."
 	redisCmd.Env = os.Environ()
 	redisCmd.Env = append(redisCmd.Env, "TESTING=true")
-	if err := redisCmd.Run(); err != nil {
-		s.log.WithError(err).Debug("Failed to ensure redis is running")
+	if redisErr := redisCmd.Run(); redisErr != nil {
+		s.log.WithError(redisErr).Debug("Failed to ensure redis is running")
 	} else {
 		s.log.WithField("container", redisContainerName).Debug("Redis container is running")
 	}
@@ -255,8 +281,8 @@ func (s *service) setupCBT(ctx context.Context) error {
 	configCmd.Dir = "."
 	configCmd.Env = os.Environ()
 	configCmd.Env = append(configCmd.Env, "TESTING=true")
-	if err := configCmd.Run(); err != nil {
-		return fmt.Errorf("failed to create config: %w", err)
+	if configErr := configCmd.Run(); configErr != nil {
+		return fmt.Errorf("failed to create config: %w", configErr)
 	}
 	s.log.WithField("container", configContainerName).Debug("Config created successfully with test overrides")
 
@@ -269,18 +295,21 @@ func (s *service) setupCBT(ctx context.Context) error {
 	engineCmd.Dir = "."
 	engineCmd.Env = os.Environ()
 	engineCmd.Env = append(engineCmd.Env, "TESTING=true")
-	if err := engineCmd.Run(); err != nil {
-		return fmt.Errorf("failed to start cbt-engine: %w", err)
+	if engineErr := engineCmd.Run(); engineErr != nil {
+		return fmt.Errorf("failed to start cbt-engine: %w", engineErr)
 	}
 	s.log.WithField("container", cbtEngine).Debug("cbt-engine started with force-recreate")
 
 	// Ensure the container actually starts (sometimes it's just created)
 	startCmd := exec.Command("docker", "start", cbtEngine) //nolint:gosec // cbtEngine is controlled input from env var
-	if err := startCmd.Run(); err != nil {
-		s.log.WithError(err).Debug("Failed to ensure cbt-engine is started")
+	if startErr := startCmd.Run(); startErr != nil {
+		s.log.WithError(startErr).Debug("Failed to ensure cbt-engine is started")
 	}
 
-	// 5. Wait for CBT engine to start
+	return nil
+}
+
+func (s *service) waitForCBTEngine(cbtEngine string) error {
 	// The cbt-engine container uses a distroless image without health check support
 	// We'll wait a bit for it to start and then verify it's running
 	s.log.Info("Waiting for CBT engine to start...")
@@ -297,8 +326,6 @@ func (s *service) setupCBT(ctx context.Context) error {
 		}
 		return ErrCBTEngineNotRunning
 	}
-
-	s.log.Info("CBT engine started successfully")
 
 	return nil
 }

@@ -130,7 +130,7 @@ func BuildListAdminCbtQuery(req *ListAdminCbtRequest, options ...QueryOption) (S
 		case *UInt64Filter_Gte:
 			qb.AddCondition("position", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("position", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("position", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("position", UInt64SliceToInterface(filter.In.Values))
@@ -160,7 +160,7 @@ func BuildListAdminCbtQuery(req *ListAdminCbtRequest, options ...QueryOption) (S
 		case *UInt64Filter_Gte:
 			qb.AddCondition("interval", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("interval", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("interval", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("interval", UInt64SliceToInterface(filter.In.Values))

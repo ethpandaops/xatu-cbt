@@ -138,7 +138,7 @@ func BuildListIntAttestationFirstSeenQuery(req *ListIntAttestationFirstSeenReque
 		case *UInt32Filter_Gte:
 			qb.AddCondition("slot", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
@@ -168,7 +168,7 @@ func BuildListIntAttestationFirstSeenQuery(req *ListIntAttestationFirstSeenReque
 		case *UInt32Filter_Gte:
 			qb.AddCondition("epoch", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("epoch", UInt32SliceToInterface(filter.In.Values))
@@ -236,7 +236,7 @@ func BuildListIntAttestationFirstSeenQuery(req *ListIntAttestationFirstSeenReque
 		case *UInt32Filter_Gte:
 			qb.AddCondition("seen_slot_start_diff", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("seen_slot_start_diff", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("seen_slot_start_diff", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("seen_slot_start_diff", UInt32SliceToInterface(filter.In.Values))
@@ -296,7 +296,7 @@ func BuildListIntAttestationFirstSeenQuery(req *ListIntAttestationFirstSeenReque
 		case *UInt32Filter_Gte:
 			qb.AddCondition("attesting_validator_index", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("attesting_validator_index", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("attesting_validator_index", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("attesting_validator_index", UInt32SliceToInterface(filter.In.Values))
@@ -660,7 +660,7 @@ func BuildListIntAttestationFirstSeenQuery(req *ListIntAttestationFirstSeenReque
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("meta_client_geo_autonomous_system_number", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("meta_client_geo_autonomous_system_number", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("meta_client_geo_autonomous_system_number", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_client_geo_autonomous_system_number", UInt32SliceToInterface(filter.In.Values))

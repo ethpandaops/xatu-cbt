@@ -113,7 +113,7 @@ func BuildListFctBlockMevHeadQuery(req *ListFctBlockMevHeadRequest, options ...Q
 		case *UInt32Filter_Gte:
 			qb.AddCondition("slot", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
@@ -143,7 +143,7 @@ func BuildListFctBlockMevHeadQuery(req *ListFctBlockMevHeadRequest, options ...Q
 		case *UInt32Filter_Gte:
 			qb.AddCondition("epoch", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("epoch", UInt32SliceToInterface(filter.In.Values))
@@ -315,7 +315,7 @@ func BuildListFctBlockMevHeadQuery(req *ListFctBlockMevHeadRequest, options ...Q
 		case *UInt64Filter_Gte:
 			qb.AddCondition("block_number", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("block_number", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("block_number", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("block_number", UInt64SliceToInterface(filter.In.Values))
@@ -465,7 +465,7 @@ func BuildListFctBlockMevHeadQuery(req *ListFctBlockMevHeadRequest, options ...Q
 		case *UInt64Filter_Gte:
 			qb.AddCondition("gas_limit", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("gas_limit", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("gas_limit", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("gas_limit", UInt64SliceToInterface(filter.In.Values))
@@ -495,7 +495,7 @@ func BuildListFctBlockMevHeadQuery(req *ListFctBlockMevHeadRequest, options ...Q
 		case *UInt64Filter_Gte:
 			qb.AddCondition("gas_used", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("gas_used", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("gas_used", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("gas_used", UInt64SliceToInterface(filter.In.Values))
@@ -559,7 +559,7 @@ func BuildListFctBlockMevHeadQuery(req *ListFctBlockMevHeadRequest, options ...Q
 		case *UInt32Filter_Gte:
 			qb.AddCondition("transaction_count", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("transaction_count", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("transaction_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("transaction_count", UInt32SliceToInterface(filter.In.Values))

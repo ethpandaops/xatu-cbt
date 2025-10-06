@@ -108,7 +108,7 @@ func BuildListFctAttestationCorrectnessByValidatorHeadQuery(req *ListFctAttestat
 		case *UInt32Filter_Gte:
 			qb.AddCondition("slot", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
@@ -138,7 +138,7 @@ func BuildListFctAttestationCorrectnessByValidatorHeadQuery(req *ListFctAttestat
 		case *UInt32Filter_Gte:
 			qb.AddCondition("epoch", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("epoch", UInt32SliceToInterface(filter.In.Values))
@@ -206,7 +206,7 @@ func BuildListFctAttestationCorrectnessByValidatorHeadQuery(req *ListFctAttestat
 		case *UInt32Filter_Gte:
 			qb.AddCondition("attesting_validator_index", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("attesting_validator_index", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("attesting_validator_index", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("attesting_validator_index", UInt32SliceToInterface(filter.In.Values))
@@ -270,7 +270,7 @@ func BuildListFctAttestationCorrectnessByValidatorHeadQuery(req *ListFctAttestat
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("slot_distance", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("slot_distance", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("slot_distance", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("slot_distance", UInt32SliceToInterface(filter.In.Values))
@@ -304,7 +304,7 @@ func BuildListFctAttestationCorrectnessByValidatorHeadQuery(req *ListFctAttestat
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("propagation_distance", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("propagation_distance", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("propagation_distance", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("propagation_distance", UInt32SliceToInterface(filter.In.Values))

@@ -33,7 +33,7 @@ func BuildListFctAddressStorageSlotChunked10000Query(req *ListFctAddressStorageS
 	case *UInt32Filter_Gte:
 		qb.AddCondition("chunk_start_block_number", ">=", filter.Gte)
 	case *UInt32Filter_Between:
-		qb.AddBetweenCondition("chunk_start_block_number", filter.Between.Min, filter.Between.Max)
+		qb.AddBetweenCondition("chunk_start_block_number", filter.Between.Min, filter.Between.Max.GetValue())
 	case *UInt32Filter_In:
 		if len(filter.In.Values) > 0 {
 			qb.AddInCondition("chunk_start_block_number", UInt32SliceToInterface(filter.In.Values))
@@ -100,7 +100,7 @@ func BuildListFctAddressStorageSlotChunked10000Query(req *ListFctAddressStorageS
 		case *UInt32Filter_Gte:
 			qb.AddCondition("first_accessed_slots", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("first_accessed_slots", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("first_accessed_slots", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("first_accessed_slots", UInt32SliceToInterface(filter.In.Values))
@@ -130,7 +130,7 @@ func BuildListFctAddressStorageSlotChunked10000Query(req *ListFctAddressStorageS
 		case *UInt32Filter_Gte:
 			qb.AddCondition("last_accessed_slots", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("last_accessed_slots", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("last_accessed_slots", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("last_accessed_slots", UInt32SliceToInterface(filter.In.Values))

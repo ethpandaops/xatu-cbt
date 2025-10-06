@@ -33,7 +33,7 @@ func BuildListFctAddressStorageSlotTop100ByContractQuery(req *ListFctAddressStor
 	case *UInt32Filter_Gte:
 		qb.AddCondition("rank", ">=", filter.Gte)
 	case *UInt32Filter_Between:
-		qb.AddBetweenCondition("rank", filter.Between.Min, filter.Between.Max)
+		qb.AddBetweenCondition("rank", filter.Between.Min, filter.Between.Max.GetValue())
 	case *UInt32Filter_In:
 		if len(filter.In.Values) > 0 {
 			qb.AddInCondition("rank", UInt32SliceToInterface(filter.In.Values))
@@ -130,7 +130,7 @@ func BuildListFctAddressStorageSlotTop100ByContractQuery(req *ListFctAddressStor
 		case *UInt64Filter_Gte:
 			qb.AddCondition("total_storage_slots", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("total_storage_slots", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("total_storage_slots", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("total_storage_slots", UInt64SliceToInterface(filter.In.Values))

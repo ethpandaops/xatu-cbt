@@ -33,7 +33,7 @@ func BuildListDimNodeQuery(req *ListDimNodeRequest, options ...QueryOption) (SQL
 	case *UInt32Filter_Gte:
 		qb.AddCondition("validator_index", ">=", filter.Gte)
 	case *UInt32Filter_Between:
-		qb.AddBetweenCondition("validator_index", filter.Between.Min, filter.Between.Max)
+		qb.AddBetweenCondition("validator_index", filter.Between.Min, filter.Between.Max.GetValue())
 	case *UInt32Filter_In:
 		if len(filter.In.Values) > 0 {
 			qb.AddInCondition("validator_index", UInt32SliceToInterface(filter.In.Values))

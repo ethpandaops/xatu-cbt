@@ -108,7 +108,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *UInt32Filter_Gte:
 			qb.AddCondition("slot", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
@@ -138,7 +138,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *UInt32Filter_Gte:
 			qb.AddCondition("epoch", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("epoch", UInt32SliceToInterface(filter.In.Values))
@@ -266,7 +266,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("block_total_bytes", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("block_total_bytes", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("block_total_bytes", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("block_total_bytes", UInt32SliceToInterface(filter.In.Values))
@@ -300,7 +300,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("block_total_bytes_compressed", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("block_total_bytes_compressed", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("block_total_bytes_compressed", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("block_total_bytes_compressed", UInt32SliceToInterface(filter.In.Values))
@@ -394,7 +394,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *UInt32Filter_Gte:
 			qb.AddCondition("proposer_index", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("proposer_index", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("proposer_index", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("proposer_index", UInt32SliceToInterface(filter.In.Values))
@@ -514,7 +514,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *UInt32Filter_Gte:
 			qb.AddCondition("execution_payload_block_number", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("execution_payload_block_number", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("execution_payload_block_number", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("execution_payload_block_number", UInt32SliceToInterface(filter.In.Values))
@@ -608,7 +608,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *NullableUInt64Filter_Gte:
 			qb.AddCondition("execution_payload_blob_gas_used", ">=", filter.Gte)
 		case *NullableUInt64Filter_Between:
-			qb.AddBetweenCondition("execution_payload_blob_gas_used", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("execution_payload_blob_gas_used", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("execution_payload_blob_gas_used", UInt64SliceToInterface(filter.In.Values))
@@ -642,7 +642,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *NullableUInt64Filter_Gte:
 			qb.AddCondition("execution_payload_excess_blob_gas", ">=", filter.Gte)
 		case *NullableUInt64Filter_Between:
-			qb.AddBetweenCondition("execution_payload_excess_blob_gas", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("execution_payload_excess_blob_gas", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("execution_payload_excess_blob_gas", UInt64SliceToInterface(filter.In.Values))
@@ -676,7 +676,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *NullableUInt64Filter_Gte:
 			qb.AddCondition("execution_payload_gas_limit", ">=", filter.Gte)
 		case *NullableUInt64Filter_Between:
-			qb.AddBetweenCondition("execution_payload_gas_limit", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("execution_payload_gas_limit", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("execution_payload_gas_limit", UInt64SliceToInterface(filter.In.Values))
@@ -710,7 +710,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *NullableUInt64Filter_Gte:
 			qb.AddCondition("execution_payload_gas_used", ">=", filter.Gte)
 		case *NullableUInt64Filter_Between:
-			qb.AddBetweenCondition("execution_payload_gas_used", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("execution_payload_gas_used", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("execution_payload_gas_used", UInt64SliceToInterface(filter.In.Values))
@@ -804,7 +804,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("execution_payload_transactions_count", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("execution_payload_transactions_count", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("execution_payload_transactions_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("execution_payload_transactions_count", UInt32SliceToInterface(filter.In.Values))
@@ -838,7 +838,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("execution_payload_transactions_total_bytes", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("execution_payload_transactions_total_bytes", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("execution_payload_transactions_total_bytes", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("execution_payload_transactions_total_bytes", UInt32SliceToInterface(filter.In.Values))
@@ -872,7 +872,7 @@ func BuildListIntBlockCanonicalQuery(req *ListIntBlockCanonicalRequest, options 
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("execution_payload_transactions_total_bytes_compressed", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("execution_payload_transactions_total_bytes_compressed", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("execution_payload_transactions_total_bytes_compressed", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("execution_payload_transactions_total_bytes_compressed", UInt32SliceToInterface(filter.In.Values))

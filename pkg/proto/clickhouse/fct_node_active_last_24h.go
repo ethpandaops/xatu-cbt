@@ -412,7 +412,7 @@ func BuildListFctNodeActiveLast24HQuery(req *ListFctNodeActiveLast24HRequest, op
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("meta_client_geo_autonomous_system_number", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("meta_client_geo_autonomous_system_number", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("meta_client_geo_autonomous_system_number", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("meta_client_geo_autonomous_system_number", UInt32SliceToInterface(filter.In.Values))

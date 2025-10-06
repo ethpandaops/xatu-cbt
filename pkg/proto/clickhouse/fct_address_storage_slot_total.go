@@ -70,7 +70,7 @@ func BuildListFctAddressStorageSlotTotalQuery(req *ListFctAddressStorageSlotTota
 		case *UInt64Filter_Gte:
 			qb.AddCondition("total_storage_slots", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("total_storage_slots", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("total_storage_slots", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("total_storage_slots", UInt64SliceToInterface(filter.In.Values))
@@ -100,7 +100,7 @@ func BuildListFctAddressStorageSlotTotalQuery(req *ListFctAddressStorageSlotTota
 		case *UInt64Filter_Gte:
 			qb.AddCondition("expired_storage_slots", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("expired_storage_slots", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("expired_storage_slots", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("expired_storage_slots", UInt64SliceToInterface(filter.In.Values))

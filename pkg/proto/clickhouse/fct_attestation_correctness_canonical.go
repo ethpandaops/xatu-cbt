@@ -113,7 +113,7 @@ func BuildListFctAttestationCorrectnessCanonicalQuery(req *ListFctAttestationCor
 		case *UInt32Filter_Gte:
 			qb.AddCondition("slot", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
@@ -143,7 +143,7 @@ func BuildListFctAttestationCorrectnessCanonicalQuery(req *ListFctAttestationCor
 		case *UInt32Filter_Gte:
 			qb.AddCondition("epoch", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("epoch", UInt32SliceToInterface(filter.In.Values))
@@ -245,7 +245,7 @@ func BuildListFctAttestationCorrectnessCanonicalQuery(req *ListFctAttestationCor
 		case *UInt32Filter_Gte:
 			qb.AddCondition("votes_max", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("votes_max", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("votes_max", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("votes_max", UInt32SliceToInterface(filter.In.Values))
@@ -275,7 +275,7 @@ func BuildListFctAttestationCorrectnessCanonicalQuery(req *ListFctAttestationCor
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("votes_head", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("votes_head", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("votes_head", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("votes_head", UInt32SliceToInterface(filter.In.Values))
@@ -309,7 +309,7 @@ func BuildListFctAttestationCorrectnessCanonicalQuery(req *ListFctAttestationCor
 		case *NullableUInt32Filter_Gte:
 			qb.AddCondition("votes_other", ">=", filter.Gte)
 		case *NullableUInt32Filter_Between:
-			qb.AddBetweenCondition("votes_other", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("votes_other", filter.Between.Min, filter.Between.Max.GetValue())
 		case *NullableUInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("votes_other", UInt32SliceToInterface(filter.In.Values))

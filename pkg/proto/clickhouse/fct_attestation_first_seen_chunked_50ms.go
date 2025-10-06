@@ -113,7 +113,7 @@ func BuildListFctAttestationFirstSeenChunked50MsQuery(req *ListFctAttestationFir
 		case *UInt32Filter_Gte:
 			qb.AddCondition("slot", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
@@ -143,7 +143,7 @@ func BuildListFctAttestationFirstSeenChunked50MsQuery(req *ListFctAttestationFir
 		case *UInt32Filter_Gte:
 			qb.AddCondition("epoch", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("epoch", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("epoch", UInt32SliceToInterface(filter.In.Values))
@@ -241,7 +241,7 @@ func BuildListFctAttestationFirstSeenChunked50MsQuery(req *ListFctAttestationFir
 		case *UInt32Filter_Gte:
 			qb.AddCondition("chunk_slot_start_diff", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("chunk_slot_start_diff", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("chunk_slot_start_diff", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("chunk_slot_start_diff", UInt32SliceToInterface(filter.In.Values))
@@ -271,7 +271,7 @@ func BuildListFctAttestationFirstSeenChunked50MsQuery(req *ListFctAttestationFir
 		case *UInt32Filter_Gte:
 			qb.AddCondition("attestation_count", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("attestation_count", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("attestation_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("attestation_count", UInt32SliceToInterface(filter.In.Values))

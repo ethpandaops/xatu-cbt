@@ -70,7 +70,7 @@ func BuildListFctAddressAccessTotalQuery(req *ListFctAddressAccessTotalRequest, 
 		case *UInt64Filter_Gte:
 			qb.AddCondition("total_accounts", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("total_accounts", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("total_accounts", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("total_accounts", UInt64SliceToInterface(filter.In.Values))
@@ -100,7 +100,7 @@ func BuildListFctAddressAccessTotalQuery(req *ListFctAddressAccessTotalRequest, 
 		case *UInt64Filter_Gte:
 			qb.AddCondition("expired_accounts", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("expired_accounts", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("expired_accounts", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("expired_accounts", UInt64SliceToInterface(filter.In.Values))
@@ -130,7 +130,7 @@ func BuildListFctAddressAccessTotalQuery(req *ListFctAddressAccessTotalRequest, 
 		case *UInt64Filter_Gte:
 			qb.AddCondition("total_contract_accounts", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("total_contract_accounts", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("total_contract_accounts", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("total_contract_accounts", UInt64SliceToInterface(filter.In.Values))
@@ -160,7 +160,7 @@ func BuildListFctAddressAccessTotalQuery(req *ListFctAddressAccessTotalRequest, 
 		case *UInt64Filter_Gte:
 			qb.AddCondition("expired_contracts", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("expired_contracts", filter.Between.Min, filter.Between.Max)
+			qb.AddBetweenCondition("expired_contracts", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("expired_contracts", UInt64SliceToInterface(filter.In.Values))
