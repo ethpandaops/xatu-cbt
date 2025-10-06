@@ -229,58 +229,36 @@ func BuildListFctBlockMevQuery(req *ListFctBlockMevRequest, options ...QueryOpti
 	if req.EarliestBidDateTime != nil {
 		switch filter := req.EarliestBidDateTime.Filter.(type) {
 		case *NullableUInt64Filter_IsNull:
-			if filter.IsNull {
-				qb.AddIsNullCondition("earliest_bid_date_time")
-			}
+			qb.AddIsNullCondition("earliest_bid_date_time")
 		case *NullableUInt64Filter_IsNotNull:
-			if filter.IsNotNull {
-				qb.AddIsNotNullCondition("earliest_bid_date_time")
-			}
+			qb.AddIsNotNullCondition("earliest_bid_date_time")
 		case *NullableUInt64Filter_Eq:
-			if filter.Eq != nil {
-				qb.AddCondition("earliest_bid_date_time", "=", DateTime64Value{filter.Eq.GetValue()})
-			}
+			qb.AddCondition("earliest_bid_date_time", "=", DateTime64Value{filter.Eq})
 		case *NullableUInt64Filter_Ne:
-			if filter.Ne != nil {
-				qb.AddCondition("earliest_bid_date_time", "!=", DateTime64Value{filter.Ne.GetValue()})
-			}
+			qb.AddCondition("earliest_bid_date_time", "!=", DateTime64Value{filter.Ne})
 		case *NullableUInt64Filter_Lt:
-			if filter.Lt != nil {
-				qb.AddCondition("earliest_bid_date_time", "<", DateTime64Value{filter.Lt.GetValue()})
-			}
+			qb.AddCondition("earliest_bid_date_time", "<", DateTime64Value{filter.Lt})
 		case *NullableUInt64Filter_Lte:
-			if filter.Lte != nil {
-				qb.AddCondition("earliest_bid_date_time", "<=", DateTime64Value{filter.Lte.GetValue()})
-			}
+			qb.AddCondition("earliest_bid_date_time", "<=", DateTime64Value{filter.Lte})
 		case *NullableUInt64Filter_Gt:
-			if filter.Gt != nil {
-				qb.AddCondition("earliest_bid_date_time", ">", DateTime64Value{filter.Gt.GetValue()})
-			}
+			qb.AddCondition("earliest_bid_date_time", ">", DateTime64Value{filter.Gt})
 		case *NullableUInt64Filter_Gte:
-			if filter.Gte != nil {
-				qb.AddCondition("earliest_bid_date_time", ">=", DateTime64Value{filter.Gte.GetValue()})
-			}
+			qb.AddCondition("earliest_bid_date_time", ">=", DateTime64Value{filter.Gte})
 		case *NullableUInt64Filter_Between:
-			if filter.Between != nil {
-				qb.AddBetweenCondition("earliest_bid_date_time", DateTime64Value{filter.Between.Min}, DateTime64Value{filter.Between.Max.GetValue()})
-			}
+			qb.AddBetweenCondition("earliest_bid_date_time", DateTime64Value{filter.Between.Min}, DateTime64Value{filter.Between.Max.GetValue()})
 		case *NullableUInt64Filter_In:
-			if filter.In != nil && len(filter.In.Values) > 0 {
+			if len(filter.In.Values) > 0 {
 				converted := make([]interface{}, len(filter.In.Values))
 				for i, v := range filter.In.Values {
-					if v != nil {
-						converted[i] = DateTime64Value{v.GetValue()}
-					}
+					converted[i] = DateTime64Value{v}
 				}
 				qb.AddInCondition("earliest_bid_date_time", converted)
 			}
 		case *NullableUInt64Filter_NotIn:
-			if filter.NotIn != nil && len(filter.NotIn.Values) > 0 {
+			if len(filter.NotIn.Values) > 0 {
 				converted := make([]interface{}, len(filter.NotIn.Values))
 				for i, v := range filter.NotIn.Values {
-					if v != nil {
-						converted[i] = DateTime64Value{v.GetValue()}
-					}
+					converted[i] = DateTime64Value{v}
 				}
 				qb.AddNotInCondition("earliest_bid_date_time", converted)
 			}
