@@ -103,21 +103,21 @@ func (x *AdminCbt) GetInterval() uint64 {
 	return 0
 }
 
-// ListAdminCbtRequest is the request message for listing admin_cbt records
+// Request for listing admin_cbt records
 type ListAdminCbtRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Filter by database (PRIMARY KEY - required)
+	// Filter by database - The database name (PRIMARY KEY - required)
 	Database *StringFilter `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
-	// Filter by position (ORDER BY column 3 - optional)
+	// Filter by position - The starting position of the processed interval (ORDER BY column 3 - optional)
 	Position *UInt64Filter `protobuf:"bytes,2,opt,name=position,proto3" json:"position,omitempty"`
 	// Filter by updated_date_time (optional)
 	UpdatedDateTime *UInt64Filter `protobuf:"bytes,3,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`
-	// Filter by table (optional)
+	// Filter by table - The table name (optional)
 	Table *StringFilter `protobuf:"bytes,4,opt,name=table,proto3" json:"table,omitempty"`
-	// Filter by interval (optional)
+	// Filter by interval - The size of the interval processed (optional)
 	Interval *UInt64Filter `protobuf:"bytes,5,opt,name=interval,proto3" json:"interval,omitempty"`
 	// The maximum number of admin_cbt to return.
 	// If unspecified, at most 100 items will be returned.
@@ -220,7 +220,7 @@ func (x *ListAdminCbtRequest) GetOrderBy() string {
 	return ""
 }
 
-// ListAdminCbtResponse is the response message for listing admin_cbt records
+// Response for listing admin_cbt records
 type ListAdminCbtResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -279,7 +279,7 @@ func (x *ListAdminCbtResponse) GetNextPageToken() string {
 	return ""
 }
 
-// GetAdminCbtRequest is the request message for getting a single admin_cbt record by primary key
+// Request for getting a single admin_cbt record by primary key
 type GetAdminCbtRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -328,7 +328,7 @@ func (x *GetAdminCbtRequest) GetDatabase() string {
 	return ""
 }
 
-// GetAdminCbtResponse is the response message for getting a single admin_cbt record
+// Response for getting a single admin_cbt record
 type GetAdminCbtResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

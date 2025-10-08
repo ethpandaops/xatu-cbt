@@ -222,47 +222,47 @@ func (x *IntBlockMevCanonical) GetTransactionCount() uint32 {
 	return 0
 }
 
-// ListIntBlockMevCanonicalRequest is the request message for listing int_block_mev_canonical records
+// Request for listing int_block_mev_canonical records
 type ListIntBlockMevCanonicalRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Filter by slot_start_date_time (PRIMARY KEY - required)
+	// Filter by slot_start_date_time - The start time for the slot that the proposer payload is for (PRIMARY KEY - required)
 	SlotStartDateTime *UInt32Filter `protobuf:"bytes,1,opt,name=slot_start_date_time,json=slotStartDateTime,proto3" json:"slot_start_date_time,omitempty"`
-	// Filter by block_root (ORDER BY column 2 - optional)
+	// Filter by block_root - The root hash of the beacon block (ORDER BY column 2 - optional)
 	BlockRoot *StringFilter `protobuf:"bytes,2,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
-	// Filter by updated_date_time (optional)
+	// Filter by updated_date_time - Timestamp when the record was last updated (optional)
 	UpdatedDateTime *UInt32Filter `protobuf:"bytes,3,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`
-	// Filter by slot (optional)
+	// Filter by slot - Slot number within the block proposer payload (optional)
 	Slot *UInt32Filter `protobuf:"bytes,4,opt,name=slot,proto3" json:"slot,omitempty"`
-	// Filter by epoch (optional)
+	// Filter by epoch - Epoch number derived from the slot that the proposer payload is for (optional)
 	Epoch *UInt32Filter `protobuf:"bytes,5,opt,name=epoch,proto3" json:"epoch,omitempty"`
-	// Filter by epoch_start_date_time (optional)
+	// Filter by epoch_start_date_time - The start time for the epoch that the proposer payload is for (optional)
 	EpochStartDateTime *UInt32Filter `protobuf:"bytes,6,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
-	// Filter by earliest_bid_date_time (optional)
+	// Filter by earliest_bid_date_time - The earliest timestamp of the accepted bid in milliseconds (optional)
 	EarliestBidDateTime *NullableUInt64Filter `protobuf:"bytes,7,opt,name=earliest_bid_date_time,json=earliestBidDateTime,proto3" json:"earliest_bid_date_time,omitempty"`
-	// Filter by relay_names (optional)
+	// Filter by relay_names - The relay names that delivered the proposer payload (optional)
 	RelayNames []string `protobuf:"bytes,8,rep,name=relay_names,json=relayNames,proto3" json:"relay_names,omitempty"`
-	// Filter by parent_hash (optional)
+	// Filter by parent_hash - The parent hash of the proposer payload (optional)
 	ParentHash *StringFilter `protobuf:"bytes,9,opt,name=parent_hash,json=parentHash,proto3" json:"parent_hash,omitempty"`
-	// Filter by block_number (optional)
+	// Filter by block_number - The block number of the proposer payload (optional)
 	BlockNumber *UInt64Filter `protobuf:"bytes,10,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
-	// Filter by block_hash (optional)
+	// Filter by block_hash - The block hash of the proposer payload (optional)
 	BlockHash *StringFilter `protobuf:"bytes,11,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	// Filter by builder_pubkey (optional)
+	// Filter by builder_pubkey - The builder pubkey of the proposer payload (optional)
 	BuilderPubkey *StringFilter `protobuf:"bytes,12,opt,name=builder_pubkey,json=builderPubkey,proto3" json:"builder_pubkey,omitempty"`
-	// Filter by proposer_pubkey (optional)
+	// Filter by proposer_pubkey - The proposer pubkey of the proposer payload (optional)
 	ProposerPubkey *StringFilter `protobuf:"bytes,13,opt,name=proposer_pubkey,json=proposerPubkey,proto3" json:"proposer_pubkey,omitempty"`
-	// Filter by proposer_fee_recipient (optional)
+	// Filter by proposer_fee_recipient - The proposer fee recipient of the proposer payload (optional)
 	ProposerFeeRecipient *StringFilter `protobuf:"bytes,14,opt,name=proposer_fee_recipient,json=proposerFeeRecipient,proto3" json:"proposer_fee_recipient,omitempty"`
-	// Filter by gas_limit (optional)
+	// Filter by gas_limit - The gas limit of the proposer payload (optional)
 	GasLimit *UInt64Filter `protobuf:"bytes,15,opt,name=gas_limit,json=gasLimit,proto3" json:"gas_limit,omitempty"`
-	// Filter by gas_used (optional)
+	// Filter by gas_used - The gas used of the proposer payload (optional)
 	GasUsed *UInt64Filter `protobuf:"bytes,16,opt,name=gas_used,json=gasUsed,proto3" json:"gas_used,omitempty"`
-	// Filter by value (optional)
+	// Filter by value - The transaction value in wei (optional)
 	Value *NullableStringFilter `protobuf:"bytes,17,opt,name=value,proto3" json:"value,omitempty"`
-	// Filter by transaction_count (optional)
+	// Filter by transaction_count - The number of transactions in the proposer payload (optional)
 	TransactionCount *UInt32Filter `protobuf:"bytes,18,opt,name=transaction_count,json=transactionCount,proto3" json:"transaction_count,omitempty"`
 	// The maximum number of int_block_mev_canonical to return.
 	// If unspecified, at most 100 items will be returned.
@@ -456,7 +456,7 @@ func (x *ListIntBlockMevCanonicalRequest) GetOrderBy() string {
 	return ""
 }
 
-// ListIntBlockMevCanonicalResponse is the response message for listing int_block_mev_canonical records
+// Response for listing int_block_mev_canonical records
 type ListIntBlockMevCanonicalResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -515,7 +515,7 @@ func (x *ListIntBlockMevCanonicalResponse) GetNextPageToken() string {
 	return ""
 }
 
-// GetIntBlockMevCanonicalRequest is the request message for getting a single int_block_mev_canonical record by primary key
+// Request for getting a single int_block_mev_canonical record by primary key
 type GetIntBlockMevCanonicalRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -564,7 +564,7 @@ func (x *GetIntBlockMevCanonicalRequest) GetSlotStartDateTime() uint32 {
 	return 0
 }
 
-// GetIntBlockMevCanonicalResponse is the response message for getting a single int_block_mev_canonical record
+// Response for getting a single int_block_mev_canonical record
 type GetIntBlockMevCanonicalResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
