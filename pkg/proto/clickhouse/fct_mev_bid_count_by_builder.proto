@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -12,19 +11,19 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctMevBidCountByBuilder {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint32 updated_date_time = 11;
   // Slot number within the block bid
-  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
+  uint32 slot = 12;
   // The start time for the slot that the bid is for
-  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
+  uint32 slot_start_date_time = 13;
   // Epoch number derived from the slot that the bid is for
-  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
+  uint32 epoch = 14;
   // The start time for the epoch that the bid is for
-  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
+  uint32 epoch_start_date_time = 15;
   // The relay that the bid was fetched from
-  string builder_pubkey = 16 [(tagger.tags) = "ch:\"builder_pubkey\""];
+  string builder_pubkey = 16;
   // The total number of bids from the builder
-  uint32 bid_total = 17 [(tagger.tags) = "ch:\"bid_total\""];
+  uint32 bid_total = 17;
 }
 
 // Request for listing fct_mev_bid_count_by_builder records

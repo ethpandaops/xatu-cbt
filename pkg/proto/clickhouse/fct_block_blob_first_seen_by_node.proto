@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
@@ -13,55 +12,55 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctBlockBlobFirstSeenByNode {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint32 updated_date_time = 11;
   // Source of the event
-  string source = 12 [(tagger.tags) = "ch:\"source\""];
+  string source = 12;
   // The slot number
-  uint32 slot = 13 [(tagger.tags) = "ch:\"slot\""];
+  uint32 slot = 13;
   // The wall clock time when the slot started
-  uint32 slot_start_date_time = 14 [(tagger.tags) = "ch:\"slot_start_date_time\""];
+  uint32 slot_start_date_time = 14;
   // The epoch number containing the slot
-  uint32 epoch = 15 [(tagger.tags) = "ch:\"epoch\""];
+  uint32 epoch = 15;
   // The wall clock time when the epoch started
-  uint32 epoch_start_date_time = 16 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
+  uint32 epoch_start_date_time = 16;
   // The time from slot start for the client to see the block
-  uint32 seen_slot_start_diff = 17 [(tagger.tags) = "ch:\"seen_slot_start_diff\""];
+  uint32 seen_slot_start_diff = 17;
   // The beacon block root hash
-  string block_root = 18 [(tagger.tags) = "ch:\"block_root\""];
+  string block_root = 18;
   // The blob index
-  uint32 blob_index = 19 [(tagger.tags) = "ch:\"blob_index\""];
+  uint32 blob_index = 19;
   // Username of the node
-  string username = 20 [(tagger.tags) = "ch:\"username\""];
+  string username = 20;
   // ID of the node
-  string node_id = 21 [(tagger.tags) = "ch:\"node_id\""];
+  string node_id = 21;
   // Classification of the node, e.g. "individual", "corporate", "internal" (aka ethPandaOps) or "unclassified"
-  string classification = 22 [(tagger.tags) = "ch:\"classification\""];
+  string classification = 22;
   // Name of the client
-  string meta_client_name = 23 [(tagger.tags) = "ch:\"meta_client_name\""];
+  string meta_client_name = 23;
   // Version of the client
-  string meta_client_version = 24 [(tagger.tags) = "ch:\"meta_client_version\""];
+  string meta_client_version = 24;
   // Implementation of the client
-  string meta_client_implementation = 25 [(tagger.tags) = "ch:\"meta_client_implementation\""];
+  string meta_client_implementation = 25;
   // City of the client
-  string meta_client_geo_city = 26 [(tagger.tags) = "ch:\"meta_client_geo_city\""];
+  string meta_client_geo_city = 26;
   // Country of the client
-  string meta_client_geo_country = 27 [(tagger.tags) = "ch:\"meta_client_geo_country\""];
+  string meta_client_geo_country = 27;
   // Country code of the client
-  string meta_client_geo_country_code = 28 [(tagger.tags) = "ch:\"meta_client_geo_country_code\""];
+  string meta_client_geo_country_code = 28;
   // Continent code of the client
-  string meta_client_geo_continent_code = 29 [(tagger.tags) = "ch:\"meta_client_geo_continent_code\""];
+  string meta_client_geo_continent_code = 29;
   // Longitude of the client
-  google.protobuf.DoubleValue meta_client_geo_longitude = 30 [(tagger.tags) = "ch:\"meta_client_geo_longitude\""];
+  google.protobuf.DoubleValue meta_client_geo_longitude = 30;
   // Latitude of the client
-  google.protobuf.DoubleValue meta_client_geo_latitude = 31 [(tagger.tags) = "ch:\"meta_client_geo_latitude\""];
+  google.protobuf.DoubleValue meta_client_geo_latitude = 31;
   // Autonomous system number of the client
-  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 32 [(tagger.tags) = "ch:\"meta_client_geo_autonomous_system_number\""];
+  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 32;
   // Autonomous system organization of the client
-  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 33 [(tagger.tags) = "ch:\"meta_client_geo_autonomous_system_organization\""];
+  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 33;
   // Ethereum consensus client version
-  string meta_consensus_version = 34 [(tagger.tags) = "ch:\"meta_consensus_version\""];
+  string meta_consensus_version = 34;
   // Ethereum consensus client implementation
-  string meta_consensus_implementation = 35 [(tagger.tags) = "ch:\"meta_consensus_implementation\""];
+  string meta_consensus_implementation = 35;
 }
 
 // Request for listing fct_block_blob_first_seen_by_node records

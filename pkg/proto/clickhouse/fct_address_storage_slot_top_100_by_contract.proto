@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -12,13 +11,13 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctAddressStorageSlotTop100ByContract {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint32 updated_date_time = 11;
   // Rank by total storage slots (1=highest)
-  uint32 rank = 12 [(tagger.tags) = "ch:\"rank\""];
+  uint32 rank = 12;
   // The contract address
-  string contract_address = 13 [(tagger.tags) = "ch:\"contract_address\""];
+  string contract_address = 13;
   // Total number of storage slots for this contract
-  uint64 total_storage_slots = 14 [(tagger.tags) = "ch:\"total_storage_slots\""];
+  uint64 total_storage_slots = 14;
 }
 
 // Request for listing fct_address_storage_slot_top_100_by_contract records

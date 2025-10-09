@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -11,59 +10,59 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message IntBlockCanonical {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint32 updated_date_time = 11;
   // The slot number from beacon block payload
-  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
+  uint32 slot = 12;
   // The wall clock time when the reorg slot started
-  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
+  uint32 slot_start_date_time = 13;
   // The epoch number from beacon block payload
-  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
+  uint32 epoch = 14;
   // The wall clock time when the epoch started
-  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
+  uint32 epoch_start_date_time = 15;
   // The root hash of the beacon block
-  string block_root = 16 [(tagger.tags) = "ch:\"block_root\""];
+  string block_root = 16;
   // The version of the beacon block
-  string block_version = 17 [(tagger.tags) = "ch:\"block_version\""];
+  string block_version = 17;
   // The total bytes of the beacon block payload
-  google.protobuf.UInt32Value block_total_bytes = 18 [(tagger.tags) = "ch:\"block_total_bytes\""];
+  google.protobuf.UInt32Value block_total_bytes = 18;
   // The total bytes of the beacon block payload when compressed using snappy
-  google.protobuf.UInt32Value block_total_bytes_compressed = 19 [(tagger.tags) = "ch:\"block_total_bytes_compressed\""];
+  google.protobuf.UInt32Value block_total_bytes_compressed = 19;
   // The root hash of the parent beacon block
-  string parent_root = 20 [(tagger.tags) = "ch:\"parent_root\""];
+  string parent_root = 20;
   // The root hash of the beacon state at this block
-  string state_root = 21 [(tagger.tags) = "ch:\"state_root\""];
+  string state_root = 21;
   // The index of the validator that proposed the beacon block
-  uint32 proposer_index = 22 [(tagger.tags) = "ch:\"proposer_index\""];
+  uint32 proposer_index = 22;
   // The block hash of the associated execution block
-  string eth1_data_block_hash = 23 [(tagger.tags) = "ch:\"eth1_data_block_hash\""];
+  string eth1_data_block_hash = 23;
   // The root of the deposit tree in the associated execution block
-  string eth1_data_deposit_root = 24 [(tagger.tags) = "ch:\"eth1_data_deposit_root\""];
+  string eth1_data_deposit_root = 24;
   // The block hash of the execution payload
-  string execution_payload_block_hash = 25 [(tagger.tags) = "ch:\"execution_payload_block_hash\""];
+  string execution_payload_block_hash = 25;
   // The block number of the execution payload
-  uint32 execution_payload_block_number = 26 [(tagger.tags) = "ch:\"execution_payload_block_number\""];
+  uint32 execution_payload_block_number = 26;
   // The recipient of the fee for this execution payload
-  string execution_payload_fee_recipient = 27 [(tagger.tags) = "ch:\"execution_payload_fee_recipient\""];
+  string execution_payload_fee_recipient = 27;
   // Base fee per gas for execution payload
-  google.protobuf.StringValue execution_payload_base_fee_per_gas = 28 [(tagger.tags) = "ch:\"execution_payload_base_fee_per_gas\""];
+  google.protobuf.StringValue execution_payload_base_fee_per_gas = 28;
   // Gas used for blobs in execution payload
-  google.protobuf.UInt64Value execution_payload_blob_gas_used = 29 [(tagger.tags) = "ch:\"execution_payload_blob_gas_used\""];
+  google.protobuf.UInt64Value execution_payload_blob_gas_used = 29;
   // Excess gas used for blobs in execution payload
-  google.protobuf.UInt64Value execution_payload_excess_blob_gas = 30 [(tagger.tags) = "ch:\"execution_payload_excess_blob_gas\""];
+  google.protobuf.UInt64Value execution_payload_excess_blob_gas = 30;
   // Gas limit for execution payload
-  google.protobuf.UInt64Value execution_payload_gas_limit = 31 [(tagger.tags) = "ch:\"execution_payload_gas_limit\""];
+  google.protobuf.UInt64Value execution_payload_gas_limit = 31;
   // Gas used for execution payload
-  google.protobuf.UInt64Value execution_payload_gas_used = 32 [(tagger.tags) = "ch:\"execution_payload_gas_used\""];
+  google.protobuf.UInt64Value execution_payload_gas_used = 32;
   // The state root of the execution payload
-  string execution_payload_state_root = 33 [(tagger.tags) = "ch:\"execution_payload_state_root\""];
+  string execution_payload_state_root = 33;
   // The parent hash of the execution payload
-  string execution_payload_parent_hash = 34 [(tagger.tags) = "ch:\"execution_payload_parent_hash\""];
+  string execution_payload_parent_hash = 34;
   // The transaction count of the execution payload
-  google.protobuf.UInt32Value execution_payload_transactions_count = 35 [(tagger.tags) = "ch:\"execution_payload_transactions_count\""];
+  google.protobuf.UInt32Value execution_payload_transactions_count = 35;
   // The transaction total bytes of the execution payload
-  google.protobuf.UInt32Value execution_payload_transactions_total_bytes = 36 [(tagger.tags) = "ch:\"execution_payload_transactions_total_bytes\""];
+  google.protobuf.UInt32Value execution_payload_transactions_total_bytes = 36;
   // The transaction total bytes of the execution payload when compressed using snappy
-  google.protobuf.UInt32Value execution_payload_transactions_total_bytes_compressed = 37 [(tagger.tags) = "ch:\"execution_payload_transactions_total_bytes_compressed\""];
+  google.protobuf.UInt32Value execution_payload_transactions_total_bytes_compressed = 37;
 }
 
 // Request for listing int_block_canonical records

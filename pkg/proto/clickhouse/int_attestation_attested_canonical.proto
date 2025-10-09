@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
@@ -10,33 +9,33 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message IntAttestationAttestedCanonical {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint32 updated_date_time = 11;
   // The slot number
-  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
+  uint32 slot = 12;
   // The wall clock time when the slot started
-  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
+  uint32 slot_start_date_time = 13;
   // The epoch number containing the slot
-  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
+  uint32 epoch = 14;
   // The wall clock time when the epoch started
-  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
+  uint32 epoch_start_date_time = 15;
   // The source epoch number in the attestation group
-  uint32 source_epoch = 16 [(tagger.tags) = "ch:\"source_epoch\""];
+  uint32 source_epoch = 16;
   // The wall clock time when the source epoch started
-  uint32 source_epoch_start_date_time = 17 [(tagger.tags) = "ch:\"source_epoch_start_date_time\""];
+  uint32 source_epoch_start_date_time = 17;
   // The source beacon block root hash in the attestation group
-  string source_root = 18 [(tagger.tags) = "ch:\"source_root\""];
+  string source_root = 18;
   // The target epoch number in the attestation group
-  uint32 target_epoch = 19 [(tagger.tags) = "ch:\"target_epoch\""];
+  uint32 target_epoch = 19;
   // The wall clock time when the target epoch started
-  uint32 target_epoch_start_date_time = 20 [(tagger.tags) = "ch:\"target_epoch_start_date_time\""];
+  uint32 target_epoch_start_date_time = 20;
   // The target beacon block root hash in the attestation group
-  string target_root = 21 [(tagger.tags) = "ch:\"target_root\""];
+  string target_root = 21;
   // The beacon block root hash
-  string block_root = 22 [(tagger.tags) = "ch:\"block_root\""];
+  string block_root = 22;
   // The index of the validator attesting
-  uint32 attesting_validator_index = 23 [(tagger.tags) = "ch:\"attesting_validator_index\""];
+  uint32 attesting_validator_index = 23;
   // The distance from the slot when the attestation was included
-  uint32 inclusion_distance = 24 [(tagger.tags) = "ch:\"inclusion_distance\""];
+  uint32 inclusion_distance = 24;
 }
 
 // Request for listing int_attestation_attested_canonical records

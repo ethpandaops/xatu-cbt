@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -11,57 +10,57 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message IntAttestationFirstSeen {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint32 updated_date_time = 11;
   // Source of the event
-  string source = 12 [(tagger.tags) = "ch:\"source\""];
+  string source = 12;
   // The slot number
-  uint32 slot = 13 [(tagger.tags) = "ch:\"slot\""];
+  uint32 slot = 13;
   // The wall clock time when the slot started
-  uint32 slot_start_date_time = 14 [(tagger.tags) = "ch:\"slot_start_date_time\""];
+  uint32 slot_start_date_time = 14;
   // The epoch number containing the slot
-  uint32 epoch = 15 [(tagger.tags) = "ch:\"epoch\""];
+  uint32 epoch = 15;
   // The wall clock time when the epoch started
-  uint32 epoch_start_date_time = 16 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
+  uint32 epoch_start_date_time = 16;
   // The time from slot start for the client to see the block
-  uint32 seen_slot_start_diff = 17 [(tagger.tags) = "ch:\"seen_slot_start_diff\""];
+  uint32 seen_slot_start_diff = 17;
   // The beacon block root hash
-  string block_root = 18 [(tagger.tags) = "ch:\"block_root\""];
+  string block_root = 18;
   // The index of the validator attesting
-  uint32 attesting_validator_index = 19 [(tagger.tags) = "ch:\"attesting_validator_index\""];
+  uint32 attesting_validator_index = 19;
   // The committee index of the attesting validator
-  string attesting_validator_committee_index = 20 [(tagger.tags) = "ch:\"attesting_validator_committee_index\""];
+  string attesting_validator_committee_index = 20;
   // Username of the node
-  string username = 21 [(tagger.tags) = "ch:\"username\""];
+  string username = 21;
   // ID of the node
-  string node_id = 22 [(tagger.tags) = "ch:\"node_id\""];
+  string node_id = 22;
   // Classification of the node, e.g. "individual", "corporate", "internal" (aka ethPandaOps) or "unclassified"
-  string classification = 23 [(tagger.tags) = "ch:\"classification\""];
+  string classification = 23;
   // Name of the client
-  string meta_client_name = 24 [(tagger.tags) = "ch:\"meta_client_name\""];
+  string meta_client_name = 24;
   // Version of the client
-  string meta_client_version = 25 [(tagger.tags) = "ch:\"meta_client_version\""];
+  string meta_client_version = 25;
   // Implementation of the client
-  string meta_client_implementation = 26 [(tagger.tags) = "ch:\"meta_client_implementation\""];
+  string meta_client_implementation = 26;
   // City of the client
-  string meta_client_geo_city = 27 [(tagger.tags) = "ch:\"meta_client_geo_city\""];
+  string meta_client_geo_city = 27;
   // Country of the client
-  string meta_client_geo_country = 28 [(tagger.tags) = "ch:\"meta_client_geo_country\""];
+  string meta_client_geo_country = 28;
   // Country code of the client
-  string meta_client_geo_country_code = 29 [(tagger.tags) = "ch:\"meta_client_geo_country_code\""];
+  string meta_client_geo_country_code = 29;
   // Continent code of the client
-  string meta_client_geo_continent_code = 30 [(tagger.tags) = "ch:\"meta_client_geo_continent_code\""];
+  string meta_client_geo_continent_code = 30;
   // Longitude of the client
-  google.protobuf.DoubleValue meta_client_geo_longitude = 31 [(tagger.tags) = "ch:\"meta_client_geo_longitude\""];
+  google.protobuf.DoubleValue meta_client_geo_longitude = 31;
   // Latitude of the client
-  google.protobuf.DoubleValue meta_client_geo_latitude = 32 [(tagger.tags) = "ch:\"meta_client_geo_latitude\""];
+  google.protobuf.DoubleValue meta_client_geo_latitude = 32;
   // Autonomous system number of the client
-  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 33 [(tagger.tags) = "ch:\"meta_client_geo_autonomous_system_number\""];
+  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 33;
   // Autonomous system organization of the client
-  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 34 [(tagger.tags) = "ch:\"meta_client_geo_autonomous_system_organization\""];
+  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 34;
   // Ethereum consensus client version
-  string meta_consensus_version = 35 [(tagger.tags) = "ch:\"meta_consensus_version\""];
+  string meta_consensus_version = 35;
   // Ethereum consensus client implementation
-  string meta_consensus_implementation = 36 [(tagger.tags) = "ch:\"meta_consensus_implementation\""];
+  string meta_consensus_implementation = 36;
 }
 
 // Request for listing int_attestation_first_seen records

@@ -23,6 +23,3 @@ xatu/
 
 # Python
 __pycache__
-
-# Buf temporary exports
-.buf-deps/

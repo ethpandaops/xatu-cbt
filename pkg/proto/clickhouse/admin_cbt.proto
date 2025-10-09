@@ -2,21 +2,20 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message AdminCbt {
-  uint64 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint64 updated_date_time = 11;
   // The database name
-  string database = 12 [(tagger.tags) = "ch:\"database\""];
+  string database = 12;
   // The table name
-  string table = 13 [(tagger.tags) = "ch:\"table\""];
+  string table = 13;
   // The starting position of the processed interval
-  uint64 position = 14 [(tagger.tags) = "ch:\"position\""];
+  uint64 position = 14;
   // The size of the interval processed
-  uint64 interval = 15 [(tagger.tags) = "ch:\"interval\""];
+  uint64 interval = 15;
 }
 
 // Request for listing admin_cbt records

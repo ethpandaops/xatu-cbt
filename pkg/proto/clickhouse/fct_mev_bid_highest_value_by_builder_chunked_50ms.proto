@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -12,27 +11,27 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctMevBidHighestValueByBuilderChunked50ms {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint32 updated_date_time = 11;
   // Slot number within the block bid
-  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
+  uint32 slot = 12;
   // The start time for the slot that the bid is for
-  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
+  uint32 slot_start_date_time = 13;
   // Epoch number derived from the slot that the bid is for
-  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
+  uint32 epoch = 14;
   // The start time for the epoch that the bid is for
-  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
+  uint32 epoch_start_date_time = 15;
   // The difference between the chunk start time and slot_start_date_time. "1500" would mean the earliest bid for this block_hash was between 1500ms and 1550ms into the slot. Negative values indicate bids received before slot start
-  int32 chunk_slot_start_diff = 16 [(tagger.tags) = "ch:\"chunk_slot_start_diff\""];
+  int32 chunk_slot_start_diff = 16;
   // The timestamp of the earliest bid for this block_hash from this builder
-  uint64 earliest_bid_date_time = 17 [(tagger.tags) = "ch:\"earliest_bid_date_time\""];
+  uint64 earliest_bid_date_time = 17;
   // The relay that the bid was fetched from
-  repeated string relay_names = 18 [(tagger.tags) = "ch:\"relay_names\""];
+  repeated string relay_names = 18;
   // The execution block hash of the bid
-  string block_hash = 19 [(tagger.tags) = "ch:\"block_hash\""];
+  string block_hash = 19;
   // The builder pubkey of the bid
-  string builder_pubkey = 20 [(tagger.tags) = "ch:\"builder_pubkey\""];
+  string builder_pubkey = 20;
   // The transaction value in wei
-  string value = 21 [(tagger.tags) = "ch:\"value\""];
+  string value = 21;
 }
 
 // Request for listing fct_mev_bid_highest_value_by_builder_chunked_50ms records

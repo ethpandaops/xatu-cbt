@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
@@ -13,23 +12,23 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctBlockProposer {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint32 updated_date_time = 11;
   // The slot number
-  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
+  uint32 slot = 12;
   // The wall clock time when the slot started
-  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
+  uint32 slot_start_date_time = 13;
   // The epoch number containing the slot
-  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
+  uint32 epoch = 14;
   // The wall clock time when the epoch started
-  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
+  uint32 epoch_start_date_time = 15;
   // The validator index of the proposer for the slot
-  uint32 proposer_validator_index = 16 [(tagger.tags) = "ch:\"proposer_validator_index\""];
+  uint32 proposer_validator_index = 16;
   // The public key of the validator proposer
-  string proposer_pubkey = 17 [(tagger.tags) = "ch:\"proposer_pubkey\""];
+  string proposer_pubkey = 17;
   // The beacon block root hash. Null if a block was never seen by a sentry, aka "missed"
-  google.protobuf.StringValue block_root = 18 [(tagger.tags) = "ch:\"block_root\""];
+  google.protobuf.StringValue block_root = 18;
   // Can be "canonical", "orphaned" or "missed"
-  string status = 19 [(tagger.tags) = "ch:\"status\""];
+  string status = 19;
 }
 
 // Request for listing fct_block_proposer records

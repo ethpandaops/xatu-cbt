@@ -10,4 +10,3 @@ breaking:
     - PACKAGE
 deps:
   - buf.build/googleapis/googleapis
-  - buf.build/srikrsna/protoc-gen-gotag

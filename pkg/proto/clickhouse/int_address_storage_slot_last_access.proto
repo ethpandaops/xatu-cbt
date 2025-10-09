@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
@@ -10,13 +9,13 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message IntAddressStorageSlotLastAccess {
   // The address of the account
-  string address = 11 [(tagger.tags) = "ch:\"address\""];
+  string address = 11;
   // The slot key of the storage
-  string slot_key = 12 [(tagger.tags) = "ch:\"slot_key\""];
+  string slot_key = 12;
   // The block number of the last access
-  uint32 block_number = 13 [(tagger.tags) = "ch:\"block_number\""];
+  uint32 block_number = 13;
   // The value of the storage
-  string value = 14 [(tagger.tags) = "ch:\"value\""];
+  string value = 14;
 }
 
 // Request for listing int_address_storage_slot_last_access records

@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package cbt;
 
-import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
@@ -13,41 +12,41 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctNodeActiveLast24h {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
+  uint32 updated_date_time = 11;
   // Timestamp when the node was last seen
-  uint32 last_seen_date_time = 12 [(tagger.tags) = "ch:\"last_seen_date_time\""];
+  uint32 last_seen_date_time = 12;
   // Username of the node
-  string username = 13 [(tagger.tags) = "ch:\"username\""];
+  string username = 13;
   // ID of the node
-  string node_id = 14 [(tagger.tags) = "ch:\"node_id\""];
+  string node_id = 14;
   // Classification of the node, e.g. "individual", "corporate", "internal" (aka ethPandaOps) or "unclassified"
-  string classification = 15 [(tagger.tags) = "ch:\"classification\""];
+  string classification = 15;
   // Name of the client
-  string meta_client_name = 16 [(tagger.tags) = "ch:\"meta_client_name\""];
+  string meta_client_name = 16;
   // Version of the client
-  string meta_client_version = 17 [(tagger.tags) = "ch:\"meta_client_version\""];
+  string meta_client_version = 17;
   // Implementation of the client
-  string meta_client_implementation = 18 [(tagger.tags) = "ch:\"meta_client_implementation\""];
+  string meta_client_implementation = 18;
   // City of the client
-  string meta_client_geo_city = 19 [(tagger.tags) = "ch:\"meta_client_geo_city\""];
+  string meta_client_geo_city = 19;
   // Country of the client
-  string meta_client_geo_country = 20 [(tagger.tags) = "ch:\"meta_client_geo_country\""];
+  string meta_client_geo_country = 20;
   // Country code of the client
-  string meta_client_geo_country_code = 21 [(tagger.tags) = "ch:\"meta_client_geo_country_code\""];
+  string meta_client_geo_country_code = 21;
   // Continent code of the client
-  string meta_client_geo_continent_code = 22 [(tagger.tags) = "ch:\"meta_client_geo_continent_code\""];
+  string meta_client_geo_continent_code = 22;
   // Longitude of the client
-  google.protobuf.DoubleValue meta_client_geo_longitude = 23 [(tagger.tags) = "ch:\"meta_client_geo_longitude\""];
+  google.protobuf.DoubleValue meta_client_geo_longitude = 23;
   // Latitude of the client
-  google.protobuf.DoubleValue meta_client_geo_latitude = 24 [(tagger.tags) = "ch:\"meta_client_geo_latitude\""];
+  google.protobuf.DoubleValue meta_client_geo_latitude = 24;
   // Autonomous system number of the client
-  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 25 [(tagger.tags) = "ch:\"meta_client_geo_autonomous_system_number\""];
+  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 25;
   // Autonomous system organization of the client
-  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 26 [(tagger.tags) = "ch:\"meta_client_geo_autonomous_system_organization\""];
+  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 26;
   // Ethereum consensus client version
-  string meta_consensus_version = 27 [(tagger.tags) = "ch:\"meta_consensus_version\""];
+  string meta_consensus_version = 27;
   // Ethereum consensus client implementation
-  string meta_consensus_implementation = 28 [(tagger.tags) = "ch:\"meta_consensus_implementation\""];
+  string meta_consensus_implementation = 28;
 }
 
 // Request for listing fct_node_active_last_24h records
