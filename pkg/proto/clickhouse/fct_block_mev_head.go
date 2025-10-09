@@ -612,7 +612,7 @@ func BuildListFctBlockMevHeadQuery(req *ListFctBlockMevHeadRequest, options ...Q
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "parent_hash", "block_number", "block_hash", "builder_pubkey", "proposer_pubkey", "proposer_fee_recipient", "gas_limit", "gas_used", "value", "transaction_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "parent_hash", "block_number", "block_hash", "builder_pubkey", "proposer_pubkey", "proposer_fee_recipient", "gas_limit", "gas_used", "toString(`value`) AS `value`", "transaction_count"}
 
 	return BuildParameterizedQuery("fct_block_mev_head", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -632,7 +632,7 @@ func BuildGetFctBlockMevHeadQuery(req *GetFctBlockMevHeadRequest, options ...Que
 	orderByClause := " ORDER BY slot_start_date_time, block_root"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "parent_hash", "block_number", "block_hash", "builder_pubkey", "proposer_pubkey", "proposer_fee_recipient", "gas_limit", "gas_used", "value", "transaction_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "parent_hash", "block_number", "block_hash", "builder_pubkey", "proposer_pubkey", "proposer_fee_recipient", "gas_limit", "gas_used", "toString(`value`) AS `value`", "transaction_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_mev_head", columns, qb, orderByClause, 1, 0, options...)

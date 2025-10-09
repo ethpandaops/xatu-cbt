@@ -394,7 +394,7 @@ func BuildListFctMevBidHighestValueByBuilderChunked50MsQuery(req *ListFctMevBidH
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "chunk_slot_start_diff", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "block_hash", "builder_pubkey", "value"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "chunk_slot_start_diff", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "block_hash", "builder_pubkey", "toString(`value`) AS `value`"}
 
 	return BuildParameterizedQuery("fct_mev_bid_highest_value_by_builder_chunked_50ms", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -414,7 +414,7 @@ func BuildGetFctMevBidHighestValueByBuilderChunked50MsQuery(req *GetFctMevBidHig
 	orderByClause := " ORDER BY slot_start_date_time, chunk_slot_start_diff, builder_pubkey"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "chunk_slot_start_diff", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "block_hash", "builder_pubkey", "value"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "chunk_slot_start_diff", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "block_hash", "builder_pubkey", "toString(`value`) AS `value`"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_mev_bid_highest_value_by_builder_chunked_50ms", columns, qb, orderByClause, 1, 0, options...)
