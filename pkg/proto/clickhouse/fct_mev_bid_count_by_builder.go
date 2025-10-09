@@ -292,7 +292,7 @@ func BuildListFctMevBidCountByBuilderQuery(req *ListFctMevBidCountByBuilderReque
 	}
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "builder_pubkey", "bid_total"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "builder_pubkey", "bid_total"}
 
 	return BuildParameterizedQuery("fct_mev_bid_count_by_builder", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -312,7 +312,7 @@ func BuildGetFctMevBidCountByBuilderQuery(req *GetFctMevBidCountByBuilderRequest
 	orderByClause := " ORDER BY slot_start_date_time, builder_pubkey"
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "builder_pubkey", "bid_total"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "builder_pubkey", "bid_total"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_mev_bid_count_by_builder", columns, qb, orderByClause, 1, 0, options...)

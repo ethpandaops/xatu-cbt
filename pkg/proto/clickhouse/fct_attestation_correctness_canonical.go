@@ -364,7 +364,7 @@ func BuildListFctAttestationCorrectnessCanonicalQuery(req *ListFctAttestationCor
 	}
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "votes_max", "votes_head", "votes_other"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "votes_max", "votes_head", "votes_other"}
 
 	return BuildParameterizedQuery("fct_attestation_correctness_canonical", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -384,7 +384,7 @@ func BuildGetFctAttestationCorrectnessCanonicalQuery(req *GetFctAttestationCorre
 	orderByClause := " ORDER BY slot_start_date_time"
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "votes_max", "votes_head", "votes_other"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "votes_max", "votes_head", "votes_other"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_attestation_correctness_canonical", columns, qb, orderByClause, 1, 0, options...)

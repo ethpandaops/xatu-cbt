@@ -326,7 +326,7 @@ func BuildListFctBlockProposerHeadQuery(req *ListFctBlockProposerHeadRequest, op
 	}
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "proposer_validator_index", "proposer_pubkey", "block_root"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "proposer_validator_index", "proposer_pubkey", "block_root"}
 
 	return BuildParameterizedQuery("fct_block_proposer_head", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -346,7 +346,7 @@ func BuildGetFctBlockProposerHeadQuery(req *GetFctBlockProposerHeadRequest, opti
 	orderByClause := " ORDER BY slot_start_date_time, proposer_validator_index"
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "proposer_validator_index", "proposer_pubkey", "block_root"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "proposer_validator_index", "proposer_pubkey", "block_root"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_proposer_head", columns, qb, orderByClause, 1, 0, options...)

@@ -266,7 +266,7 @@ func BuildListFctBlockProposerEntityQuery(req *ListFctBlockProposerEntityRequest
 	}
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "entity"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity"}
 
 	return BuildParameterizedQuery("fct_block_proposer_entity", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -286,7 +286,7 @@ func BuildGetFctBlockProposerEntityQuery(req *GetFctBlockProposerEntityRequest, 
 	orderByClause := " ORDER BY slot_start_date_time"
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "entity"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_proposer_entity", columns, qb, orderByClause, 1, 0, options...)

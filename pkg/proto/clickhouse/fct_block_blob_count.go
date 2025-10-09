@@ -322,7 +322,7 @@ func BuildListFctBlockBlobCountQuery(req *ListFctBlockBlobCountRequest, options 
 	}
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "blob_count", "status"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "blob_count", "status"}
 
 	return BuildParameterizedQuery("fct_block_blob_count", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -342,7 +342,7 @@ func BuildGetFctBlockBlobCountQuery(req *GetFctBlockBlobCountRequest, options ..
 	orderByClause := " ORDER BY slot_start_date_time, block_root"
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "blob_count", "status"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "blob_count", "status"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_blob_count", columns, qb, orderByClause, 1, 0, options...)

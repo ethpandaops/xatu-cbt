@@ -754,7 +754,7 @@ func BuildListFctBlockFirstSeenByNodeQuery(req *ListFctBlockFirstSeenByNodeReque
 	}
 
 	// Build column list
-	columns := []string{"updated_date_time", "source", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "seen_slot_start_diff", "block_root", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
 
 	return BuildParameterizedQuery("fct_block_first_seen_by_node", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -774,7 +774,7 @@ func BuildGetFctBlockFirstSeenByNodeQuery(req *GetFctBlockFirstSeenByNodeRequest
 	orderByClause := " ORDER BY slot_start_date_time, block_root, meta_client_name"
 
 	// Build column list
-	columns := []string{"updated_date_time", "source", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "seen_slot_start_diff", "block_root", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_first_seen_by_node", columns, qb, orderByClause, 1, 0, options...)

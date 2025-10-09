@@ -605,7 +605,7 @@ func BuildListIntBlockMevCanonicalQuery(req *ListIntBlockMevCanonicalRequest, op
 	}
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "earliest_bid_date_time", "relay_names", "parent_hash", "block_number", "block_hash", "builder_pubkey", "proposer_pubkey", "proposer_fee_recipient", "gas_limit", "gas_used", "value", "transaction_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "parent_hash", "block_number", "block_hash", "builder_pubkey", "proposer_pubkey", "proposer_fee_recipient", "gas_limit", "gas_used", "value", "transaction_count"}
 
 	return BuildParameterizedQuery("int_block_mev_canonical", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -625,7 +625,7 @@ func BuildGetIntBlockMevCanonicalQuery(req *GetIntBlockMevCanonicalRequest, opti
 	orderByClause := " ORDER BY slot_start_date_time, block_root"
 
 	// Build column list
-	columns := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "earliest_bid_date_time", "relay_names", "parent_hash", "block_number", "block_hash", "builder_pubkey", "proposer_pubkey", "proposer_fee_recipient", "gas_limit", "gas_used", "value", "transaction_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "toUnixTimestamp64(`earliest_bid_date_time`, 6) AS `earliest_bid_date_time`", "relay_names", "parent_hash", "block_number", "block_hash", "builder_pubkey", "proposer_pubkey", "proposer_fee_recipient", "gas_limit", "gas_used", "value", "transaction_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("int_block_mev_canonical", columns, qb, orderByClause, 1, 0, options...)
