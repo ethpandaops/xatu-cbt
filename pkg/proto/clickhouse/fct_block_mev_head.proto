@@ -68,7 +68,7 @@ message ListFctBlockMevHeadRequest {
   // Filter by earliest_bid_date_time - The earliest timestamp of the accepted bid in milliseconds (optional)
   NullableInt64Filter earliest_bid_date_time = 7 [(google.api.field_behavior) = OPTIONAL];
   // Filter by relay_names - The relay names that delivered the proposer payload (optional)
-  repeated string relay_names = 8 [(google.api.field_behavior) = OPTIONAL];
+  repeated string relay_names = 8;
   // Filter by parent_hash - The parent hash of the proposer payload (optional)
   StringFilter parent_hash = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_number - The block number of the proposer payload (optional)

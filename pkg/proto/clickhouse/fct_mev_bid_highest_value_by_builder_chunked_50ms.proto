@@ -56,7 +56,7 @@ message ListFctMevBidHighestValueByBuilderChunked50msRequest {
   // Filter by earliest_bid_date_time - The timestamp of the earliest bid for this block_hash from this builder (optional)
   Int64Filter earliest_bid_date_time = 8 [(google.api.field_behavior) = OPTIONAL];
   // Filter by relay_names - The relay that the bid was fetched from (optional)
-  repeated string relay_names = 9 [(google.api.field_behavior) = OPTIONAL];
+  repeated string relay_names = 9;
   // Filter by block_hash - The execution block hash of the bid (optional)
   StringFilter block_hash = 10 [(google.api.field_behavior) = OPTIONAL];
   // Filter by value - The transaction value in wei (optional)
