@@ -43,8 +43,17 @@ test:
 # Download dependencies
 .PHONY: deps
 deps:
+	@echo "📦 Downloading Go dependencies..."
 	$(GOMOD) download
 	$(GOMOD) tidy
+	@echo "📦 Installing protoc-gen-gotag..."
+	@if ! which protoc-gen-gotag > /dev/null; then \
+		echo "  → Installing protoc-gen-gotag..."; \
+		go install github.com/srikrsna/protoc-gen-gotag@latest; \
+	else \
+		echo "  → protoc-gen-gotag already installed"; \
+	fi
+	@echo "✅ All dependencies installed"
 
 # Format code
 .PHONY: fmt
@@ -53,7 +62,7 @@ fmt:
 
 # Generate protobuf files from ClickHouse tables
 .PHONY: proto
-proto:
+proto: deps
 	@# Load .env file and check NETWORK is set
 	@if [ -f .env ]; then \
 		export $$(grep -v '^#' .env | grep -v '^$$' | sed 's/#.*//' | xargs); \
@@ -96,6 +105,18 @@ proto:
 	buf dep update
 	@echo "Generating Go protobuf code..."
 	buf generate
+	@rm -rf .buf-deps
+	@buf export buf.build/srikrsna/protoc-gen-gotag -o .buf-deps
+	@buf export buf.build/googleapis/googleapis -o .buf-deps
+	@PROTO_DIR=pkg/proto/clickhouse; \
+	BUF_DEPS=$$(pwd)/.buf-deps; \
+	cd $$PROTO_DIR && protoc \
+		--proto_path=. \
+		--proto_path=$$BUF_DEPS \
+		--gotag_out=paths=source_relative:. \
+		*.proto
+	@rm -rf .buf-deps
+	@echo "✅ Proto generation completed!"
 
 # Docker compose commands
 # Usage: make docker compose up mainnet
@@ -145,7 +166,7 @@ help:
 	@echo "  make run     - Run the interactive TUI"
 	@echo "  make clean   - Remove build artifacts"
 	@echo "  make test    - Run tests"
-	@echo "  make deps    - Download and tidy dependencies"
+	@echo "  make deps    - Download Go and proto dependencies"
 	@echo "  make fmt     - Format Go code"
 	@echo "  make proto   - Generate protobuf files from ClickHouse tables"
 	@echo "  make docker compose up <network>   - Start CBT for specified network"

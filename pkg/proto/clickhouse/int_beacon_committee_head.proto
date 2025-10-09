@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
@@ -9,19 +10,19 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message IntBeaconCommitteeHead {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // The slot number
-  uint32 slot = 12;
+  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
   // The wall clock time when the slot started
-  uint32 slot_start_date_time = 13;
+  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
   // The epoch number containing the slot
-  uint32 epoch = 14;
+  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
   // The wall clock time when the epoch started
-  uint32 epoch_start_date_time = 15;
+  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
   // The committee index in the beacon API committee payload
-  string committee_index = 16;
+  string committee_index = 16 [(tagger.tags) = "ch:\"committee_index\""];
   // The validator indices in the beacon API committee payload
-  repeated uint32 validators = 17;
+  repeated uint32 validators = 17 [(tagger.tags) = "ch:\"validators\""];
 }
 
 // Request for listing int_beacon_committee_head records

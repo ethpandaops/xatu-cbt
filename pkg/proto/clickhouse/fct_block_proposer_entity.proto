@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
@@ -12,17 +13,17 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctBlockProposerEntity {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // The slot number
-  uint32 slot = 12;
+  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
   // The wall clock time when the slot started
-  uint32 slot_start_date_time = 13;
+  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
   // The epoch number containing the slot
-  uint32 epoch = 14;
+  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
   // The wall clock time when the epoch started
-  uint32 epoch_start_date_time = 15;
+  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
   // The entity that proposed the block
-  google.protobuf.StringValue entity = 16;
+  google.protobuf.StringValue entity = 16 [(tagger.tags) = "ch:\"entity\""];
 }
 
 // Request for listing fct_block_proposer_entity records

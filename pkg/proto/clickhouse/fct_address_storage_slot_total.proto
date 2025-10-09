@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -11,11 +12,11 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctAddressStorageSlotTotal {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // Total number of storage slots accessed in last 365 days
-  uint64 total_storage_slots = 12;
+  uint64 total_storage_slots = 12 [(tagger.tags) = "ch:\"total_storage_slots\""];
   // Number of expired storage slots (not accessed in last 365 days)
-  uint64 expired_storage_slots = 13;
+  uint64 expired_storage_slots = 13 [(tagger.tags) = "ch:\"expired_storage_slots\""];
 }
 
 // Request for listing fct_address_storage_slot_total records

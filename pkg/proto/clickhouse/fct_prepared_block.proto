@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
@@ -12,49 +13,49 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctPreparedBlock {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // The slot number from beacon block
-  uint32 slot = 12;
+  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
   // The wall clock time when the slot started
-  uint32 slot_start_date_time = 13;
+  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
   // The wall clock time when the event was received
-  uint32 event_date_time = 14;
+  uint32 event_date_time = 14 [(tagger.tags) = "ch:\"event_date_time\""];
   // Name of the client that generated the event
-  string meta_client_name = 15;
+  string meta_client_name = 15 [(tagger.tags) = "ch:\"meta_client_name\""];
   // Version of the client that generated the event
-  string meta_client_version = 16;
+  string meta_client_version = 16 [(tagger.tags) = "ch:\"meta_client_version\""];
   // Implementation of the client that generated the event
-  string meta_client_implementation = 17;
+  string meta_client_implementation = 17 [(tagger.tags) = "ch:\"meta_client_implementation\""];
   // Consensus implementation of the validator
-  string meta_consensus_implementation = 18;
+  string meta_consensus_implementation = 18 [(tagger.tags) = "ch:\"meta_consensus_implementation\""];
   // Consensus version of the validator
-  string meta_consensus_version = 19;
+  string meta_consensus_version = 19 [(tagger.tags) = "ch:\"meta_consensus_version\""];
   // City of the client that generated the event
-  string meta_client_geo_city = 20;
+  string meta_client_geo_city = 20 [(tagger.tags) = "ch:\"meta_client_geo_city\""];
   // Country of the client that generated the event
-  string meta_client_geo_country = 21;
+  string meta_client_geo_country = 21 [(tagger.tags) = "ch:\"meta_client_geo_country\""];
   // Country code of the client that generated the event
-  string meta_client_geo_country_code = 22;
+  string meta_client_geo_country_code = 22 [(tagger.tags) = "ch:\"meta_client_geo_country_code\""];
   // The version of the beacon block
-  string block_version = 23;
+  string block_version = 23 [(tagger.tags) = "ch:\"block_version\""];
   // The total bytes of the beacon block payload
-  google.protobuf.UInt32Value block_total_bytes = 24;
+  google.protobuf.UInt32Value block_total_bytes = 24 [(tagger.tags) = "ch:\"block_total_bytes\""];
   // The total bytes of the beacon block payload when compressed using snappy
-  google.protobuf.UInt32Value block_total_bytes_compressed = 25;
+  google.protobuf.UInt32Value block_total_bytes_compressed = 25 [(tagger.tags) = "ch:\"block_total_bytes_compressed\""];
   // The value of the execution payload in wei
-  google.protobuf.UInt64Value execution_payload_value = 26;
+  google.protobuf.UInt64Value execution_payload_value = 26 [(tagger.tags) = "ch:\"execution_payload_value\""];
   // The value of the consensus payload in wei
-  google.protobuf.UInt64Value consensus_payload_value = 27;
+  google.protobuf.UInt64Value consensus_payload_value = 27 [(tagger.tags) = "ch:\"consensus_payload_value\""];
   // The block number of the execution payload
-  uint32 execution_payload_block_number = 28;
+  uint32 execution_payload_block_number = 28 [(tagger.tags) = "ch:\"execution_payload_block_number\""];
   // Gas limit for execution payload
-  google.protobuf.UInt64Value execution_payload_gas_limit = 29;
+  google.protobuf.UInt64Value execution_payload_gas_limit = 29 [(tagger.tags) = "ch:\"execution_payload_gas_limit\""];
   // Gas used for execution payload
-  google.protobuf.UInt64Value execution_payload_gas_used = 30;
+  google.protobuf.UInt64Value execution_payload_gas_used = 30 [(tagger.tags) = "ch:\"execution_payload_gas_used\""];
   // The transaction count of the execution payload
-  google.protobuf.UInt32Value execution_payload_transactions_count = 31;
+  google.protobuf.UInt32Value execution_payload_transactions_count = 31 [(tagger.tags) = "ch:\"execution_payload_transactions_count\""];
   // The transaction total bytes of the execution payload
-  google.protobuf.UInt32Value execution_payload_transactions_total_bytes = 32;
+  google.protobuf.UInt32Value execution_payload_transactions_total_bytes = 32 [(tagger.tags) = "ch:\"execution_payload_transactions_total_bytes\""];
 }
 
 // Request for listing fct_prepared_block records

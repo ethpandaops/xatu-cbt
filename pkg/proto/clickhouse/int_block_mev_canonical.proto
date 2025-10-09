@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -10,41 +11,41 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message IntBlockMevCanonical {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // Slot number within the block proposer payload
-  uint32 slot = 12;
+  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
   // The start time for the slot that the proposer payload is for
-  uint32 slot_start_date_time = 13;
+  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
   // Epoch number derived from the slot that the proposer payload is for
-  uint32 epoch = 14;
+  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
   // The start time for the epoch that the proposer payload is for
-  uint32 epoch_start_date_time = 15;
+  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
   // The root hash of the beacon block
-  string block_root = 16;
+  string block_root = 16 [(tagger.tags) = "ch:\"block_root\""];
   // The earliest timestamp of the accepted bid in milliseconds
-  google.protobuf.UInt64Value earliest_bid_date_time = 17;
+  google.protobuf.UInt64Value earliest_bid_date_time = 17 [(tagger.tags) = "ch:\"earliest_bid_date_time\""];
   // The relay names that delivered the proposer payload
-  repeated string relay_names = 18;
+  repeated string relay_names = 18 [(tagger.tags) = "ch:\"relay_names\""];
   // The parent hash of the proposer payload
-  string parent_hash = 19;
+  string parent_hash = 19 [(tagger.tags) = "ch:\"parent_hash\""];
   // The block number of the proposer payload
-  uint64 block_number = 20;
+  uint64 block_number = 20 [(tagger.tags) = "ch:\"block_number\""];
   // The block hash of the proposer payload
-  string block_hash = 21;
+  string block_hash = 21 [(tagger.tags) = "ch:\"block_hash\""];
   // The builder pubkey of the proposer payload
-  string builder_pubkey = 22;
+  string builder_pubkey = 22 [(tagger.tags) = "ch:\"builder_pubkey\""];
   // The proposer pubkey of the proposer payload
-  string proposer_pubkey = 23;
+  string proposer_pubkey = 23 [(tagger.tags) = "ch:\"proposer_pubkey\""];
   // The proposer fee recipient of the proposer payload
-  string proposer_fee_recipient = 24;
+  string proposer_fee_recipient = 24 [(tagger.tags) = "ch:\"proposer_fee_recipient\""];
   // The gas limit of the proposer payload
-  uint64 gas_limit = 25;
+  uint64 gas_limit = 25 [(tagger.tags) = "ch:\"gas_limit\""];
   // The gas used of the proposer payload
-  uint64 gas_used = 26;
+  uint64 gas_used = 26 [(tagger.tags) = "ch:\"gas_used\""];
   // The transaction value in wei
-  google.protobuf.StringValue value = 27;
+  google.protobuf.StringValue value = 27 [(tagger.tags) = "ch:\"value\""];
   // The number of transactions in the proposer payload
-  uint32 transaction_count = 28;
+  uint32 transaction_count = 28 [(tagger.tags) = "ch:\"transaction_count\""];
 }
 
 // Request for listing int_block_mev_canonical records

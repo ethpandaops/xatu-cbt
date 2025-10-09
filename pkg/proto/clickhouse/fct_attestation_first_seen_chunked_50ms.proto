@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -11,21 +12,21 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctAttestationFirstSeenChunked50ms {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // The slot number
-  uint32 slot = 12;
+  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
   // The wall clock time when the slot started
-  uint32 slot_start_date_time = 13;
+  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
   // The epoch number containing the slot
-  uint32 epoch = 14;
+  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
   // The wall clock time when the epoch started
-  uint32 epoch_start_date_time = 15;
+  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
   // The beacon block root hash that was attested, null means the attestation was missed
-  string block_root = 16;
+  string block_root = 16 [(tagger.tags) = "ch:\"block_root\""];
   // The different between the chunk start time and slot_start_date_time. "1500" would mean this chunk contains attestations first seen between 1500ms 1550ms into the slot
-  uint32 chunk_slot_start_diff = 17;
+  uint32 chunk_slot_start_diff = 17 [(tagger.tags) = "ch:\"chunk_slot_start_diff\""];
   // The number of attestations in this chunk
-  uint32 attestation_count = 18;
+  uint32 attestation_count = 18 [(tagger.tags) = "ch:\"attestation_count\""];
 }
 
 // Request for listing fct_attestation_first_seen_chunked_50ms records

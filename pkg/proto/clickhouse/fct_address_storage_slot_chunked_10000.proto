@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -11,13 +12,13 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctAddressStorageSlotChunked10000 {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // Start block number of the chunk
-  uint32 chunk_start_block_number = 12;
+  uint32 chunk_start_block_number = 12 [(tagger.tags) = "ch:\"chunk_start_block_number\""];
   // Number of slots first accessed in the chunk
-  uint32 first_accessed_slots = 13;
+  uint32 first_accessed_slots = 13 [(tagger.tags) = "ch:\"first_accessed_slots\""];
   // Number of slots last accessed in the chunk
-  uint32 last_accessed_slots = 14;
+  uint32 last_accessed_slots = 14 [(tagger.tags) = "ch:\"last_accessed_slots\""];
 }
 
 // Request for listing fct_address_storage_slot_chunked_10000 records

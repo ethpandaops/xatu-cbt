@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
@@ -12,23 +13,23 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctAttestationCorrectnessCanonical {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // The slot number
-  uint32 slot = 12;
+  uint32 slot = 12 [(tagger.tags) = "ch:\"slot\""];
   // The wall clock time when the slot started
-  uint32 slot_start_date_time = 13;
+  uint32 slot_start_date_time = 13 [(tagger.tags) = "ch:\"slot_start_date_time\""];
   // The epoch number containing the slot
-  uint32 epoch = 14;
+  uint32 epoch = 14 [(tagger.tags) = "ch:\"epoch\""];
   // The wall clock time when the epoch started
-  uint32 epoch_start_date_time = 15;
+  uint32 epoch_start_date_time = 15 [(tagger.tags) = "ch:\"epoch_start_date_time\""];
   // The beacon block root hash
-  google.protobuf.StringValue block_root = 16;
+  google.protobuf.StringValue block_root = 16 [(tagger.tags) = "ch:\"block_root\""];
   // The maximum number of scheduled votes for the block
-  uint32 votes_max = 17;
+  uint32 votes_max = 17 [(tagger.tags) = "ch:\"votes_max\""];
   // The number of votes for the block proposed in the current slot
-  google.protobuf.UInt32Value votes_head = 18;
+  google.protobuf.UInt32Value votes_head = 18 [(tagger.tags) = "ch:\"votes_head\""];
   // The number of votes for any blocks proposed in previous slots
-  google.protobuf.UInt32Value votes_other = 19;
+  google.protobuf.UInt32Value votes_other = 19 [(tagger.tags) = "ch:\"votes_other\""];
 }
 
 // Request for listing fct_attestation_correctness_canonical records

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -10,19 +11,19 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message DimNode {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // The index of the validator
-  uint32 validator_index = 12;
+  uint32 validator_index = 12 [(tagger.tags) = "ch:\"validator_index\""];
   // The name of the node
-  google.protobuf.StringValue name = 13;
+  google.protobuf.StringValue name = 13 [(tagger.tags) = "ch:\"name\""];
   // Groups the node belongs to
-  repeated string groups = 14;
+  repeated string groups = 14 [(tagger.tags) = "ch:\"groups\""];
   // Tags associated with the node
-  repeated string tags = 15;
+  repeated string tags = 15 [(tagger.tags) = "ch:\"tags\""];
   // Additional attributes of the node
-  string attributes = 16;
+  string attributes = 16 [(tagger.tags) = "ch:\"attributes\""];
   // The source entity of the node
-  string source = 17;
+  string source = 17 [(tagger.tags) = "ch:\"source\""];
 }
 
 // Request for listing dim_node records

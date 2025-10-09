@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -11,15 +12,15 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message FctAddressAccessTotal {
   // Timestamp when the record was last updated
-  uint32 updated_date_time = 11;
+  uint32 updated_date_time = 11 [(tagger.tags) = "ch:\"updated_date_time\""];
   // Total number of accounts accessed in last 365 days
-  uint64 total_accounts = 12;
+  uint64 total_accounts = 12 [(tagger.tags) = "ch:\"total_accounts\""];
   // Number of expired accounts (not accessed in last 365 days)
-  uint64 expired_accounts = 13;
+  uint64 expired_accounts = 13 [(tagger.tags) = "ch:\"expired_accounts\""];
   // Total number of contract accounts accessed in last 365 days
-  uint64 total_contract_accounts = 14;
+  uint64 total_contract_accounts = 14 [(tagger.tags) = "ch:\"total_contract_accounts\""];
   // Number of expired contracts (not accessed in last 365 days)
-  uint64 expired_contracts = 15;
+  uint64 expired_contracts = 15 [(tagger.tags) = "ch:\"expired_contracts\""];
 }
 
 // Request for listing fct_address_access_total records

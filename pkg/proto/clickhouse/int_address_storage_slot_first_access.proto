@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
+import "tagger/tagger.proto";
 import "common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
@@ -9,15 +10,15 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message IntAddressStorageSlotFirstAccess {
   // The address of the account
-  string address = 11;
+  string address = 11 [(tagger.tags) = "ch:\"address\""];
   // The slot key of the storage
-  string slot_key = 12;
+  string slot_key = 12 [(tagger.tags) = "ch:\"slot_key\""];
   // The block number of the first access
-  uint32 block_number = 13;
+  uint32 block_number = 13 [(tagger.tags) = "ch:\"block_number\""];
   // The value of the storage
-  string value = 14;
+  string value = 14 [(tagger.tags) = "ch:\"value\""];
   // Version for this address + slot key, for internal use in clickhouse to keep first access
-  uint32 version = 15;
+  uint32 version = 15 [(tagger.tags) = "ch:\"version\""];
 }
 
 // Request for listing int_address_storage_slot_first_access records
