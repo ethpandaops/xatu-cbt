@@ -23,7 +23,7 @@ message FctMevBidHighestValueByBuilderChunked50ms {
   // The difference between the chunk start time and slot_start_date_time. "1500" would mean the earliest bid for this block_hash was between 1500ms and 1550ms into the slot. Negative values indicate bids received before slot start
   int32 chunk_slot_start_diff = 16;
   // The timestamp of the earliest bid for this block_hash from this builder
-  uint64 earliest_bid_date_time = 17;
+  int64 earliest_bid_date_time = 17;
   // The relay that the bid was fetched from
   repeated string relay_names = 18;
   // The execution block hash of the bid
@@ -54,7 +54,7 @@ message ListFctMevBidHighestValueByBuilderChunked50msRequest {
   // Filter by epoch_start_date_time - The start time for the epoch that the bid is for (optional)
   UInt32Filter epoch_start_date_time = 7 [(google.api.field_behavior) = OPTIONAL];
   // Filter by earliest_bid_date_time - The timestamp of the earliest bid for this block_hash from this builder (optional)
-  UInt64Filter earliest_bid_date_time = 8 [(google.api.field_behavior) = OPTIONAL];
+  Int64Filter earliest_bid_date_time = 8 [(google.api.field_behavior) = OPTIONAL];
   // Filter by relay_names - The relay that the bid was fetched from (optional)
   repeated string relay_names = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_hash - The execution block hash of the bid (optional)

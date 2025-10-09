@@ -7,7 +7,7 @@ import "common.proto";
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
 message AdminCbt {
-  uint64 updated_date_time = 11;
+  int64 updated_date_time = 11;
   // The database name
   string database = 12;
   // The table name
@@ -27,7 +27,7 @@ message ListAdminCbtRequest {
   UInt64Filter position = 2;
 
   // Filter by updated_date_time (optional)
-  UInt64Filter updated_date_time = 3;
+  Int64Filter updated_date_time = 3;
   // Filter by table - The table name (optional)
   StringFilter table = 4;
   // Filter by interval - The size of the interval processed (optional)

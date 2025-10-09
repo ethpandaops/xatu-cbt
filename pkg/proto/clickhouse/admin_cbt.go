@@ -49,33 +49,33 @@ func BuildListAdminCbtQuery(req *ListAdminCbtRequest, options ...QueryOption) (S
 	// Add filter for column: updated_date_time
 	if req.UpdatedDateTime != nil {
 		switch filter := req.UpdatedDateTime.Filter.(type) {
-		case *UInt64Filter_Eq:
-			qb.AddCondition("updated_date_time", "=", DateTime64Value{filter.Eq})
-		case *UInt64Filter_Ne:
-			qb.AddCondition("updated_date_time", "!=", DateTime64Value{filter.Ne})
-		case *UInt64Filter_Lt:
-			qb.AddCondition("updated_date_time", "<", DateTime64Value{filter.Lt})
-		case *UInt64Filter_Lte:
-			qb.AddCondition("updated_date_time", "<=", DateTime64Value{filter.Lte})
-		case *UInt64Filter_Gt:
-			qb.AddCondition("updated_date_time", ">", DateTime64Value{filter.Gt})
-		case *UInt64Filter_Gte:
-			qb.AddCondition("updated_date_time", ">=", DateTime64Value{filter.Gte})
-		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("updated_date_time", DateTime64Value{filter.Between.Min}, DateTime64Value{filter.Between.Max.GetValue()})
-		case *UInt64Filter_In:
+		case *Int64Filter_Eq:
+			qb.AddCondition("updated_date_time", "=", DateTime64Value{uint64(filter.Eq)})
+		case *Int64Filter_Ne:
+			qb.AddCondition("updated_date_time", "!=", DateTime64Value{uint64(filter.Ne)})
+		case *Int64Filter_Lt:
+			qb.AddCondition("updated_date_time", "<", DateTime64Value{uint64(filter.Lt)})
+		case *Int64Filter_Lte:
+			qb.AddCondition("updated_date_time", "<=", DateTime64Value{uint64(filter.Lte)})
+		case *Int64Filter_Gt:
+			qb.AddCondition("updated_date_time", ">", DateTime64Value{uint64(filter.Gt)})
+		case *Int64Filter_Gte:
+			qb.AddCondition("updated_date_time", ">=", DateTime64Value{uint64(filter.Gte)})
+		case *Int64Filter_Between:
+			qb.AddBetweenCondition("updated_date_time", DateTime64Value{uint64(filter.Between.Min)}, DateTime64Value{uint64(filter.Between.Max.GetValue())})
+		case *Int64Filter_In:
 			if len(filter.In.Values) > 0 {
 				converted := make([]interface{}, len(filter.In.Values))
 				for i, v := range filter.In.Values {
-					converted[i] = DateTime64Value{v}
+					converted[i] = DateTime64Value{uint64(v)}
 				}
 				qb.AddInCondition("updated_date_time", converted)
 			}
-		case *UInt64Filter_NotIn:
+		case *Int64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
 				converted := make([]interface{}, len(filter.NotIn.Values))
 				for i, v := range filter.NotIn.Values {
-					converted[i] = DateTime64Value{v}
+					converted[i] = DateTime64Value{uint64(v)}
 				}
 				qb.AddNotInCondition("updated_date_time", converted)
 			}
