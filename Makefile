@@ -87,7 +87,13 @@ proto:
 		--out /workspace/pkg/proto/clickhouse \
 		--package cbt \
 		--go-package github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse \
-		--include-comments
+		--include-comments \
+		--enable-api \
+		--api-table-prefixes "fct" \
+		--api-base-path "/api/v1"
+
+	@echo "Updating buf dependencies..."
+	buf dep update
 	@echo "Generating Go protobuf code..."
 	buf generate
 
