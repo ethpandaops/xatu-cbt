@@ -6,6 +6,7 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Attestation correctness by validator for the finalized chain
@@ -34,7 +35,7 @@ message FctAttestationCorrectnessByValidatorHead {
 // Request for listing fct_attestation_correctness_by_validator_head records
 message ListFctAttestationCorrectnessByValidatorHeadRequest {
   // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
-  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED];
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by attesting_validator_index - The index of the validator attesting (ORDER BY column 2 - optional)
   UInt32Filter attesting_validator_index = 2 [(google.api.field_behavior) = OPTIONAL];

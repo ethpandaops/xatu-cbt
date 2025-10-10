@@ -5,6 +5,7 @@ package cbt;
 import "common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Address access totals chunked by 10000 blocks
@@ -23,7 +24,7 @@ message FctAddressAccessChunked10000 {
 // Request for listing fct_address_access_chunked_10000 records
 message ListFctAddressAccessChunked10000Request {
   // Filter by chunk_start_block_number - Start block number of the chunk (PRIMARY KEY - required)
-  UInt32Filter chunk_start_block_number = 1 [(google.api.field_behavior) = REQUIRED];
+  UInt32Filter chunk_start_block_number = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by updated_date_time - Timestamp when the record was last updated (optional)
   UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];

@@ -6,6 +6,7 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Active nodes for the network
@@ -52,7 +53,7 @@ message FctNodeActiveLast24h {
 // Request for listing fct_node_active_last_24h records
 message ListFctNodeActiveLast24hRequest {
   // Filter by meta_client_name - Name of the client (PRIMARY KEY - required)
-  StringFilter meta_client_name = 1 [(google.api.field_behavior) = REQUIRED];
+  StringFilter meta_client_name = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by updated_date_time - Timestamp when the record was last updated (optional)
   UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
