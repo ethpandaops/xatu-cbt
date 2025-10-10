@@ -4,7 +4,7 @@ package clickhouse.v1;
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/ethpandaops/clickhouse-proto-gen/proto/clickhouse";
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse/clickhouse";
 
 extend google.protobuf.FieldOptions {
   // Indicates this field can substitute for another field (typically a primary key).

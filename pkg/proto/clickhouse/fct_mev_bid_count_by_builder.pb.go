@@ -7,7 +7,7 @@
 package clickhouse
 
 import (
-	_ "github.com/ethpandaops/clickhouse-proto-gen/proto/clickhouse"
+	_ "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse/clickhouse"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
