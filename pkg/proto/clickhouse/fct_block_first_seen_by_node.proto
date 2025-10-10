@@ -6,6 +6,7 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // When the block was first seen on the network by a sentry node
@@ -63,8 +64,8 @@ message FctBlockFirstSeenByNode {
 
 // Request for listing fct_block_first_seen_by_node records
 message ListFctBlockFirstSeenByNodeRequest {
-  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
-  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED];
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: slot)
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by block_root - The beacon block root hash (ORDER BY column 2 - optional)
   StringFilter block_root = 2 [(google.api.field_behavior) = OPTIONAL];
@@ -76,8 +77,8 @@ message ListFctBlockFirstSeenByNodeRequest {
   UInt32Filter updated_date_time = 4 [(google.api.field_behavior) = OPTIONAL];
   // Filter by source - Source of the event (optional)
   StringFilter source = 5 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by slot - The slot number (optional)
-  UInt32Filter slot = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by slot - The slot number (PROJECTION: p_by_slot - alternative to slot_start_date_time)
+  UInt32Filter slot = 6 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.projection_name) = "p_by_slot", (clickhouse.v1.projection_alternative_for) = "slot_start_date_time", (clickhouse.v1.required_group) = "primary_key"];
   // Filter by epoch - The epoch number containing the slot (optional)
   UInt32Filter epoch = 7 [(google.api.field_behavior) = OPTIONAL];
   // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)

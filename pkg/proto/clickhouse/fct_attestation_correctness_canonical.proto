@@ -6,6 +6,7 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Attestation correctness of a block for the finalized chain
@@ -33,13 +34,13 @@ message FctAttestationCorrectnessCanonical {
 
 // Request for listing fct_attestation_correctness_canonical records
 message ListFctAttestationCorrectnessCanonicalRequest {
-  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
-  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED];
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: slot)
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by updated_date_time - Timestamp when the record was last updated (optional)
   UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by slot - The slot number (optional)
-  UInt32Filter slot = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by slot - The slot number (PROJECTION: p_by_slot - alternative to slot_start_date_time)
+  UInt32Filter slot = 3 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.projection_name) = "p_by_slot", (clickhouse.v1.projection_alternative_for) = "slot_start_date_time", (clickhouse.v1.required_group) = "primary_key"];
   // Filter by epoch - The epoch number containing the slot (optional)
   UInt32Filter epoch = 4 [(google.api.field_behavior) = OPTIONAL];
   // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)

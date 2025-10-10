@@ -6,6 +6,7 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Prepared block proposals showing what would have been built if the validator had been selected as proposer
@@ -59,8 +60,8 @@ message FctPreparedBlock {
 
 // Request for listing fct_prepared_block records
 message ListFctPreparedBlockRequest {
-  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
-  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED];
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: meta_client_name, slot)
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by slot - The slot number from beacon block (ORDER BY column 2 - optional)
   UInt32Filter slot = 2 [(google.api.field_behavior) = OPTIONAL];
