@@ -47,13 +47,21 @@ services:
         config = {
             'logging': 'debug',
             'metricsAddr': ':9090',
-            'healthCheckAddr': ':8080',
+            'healthCheckAddr': ':8081',
             'clickhouse': {
                 'url': f'http://{clickhouse_user}:{clickhouse_pass}@xatu-clickhouse-01:8123',
                 'cluster': '{cluster}',
                 'localSuffix': '_local',
-                'adminDatabase': network,
-                'adminTable': 'admin_cbt'
+                'admin': {
+                    'incremental': {
+                        'database': network,
+                        'table': 'cbt_incremental'
+                    },
+                    'scheduled': {
+                        'database': network,
+                        'table': 'cbt_scheduled'
+                    }
+                }
             },
             'redis': {
                 'url': f'redis://cbt-redis-{network}:6379/0'
@@ -72,7 +80,34 @@ services:
                 'transformations': {
                     'defaultDatabase': network
                 }
-            }
+            },
+            'frontend': {
+                'enabled': True,
+                'addr': ':8080'
+            },
+            'interval_types': {
+                'slot': [
+                    {
+                        'name': 'Slot',
+                        'expression': "math.floor((value - 1606824023) / 12)"
+                    },
+                    {
+                        'name': 'Datetime',
+                        'format': 'datetime',
+                        'expression': "value * 1000"
+                    }
+                ],
+                'block': [
+                    {
+                        'name': 'Block number'
+                    }
+                ],
+                'entity': [
+                    {
+                        'name': 'Validator index'
+                    }
+                ]
+            } 
         }
         
         # Merge with overrides if they exist
@@ -114,6 +149,8 @@ services:
       - cbt-config:/config:ro
     command: ["--config", "/config/${NETWORK}.yaml"]
     restart: unless-stopped
+    ports:
+      - "8080:8080"  # Frontend port
     networks:
       - xatu_xatu-net
     deploy:

@@ -1,6 +1,8 @@
 ---
 table: int_block_proposer_canonical
+type: incremental
 interval:
+  type: slot
   max: 50000
 schedules:
   forwardfill: "@every 30s"

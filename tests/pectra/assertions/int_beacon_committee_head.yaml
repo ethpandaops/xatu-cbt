@@ -16,7 +16,7 @@
       fromUnixTimestamp(MAX(position + interval)) AS max,
       fromUnixTimestamp(MIN(position)) AS min
     FROM
-      admin_cbt FINAL
+      cbt_incremental FINAL
     WHERE
       table = 'int_beacon_committee_head'
   expected:

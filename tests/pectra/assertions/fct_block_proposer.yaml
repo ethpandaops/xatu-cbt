@@ -26,7 +26,7 @@
       fromUnixTimestamp(MAX(position + interval)) AS max,
       fromUnixTimestamp(MIN(position)) AS min
     FROM
-      admin_cbt FINAL
+      cbt_incremental FINAL
     WHERE
       table = 'fct_block_proposer'
   expected:

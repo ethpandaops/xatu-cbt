@@ -1,6 +1,8 @@
 ---
 table: fct_prepared_block
+type: incremental
 interval:
+  type: slot
   max: 384
 schedules:
   forwardfill: "@every 30s"

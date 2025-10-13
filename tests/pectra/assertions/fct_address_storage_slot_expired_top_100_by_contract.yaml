@@ -1,12 +1,10 @@
-- name: "Expected admin bounds"
+- name: "Has been scheduled at least once"
   sql: |
     SELECT
-      fromUnixTimestamp(MAX(position + interval)) AS max,
-      fromUnixTimestamp(MIN(position)) AS min
+      COUNT(*) AS count
     FROM
-      admin_cbt FINAL
+      cbt_scheduled FINAL
     WHERE
       table = 'fct_address_storage_slot_expired_top_100_by_contract'
   expected:
-    max: "2025-07-15T08:38:11Z"
-    min: "2025-07-15T08:34:23Z"
+    count: 1

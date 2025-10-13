@@ -1,6 +1,8 @@
 ---
 table: fct_mev_bid_highest_value_by_builder_chunked_50ms
+type: incremental
 interval:
+  type: slot
   max: 384
 schedules:
   forwardfill: "@every 5s"

@@ -1,6 +1,8 @@
 ---
 table: fct_mev_bid_count_by_builder
+type: incremental
 interval:
+  type: slot
   max: 384
 schedules:
   forwardfill: "@every 5s"

@@ -1,6 +1,8 @@
 ---
 table: fct_node_active_last_24h
+type: incremental
 interval:
+  type: slot
   max: 300
 schedules:
   forwardfill: "@every 1m"
