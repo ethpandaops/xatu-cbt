@@ -11,7 +11,7 @@
     SELECT
       COUNT(*) AS count
     FROM
-      cbt_scheduled FINAL
+      admin_cbt_scheduled FINAL
     WHERE
       table = 'dim_node'
   expected:

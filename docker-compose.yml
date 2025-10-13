@@ -55,11 +55,11 @@ services:
                 'admin': {
                     'incremental': {
                         'database': network,
-                        'table': 'cbt_incremental'
+                        'table': 'admin_cbt_incremental'
                     },
                     'scheduled': {
                         'database': network,
-                        'table': 'cbt_scheduled'
+                        'table': 'admin_cbt_scheduled'
                     }
                 }
             },

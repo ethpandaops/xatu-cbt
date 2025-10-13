@@ -12,7 +12,7 @@
       fromUnixTimestamp(MAX(position + interval)) AS max,
       fromUnixTimestamp(MIN(position)) AS min
     FROM
-      cbt_incremental FINAL
+      admin_cbt_incremental FINAL
     WHERE
       table = 'fct_node_active_last_24h'
   expected:

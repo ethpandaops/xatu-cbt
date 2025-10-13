@@ -19,7 +19,7 @@
     SELECT
       COUNT(*) AS count
     FROM
-      cbt_scheduled FINAL
+      admin_cbt_scheduled FINAL
     WHERE
       table = 'fct_address_storage_slot_top_100_by_contract'
   expected:
