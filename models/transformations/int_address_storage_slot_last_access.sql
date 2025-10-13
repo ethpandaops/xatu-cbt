@@ -1,6 +1,8 @@
 ---
 table: int_address_storage_slot_last_access
+type: incremental
 interval:
+  type: block
   max: 1000
 schedules:
   forwardfill: "@every 1m"

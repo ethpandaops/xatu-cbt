@@ -1,6 +1,8 @@
 ---
 table: fct_block_blob_first_seen_by_node
+type: incremental
 interval:
+  type: slot
   max: 50000
 schedules:
   forwardfill: "@every 5s"

@@ -12,15 +12,13 @@
     expired_accounts: 0
     total_contract_accounts: 10
     expired_contracts: 0
-- name: "Expected admin bounds"
+- name: "Has been scheduled at least once"
   sql: |
     SELECT
-      fromUnixTimestamp(MAX(position + interval)) AS max,
-      fromUnixTimestamp(MIN(position)) AS min
+      COUNT(*) AS count
     FROM
-      admin_cbt FINAL
+      admin_cbt_scheduled FINAL
     WHERE
       table = 'fct_address_access_total'
   expected:
-    max: "2025-07-15T08:38:11Z"
-    min: "2025-07-15T08:34:23Z"
+    count: 1

@@ -16,7 +16,7 @@
       MAX(position + interval) AS max,
       MIN(position) AS min
     FROM
-      admin_cbt FINAL
+      admin_cbt_incremental FINAL
     WHERE
       table = 'int_address_storage_slot_first_access'
   expected:

@@ -16,7 +16,7 @@
       fromUnixTimestamp(MAX(position + interval)) AS max,
       fromUnixTimestamp(MIN(position)) AS min
     FROM
-      admin_cbt FINAL
+      admin_cbt_incremental FINAL
     WHERE
       table = 'fct_mev_bid_highest_value_by_builder_chunked_50ms'
   expected:

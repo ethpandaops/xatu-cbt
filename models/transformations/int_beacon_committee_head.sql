@@ -1,6 +1,8 @@
 ---
 table: int_beacon_committee_head
+type: incremental
 interval:
+  type: slot
   max: 384
 schedules:
   forwardfill: "@every 5s"

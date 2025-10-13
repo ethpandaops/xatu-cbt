@@ -1,6 +1,8 @@
 ---
 table: int_attestation_attested_canonical
+type: incremental
 interval:
+  type: slot
   max: 384
 schedules:
   forwardfill: "@every 30s"

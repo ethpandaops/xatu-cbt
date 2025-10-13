@@ -3,6 +3,8 @@ table: ethseer_validator_entity
 cache:
   incremental_scan_interval: 1m
   full_scan_interval: 24h
+interval:
+  type: entity
 ---
 SELECT 
     min(`index`) as min,

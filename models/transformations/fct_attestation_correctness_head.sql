@@ -1,6 +1,8 @@
 ---
 table: fct_attestation_correctness_head
+type: incremental
 interval:
+  type: slot
   max: 384
 schedules:
   forwardfill: "@every 5s"

@@ -1,6 +1,8 @@
 ---
 table: fct_attestation_first_seen_chunked_50ms
+type: incremental
 interval:
+  type: slot
   max: 384
 schedules:
   forwardfill: "@every 5s"

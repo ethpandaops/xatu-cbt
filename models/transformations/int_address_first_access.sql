@@ -1,6 +1,8 @@
 ---
 table: int_address_first_access
+type: incremental
 interval:
+  type: block
   max: 10000
 schedules:
   forwardfill: "@every 1m"

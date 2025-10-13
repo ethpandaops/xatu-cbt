@@ -1,6 +1,8 @@
 ---
 table: int_attestation_first_seen
+type: incremental
 interval:
+  type: slot
   max: 384
 schedules:
   forwardfill: "@every 5s"

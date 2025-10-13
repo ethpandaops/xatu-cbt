@@ -16,7 +16,7 @@
       fromUnixTimestamp(MAX(position + interval)) AS max,
       fromUnixTimestamp(MIN(position)) AS min
     FROM
-      admin_cbt FINAL
+      admin_cbt_incremental FINAL
     WHERE
       table = 'int_attestation_attested_head'
   expected:

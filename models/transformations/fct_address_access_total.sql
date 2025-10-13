@@ -1,26 +1,17 @@
 ---
 table: fct_address_access_total
-interval:
-  max: 86400
-  min: 86400
-schedules:
-  forwardfill: "@every 2m"
+type: scheduled
+schedule: "@every 2m"
 tags:
   - address
   - access
   - total
-dependencies:
-  - "{{transformation}}.fct_block"
-  # TODO: should be added with scheduled transformations
-  # - "{{external}}.canonical_execution_contracts"
-  # - "{{transformation}}.int_address_last_access"
-  # - "{{transformation}}.int_contract"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH latest_block AS (
     SELECT max(slot_start_date_time) as slot_start_date_time
-    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`fct_block` FINAL
+    FROM `{{ .self.database }}`.`fct_block` FINAL
     WHERE `status` = 'canonical'
 ),
 block_range AS (
@@ -28,32 +19,32 @@ block_range AS (
     SELECT
         max(execution_payload_block_number) AS max_block_number,
         min(execution_payload_block_number) AS min_block_number
-    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`fct_block` FINAL
+    FROM `{{ .self.database }}`.`fct_block` FINAL
     WHERE `status` = 'canonical'
         AND execution_payload_block_number IS NOT NULL
         AND slot_start_date_time >= (SELECT slot_start_date_time - INTERVAL 365 DAY FROM latest_block)
 ),
 total_contracts AS (
     SELECT COUNT(DISTINCT contract_address) AS count
-    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`canonical_execution_contracts` FINAL
+    FROM `{{ .self.database }}`.`canonical_execution_contracts` FINAL
 ),
 total_accounts AS (
     SELECT COUNT(*) AS count
-    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`int_address_last_access` FINAL
+    FROM `{{ .self.database }}`.`int_address_last_access` FINAL
 ),
 expired_accounts AS (
     -- Expired accounts (not accessed in last 365 days)
     SELECT COUNT(*) AS count
-    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`int_address_last_access` FINAL
+    FROM `{{ .self.database }}`.`int_address_last_access` FINAL
     WHERE block_number < (SELECT min_block_number FROM block_range)
 ),
 expired_contracts AS (
     -- Expired contracts (not accessed in last 365 days)
     SELECT COUNT(*) AS count
-    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`int_address_last_access` AS a FINAL
+    FROM `{{ .self.database }}`.`int_address_last_access` AS a FINAL
     GLOBAL INNER JOIN (
     SELECT DISTINCT lower(contract_address) AS contract_address
-    FROM `{{ index .dep "{{transformation}}" "fct_block" "database" }}`.`canonical_execution_contracts` FINAL
+    FROM `{{ .self.database }}`.`canonical_execution_contracts` FINAL
     ) AS c
     ON a.address = c.contract_address
     WHERE a.block_number < (SELECT min_block_number FROM block_range)

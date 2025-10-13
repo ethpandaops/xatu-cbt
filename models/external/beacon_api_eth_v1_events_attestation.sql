@@ -3,7 +3,9 @@ table: beacon_api_eth_v1_events_attestation
 cache:
   incremental_scan_interval: 5s
   full_scan_interval: 24h
-lag: 24
+interval:
+  type: slot
+lag: 12
 ---
 SELECT
     -- Hardcoded min date for mainnet to avoid querying the full table on full scans.

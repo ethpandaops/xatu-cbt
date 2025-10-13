@@ -3,6 +3,8 @@ table: canonical_beacon_proposer_duty
 cache:
   incremental_scan_interval: 2m
   full_scan_interval: 24h
+interval:
+  type: slot
 lag: 384
 ---
 SELECT 
