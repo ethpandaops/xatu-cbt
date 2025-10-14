@@ -5,7 +5,7 @@ cache:
   full_scan_interval: 24h
 interval:
   type: slot
-lag: 12
+lag: 24
 ---
 SELECT
     -- Hardcoded min date for mainnet to avoid querying the full table on full scans.

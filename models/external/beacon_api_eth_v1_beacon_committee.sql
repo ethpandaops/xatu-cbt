@@ -5,7 +5,7 @@ cache:
   full_scan_interval: 24h
 interval:
   type: slot
-lag: 12
+lag: 24
 ---
 SELECT 
     toUnixTimestamp(min(slot_start_date_time)) as min,
