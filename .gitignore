@@ -23,3 +23,6 @@ xatu/
 
 # Python
 __pycache__
+
+# Make cache for timestamp tracking
+.make-cache/

@@ -15,9 +15,30 @@ GOMOD=$(GOCMD) mod
 # Main package path
 MAIN_PATH=./cmd/xatu-cbt
 
+# Set default goal explicitly (before catch-all rules interfere)
+.DEFAULT_GOAL := all
+
+# Docker image for CBT
+CBT_DOCKER_IMAGE=ethpandaops/cbt:debian-latest
+
+# Check for Docker image updates (once per day)
+.docker-check-timestamp:
+	@mkdir -p .make-cache
+	@if [ ! -f .make-cache/docker-pull-timestamp ] || \
+		[ $$(( $$(date +%s) - $$(stat -c %Y .make-cache/docker-pull-timestamp 2>/dev/null || echo 0) )) -gt 86400 ]; then \
+		echo "Checking for CBT Docker image updates..."; \
+		docker pull $(CBT_DOCKER_IMAGE) && \
+		touch .make-cache/docker-pull-timestamp; \
+	else \
+		echo "Docker image checked recently (within 24h), skipping..."; \
+	fi
+
+.PHONY: docker-check
+docker-check: .docker-check-timestamp
+
 # Default target - build and run interactive
 .PHONY: all
-all: build run
+all: docker-check build run
 
 # Run the binary in interactive mode (TUI)
 .PHONY: run
