@@ -1,7 +1,7 @@
 ---
 table: fct_address_access_total
 type: scheduled
-schedule: "@every 2m"
+schedule: "@every 24h"
 tags:
   - address
   - access
