@@ -35,7 +35,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_expired_top_100_by_contr
     '{cluster}',
     '${NETWORK_NAME}',
     fct_address_storage_slot_expired_top_100_by_contract_local,
-    cityHash64(`contract_address`)
+    cityHash64(`rank`)
 );
 
 CREATE TABLE `${NETWORK_NAME}`.fct_address_access_total_local on cluster '{cluster}' (
