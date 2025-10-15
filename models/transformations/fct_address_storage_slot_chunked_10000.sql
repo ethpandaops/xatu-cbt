@@ -1,7 +1,7 @@
 ---
 table: fct_address_storage_slot_chunked_10000
 type: scheduled
-schedule: "@every 2m"
+schedule: "@every 24h"
 tags:
   - address
   - access
