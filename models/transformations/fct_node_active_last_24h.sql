@@ -1,17 +1,11 @@
 ---
 table: fct_node_active_last_24h
-type: incremental
-interval:
-  type: slot
-  max: 300
-schedules:
-  forwardfill: "@every 1m"
+type: scheduled
+schedule: "@every 5m"
 tags:
   - xatu
   - active
   - nodes
-dependencies:
-  - "{{external}}.beacon_api_eth_v1_events_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -57,7 +51,7 @@ SELECT
     argMax(meta_client_geo_autonomous_system_organization, slot_start_date_time) AS meta_client_geo_autonomous_system_organization,
     argMax(meta_consensus_version, slot_start_date_time) AS meta_consensus_version,
     argMax(meta_consensus_implementation, slot_start_date_time) AS meta_consensus_implementation
-FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "database" }}`.`beacon_api_eth_v1_events_block` FINAL
+FROM `{{ .self.database }}`.`beacon_api_eth_v1_events_block` FINAL
 WHERE slot_start_date_time >= NOW() - INTERVAL '24 HOUR'
 GROUP BY meta_client_name
 ORDER BY last_seen_date_time DESC;

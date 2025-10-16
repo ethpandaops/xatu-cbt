@@ -20,6 +20,9 @@ models:
     fct_address_storage_slot_total:
       config:
         schedule: "@every 65s"
+    fct_node_active_last_24h:
+      config:
+        schedule: "@every 30s"
     beacon_api_eth_v1_beacon_committee:
       config:
         lag: 12
