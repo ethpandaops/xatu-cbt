@@ -18,52 +18,90 @@ dependencies:
   - "{{external}}.canonical_execution_nonce_diffs"
   - "{{external}}.canonical_execution_storage_diffs"
   - "{{external}}.canonical_execution_storage_reads"
+  - "{{external}}.canonical_execution_transaction"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
-SELECT 
-    address,
-    min(block_number) AS block_number,
-    null AS `version`
-FROM (
-    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_nonce_reads" "helpers" "from" }} FINAL
+WITH get_tx_success AS (
+  SELECT lower(transaction_hash) AS transaction_hash
+  FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }} FINAL
+  WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    AND success = true
+    AND meta_network_name = '{{ .env.NETWORK }}'
+),
+all_addresses AS (
+    SELECT 
+      lower(address) AS address, 
+      lower(transaction_hash) AS transaction_hash, 
+      block_number 
+    FROM {{ index .dep "{{external}}" "canonical_execution_nonce_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
       AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_nonce_diffs" "helpers" "from" }} FINAL
+    SELECT 
+      lower(address) AS address, 
+      lower(transaction_hash) AS transaction_hash, 
+      block_number 
+    FROM {{ index .dep "{{external}}" "canonical_execution_nonce_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
       AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_balance_diffs" "helpers" "from" }} FINAL
+    SELECT 
+      lower(address) AS address, 
+      lower(transaction_hash) AS transaction_hash, 
+      block_number 
+    FROM {{ index .dep "{{external}}" "canonical_execution_balance_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
       AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_balance_reads" "helpers" "from" }} FINAL
+    SELECT 
+      lower(address) AS address, 
+      lower(transaction_hash) AS transaction_hash, 
+      block_number 
+    FROM {{ index .dep "{{external}}" "canonical_execution_balance_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
       AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_storage_diffs" "helpers" "from" }} FINAL
+    SELECT 
+      lower(address) AS address, 
+      lower(transaction_hash) AS transaction_hash, 
+      block_number 
+    FROM {{ index .dep "{{external}}" "canonical_execution_storage_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
       AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(contract_address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_storage_reads" "helpers" "from" }} FINAL
+    SELECT 
+      lower(contract_address) AS address, 
+      lower(transaction_hash) AS transaction_hash, 
+      block_number 
+    FROM {{ index .dep "{{external}}" "canonical_execution_storage_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
       AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(contract_address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} FINAL
+    SELECT 
+      lower(contract_address) AS address, 
+      lower(transaction_hash) AS transaction_hash, 
+      block_number 
+    FROM {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
       AND meta_network_name = '{{ .env.NETWORK }}'
 )
-GROUP BY address;
+SELECT
+    a.address,
+    min(a.block_number) AS block_number,
+    NULL AS version
+FROM all_addresses a
+GLOBAL JOIN get_tx_success g ON a.transaction_hash = g.transaction_hash
+GROUP BY a.address;
