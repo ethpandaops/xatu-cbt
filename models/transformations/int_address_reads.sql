@@ -19,7 +19,9 @@ dependencies:
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH get_tx_success AS (
-  SELECT lower(transaction_hash) AS transaction_hash,
+  SELECT
+    lower(transaction_hash) AS transaction_hash,
+    transaction_index
   FROM `{{ index .dep "{{external}}" "canonical_execution_transaction" "database" }}`.`canonical_execution_transaction` FINAL
   WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
   AND success = true
@@ -54,13 +56,15 @@ address_reads AS (
   SELECT
     ar.address,
     ar.block_number,
-    ar.transaction_hash
+    ar.transaction_hash,
+    g.transaction_index
   FROM all_address_reads ar
   GLOBAL JOIN get_tx_success g ON ar.transaction_hash = g.transaction_hash
 )
 SELECT 
     address,
     block_number,
-    countDistinct(transaction_hash) AS tx_count
+    countDistinct(transaction_hash) AS tx_count,
+    max(transaction_index)
 FROM address_reads
 GROUP BY address, block_number;
