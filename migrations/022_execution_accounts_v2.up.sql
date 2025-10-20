@@ -1,7 +1,8 @@
 CREATE TABLE `${NETWORK_NAME}`.int_address_diffs_local on cluster '{cluster}' (
     `address` String COMMENT 'The address of the account' CODEC(ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number of the diffs' CODEC(ZSTD(1)),
-    `tx_count` UInt32 COMMENT 'The number of transactions with diffs' CODEC(ZSTD(1)),
+    `tx_count` UInt32 COMMENT 'The number of transactions with diffs for this address in the block' CODEC(ZSTD(1)),
+    `last_tx_index` UInt32 COMMENT 'The last transaction index with diffs for this address in the block' CODEC(ZSTD(1)),
 ) ENGINE = ReplicatedMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',
@@ -19,7 +20,8 @@ CREATE TABLE `${NETWORK_NAME}`.int_address_diffs ON CLUSTER '{cluster}' AS `${NE
 CREATE TABLE `${NETWORK_NAME}`.int_address_reads_local on cluster '{cluster}' (
     `address` String COMMENT 'The address of the account' CODEC(ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number of the reads' CODEC(ZSTD(1)),
-    `tx_count` UInt32 COMMENT 'The number of transactions with reads' CODEC(ZSTD(1))
+    `tx_count` UInt32 COMMENT 'The number of reads for this address in this block' CODEC(ZSTD(1)),
+    `last_tx_index` UInt32 COMMENT 'The last transaction index with diffs for this address in the block' CODEC(ZSTD(1)),
 ) ENGINE = ReplicatedMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}'
