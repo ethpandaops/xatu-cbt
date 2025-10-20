@@ -54,3 +54,23 @@ CREATE TABLE `${NETWORK_NAME}`.int_pre_6780_accounts_destructs ON CLUSTER '{clus
     int_pre_6780_accounts_destructs_local,
     cityHash64(`address`)
 );
+
+CREATE TABLE `${NETWORK_NAME}`.int_post_6780_accounts_destructs_local on cluster '{cluster}' (
+    `address` String COMMENT 'The address of the account' CODEC(ZSTD(1)),
+    `block_number` UInt32 COMMENT 'The block number' CODEC(ZSTD(1)),
+    `transaction_hash` FixedString(66) COMMENT 'The transaction hash' CODEC(ZSTD(1)),
+    `transaction_index` UInt64 COMMENT 'The transaction index' CODEC(DoubleDelta, ZSTD(1)),
+    `is_same_tx` Bool COMMENT 'Whether the self-destruct is in the same transaction as the creation' CODEC(ZSTD(1)),
+) ENGINE = ReplicatedMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}'
+) PARTITION BY cityHash64(`address`) % 16
+ORDER BY
+    (address, block_number, transaction_hash) COMMENT 'Table for accounts self-destructs data post-6780 (Dencun fork)';
+
+CREATE TABLE `${NETWORK_NAME}`.int_post_6780_accounts_destructs ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_post_6780_accounts_destructs_local ENGINE = Distributed(
+    '{cluster}',
+    `${NETWORK_NAME}`,
+    int_post_6780_accounts_destructs_local,
+    cityHash64(`address`)
+);
