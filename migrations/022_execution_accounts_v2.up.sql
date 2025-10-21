@@ -74,3 +74,21 @@ CREATE TABLE `${NETWORK_NAME}`.int_post_6780_accounts_destructs ON CLUSTER '{clu
     int_post_6780_accounts_destructs_local,
     cityHash64(`address`)
 );
+
+CREATE TABLE `${NETWORK_NAME}`.int_accounts_alive_local on cluster '{cluster}' (
+    `address` String COMMENT 'The address of the account' CODEC(ZSTD(1)),
+    `block_number` UInt32 COMMENT 'The block number of the latest status of this address' CODEC(ZSTD(1)),
+    `is_alive` Bool COMMENT 'Whether the account is currently alive in the state' CODEC(ZSTD(1))
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `block_number`
+) PARTITION BY cityHash64(`address`) % 16
+ORDER BY (address) COMMENT 'Table that states if an account is currently alive or not';
+
+CREATE TABLE `${NETWORK_NAME}`.int_accounts_alive ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_accounts_alive_local ENGINE = Distributed(
+    '{cluster}',
+    `${NETWORK_NAME}`,
+    int_accounts_alive_local,
+    cityHash64(`address`)
+);
