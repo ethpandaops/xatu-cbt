@@ -1,0 +1,8 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      canonical_execution_transaction FINAL
+  expected:
+    count: 4139
