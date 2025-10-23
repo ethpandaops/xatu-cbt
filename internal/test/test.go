@@ -70,7 +70,7 @@ func (s *service) Stop() error {
 func (s *service) RunTest(ctx context.Context, testName string, skipSetup bool) error {
 	s.log.WithField("test", testName).Info("Running test")
 
-	// Parse test path - support both flat (legacy) and nested (spec/network) structure
+	// Resolve test paths from network/spec format (e.g., mainnet/pectra, sepolia/fusaka)
 	testDir, dataDir, assertionsDir := s.resolveTestPaths(testName)
 
 	// Check if test directory exists
