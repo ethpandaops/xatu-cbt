@@ -6,7 +6,7 @@ on:
       xatu_ref:
         description: 'Xatu repository ref to checkout'
         required: false
-        default: 'fix/chown-tempo'
+        default: 'master'
         type: string
 permissions:
   contents: read
