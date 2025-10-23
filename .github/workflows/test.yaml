@@ -14,7 +14,6 @@ jobs:
   discover-tests:
     name: Discover test directories
     runs-on:
-    runs-on:
       - self-hosted-ghr
       - size-s-x64
     outputs:
@@ -35,7 +34,6 @@ jobs:
     name: Test ${{ matrix.test }}
     needs: discover-tests
     if: needs.discover-tests.outputs.tests != '[]'
-    runs-on:
     runs-on:
       - self-hosted-ghr
       - size-s-x64
