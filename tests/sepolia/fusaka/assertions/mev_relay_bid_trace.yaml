@@ -1,0 +1,4 @@
+- name: total count
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  mev_relay_bid_trace FINAL\n"
+  expected:
+    count: 76

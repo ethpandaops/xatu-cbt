@@ -1,0 +1,20 @@
+- name: Bounds
+  sql: "SELECT\n  MAX(slot_distance) AS slot_distance,\n  MAX(inclusion_distance)\
+    \ AS inclusion_distance\nFROM\n  fct_attestation_correctness_by_validator_canonical\
+    \ FINAL\n"
+  expected:
+    slot_distance: '9'
+    inclusion_distance: '54'
+- name: Expected size
+  sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n\
+    \  fct_attestation_correctness_by_validator_canonical FINAL\n"
+  expected:
+    count: 332
+    min: '12145370'
+    max: '12145389'
+- name: Expected admin bounds
+  sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position))\
+    \ AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'fct_attestation_correctness_by_validator_canonical'\n"
+  expected:
+    max: '2025-10-22T23:42:36Z'
+    min: '2025-07-15T08:34:23Z'

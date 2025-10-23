@@ -1,0 +1,5 @@
+- name: total count
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  canonical_beacon_elaborated_attestation\
+    \ FINAL\n"
+  expected:
+    count: 10

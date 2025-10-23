@@ -1,0 +1,11 @@
+- name: Expected bounds and size
+  sql: "SELECT\n  total_storage_slots,\n  expired_storage_slots\nFROM\n  fct_address_storage_slot_total\
+    \ FINAL\n"
+  expected:
+    total_storage_slots: 2984
+    expired_storage_slots: 0
+- name: Has been scheduled at least once
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  admin_cbt_scheduled FINAL\nWHERE\n  table\
+    \ = 'fct_address_storage_slot_total'\n"
+  expected:
+    count: 0

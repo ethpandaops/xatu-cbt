@@ -1,0 +1,4 @@
+- name: total count
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  canonical_beacon_block FINAL\n"
+  expected:
+    count: 7

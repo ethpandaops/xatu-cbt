@@ -192,6 +192,9 @@ get_partition_column() {
     block)
       echo "block_number"
       ;;
+    entity)
+      echo "index"
+      ;;
     *)
       echo "slot"  # Default silently
       ;;
@@ -227,23 +230,33 @@ for table in "${TABLES[@]}"; do
   partition_col=$(get_partition_column "$interval_type")
 
   # Determine range based on interval type
-  if [ "$interval_type" == "block" ]; then
-    range_start=$BLOCK_START
-    range_end=$BLOCK_END
-  else
-    range_start=$SLOT_START
-    range_end=$SLOT_END
-  fi
+  if [ "$interval_type" == "entity" ]; then
+    # Entity tables don't have slot/block ranges, just filter by network
+    echo "  Interval type:  ${interval_type}"
+    echo "  Filter:         network only (no range)"
 
-  echo "  Interval type:  ${interval_type}"
-  echo "  Partition col:  ${partition_col}"
-  echo "  Range:          ${range_start} - ${range_end}"
+    # Build SQL query for entity tables
+    query="SELECT * FROM ${table} WHERE meta_network_name = '${NETWORK}' FORMAT Parquet"
+  else
+    # Slot or block based tables
+    if [ "$interval_type" == "block" ]; then
+      range_start=$BLOCK_START
+      range_end=$BLOCK_END
+    else
+      range_start=$SLOT_START
+      range_end=$SLOT_END
+    fi
+
+    echo "  Interval type:  ${interval_type}"
+    echo "  Partition col:  ${partition_col}"
+    echo "  Range:          ${range_start} - ${range_end}"
+
+    # Build SQL query
+    query="SELECT * FROM ${table} WHERE ${partition_col} BETWEEN ${range_start} AND ${range_end} AND meta_network_name = '${NETWORK}' FORMAT Parquet"
+  fi
 
   # Build output file path
   output_file="${OUTPUT_DIR}/${table}.parquet"
-
-  # Build SQL query
-  query="SELECT * FROM ${table} WHERE ${partition_col} BETWEEN ${range_start} AND ${range_end} AND meta_network_name = '${NETWORK}' FORMAT Parquet"
 
   # Execute export
   if curl -sS "${CLICKHOUSE_HOST}" --data-binary "$query" -o "$output_file" 2>/dev/null; then

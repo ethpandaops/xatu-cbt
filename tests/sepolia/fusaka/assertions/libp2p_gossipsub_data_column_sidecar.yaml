@@ -1,0 +1,5 @@
+- name: total count
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  libp2p_gossipsub_data_column_sidecar\
+    \ FINAL\n"
+  expected:
+    count: 6060
