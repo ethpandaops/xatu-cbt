@@ -135,12 +135,11 @@ func (s *service) Teardown(ctx context.Context) error {
 
 // resolveTestPaths resolves test directory structure
 // Format: tests/network/spec (e.g., tests/mainnet/pectra, tests/sepolia/fusaka)
-// Returns: testDir, dataDir, assertionsDir
-func (s *service) resolveTestPaths(testName string) (string, string, string) {
+func (s *service) resolveTestPaths(testName string) (testDir, dataDir, assertionsDir string) {
 	// testName must be in network/spec format (e.g., "mainnet/pectra", "sepolia/fusaka")
-	testDir := filepath.Join(s.cfg.TestsDir, testName)
-	dataDir := filepath.Join(testDir, "data")
-	assertionsDir := filepath.Join(testDir, "assertions")
+	testDir = filepath.Join(s.cfg.TestsDir, testName)
+	dataDir = filepath.Join(testDir, "data")
+	assertionsDir = filepath.Join(testDir, "assertions")
 	return testDir, dataDir, assertionsDir
 }
 
