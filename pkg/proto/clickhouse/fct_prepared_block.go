@@ -509,31 +509,31 @@ func BuildListFctPreparedBlockQuery(req *ListFctPreparedBlockRequest, options ..
 	// Add filter for column: execution_payload_value
 	if req.ExecutionPayloadValue != nil {
 		switch filter := req.ExecutionPayloadValue.Filter.(type) {
-		case *NullableUInt64Filter_Eq:
+		case *NullableStringFilter_Eq:
 			qb.AddCondition("execution_payload_value", "=", filter.Eq)
-		case *NullableUInt64Filter_Ne:
+		case *NullableStringFilter_Ne:
 			qb.AddCondition("execution_payload_value", "!=", filter.Ne)
-		case *NullableUInt64Filter_Lt:
-			qb.AddCondition("execution_payload_value", "<", filter.Lt)
-		case *NullableUInt64Filter_Lte:
-			qb.AddCondition("execution_payload_value", "<=", filter.Lte)
-		case *NullableUInt64Filter_Gt:
-			qb.AddCondition("execution_payload_value", ">", filter.Gt)
-		case *NullableUInt64Filter_Gte:
-			qb.AddCondition("execution_payload_value", ">=", filter.Gte)
-		case *NullableUInt64Filter_Between:
-			qb.AddBetweenCondition("execution_payload_value", filter.Between.Min, filter.Between.Max.GetValue())
-		case *NullableUInt64Filter_In:
+		case *NullableStringFilter_Contains:
+			qb.AddLikeCondition("execution_payload_value", "%" + filter.Contains + "%")
+		case *NullableStringFilter_StartsWith:
+			qb.AddLikeCondition("execution_payload_value", filter.StartsWith + "%")
+		case *NullableStringFilter_EndsWith:
+			qb.AddLikeCondition("execution_payload_value", "%" + filter.EndsWith)
+		case *NullableStringFilter_Like:
+			qb.AddLikeCondition("execution_payload_value", filter.Like)
+		case *NullableStringFilter_NotLike:
+			qb.AddNotLikeCondition("execution_payload_value", filter.NotLike)
+		case *NullableStringFilter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("execution_payload_value", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("execution_payload_value", StringSliceToInterface(filter.In.Values))
 			}
-		case *NullableUInt64Filter_NotIn:
+		case *NullableStringFilter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("execution_payload_value", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("execution_payload_value", StringSliceToInterface(filter.NotIn.Values))
 			}
-		case *NullableUInt64Filter_IsNull:
+		case *NullableStringFilter_IsNull:
 			qb.AddIsNullCondition("execution_payload_value")
-		case *NullableUInt64Filter_IsNotNull:
+		case *NullableStringFilter_IsNotNull:
 			qb.AddIsNotNullCondition("execution_payload_value")
 		default:
 			// Unsupported filter type
@@ -543,31 +543,31 @@ func BuildListFctPreparedBlockQuery(req *ListFctPreparedBlockRequest, options ..
 	// Add filter for column: consensus_payload_value
 	if req.ConsensusPayloadValue != nil {
 		switch filter := req.ConsensusPayloadValue.Filter.(type) {
-		case *NullableUInt64Filter_Eq:
+		case *NullableStringFilter_Eq:
 			qb.AddCondition("consensus_payload_value", "=", filter.Eq)
-		case *NullableUInt64Filter_Ne:
+		case *NullableStringFilter_Ne:
 			qb.AddCondition("consensus_payload_value", "!=", filter.Ne)
-		case *NullableUInt64Filter_Lt:
-			qb.AddCondition("consensus_payload_value", "<", filter.Lt)
-		case *NullableUInt64Filter_Lte:
-			qb.AddCondition("consensus_payload_value", "<=", filter.Lte)
-		case *NullableUInt64Filter_Gt:
-			qb.AddCondition("consensus_payload_value", ">", filter.Gt)
-		case *NullableUInt64Filter_Gte:
-			qb.AddCondition("consensus_payload_value", ">=", filter.Gte)
-		case *NullableUInt64Filter_Between:
-			qb.AddBetweenCondition("consensus_payload_value", filter.Between.Min, filter.Between.Max.GetValue())
-		case *NullableUInt64Filter_In:
+		case *NullableStringFilter_Contains:
+			qb.AddLikeCondition("consensus_payload_value", "%" + filter.Contains + "%")
+		case *NullableStringFilter_StartsWith:
+			qb.AddLikeCondition("consensus_payload_value", filter.StartsWith + "%")
+		case *NullableStringFilter_EndsWith:
+			qb.AddLikeCondition("consensus_payload_value", "%" + filter.EndsWith)
+		case *NullableStringFilter_Like:
+			qb.AddLikeCondition("consensus_payload_value", filter.Like)
+		case *NullableStringFilter_NotLike:
+			qb.AddNotLikeCondition("consensus_payload_value", filter.NotLike)
+		case *NullableStringFilter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("consensus_payload_value", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("consensus_payload_value", StringSliceToInterface(filter.In.Values))
 			}
-		case *NullableUInt64Filter_NotIn:
+		case *NullableStringFilter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("consensus_payload_value", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("consensus_payload_value", StringSliceToInterface(filter.NotIn.Values))
 			}
-		case *NullableUInt64Filter_IsNull:
+		case *NullableStringFilter_IsNull:
 			qb.AddIsNullCondition("consensus_payload_value")
-		case *NullableUInt64Filter_IsNotNull:
+		case *NullableStringFilter_IsNotNull:
 			qb.AddIsNotNullCondition("consensus_payload_value")
 		default:
 			// Unsupported filter type
@@ -777,7 +777,7 @@ func BuildListFctPreparedBlockQuery(req *ListFctPreparedBlockRequest, options ..
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "toUnixTimestamp(`event_date_time`) AS `event_date_time`", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "execution_payload_value", "consensus_payload_value", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "toUnixTimestamp(`event_date_time`) AS `event_date_time`", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "toString(`execution_payload_value`) AS `execution_payload_value`", "toString(`consensus_payload_value`) AS `consensus_payload_value`", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes"}
 
 	return BuildParameterizedQuery("fct_prepared_block", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -797,7 +797,7 @@ func BuildGetFctPreparedBlockQuery(req *GetFctPreparedBlockRequest, options ...Q
 	orderByClause := " ORDER BY slot_start_date_time, slot, meta_client_name, event_date_time"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "toUnixTimestamp(`event_date_time`) AS `event_date_time`", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "execution_payload_value", "consensus_payload_value", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "toUnixTimestamp(`event_date_time`) AS `event_date_time`", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_consensus_implementation", "meta_consensus_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "block_version", "block_total_bytes", "block_total_bytes_compressed", "toString(`execution_payload_value`) AS `execution_payload_value`", "toString(`consensus_payload_value`) AS `consensus_payload_value`", "execution_payload_block_number", "execution_payload_gas_limit", "execution_payload_gas_used", "execution_payload_transactions_count", "execution_payload_transactions_total_bytes"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_prepared_block", columns, qb, orderByClause, 1, 0, options...)

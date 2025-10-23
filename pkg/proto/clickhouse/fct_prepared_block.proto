@@ -43,9 +43,9 @@ message FctPreparedBlock {
   // The total bytes of the beacon block payload when compressed using snappy
   google.protobuf.UInt32Value block_total_bytes_compressed = 25;
   // The value of the execution payload in wei
-  google.protobuf.UInt64Value execution_payload_value = 26;
+  google.protobuf.StringValue execution_payload_value = 26;
   // The value of the consensus payload in wei
-  google.protobuf.UInt64Value consensus_payload_value = 27;
+  google.protobuf.StringValue consensus_payload_value = 27;
   // The block number of the execution payload
   uint32 execution_payload_block_number = 28;
   // Gas limit for execution payload
@@ -95,9 +95,9 @@ message ListFctPreparedBlockRequest {
   // Filter by block_total_bytes_compressed - The total bytes of the beacon block payload when compressed using snappy (optional)
   NullableUInt32Filter block_total_bytes_compressed = 15 [(google.api.field_behavior) = OPTIONAL];
   // Filter by execution_payload_value - The value of the execution payload in wei (optional)
-  NullableUInt64Filter execution_payload_value = 16 [(google.api.field_behavior) = OPTIONAL];
+  NullableStringFilter execution_payload_value = 16 [(google.api.field_behavior) = OPTIONAL];
   // Filter by consensus_payload_value - The value of the consensus payload in wei (optional)
-  NullableUInt64Filter consensus_payload_value = 17 [(google.api.field_behavior) = OPTIONAL];
+  NullableStringFilter consensus_payload_value = 17 [(google.api.field_behavior) = OPTIONAL];
   // Filter by execution_payload_block_number - The block number of the execution payload (optional)
   UInt32Filter execution_payload_block_number = 18 [(google.api.field_behavior) = OPTIONAL];
   // Filter by execution_payload_gas_limit - Gas limit for execution payload (optional)
