@@ -59,9 +59,9 @@ type FctPreparedBlock struct {
 	// The total bytes of the beacon block payload when compressed using snappy
 	BlockTotalBytesCompressed *wrapperspb.UInt32Value `protobuf:"bytes,25,opt,name=block_total_bytes_compressed,json=blockTotalBytesCompressed,proto3" json:"block_total_bytes_compressed,omitempty"`
 	// The value of the execution payload in wei
-	ExecutionPayloadValue *wrapperspb.UInt64Value `protobuf:"bytes,26,opt,name=execution_payload_value,json=executionPayloadValue,proto3" json:"execution_payload_value,omitempty"`
+	ExecutionPayloadValue *wrapperspb.StringValue `protobuf:"bytes,26,opt,name=execution_payload_value,json=executionPayloadValue,proto3" json:"execution_payload_value,omitempty"`
 	// The value of the consensus payload in wei
-	ConsensusPayloadValue *wrapperspb.UInt64Value `protobuf:"bytes,27,opt,name=consensus_payload_value,json=consensusPayloadValue,proto3" json:"consensus_payload_value,omitempty"`
+	ConsensusPayloadValue *wrapperspb.StringValue `protobuf:"bytes,27,opt,name=consensus_payload_value,json=consensusPayloadValue,proto3" json:"consensus_payload_value,omitempty"`
 	// The block number of the execution payload
 	ExecutionPayloadBlockNumber uint32 `protobuf:"varint,28,opt,name=execution_payload_block_number,json=executionPayloadBlockNumber,proto3" json:"execution_payload_block_number,omitempty"`
 	// Gas limit for execution payload
@@ -211,14 +211,14 @@ func (x *FctPreparedBlock) GetBlockTotalBytesCompressed() *wrapperspb.UInt32Valu
 	return nil
 }
 
-func (x *FctPreparedBlock) GetExecutionPayloadValue() *wrapperspb.UInt64Value {
+func (x *FctPreparedBlock) GetExecutionPayloadValue() *wrapperspb.StringValue {
 	if x != nil {
 		return x.ExecutionPayloadValue
 	}
 	return nil
 }
 
-func (x *FctPreparedBlock) GetConsensusPayloadValue() *wrapperspb.UInt64Value {
+func (x *FctPreparedBlock) GetConsensusPayloadValue() *wrapperspb.StringValue {
 	if x != nil {
 		return x.ConsensusPayloadValue
 	}
@@ -297,9 +297,9 @@ type ListFctPreparedBlockRequest struct {
 	// Filter by block_total_bytes_compressed - The total bytes of the beacon block payload when compressed using snappy (optional)
 	BlockTotalBytesCompressed *NullableUInt32Filter `protobuf:"bytes,15,opt,name=block_total_bytes_compressed,json=blockTotalBytesCompressed,proto3" json:"block_total_bytes_compressed,omitempty"`
 	// Filter by execution_payload_value - The value of the execution payload in wei (optional)
-	ExecutionPayloadValue *NullableUInt64Filter `protobuf:"bytes,16,opt,name=execution_payload_value,json=executionPayloadValue,proto3" json:"execution_payload_value,omitempty"`
+	ExecutionPayloadValue *NullableStringFilter `protobuf:"bytes,16,opt,name=execution_payload_value,json=executionPayloadValue,proto3" json:"execution_payload_value,omitempty"`
 	// Filter by consensus_payload_value - The value of the consensus payload in wei (optional)
-	ConsensusPayloadValue *NullableUInt64Filter `protobuf:"bytes,17,opt,name=consensus_payload_value,json=consensusPayloadValue,proto3" json:"consensus_payload_value,omitempty"`
+	ConsensusPayloadValue *NullableStringFilter `protobuf:"bytes,17,opt,name=consensus_payload_value,json=consensusPayloadValue,proto3" json:"consensus_payload_value,omitempty"`
 	// Filter by execution_payload_block_number - The block number of the execution payload (optional)
 	ExecutionPayloadBlockNumber *UInt32Filter `protobuf:"bytes,18,opt,name=execution_payload_block_number,json=executionPayloadBlockNumber,proto3" json:"execution_payload_block_number,omitempty"`
 	// Filter by execution_payload_gas_limit - Gas limit for execution payload (optional)
@@ -460,14 +460,14 @@ func (x *ListFctPreparedBlockRequest) GetBlockTotalBytesCompressed() *NullableUI
 	return nil
 }
 
-func (x *ListFctPreparedBlockRequest) GetExecutionPayloadValue() *NullableUInt64Filter {
+func (x *ListFctPreparedBlockRequest) GetExecutionPayloadValue() *NullableStringFilter {
 	if x != nil {
 		return x.ExecutionPayloadValue
 	}
 	return nil
 }
 
-func (x *ListFctPreparedBlockRequest) GetConsensusPayloadValue() *NullableUInt64Filter {
+func (x *ListFctPreparedBlockRequest) GetConsensusPayloadValue() *NullableStringFilter {
 	if x != nil {
 		return x.ConsensusPayloadValue
 	}
@@ -754,12 +754,12 @@ var file_fct_prepared_block_proto_rawDesc = []byte{
 	0x12, 0x54, 0x0a, 0x17, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x61,
 	0x79, 0x6c, 0x6f, 0x61, 0x64, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x1a, 0x20, 0x01, 0x28,
 	0x0b, 0x32, 0x1c, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x62, 0x75, 0x66, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x36, 0x34, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52,
+	0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52,
 	0x15, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61,
 	0x64, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x54, 0x0a, 0x17, 0x63, 0x6f, 0x6e, 0x73, 0x65, 0x6e,
 	0x73, 0x75, 0x73, 0x5f, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x5f, 0x76, 0x61, 0x6c, 0x75,
 	0x65, 0x18, 0x1b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x36, 0x34,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67,
 	0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x15, 0x63, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73, 0x75, 0x73,
 	0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x43, 0x0a, 0x1e,
 	0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61,
@@ -867,13 +867,13 @@ var file_fct_prepared_block_proto_rawDesc = []byte{
 	0x79, 0x74, 0x65, 0x73, 0x43, 0x6f, 0x6d, 0x70, 0x72, 0x65, 0x73, 0x73, 0x65, 0x64, 0x12, 0x56,
 	0x0a, 0x17, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x61, 0x79, 0x6c,
 	0x6f, 0x61, 0x64, 0x5f, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x10, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x19, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x4e, 0x75, 0x6c, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x55, 0x49,
-	0x6e, 0x74, 0x36, 0x34, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x42, 0x03, 0xe0, 0x41, 0x01, 0x52,
+	0x19, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x4e, 0x75, 0x6c, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x53, 0x74,
+	0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x42, 0x03, 0xe0, 0x41, 0x01, 0x52,
 	0x15, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61,
 	0x64, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x56, 0x0a, 0x17, 0x63, 0x6f, 0x6e, 0x73, 0x65, 0x6e,
 	0x73, 0x75, 0x73, 0x5f, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x5f, 0x76, 0x61, 0x6c, 0x75,
 	0x65, 0x18, 0x11, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x4e, 0x75,
-	0x6c, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x55, 0x49, 0x6e, 0x74, 0x36, 0x34, 0x46, 0x69, 0x6c, 0x74,
+	0x6c, 0x6c, 0x61, 0x62, 0x6c, 0x65, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x6c, 0x74,
 	0x65, 0x72, 0x42, 0x03, 0xe0, 0x41, 0x01, 0x52, 0x15, 0x63, 0x6f, 0x6e, 0x73, 0x65, 0x6e, 0x73,
 	0x75, 0x73, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x12, 0x5b,
 	0x0a, 0x1e, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x61, 0x79, 0x6c,
@@ -977,43 +977,45 @@ var file_fct_prepared_block_proto_goTypes = []any{
 	(*GetFctPreparedBlockRequest)(nil),   // 3: cbt.GetFctPreparedBlockRequest
 	(*GetFctPreparedBlockResponse)(nil),  // 4: cbt.GetFctPreparedBlockResponse
 	(*wrapperspb.UInt32Value)(nil),       // 5: google.protobuf.UInt32Value
-	(*wrapperspb.UInt64Value)(nil),       // 6: google.protobuf.UInt64Value
-	(*UInt32Filter)(nil),                 // 7: cbt.UInt32Filter
-	(*StringFilter)(nil),                 // 8: cbt.StringFilter
-	(*NullableUInt32Filter)(nil),         // 9: cbt.NullableUInt32Filter
-	(*NullableUInt64Filter)(nil),         // 10: cbt.NullableUInt64Filter
+	(*wrapperspb.StringValue)(nil),       // 6: google.protobuf.StringValue
+	(*wrapperspb.UInt64Value)(nil),       // 7: google.protobuf.UInt64Value
+	(*UInt32Filter)(nil),                 // 8: cbt.UInt32Filter
+	(*StringFilter)(nil),                 // 9: cbt.StringFilter
+	(*NullableUInt32Filter)(nil),         // 10: cbt.NullableUInt32Filter
+	(*NullableStringFilter)(nil),         // 11: cbt.NullableStringFilter
+	(*NullableUInt64Filter)(nil),         // 12: cbt.NullableUInt64Filter
 }
 var file_fct_prepared_block_proto_depIdxs = []int32{
 	5,  // 0: cbt.FctPreparedBlock.block_total_bytes:type_name -> google.protobuf.UInt32Value
 	5,  // 1: cbt.FctPreparedBlock.block_total_bytes_compressed:type_name -> google.protobuf.UInt32Value
-	6,  // 2: cbt.FctPreparedBlock.execution_payload_value:type_name -> google.protobuf.UInt64Value
-	6,  // 3: cbt.FctPreparedBlock.consensus_payload_value:type_name -> google.protobuf.UInt64Value
-	6,  // 4: cbt.FctPreparedBlock.execution_payload_gas_limit:type_name -> google.protobuf.UInt64Value
-	6,  // 5: cbt.FctPreparedBlock.execution_payload_gas_used:type_name -> google.protobuf.UInt64Value
+	6,  // 2: cbt.FctPreparedBlock.execution_payload_value:type_name -> google.protobuf.StringValue
+	6,  // 3: cbt.FctPreparedBlock.consensus_payload_value:type_name -> google.protobuf.StringValue
+	7,  // 4: cbt.FctPreparedBlock.execution_payload_gas_limit:type_name -> google.protobuf.UInt64Value
+	7,  // 5: cbt.FctPreparedBlock.execution_payload_gas_used:type_name -> google.protobuf.UInt64Value
 	5,  // 6: cbt.FctPreparedBlock.execution_payload_transactions_count:type_name -> google.protobuf.UInt32Value
 	5,  // 7: cbt.FctPreparedBlock.execution_payload_transactions_total_bytes:type_name -> google.protobuf.UInt32Value
-	7,  // 8: cbt.ListFctPreparedBlockRequest.slot_start_date_time:type_name -> cbt.UInt32Filter
-	7,  // 9: cbt.ListFctPreparedBlockRequest.slot:type_name -> cbt.UInt32Filter
-	8,  // 10: cbt.ListFctPreparedBlockRequest.meta_client_name:type_name -> cbt.StringFilter
-	7,  // 11: cbt.ListFctPreparedBlockRequest.event_date_time:type_name -> cbt.UInt32Filter
-	7,  // 12: cbt.ListFctPreparedBlockRequest.updated_date_time:type_name -> cbt.UInt32Filter
-	8,  // 13: cbt.ListFctPreparedBlockRequest.meta_client_version:type_name -> cbt.StringFilter
-	8,  // 14: cbt.ListFctPreparedBlockRequest.meta_client_implementation:type_name -> cbt.StringFilter
-	8,  // 15: cbt.ListFctPreparedBlockRequest.meta_consensus_implementation:type_name -> cbt.StringFilter
-	8,  // 16: cbt.ListFctPreparedBlockRequest.meta_consensus_version:type_name -> cbt.StringFilter
-	8,  // 17: cbt.ListFctPreparedBlockRequest.meta_client_geo_city:type_name -> cbt.StringFilter
-	8,  // 18: cbt.ListFctPreparedBlockRequest.meta_client_geo_country:type_name -> cbt.StringFilter
-	8,  // 19: cbt.ListFctPreparedBlockRequest.meta_client_geo_country_code:type_name -> cbt.StringFilter
-	8,  // 20: cbt.ListFctPreparedBlockRequest.block_version:type_name -> cbt.StringFilter
-	9,  // 21: cbt.ListFctPreparedBlockRequest.block_total_bytes:type_name -> cbt.NullableUInt32Filter
-	9,  // 22: cbt.ListFctPreparedBlockRequest.block_total_bytes_compressed:type_name -> cbt.NullableUInt32Filter
-	10, // 23: cbt.ListFctPreparedBlockRequest.execution_payload_value:type_name -> cbt.NullableUInt64Filter
-	10, // 24: cbt.ListFctPreparedBlockRequest.consensus_payload_value:type_name -> cbt.NullableUInt64Filter
-	7,  // 25: cbt.ListFctPreparedBlockRequest.execution_payload_block_number:type_name -> cbt.UInt32Filter
-	10, // 26: cbt.ListFctPreparedBlockRequest.execution_payload_gas_limit:type_name -> cbt.NullableUInt64Filter
-	10, // 27: cbt.ListFctPreparedBlockRequest.execution_payload_gas_used:type_name -> cbt.NullableUInt64Filter
-	9,  // 28: cbt.ListFctPreparedBlockRequest.execution_payload_transactions_count:type_name -> cbt.NullableUInt32Filter
-	9,  // 29: cbt.ListFctPreparedBlockRequest.execution_payload_transactions_total_bytes:type_name -> cbt.NullableUInt32Filter
+	8,  // 8: cbt.ListFctPreparedBlockRequest.slot_start_date_time:type_name -> cbt.UInt32Filter
+	8,  // 9: cbt.ListFctPreparedBlockRequest.slot:type_name -> cbt.UInt32Filter
+	9,  // 10: cbt.ListFctPreparedBlockRequest.meta_client_name:type_name -> cbt.StringFilter
+	8,  // 11: cbt.ListFctPreparedBlockRequest.event_date_time:type_name -> cbt.UInt32Filter
+	8,  // 12: cbt.ListFctPreparedBlockRequest.updated_date_time:type_name -> cbt.UInt32Filter
+	9,  // 13: cbt.ListFctPreparedBlockRequest.meta_client_version:type_name -> cbt.StringFilter
+	9,  // 14: cbt.ListFctPreparedBlockRequest.meta_client_implementation:type_name -> cbt.StringFilter
+	9,  // 15: cbt.ListFctPreparedBlockRequest.meta_consensus_implementation:type_name -> cbt.StringFilter
+	9,  // 16: cbt.ListFctPreparedBlockRequest.meta_consensus_version:type_name -> cbt.StringFilter
+	9,  // 17: cbt.ListFctPreparedBlockRequest.meta_client_geo_city:type_name -> cbt.StringFilter
+	9,  // 18: cbt.ListFctPreparedBlockRequest.meta_client_geo_country:type_name -> cbt.StringFilter
+	9,  // 19: cbt.ListFctPreparedBlockRequest.meta_client_geo_country_code:type_name -> cbt.StringFilter
+	9,  // 20: cbt.ListFctPreparedBlockRequest.block_version:type_name -> cbt.StringFilter
+	10, // 21: cbt.ListFctPreparedBlockRequest.block_total_bytes:type_name -> cbt.NullableUInt32Filter
+	10, // 22: cbt.ListFctPreparedBlockRequest.block_total_bytes_compressed:type_name -> cbt.NullableUInt32Filter
+	11, // 23: cbt.ListFctPreparedBlockRequest.execution_payload_value:type_name -> cbt.NullableStringFilter
+	11, // 24: cbt.ListFctPreparedBlockRequest.consensus_payload_value:type_name -> cbt.NullableStringFilter
+	8,  // 25: cbt.ListFctPreparedBlockRequest.execution_payload_block_number:type_name -> cbt.UInt32Filter
+	12, // 26: cbt.ListFctPreparedBlockRequest.execution_payload_gas_limit:type_name -> cbt.NullableUInt64Filter
+	12, // 27: cbt.ListFctPreparedBlockRequest.execution_payload_gas_used:type_name -> cbt.NullableUInt64Filter
+	10, // 28: cbt.ListFctPreparedBlockRequest.execution_payload_transactions_count:type_name -> cbt.NullableUInt32Filter
+	10, // 29: cbt.ListFctPreparedBlockRequest.execution_payload_transactions_total_bytes:type_name -> cbt.NullableUInt32Filter
 	0,  // 30: cbt.ListFctPreparedBlockResponse.fct_prepared_block:type_name -> cbt.FctPreparedBlock
 	0,  // 31: cbt.GetFctPreparedBlockResponse.item:type_name -> cbt.FctPreparedBlock
 	1,  // 32: cbt.FctPreparedBlockService.List:input_type -> cbt.ListFctPreparedBlockRequest

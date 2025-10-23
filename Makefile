@@ -111,7 +111,8 @@ proto:
 		--include-comments \
 		--enable-api \
 		--api-table-prefixes "fct" \
-		--api-base-path "/api/v1"
+		--api-base-path "/api/v1" \
+		--uint64-to-string "*.consensus_payload_value,*.execution_payload_value"
 
 	@echo "Updating buf dependencies..."
 	buf dep update

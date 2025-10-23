@@ -20,7 +20,7 @@ message DimNode {
   // Tags associated with the node
   repeated string tags = 15;
   // Additional attributes of the node
-  string attributes = 16;
+  map<string, string> attributes = 16;
   // The source entity of the node
   string source = 17;
 }
