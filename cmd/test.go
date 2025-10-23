@@ -14,13 +14,22 @@ var (
 )
 
 var testCmd = &cobra.Command{
-	Use:   "test [test-name]",
+	Use:   "test [network/spec]",
 	Short: "Run a test suite",
 	Long: `Run a test suite with setup, data ingestion, and assertions.
 
-Test name format:
-  - Nested (recommended): spec/network (e.g., "pectra/mainnet", "fusaka/sepolia")
-  - Legacy (supported): spec (e.g., "pectra" automatically uses "pectra/mainnet")
+Test name format: network/spec (e.g., "mainnet/pectra", "sepolia/fusaka")
+
+Test directory structure:
+  tests/
+  ├── mainnet/
+  │   └── pectra/
+  │       ├── data/
+  │       └── assertions/
+  └── sepolia/
+      └── fusaka/
+          ├── data/
+          └── assertions/
 
 The test command will:
 1. Run setup phase (unless --skip-setup is used):
@@ -33,9 +42,8 @@ The test command will:
 2. Run assertions on interval until all pass or timeout
 
 Examples:
-  ./bin/xatu-cbt test pectra/mainnet
-  ./bin/xatu-cbt test fusaka/sepolia
-  ./bin/xatu-cbt test pectra  # Uses pectra/mainnet`,
+  ./bin/xatu-cbt test mainnet/pectra
+  ./bin/xatu-cbt test sepolia/fusaka`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(_ *cobra.Command, args []string) error {
 		testName := args[0]

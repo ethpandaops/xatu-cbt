@@ -134,31 +134,10 @@ func (s *service) Teardown(ctx context.Context) error {
 }
 
 // resolveTestPaths resolves test directory structure
-// Supports both legacy flat structure (tests/pectra/) and nested structure (tests/pectra/mainnet/)
+// Format: tests/network/spec (e.g., tests/mainnet/pectra, tests/sepolia/fusaka)
 // Returns: testDir, dataDir, assertionsDir
 func (s *service) resolveTestPaths(testName string) (string, string, string) {
-	// Check if testName contains a slash (spec/network format)
-	if strings.Contains(testName, "/") {
-		// New nested format: tests/fusaka/sepolia
-		testDir := filepath.Join(s.cfg.TestsDir, testName)
-		dataDir := filepath.Join(testDir, "data")
-		assertionsDir := filepath.Join(testDir, "assertions")
-		return testDir, dataDir, assertionsDir
-	}
-
-	// Legacy flat format: tests/pectra
-	// First check if nested mainnet directory exists
-	nestedTestDir := filepath.Join(s.cfg.TestsDir, testName, "mainnet")
-	if _, err := os.Stat(nestedTestDir); err == nil {
-		// Use nested structure if it exists
-		s.log.WithField("test", testName).Debug("Using nested test structure with mainnet")
-		dataDir := filepath.Join(nestedTestDir, "data")
-		assertionsDir := filepath.Join(nestedTestDir, "assertions")
-		return nestedTestDir, dataDir, assertionsDir
-	}
-
-	// Fall back to legacy flat structure
-	s.log.WithField("test", testName).Debug("Using legacy flat test structure")
+	// testName must be in network/spec format (e.g., "mainnet/pectra", "sepolia/fusaka")
 	testDir := filepath.Join(s.cfg.TestsDir, testName)
 	dataDir := filepath.Join(testDir, "data")
 	assertionsDir := filepath.Join(testDir, "assertions")
