@@ -18,6 +18,10 @@ var testCmd = &cobra.Command{
 	Short: "Run a test suite",
 	Long: `Run a test suite with setup, data ingestion, and assertions.
 
+Test name format:
+  - Nested (recommended): spec/network (e.g., "pectra/mainnet", "fusaka/sepolia")
+  - Legacy (supported): spec (e.g., "pectra" automatically uses "pectra/mainnet")
+
 The test command will:
 1. Run setup phase (unless --skip-setup is used):
    - Stop existing docker containers
@@ -26,7 +30,12 @@ The test command will:
    - Setup network databases
    - Ingest test data from YAML files
    - Start CBT engine
-2. Run assertions on interval until all pass or timeout`,
+2. Run assertions on interval until all pass or timeout
+
+Examples:
+  ./bin/xatu-cbt test pectra/mainnet
+  ./bin/xatu-cbt test fusaka/sepolia
+  ./bin/xatu-cbt test pectra  # Uses pectra/mainnet`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(_ *cobra.Command, args []string) error {
 		testName := args[0]

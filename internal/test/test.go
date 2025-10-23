@@ -70,7 +70,10 @@ func (s *service) Stop() error {
 func (s *service) RunTest(ctx context.Context, testName string, skipSetup bool) error {
 	s.log.WithField("test", testName).Info("Running test")
 
-	testDir := filepath.Join(s.cfg.TestsDir, testName)
+	// Parse test path - support both flat (legacy) and nested (spec/network) structure
+	testDir, dataDir, assertionsDir := s.resolveTestPaths(testName)
+
+	// Check if test directory exists
 	if _, err := os.Stat(testDir); os.IsNotExist(err) {
 		return fmt.Errorf("%w: %s", ErrTestDirNotExist, testDir)
 	}
@@ -86,7 +89,7 @@ func (s *service) RunTest(ctx context.Context, testName string, skipSetup bool) 
 			s.log.Warn("Xatu environment not detected, cannot skip setup - will run full setup")
 		}
 
-		if err := s.setupXatu(ctx, testName); err != nil {
+		if err := s.setupXatu(ctx, dataDir); err != nil {
 			return fmt.Errorf("xatu setup failed: %w", err)
 		}
 	}
@@ -102,7 +105,7 @@ func (s *service) RunTest(ctx context.Context, testName string, skipSetup bool) 
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.Timeout)
 	defer cancel()
 
-	return s.runAssertions(ctx, testName)
+	return s.runAssertions(ctx, assertionsDir)
 }
 
 func (s *service) Teardown(ctx context.Context) error {
@@ -128,6 +131,38 @@ func (s *service) Teardown(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// resolveTestPaths resolves test directory structure
+// Supports both legacy flat structure (tests/pectra/) and nested structure (tests/pectra/mainnet/)
+// Returns: testDir, dataDir, assertionsDir
+func (s *service) resolveTestPaths(testName string) (string, string, string) {
+	// Check if testName contains a slash (spec/network format)
+	if strings.Contains(testName, "/") {
+		// New nested format: tests/fusaka/sepolia
+		testDir := filepath.Join(s.cfg.TestsDir, testName)
+		dataDir := filepath.Join(testDir, "data")
+		assertionsDir := filepath.Join(testDir, "assertions")
+		return testDir, dataDir, assertionsDir
+	}
+
+	// Legacy flat format: tests/pectra
+	// First check if nested mainnet directory exists
+	nestedTestDir := filepath.Join(s.cfg.TestsDir, testName, "mainnet")
+	if _, err := os.Stat(nestedTestDir); err == nil {
+		// Use nested structure if it exists
+		s.log.WithField("test", testName).Debug("Using nested test structure with mainnet")
+		dataDir := filepath.Join(nestedTestDir, "data")
+		assertionsDir := filepath.Join(nestedTestDir, "assertions")
+		return nestedTestDir, dataDir, assertionsDir
+	}
+
+	// Fall back to legacy flat structure
+	s.log.WithField("test", testName).Debug("Using legacy flat test structure")
+	testDir := filepath.Join(s.cfg.TestsDir, testName)
+	dataDir := filepath.Join(testDir, "data")
+	assertionsDir := filepath.Join(testDir, "assertions")
+	return testDir, dataDir, assertionsDir
 }
 
 func (s *service) checkXatuExists(_ context.Context) bool {
@@ -330,7 +365,7 @@ func (s *service) waitForCBTEngine(cbtEngine string) error {
 	return nil
 }
 
-func (s *service) setupXatu(ctx context.Context, testName string) error {
+func (s *service) setupXatu(ctx context.Context, dataDir string) error {
 	s.log.Info("Setting up Xatu environment")
 
 	xatuRef := s.cfg.XatuRef
@@ -363,8 +398,7 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 	s.log.Info("ClickHouse migrations completed successfully")
 
 	// 4. Ingest test data into ClickHouse
-	s.log.Debug("Ingesting test data")
-	dataDir := filepath.Join(s.cfg.TestsDir, testName, "data")
+	s.log.WithField("data_dir", dataDir).Debug("Ingesting test data")
 	if err := s.dataLoader.LoadTestData(ctx, dataDir); err != nil {
 		return fmt.Errorf("failed to load test data: %w", err)
 	}
@@ -372,10 +406,8 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 	return nil
 }
 
-func (s *service) runAssertions(ctx context.Context, testName string) error {
-	s.log.Info("Running assertions phase")
-
-	assertionsDir := filepath.Join(s.cfg.TestsDir, testName, "assertions")
+func (s *service) runAssertions(ctx context.Context, assertionsDir string) error {
+	s.log.WithField("assertions_dir", assertionsDir).Info("Running assertions phase")
 
 	ticker := time.NewTicker(s.cfg.CheckInterval)
 	defer ticker.Stop()
