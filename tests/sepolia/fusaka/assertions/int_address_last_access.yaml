@@ -1,0 +1,8 @@
+- name: Expected size
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      int_address_last_access FINAL
+  expected:
+    count: 0
