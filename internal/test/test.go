@@ -70,7 +70,10 @@ func (s *service) Stop() error {
 func (s *service) RunTest(ctx context.Context, testName string, skipSetup bool) error {
 	s.log.WithField("test", testName).Info("Running test")
 
-	testDir := filepath.Join(s.cfg.TestsDir, testName)
+	// Resolve test paths from network/spec format (e.g., mainnet/pectra, sepolia/fusaka)
+	testDir, dataDir, assertionsDir := s.resolveTestPaths(testName)
+
+	// Check if test directory exists
 	if _, err := os.Stat(testDir); os.IsNotExist(err) {
 		return fmt.Errorf("%w: %s", ErrTestDirNotExist, testDir)
 	}
@@ -86,7 +89,7 @@ func (s *service) RunTest(ctx context.Context, testName string, skipSetup bool) 
 			s.log.Warn("Xatu environment not detected, cannot skip setup - will run full setup")
 		}
 
-		if err := s.setupXatu(ctx, testName); err != nil {
+		if err := s.setupXatu(ctx, dataDir); err != nil {
 			return fmt.Errorf("xatu setup failed: %w", err)
 		}
 	}
@@ -102,7 +105,7 @@ func (s *service) RunTest(ctx context.Context, testName string, skipSetup bool) 
 	ctx, cancel := context.WithTimeout(ctx, s.cfg.Timeout)
 	defer cancel()
 
-	return s.runAssertions(ctx, testName)
+	return s.runAssertions(ctx, assertionsDir)
 }
 
 func (s *service) Teardown(ctx context.Context) error {
@@ -128,6 +131,16 @@ func (s *service) Teardown(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// resolveTestPaths resolves test directory structure
+// Format: tests/network/spec (e.g., tests/mainnet/pectra, tests/sepolia/fusaka)
+func (s *service) resolveTestPaths(testName string) (testDir, dataDir, assertionsDir string) {
+	// testName must be in network/spec format (e.g., "mainnet/pectra", "sepolia/fusaka")
+	testDir = filepath.Join(s.cfg.TestsDir, testName)
+	dataDir = filepath.Join(testDir, "data")
+	assertionsDir = filepath.Join(testDir, "assertions")
+	return testDir, dataDir, assertionsDir
 }
 
 func (s *service) checkXatuExists(_ context.Context) bool {
@@ -330,7 +343,7 @@ func (s *service) waitForCBTEngine(cbtEngine string) error {
 	return nil
 }
 
-func (s *service) setupXatu(ctx context.Context, testName string) error {
+func (s *service) setupXatu(ctx context.Context, dataDir string) error {
 	s.log.Info("Setting up Xatu environment")
 
 	xatuRef := s.cfg.XatuRef
@@ -363,8 +376,7 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 	s.log.Info("ClickHouse migrations completed successfully")
 
 	// 4. Ingest test data into ClickHouse
-	s.log.Debug("Ingesting test data")
-	dataDir := filepath.Join(s.cfg.TestsDir, testName, "data")
+	s.log.WithField("data_dir", dataDir).Debug("Ingesting test data")
 	if err := s.dataLoader.LoadTestData(ctx, dataDir); err != nil {
 		return fmt.Errorf("failed to load test data: %w", err)
 	}
@@ -372,10 +384,8 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 	return nil
 }
 
-func (s *service) runAssertions(ctx context.Context, testName string) error {
-	s.log.Info("Running assertions phase")
-
-	assertionsDir := filepath.Join(s.cfg.TestsDir, testName, "assertions")
+func (s *service) runAssertions(ctx context.Context, assertionsDir string) error {
+	s.log.WithField("assertions_dir", assertionsDir).Info("Running assertions phase")
 
 	ticker := time.NewTicker(s.cfg.CheckInterval)
 	defer ticker.Stop()
