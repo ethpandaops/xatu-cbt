@@ -8,8 +8,8 @@
       int_address_storage_slot_first_access FINAL
   expected:
     count: 2984
-    min: '22923418'
-    max: '22923437'
+    min: '9469138'
+    max: '9469144'
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -20,5 +20,5 @@
     WHERE
       table = 'int_address_storage_slot_first_access'
   expected:
-    min: '22923418'
+    min: '9469138'
     max: 9469144

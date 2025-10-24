@@ -8,8 +8,8 @@
       fct_address_storage_slot_chunked_10000 FINAL
   expected:
     chunk_start_block_number: 9460000
-    first_accessed_slots: 16746
-    last_accessed_slots: 16746
+    first_accessed_slots: 2984
+    last_accessed_slots: 2984
 - name: Has been scheduled at least once
   sql: |
     SELECT
@@ -19,4 +19,4 @@
     WHERE
       table = 'fct_address_storage_slot_chunked_10000'
   expected:
-    count: 0
+    count: 1

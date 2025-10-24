@@ -8,8 +8,8 @@
       fct_attestation_correctness_canonical FINAL
   expected:
     count: 7
-    min: '12145370'
-    max: '12145390'
+    min: '8786908'
+    max: '8786914'
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -21,4 +21,4 @@
       table = 'fct_attestation_correctness_canonical'
   expected:
     max: '2025-10-22T23:42:48Z'
-    min: '2025-07-15T08:34:23Z'
+    min: '2025-10-22T23:41:36Z'

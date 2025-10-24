@@ -6,8 +6,8 @@
     FROM
       fct_attestation_correctness_by_validator_head FINAL
   expected:
-    slot_distance: '9'
-    propagation_distance: '15'
+    slot_distance: '1'
+    propagation_distance: '0'
 - name: Expected size
   sql: |
     SELECT
@@ -18,8 +18,8 @@
       fct_attestation_correctness_by_validator_head FINAL
   expected:
     count: 332
-    min: '12145370'
-    max: '12145389'
+    min: '8786908'
+    max: '8786913'
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -31,4 +31,4 @@
       table = 'fct_attestation_correctness_by_validator_head'
   expected:
     max: '2025-10-22T23:42:36Z'
-    min: '2025-07-15T08:34:23Z'
+    min: '2025-10-22T23:41:36Z'

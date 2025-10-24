@@ -8,8 +8,8 @@
       fct_block_blob_first_seen_by_node FINAL
   expected:
     count: 0
-    min: '2025-07-15T08:34:35Z'
-    max: '2025-07-15T08:37:59Z'
+    min: '1970-01-01T00:00:00Z'
+    max: '1970-01-01T00:00:00Z'
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -21,4 +21,4 @@
       table = 'fct_block_blob_first_seen_by_node'
   expected:
     max: '1970-01-01T00:00:00Z'
-    min: '2025-07-15T08:34:35Z'
+    min: '1970-01-01T00:00:00Z'

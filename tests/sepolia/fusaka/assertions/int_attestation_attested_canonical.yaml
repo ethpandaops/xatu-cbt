@@ -8,7 +8,7 @@
       int_attestation_attested_canonical FINAL
   expected:
     count: 388
-    min: '2025-07-15T08:34:23Z'
+    min: '2025-10-22T23:41:36Z'
     max: '2025-10-22T23:42:48Z'
 - name: Expected admin bounds
   sql: |
@@ -21,4 +21,4 @@
       table = 'int_attestation_attested_canonical'
   expected:
     max: '2025-10-22T23:42:48Z'
-    min: '2025-07-15T08:34:23Z'
+    min: '2025-10-22T23:41:36Z'

@@ -18,8 +18,8 @@
       fct_block_blob_count FINAL
   expected:
     count: 12
-    min: '12145371'
-    max: '12145388'
+    min: '8786908'
+    max: '8786913'
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -31,4 +31,4 @@
       table = 'fct_block_blob_count'
   expected:
     max: '2025-10-22T23:42:36Z'
-    min: '2025-07-15T08:34:35Z'
+    min: '2025-10-22T23:41:36Z'

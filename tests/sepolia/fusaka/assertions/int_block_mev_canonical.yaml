@@ -8,8 +8,8 @@
       int_block_mev_canonical FINAL
   expected:
     count: 3
-    min: '2025-07-15T08:34:23Z'
-    max: '1970-01-01T00:00:00Z'
+    min: '2025-10-22T23:41:36Z'
+    max: '2025-10-22T23:42:12Z'
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -21,4 +21,4 @@
       table = 'int_block_mev_canonical'
   expected:
     max: '2025-10-22T23:42:36Z'
-    min: '2025-07-15T08:34:23Z'
+    min: '2025-10-22T23:41:36Z'

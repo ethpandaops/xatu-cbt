@@ -10,7 +10,7 @@
   expected:
     total_accounts: 0
     expired_accounts: 0
-    total_contract_accounts: 10
+    total_contract_accounts: 18
     expired_contracts: 0
 - name: Has been scheduled at least once
   sql: |
@@ -21,4 +21,4 @@
     WHERE
       table = 'fct_address_access_total'
   expected:
-    count: 0
+    count: 1

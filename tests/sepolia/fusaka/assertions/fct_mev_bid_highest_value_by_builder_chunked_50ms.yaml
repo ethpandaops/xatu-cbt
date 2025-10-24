@@ -8,8 +8,8 @@
       fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
   expected:
     count: 27
-    min: '12145370'
-    max: '12145389'
+    min: '8786908'
+    max: '8786913'
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -21,4 +21,4 @@
       table = 'fct_mev_bid_highest_value_by_builder_chunked_50ms'
   expected:
     max: '2025-10-22T23:42:36Z'
-    min: '2025-07-15T08:34:23Z'
+    min: '2025-10-22T23:41:36Z'

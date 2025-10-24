@@ -9,11 +9,11 @@
     FROM
       fct_address_storage_slot_top_100_by_contract FINAL
   expected:
-    count: 88
+    count: 100
     top_contract_address: '0xea1499503adddc74fc284a5707d29bcac8cd48ca'
-    top_total_storage_slots: 1769
-    bottom_contract_address: '0x03b59bd1c8b9f6c265ba0c3421923b93f15036fa'
-    bottom_total_storage_slots: 22
+    top_total_storage_slots: 358
+    bottom_contract_address: '0x57c5dc670eb6f571bdd8fc1cf178c46c9a917a74'
+    bottom_total_storage_slots: 9
 - name: Has been scheduled at least once
   sql: |
     SELECT
@@ -23,4 +23,4 @@
     WHERE
       table = 'fct_address_storage_slot_top_100_by_contract'
   expected:
-    count: 0
+    count: 1
