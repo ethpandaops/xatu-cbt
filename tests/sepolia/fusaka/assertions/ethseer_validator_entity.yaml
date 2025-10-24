@@ -1,4 +1,8 @@
 - name: total count
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  ethseer_validator_entity FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      ethseer_validator_entity FINAL
   expected:
     count: 1973

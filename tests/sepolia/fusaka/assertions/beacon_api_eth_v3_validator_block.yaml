@@ -1,38 +1,64 @@
 - name: total count
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  beacon_api_eth_v3_validator_block FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
   expected:
     count: 239
 - name: unique clients
-  sql: "SELECT\n  COUNT(DISTINCT meta_client_name) AS unique_clients\nFROM\n  beacon_api_eth_v3_validator_block\
-    \ FINAL\n"
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_client_name) AS unique_clients
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
   expected:
     unique_clients: 35
 - name: slot range
-  sql: "SELECT\n  MIN(slot) AS min_slot,\n  MAX(slot) AS max_slot\nFROM\n  beacon_api_eth_v3_validator_block\
-    \ FINAL\n"
+  sql: |
+    SELECT
+      MIN(slot) AS min_slot,
+      MAX(slot) AS max_slot
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
   expected:
     min_slot: 8786908
     max_slot: 12145390
 - name: has execution and consensus clients
-  sql: "SELECT\n  COUNT(DISTINCT meta_client_implementation) AS execution_clients,\n\
-    \  COUNT(DISTINCT meta_consensus_implementation) AS consensus_clients\nFROM\n\
-    \  beacon_api_eth_v3_validator_block FINAL\n"
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_client_implementation) AS execution_clients,
+      COUNT(DISTINCT meta_consensus_implementation) AS consensus_clients
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
   expected:
     execution_clients: 1
     consensus_clients: 7
 - name: block version consistency
-  sql: "SELECT\n  COUNT(DISTINCT block_version) AS versions,\n  MIN(block_version)\
-    \ AS version_name\nFROM\n  beacon_api_eth_v3_validator_block FINAL\n"
+  sql: |
+    SELECT
+      COUNT(DISTINCT block_version) AS versions,
+      MIN(block_version) AS version_name
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
   expected:
     versions: 1
     version_name: fulu
 - name: execution payload data present
-  sql: "SELECT\n  COUNT(*) AS blocks_with_exec_data\nFROM\n  beacon_api_eth_v3_validator_block\
-    \ FINAL\nWHERE\n  execution_payload_block_number > 0\n"
+  sql: |
+    SELECT
+      COUNT(*) AS blocks_with_exec_data
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
+    WHERE
+      execution_payload_block_number > 0
   expected:
     blocks_with_exec_data: 239
 - name: consensus implementations detail
-  sql: "SELECT\n  COUNT(DISTINCT meta_consensus_implementation) AS total_implementations\n\
-    FROM\n  beacon_api_eth_v3_validator_block FINAL\n"
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
+    FROM
+      beacon_api_eth_v3_validator_block FINAL
   expected:
     total_implementations: 7

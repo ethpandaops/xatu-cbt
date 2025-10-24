@@ -1,5 +1,8 @@
 - name: total count
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  canonical_beacon_elaborated_attestation\
-    \ FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      canonical_beacon_elaborated_attestation FINAL
   expected:
     count: 10

@@ -1,4 +1,8 @@
 - name: total count
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  libp2p_gossipsub_beacon_attestation FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      libp2p_gossipsub_beacon_attestation FINAL
   expected:
     count: 2364

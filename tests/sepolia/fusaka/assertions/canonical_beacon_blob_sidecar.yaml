@@ -1,4 +1,8 @@
 - name: total count
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  canonical_beacon_blob_sidecar FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      canonical_beacon_blob_sidecar FINAL
   expected:
     count: 47

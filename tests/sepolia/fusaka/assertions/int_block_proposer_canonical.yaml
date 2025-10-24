@@ -1,13 +1,24 @@
 - name: Expected bounds and size
-  sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot_start_date_time) AS min,\n  MAX(slot_start_date_time)\
-    \ AS max\nFROM\n  int_block_proposer_canonical FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot_start_date_time) AS min,
+      MAX(slot_start_date_time) AS max
+    FROM
+      int_block_proposer_canonical FINAL
   expected:
     count: 7
     min: '2025-07-15T08:34:23Z'
     max: '1970-01-01T00:00:00Z'
 - name: Expected admin bounds
-  sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position))\
-    \ AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'int_block_proposer_canonical'\n"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'int_block_proposer_canonical'
   expected:
     max: '2025-10-22T23:42:48Z'
     min: '2025-07-15T08:34:23Z'

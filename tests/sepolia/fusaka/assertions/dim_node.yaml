@@ -1,18 +1,18 @@
-- name: Expected size
+- name: "Expected size"
   sql: |
     SELECT
       COUNT(*) AS count
     FROM
-      'fct_node_active_last_24h' FINAL
+      dim_node FINAL
   expected:
-    count: 39
-- name: Has been scheduled at least once
+    count: 1
+- name: "Has been scheduled at least once"
   sql: |
     SELECT
       COUNT(*) AS count
     FROM
       admin_cbt_scheduled FINAL
     WHERE
-      table = 'fct_node_active_last_24h'
+      table = 'dim_node'
   expected:
-    count: 0
+    count: 1

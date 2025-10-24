@@ -1,13 +1,24 @@
 - name: Expected bounds and size
-  sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n\
-    \  fct_mev_bid_count_by_relay FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot) AS min,
+      MAX(slot) AS max
+    FROM
+      fct_mev_bid_count_by_relay FINAL
   expected:
     count: 4
     min: '12145370'
     max: '12145389'
 - name: Expected admin bounds
-  sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position))\
-    \ AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'fct_mev_bid_count_by_relay'\n"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'fct_mev_bid_count_by_relay'
   expected:
     max: '2025-10-22T23:42:36Z'
     min: '2025-07-15T08:34:23Z'

@@ -1,4 +1,8 @@
 - name: total count
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  mev_relay_bid_trace FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      mev_relay_bid_trace FINAL
   expected:
     count: 76

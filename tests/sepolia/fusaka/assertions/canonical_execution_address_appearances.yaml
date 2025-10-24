@@ -1,5 +1,8 @@
 - name: total count
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  canonical_execution_address_appearances\
-    \ FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      canonical_execution_address_appearances FINAL
   expected:
     count: 7870

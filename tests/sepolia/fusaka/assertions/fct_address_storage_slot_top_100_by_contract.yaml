@@ -1,8 +1,13 @@
 - name: Expected bounds and size
-  sql: "SELECT\n  COUNT(*) AS count,\n  argMin(contract_address, rank) AS top_contract_address,\n\
-    \  argMin(total_storage_slots, rank) AS top_total_storage_slots,\n  argMax(contract_address,\
-    \ rank) AS bottom_contract_address,\n  argMax(total_storage_slots, rank) AS bottom_total_storage_slots\n\
-    FROM\n  fct_address_storage_slot_top_100_by_contract FINAL\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      argMin(contract_address, rank) AS top_contract_address,
+      argMin(total_storage_slots, rank) AS top_total_storage_slots,
+      argMax(contract_address, rank) AS bottom_contract_address,
+      argMax(total_storage_slots, rank) AS bottom_total_storage_slots
+    FROM
+      fct_address_storage_slot_top_100_by_contract FINAL
   expected:
     count: 88
     top_contract_address: '0xea1499503adddc74fc284a5707d29bcac8cd48ca'
@@ -10,7 +15,12 @@
     bottom_contract_address: '0x03b59bd1c8b9f6c265ba0c3421923b93f15036fa'
     bottom_total_storage_slots: 22
 - name: Has been scheduled at least once
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  admin_cbt_scheduled FINAL\nWHERE\n  table\
-    \ = 'fct_address_storage_slot_top_100_by_contract'\n"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      admin_cbt_scheduled FINAL
+    WHERE
+      table = 'fct_address_storage_slot_top_100_by_contract'
   expected:
     count: 0
