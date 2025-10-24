@@ -23,7 +23,8 @@ jobs:
       - id: set-tests
         run: |
           if [ -d "tests" ]; then
-            tests=$(find tests -maxdepth 1 -type d -not -path tests | xargs -n1 basename | jq -R -s -c 'split("\n")[:-1]')
+            # Find network/spec directories (e.g., mainnet/pectra, sepolia/fusaka)
+            tests=$(find tests -mindepth 2 -maxdepth 2 -type d | sed 's|^tests/||' | jq -R -s -c 'split("\n")[:-1]')
             echo "tests=${tests}" >> $GITHUB_OUTPUT
             echo "Found tests: ${tests}"
           else
@@ -46,6 +47,7 @@ jobs:
       - name: Check external models have test data
         run: |
           echo "Checking external models have corresponding test data..."
+          echo "Test path: tests/${{ matrix.test }}/data"
           missing_data=""
           if [ -d "models/external" ]; then
             while IFS= read -r model_file; do
@@ -64,6 +66,7 @@ jobs:
       - name: Check all models have assertions
         run: |
           echo "Checking all models have corresponding assertions..."
+          echo "Test path: tests/${{ matrix.test }}/assertions"
           missing_assertions=""
           if [ -d "models" ]; then
             while IFS= read -r model_file; do
