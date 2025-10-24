@@ -47,7 +47,7 @@ run: build
 
 # Build the binary
 .PHONY: build
-build:
+build: docker-check
 	$(GOBUILD) -o $(BINARY_PATH) $(MAIN_PATH)
 
 # Clean build artifacts
