@@ -13,9 +13,7 @@ permissions:
 jobs:
   discover-tests:
     name: Discover test directories
-    runs-on:
-      - self-hosted-ghr
-      - size-s-x64
+    runs-on: ubuntu-latest
     outputs:
       tests: ${{ steps.set-tests.outputs.tests }}
     steps:
@@ -35,9 +33,7 @@ jobs:
     name: Test ${{ matrix.test }}
     needs: discover-tests
     if: needs.discover-tests.outputs.tests != '[]'
-    runs-on:
-      - self-hosted-ghr
-      - size-s-x64
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
