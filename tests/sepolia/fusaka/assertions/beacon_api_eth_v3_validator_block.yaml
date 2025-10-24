@@ -23,7 +23,7 @@
       beacon_api_eth_v3_validator_block FINAL
   expected:
     min_slot: 8786908
-    max_slot: 12145390
+    max_slot: 8786914
 - name: has execution and consensus clients
   sql: |
     SELECT
