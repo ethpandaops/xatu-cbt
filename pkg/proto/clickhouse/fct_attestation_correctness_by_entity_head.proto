@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Attestation correctness aggregated by entity for the head chain. Multiple rows per slot when entities attest to different block roots (forks)
+
+message FctAttestationCorrectnessByEntityHead {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The slot number
+  uint32 slot = 12;
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 13;
+  // The epoch number containing the slot
+  uint32 epoch = 14;
+  // The wall clock time when the epoch started
+  uint32 epoch_start_date_time = 15;
+  // The entity (staking provider) associated with the validators
+  google.protobuf.StringValue entity = 16;
+  // The beacon block root hash that was attested, null means the attestation was missed
+  google.protobuf.StringValue block_root = 17;
+  // Number of attestations for this entity/block_root combination
+  uint32 attestation_count = 18;
+}
+
+// Request for listing fct_attestation_correctness_by_entity_head records
+message ListFctAttestationCorrectnessByEntityHeadRequest {
+  // Filter by slot - The slot number (PRIMARY KEY - required unless using alternatives: slot_start_date_time)
+  UInt32Filter slot = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PROJECTION: p_by_slot_start_date_time - alternative to slot)
+  UInt32Filter slot_start_date_time = 3 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.projection_name) = "p_by_slot_start_date_time", (clickhouse.v1.projection_alternative_for) = "slot", (clickhouse.v1.required_group) = "primary_key"];
+  // Filter by epoch - The epoch number containing the slot (optional)
+  UInt32Filter epoch = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
+  UInt32Filter epoch_start_date_time = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by entity - The entity (staking provider) associated with the validators (optional)
+  NullableStringFilter entity = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_root - The beacon block root hash that was attested, null means the attestation was missed (optional)
+  NullableStringFilter block_root = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by attestation_count - Number of attestations for this entity/block_root combination (optional)
+  UInt32Filter attestation_count = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_attestation_correctness_by_entity_head to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 9 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctAttestationCorrectnessByEntityHead` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 10 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 11 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_attestation_correctness_by_entity_head records
+message ListFctAttestationCorrectnessByEntityHeadResponse {
+  // The list of fct_attestation_correctness_by_entity_head.
+  repeated FctAttestationCorrectnessByEntityHead fct_attestation_correctness_by_entity_head = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_attestation_correctness_by_entity_head record by primary key
+message GetFctAttestationCorrectnessByEntityHeadRequest {
+  // The slot number
+  uint32 slot = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_attestation_correctness_by_entity_head record
+message GetFctAttestationCorrectnessByEntityHeadResponse {
+  FctAttestationCorrectnessByEntityHead item = 1;
+}
+
+// Query fct_attestation_correctness_by_entity_head data
+service FctAttestationCorrectnessByEntityHeadService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctAttestationCorrectnessByEntityHeadRequest) returns (ListFctAttestationCorrectnessByEntityHeadResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_correctness_by_entity_head"
+    };
+  }
+  // Get record | Retrieve a single record by slot
+  rpc Get(GetFctAttestationCorrectnessByEntityHeadRequest) returns (GetFctAttestationCorrectnessByEntityHeadResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_correctness_by_entity_head/{slot}"
+    };
+  }
+}
