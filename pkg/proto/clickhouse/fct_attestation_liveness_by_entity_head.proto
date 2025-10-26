@@ -8,9 +8,9 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Attestation correctness aggregated by entity for the head chain. One or two rows per (slot, entity): one for attested, one for missed.
+// Attestation liveness aggregated by entity for the head chain. One or two rows per (slot, entity): one for attested, one for missed.
 
-message FctAttestationCorrectnessByEntityHead {
+message FctAttestationLivenessByEntityHead {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // The slot number
@@ -29,8 +29,8 @@ message FctAttestationCorrectnessByEntityHead {
   uint32 attestation_count = 18;
 }
 
-// Request for listing fct_attestation_correctness_by_entity_head records
-message ListFctAttestationCorrectnessByEntityHeadRequest {
+// Request for listing fct_attestation_liveness_by_entity_head records
+message ListFctAttestationLivenessByEntityHeadRequest {
   // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: slot)
   UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
 
@@ -51,11 +51,11 @@ message ListFctAttestationCorrectnessByEntityHeadRequest {
   // Filter by attestation_count - Number of attestations for this entity/status combination (optional)
   UInt32Filter attestation_count = 8 [(google.api.field_behavior) = OPTIONAL];
 
-  // The maximum number of fct_attestation_correctness_by_entity_head to return.
+  // The maximum number of fct_attestation_liveness_by_entity_head to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 9 [(google.api.field_behavior) = OPTIONAL];
-  // A page token, received from a previous `ListFctAttestationCorrectnessByEntityHead` call.
+  // A page token, received from a previous `ListFctAttestationLivenessByEntityHead` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 10 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
@@ -64,38 +64,38 @@ message ListFctAttestationCorrectnessByEntityHeadRequest {
   string order_by = 11 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Response for listing fct_attestation_correctness_by_entity_head records
-message ListFctAttestationCorrectnessByEntityHeadResponse {
-  // The list of fct_attestation_correctness_by_entity_head.
-  repeated FctAttestationCorrectnessByEntityHead fct_attestation_correctness_by_entity_head = 1;
+// Response for listing fct_attestation_liveness_by_entity_head records
+message ListFctAttestationLivenessByEntityHeadResponse {
+  // The list of fct_attestation_liveness_by_entity_head.
+  repeated FctAttestationLivenessByEntityHead fct_attestation_liveness_by_entity_head = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// Request for getting a single fct_attestation_correctness_by_entity_head record by primary key
-message GetFctAttestationCorrectnessByEntityHeadRequest {
+// Request for getting a single fct_attestation_liveness_by_entity_head record by primary key
+message GetFctAttestationLivenessByEntityHeadRequest {
   // The wall clock time when the slot started
   uint32 slot_start_date_time = 1; // Primary key (required)
 }
 
-// Response for getting a single fct_attestation_correctness_by_entity_head record
-message GetFctAttestationCorrectnessByEntityHeadResponse {
-  FctAttestationCorrectnessByEntityHead item = 1;
+// Response for getting a single fct_attestation_liveness_by_entity_head record
+message GetFctAttestationLivenessByEntityHeadResponse {
+  FctAttestationLivenessByEntityHead item = 1;
 }
 
-// Query fct_attestation_correctness_by_entity_head data
-service FctAttestationCorrectnessByEntityHeadService {
+// Query fct_attestation_liveness_by_entity_head data
+service FctAttestationLivenessByEntityHeadService {
   // List records | Retrieve paginated results with optional filtering
-  rpc List(ListFctAttestationCorrectnessByEntityHeadRequest) returns (ListFctAttestationCorrectnessByEntityHeadResponse) {
+  rpc List(ListFctAttestationLivenessByEntityHeadRequest) returns (ListFctAttestationLivenessByEntityHeadResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_attestation_correctness_by_entity_head"
+      get: "/api/v1/fct_attestation_liveness_by_entity_head"
     };
   }
   // Get record | Retrieve a single record by slot_start_date_time
-  rpc Get(GetFctAttestationCorrectnessByEntityHeadRequest) returns (GetFctAttestationCorrectnessByEntityHeadResponse) {
+  rpc Get(GetFctAttestationLivenessByEntityHeadRequest) returns (GetFctAttestationLivenessByEntityHeadResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_attestation_correctness_by_entity_head/{slot_start_date_time}"
+      get: "/api/v1/fct_attestation_liveness_by_entity_head/{slot_start_date_time}"
     };
   }
 }
