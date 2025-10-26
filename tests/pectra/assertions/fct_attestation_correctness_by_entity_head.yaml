@@ -1,0 +1,63 @@
+- name: "Expected size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot) AS min,
+      MAX(slot) AS max
+    FROM
+      fct_attestation_correctness_by_entity_head FINAL
+  expected:
+    count: 80
+    min: "12145370"
+    max: "12145389"
+- name: "Expected distinct block roots (forks)"
+  sql: |
+    SELECT
+      COUNT(DISTINCT block_root) AS block_root_count
+    FROM
+      fct_attestation_correctness_by_entity_head FINAL
+  expected:
+    block_root_count: 2
+- name: "Expected distinct slots"
+  sql: |
+    SELECT
+      COUNT(DISTINCT slot) AS slot_count
+    FROM
+      fct_attestation_correctness_by_entity_head FINAL
+  expected:
+    slot_count: 20
+- name: "Verify fork behavior - multiple rows per slot"
+  sql: |
+    SELECT
+      COUNT(*) as slots_with_multiple_block_roots
+    FROM (
+      SELECT
+        slot,
+        COUNT(DISTINCT block_root) as block_root_count
+      FROM
+        fct_attestation_correctness_by_entity_head FINAL
+      GROUP BY slot
+      HAVING block_root_count > 1
+    )
+  expected:
+    slots_with_multiple_block_roots: 20
+- name: "Total attestation count matches validator table"
+  sql: |
+    SELECT
+      SUM(attestation_count) AS total_from_aggregated
+    FROM
+      fct_attestation_correctness_by_entity_head FINAL
+  expected:
+    total_from_aggregated: 685007
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'fct_attestation_correctness_by_entity_head'
+  expected:
+    max: "2025-07-15T08:38:11Z"
+    min: "2025-07-15T08:34:23Z"
