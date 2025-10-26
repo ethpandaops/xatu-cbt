@@ -45,6 +45,7 @@ SELECT
     argMax(execution_payload_transactions_count, updated_date_time) AS execution_payload_transactions_count,
     argMax(execution_payload_transactions_total_bytes, updated_date_time) AS execution_payload_transactions_total_bytes,
     argMax(execution_payload_transactions_total_bytes_compressed, updated_date_time) AS execution_payload_transactions_total_bytes_compressed
-FROM `{{ index .dep "{{external}}" "beacon_api_eth_v2_beacon_block" "database" }}`.`beacon_api_eth_v2_beacon_block` FINAL
+FROM {{ index .dep "{{external}}" "beacon_api_eth_v2_beacon_block" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
 GROUP BY slot_start_date_time, block_root

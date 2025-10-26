@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      canonical_beacon_elaborated_attestation FINAL
+      cluster('{remote_cluster}', default.canonical_beacon_elaborated_attestation) FINAL
   expected:
     count: 3072

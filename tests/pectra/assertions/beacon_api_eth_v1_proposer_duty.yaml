@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      beacon_api_eth_v1_proposer_duty FINAL
+      cluster('{remote_cluster}', default.beacon_api_eth_v1_proposer_duty) FINAL
   expected:
     count: 42

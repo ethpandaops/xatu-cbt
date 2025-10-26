@@ -100,10 +100,14 @@ services:
             },
             'models': {
                 'external': {
-                    'defaultDatabase': network
+                    'defaultCluster': '{remote_cluster}',
+                    'defaultDatabase': 'default'
                 },
                 'transformations': {
                     'defaultDatabase': network
+                },
+                'env': {
+                    'NETWORK': network
                 }
             },
             'frontend': {

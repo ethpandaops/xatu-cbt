@@ -39,8 +39,9 @@ WITH combined_events AS (
         meta_client_geo_autonomous_system_organization,
         meta_consensus_version,
         meta_consensus_implementation
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_blob_sidecar" "database" }}`.`beacon_api_eth_v1_events_blob_sidecar` FINAL
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_blob_sidecar" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,

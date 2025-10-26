@@ -25,7 +25,7 @@ WITH attestations AS (
         block_root,
         seen_slot_start_diff,
         attesting_validator_index
-    FROM `{{ index .dep "{{transformation}}" "int_attestation_first_seen" "database" }}`.`int_attestation_first_seen` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_attestation_first_seen" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND seen_slot_start_diff IS NOT NULL
 ),

@@ -37,7 +37,7 @@ WITH canonical_blocks AS (
         value,
         transaction_count,
         'canonical' AS `status`
-    FROM `{{ index .dep "{{transformation}}" "int_block_mev_canonical" "database" }}`.`int_block_mev_canonical` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_block_mev_canonical" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 orphaned_blocks AS (
@@ -60,7 +60,7 @@ orphaned_blocks AS (
         h.value AS value,
         h.transaction_count AS transaction_count,
         'orphaned' AS `status`
-    FROM `{{ index .dep "{{transformation}}" "fct_block_mev_head" "database" }}`.`fct_block_mev_head` AS h FINAL
+    FROM {{ index .dep "{{transformation}}" "fct_block_mev_head" "helpers" "from" }} AS h FINAL
     GLOBAL LEFT ANTI JOIN canonical_blocks c 
         ON h.slot_start_date_time = c.slot_start_date_time 
         AND h.block_root = c.block_root

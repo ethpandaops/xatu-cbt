@@ -29,7 +29,7 @@ WITH blocks AS (
         execution_payload_block_hash AS block_hash,
         execution_payload_parent_hash AS parent_hash,
         execution_payload_block_number AS block_number
-    FROM `{{ index .dep "{{transformation}}" "fct_block_head" "database" }}`.`fct_block_head` FINAL
+    FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 proposer_payloads_raw AS (
@@ -42,16 +42,18 @@ proposer_payloads_raw AS (
     gas_used,
     num_tx AS transaction_count,
     relay_name
-  FROM `{{ index .dep "{{external}}" "mev_relay_proposer_payload_delivered" "database" }}`.`mev_relay_proposer_payload_delivered` FINAL
+  FROM {{ index .dep "{{external}}" "mev_relay_proposer_payload_delivered" "helpers" "from" }} FINAL
   WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 bid_traces_raw AS (
   SELECT
     block_hash,
     min(timestamp_ms) AS min_timestamp_ms,
     max(value) AS max_value
-  FROM `{{ index .dep "{{external}}" "mev_relay_bid_trace" "database" }}`.`mev_relay_bid_trace` FINAL
+  FROM {{ index .dep "{{external}}" "mev_relay_bid_trace" "helpers" "from" }} FINAL
   WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
   GROUP BY block_hash
 ),
 blocks_with_payloads AS (

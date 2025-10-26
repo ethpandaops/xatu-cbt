@@ -24,6 +24,7 @@ SELECT
     epoch_start_date_time,
     relay_name,
     count(*) AS bid_total
-FROM `{{ index .dep "{{external}}" "mev_relay_bid_trace" "database" }}`.`mev_relay_bid_trace` FINAL
+FROM {{ index .dep "{{external}}" "mev_relay_bid_trace" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
 GROUP BY slot_start_date_time, slot, epoch, epoch_start_date_time, relay_name

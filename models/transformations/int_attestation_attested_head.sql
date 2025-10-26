@@ -26,7 +26,7 @@ WITH validator_indices AS (
         epoch,
         epoch_start_date_time,
         arrayJoin(validators) AS validator_index
-    FROM `{{ index .dep "{{transformation}}" "int_beacon_committee_head" "database" }}`.`int_beacon_committee_head` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_beacon_committee_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -46,8 +46,9 @@ combined_events AS (
         target_root,
         attesting_validator_index,
         floor(min(propagation_slot_start_diff) / 12000) AS propagation_distance
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_attestation" "database" }}`.`beacon_api_eth_v1_events_attestation`
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_attestation" "helpers" "from" }}
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
         AND aggregation_bits = ''
         AND attesting_validator_index IS NOT NULL
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, beacon_block_root, source_epoch, source_epoch_start_date_time, source_root, target_epoch, target_epoch_start_date_time, target_root, attesting_validator_index
@@ -68,8 +69,9 @@ combined_events AS (
         target_root,
         attesting_validator_index,
         floor(min(propagation_slot_start_diff) / 12000) AS propagation_distance
-    FROM `{{ index .dep "{{external}}" "libp2p_gossipsub_beacon_attestation" "database" }}`.`libp2p_gossipsub_beacon_attestation` FINAL
+    FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_attestation" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
         AND aggregation_bits = ''
         AND attesting_validator_index IS NOT NULL
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, beacon_block_root, source_epoch, source_epoch_start_date_time, source_root, target_epoch, target_epoch_start_date_time, target_root, attesting_validator_index

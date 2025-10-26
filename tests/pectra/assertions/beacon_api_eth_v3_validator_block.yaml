@@ -3,7 +3,7 @@
     SELECT
       COUNT(*) AS count
     FROM
-      beacon_api_eth_v3_validator_block FINAL
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
   expected:
     count: 172  # Actual count from test data
 
@@ -12,7 +12,7 @@
     SELECT
       COUNT(DISTINCT meta_client_name) AS unique_clients
     FROM
-      beacon_api_eth_v3_validator_block FINAL
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
   expected:
     unique_clients: 10  # 10 unique validator client nodes
 
@@ -22,7 +22,7 @@
       MIN(slot) AS min_slot,
       MAX(slot) AS max_slot
     FROM
-      beacon_api_eth_v3_validator_block FINAL
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
   expected:
     min_slot: 12145370  # First slot in test data
     max_slot: 12145390  # Last slot in test data
@@ -33,7 +33,7 @@
       COUNT(DISTINCT meta_client_implementation) AS execution_clients,
       COUNT(DISTINCT meta_consensus_implementation) AS consensus_clients
     FROM
-      beacon_api_eth_v3_validator_block FINAL
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
   expected:
     execution_clients: 1  # Xatu
     consensus_clients: 5  # lighthouse, prysm, teku, nimbus, lodestar
@@ -44,7 +44,7 @@
       COUNT(DISTINCT block_version) AS versions,
       MIN(block_version) AS version_name
     FROM
-      beacon_api_eth_v3_validator_block FINAL
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
   expected:
     versions: 1  # Single version
     version_name: "electra"  # Electra fork
@@ -54,7 +54,7 @@
     SELECT
       COUNT(*) AS blocks_with_exec_data
     FROM
-      beacon_api_eth_v3_validator_block FINAL
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
     WHERE
       execution_payload_block_number > 0
   expected:
@@ -65,6 +65,6 @@
     SELECT
       COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
     FROM
-      beacon_api_eth_v3_validator_block FINAL
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
   expected:
     total_implementations: 5

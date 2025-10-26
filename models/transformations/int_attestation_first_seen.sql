@@ -40,8 +40,9 @@ WITH combined_events AS (
         meta_client_geo_autonomous_system_organization,
         meta_consensus_version,
         meta_consensus_implementation
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_attestation" "database" }}`.`beacon_api_eth_v1_events_attestation` FINAL
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_attestation" "helpers" "from" }}
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
         AND aggregation_bits = ''
         AND attesting_validator_index IS NOT NULL
 
@@ -79,8 +80,9 @@ WITH combined_events AS (
             ELSE
                 ''
         END AS meta_consensus_implementation
-    FROM `{{ index .dep "{{external}}" "libp2p_gossipsub_beacon_attestation" "database" }}`.`libp2p_gossipsub_beacon_attestation` FINAL
+    FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_attestation" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
         AND aggregation_bits = ''
         AND attesting_validator_index IS NOT NULL
 )
