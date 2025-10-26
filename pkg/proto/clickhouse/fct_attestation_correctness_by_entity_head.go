@@ -10,7 +10,7 @@ import (
 // BuildListFctAttestationCorrectnessByEntityHeadQuery constructs a parameterized SQL query from a ListFctAttestationCorrectnessByEntityHeadRequest
 //
 // Available projections:
-//   - p_by_slot_start_date_time (primary key: slot_start_date_time)
+//   - p_by_slot (primary key: slot)
 //
 // Use WithProjection() option to select a specific projection.
 func BuildListFctAttestationCorrectnessByEntityHeadQuery(req *ListFctAttestationCorrectnessByEntityHeadRequest, options ...QueryOption) (SQLQuery, error) {
@@ -24,29 +24,37 @@ func BuildListFctAttestationCorrectnessByEntityHeadQuery(req *ListFctAttestation
 	qb := NewQueryBuilder()
 
 	// Add primary key filter
-	if req.Slot != nil {
-		switch filter := req.Slot.Filter.(type) {
+	if req.SlotStartDateTime != nil {
+		switch filter := req.SlotStartDateTime.Filter.(type) {
 		case *UInt32Filter_Eq:
-			qb.AddCondition("slot", "=", filter.Eq)
+			qb.AddCondition("slot_start_date_time", "=", DateTimeValue{filter.Eq})
 		case *UInt32Filter_Ne:
-			qb.AddCondition("slot", "!=", filter.Ne)
+			qb.AddCondition("slot_start_date_time", "!=", DateTimeValue{filter.Ne})
 		case *UInt32Filter_Lt:
-			qb.AddCondition("slot", "<", filter.Lt)
+			qb.AddCondition("slot_start_date_time", "<", DateTimeValue{filter.Lt})
 		case *UInt32Filter_Lte:
-			qb.AddCondition("slot", "<=", filter.Lte)
+			qb.AddCondition("slot_start_date_time", "<=", DateTimeValue{filter.Lte})
 		case *UInt32Filter_Gt:
-			qb.AddCondition("slot", ">", filter.Gt)
+			qb.AddCondition("slot_start_date_time", ">", DateTimeValue{filter.Gt})
 		case *UInt32Filter_Gte:
-			qb.AddCondition("slot", ">=", filter.Gte)
+			qb.AddCondition("slot_start_date_time", ">=", DateTimeValue{filter.Gte})
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("slot_start_date_time", DateTimeValue{filter.Between.Min}, DateTimeValue{filter.Between.Max.GetValue()})
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
+				converted := make([]interface{}, len(filter.In.Values))
+				for i, v := range filter.In.Values {
+					converted[i] = DateTimeValue{v}
+				}
+				qb.AddInCondition("slot_start_date_time", converted)
 			}
 		case *UInt32Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("slot", UInt32SliceToInterface(filter.NotIn.Values))
+				converted := make([]interface{}, len(filter.NotIn.Values))
+				for i, v := range filter.NotIn.Values {
+					converted[i] = DateTimeValue{v}
+				}
+				qb.AddNotInCondition("slot_start_date_time", converted)
 			}
 		default:
 			// Unsupported filter type
@@ -91,38 +99,30 @@ func BuildListFctAttestationCorrectnessByEntityHeadQuery(req *ListFctAttestation
 		}
 	}
 
-	// Add filter for column: slot_start_date_time
-	if req.SlotStartDateTime != nil {
-		switch filter := req.SlotStartDateTime.Filter.(type) {
+	// Add filter for column: slot
+	if req.Slot != nil {
+		switch filter := req.Slot.Filter.(type) {
 		case *UInt32Filter_Eq:
-			qb.AddCondition("slot_start_date_time", "=", DateTimeValue{filter.Eq})
+			qb.AddCondition("slot", "=", filter.Eq)
 		case *UInt32Filter_Ne:
-			qb.AddCondition("slot_start_date_time", "!=", DateTimeValue{filter.Ne})
+			qb.AddCondition("slot", "!=", filter.Ne)
 		case *UInt32Filter_Lt:
-			qb.AddCondition("slot_start_date_time", "<", DateTimeValue{filter.Lt})
+			qb.AddCondition("slot", "<", filter.Lt)
 		case *UInt32Filter_Lte:
-			qb.AddCondition("slot_start_date_time", "<=", DateTimeValue{filter.Lte})
+			qb.AddCondition("slot", "<=", filter.Lte)
 		case *UInt32Filter_Gt:
-			qb.AddCondition("slot_start_date_time", ">", DateTimeValue{filter.Gt})
+			qb.AddCondition("slot", ">", filter.Gt)
 		case *UInt32Filter_Gte:
-			qb.AddCondition("slot_start_date_time", ">=", DateTimeValue{filter.Gte})
+			qb.AddCondition("slot", ">=", filter.Gte)
 		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("slot_start_date_time", DateTimeValue{filter.Between.Min}, DateTimeValue{filter.Between.Max.GetValue()})
+			qb.AddBetweenCondition("slot", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt32Filter_In:
 			if len(filter.In.Values) > 0 {
-				converted := make([]interface{}, len(filter.In.Values))
-				for i, v := range filter.In.Values {
-					converted[i] = DateTimeValue{v}
-				}
-				qb.AddInCondition("slot_start_date_time", converted)
+				qb.AddInCondition("slot", UInt32SliceToInterface(filter.In.Values))
 			}
 		case *UInt32Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				converted := make([]interface{}, len(filter.NotIn.Values))
-				for i, v := range filter.NotIn.Values {
-					converted[i] = DateTimeValue{v}
-				}
-				qb.AddNotInCondition("slot_start_date_time", converted)
+				qb.AddNotInCondition("slot", UInt32SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -200,66 +200,58 @@ func BuildListFctAttestationCorrectnessByEntityHeadQuery(req *ListFctAttestation
 	// Add filter for column: entity
 	if req.Entity != nil {
 		switch filter := req.Entity.Filter.(type) {
-		case *NullableStringFilter_Eq:
+		case *StringFilter_Eq:
 			qb.AddCondition("entity", "=", filter.Eq)
-		case *NullableStringFilter_Ne:
+		case *StringFilter_Ne:
 			qb.AddCondition("entity", "!=", filter.Ne)
-		case *NullableStringFilter_Contains:
+		case *StringFilter_Contains:
 			qb.AddLikeCondition("entity", "%" + filter.Contains + "%")
-		case *NullableStringFilter_StartsWith:
+		case *StringFilter_StartsWith:
 			qb.AddLikeCondition("entity", filter.StartsWith + "%")
-		case *NullableStringFilter_EndsWith:
+		case *StringFilter_EndsWith:
 			qb.AddLikeCondition("entity", "%" + filter.EndsWith)
-		case *NullableStringFilter_Like:
+		case *StringFilter_Like:
 			qb.AddLikeCondition("entity", filter.Like)
-		case *NullableStringFilter_NotLike:
+		case *StringFilter_NotLike:
 			qb.AddNotLikeCondition("entity", filter.NotLike)
-		case *NullableStringFilter_In:
+		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("entity", StringSliceToInterface(filter.In.Values))
 			}
-		case *NullableStringFilter_NotIn:
+		case *StringFilter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
 				qb.AddNotInCondition("entity", StringSliceToInterface(filter.NotIn.Values))
 			}
-		case *NullableStringFilter_IsNull:
-			qb.AddIsNullCondition("entity")
-		case *NullableStringFilter_IsNotNull:
-			qb.AddIsNotNullCondition("entity")
 		default:
 			// Unsupported filter type
 		}
 	}
 
-	// Add filter for column: block_root
-	if req.BlockRoot != nil {
-		switch filter := req.BlockRoot.Filter.(type) {
-		case *NullableStringFilter_Eq:
-			qb.AddCondition("block_root", "=", filter.Eq)
-		case *NullableStringFilter_Ne:
-			qb.AddCondition("block_root", "!=", filter.Ne)
-		case *NullableStringFilter_Contains:
-			qb.AddLikeCondition("block_root", "%" + filter.Contains + "%")
-		case *NullableStringFilter_StartsWith:
-			qb.AddLikeCondition("block_root", filter.StartsWith + "%")
-		case *NullableStringFilter_EndsWith:
-			qb.AddLikeCondition("block_root", "%" + filter.EndsWith)
-		case *NullableStringFilter_Like:
-			qb.AddLikeCondition("block_root", filter.Like)
-		case *NullableStringFilter_NotLike:
-			qb.AddNotLikeCondition("block_root", filter.NotLike)
-		case *NullableStringFilter_In:
+	// Add filter for column: status
+	if req.Status != nil {
+		switch filter := req.Status.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("status", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("status", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("status", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("status", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("status", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("status", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("status", filter.NotLike)
+		case *StringFilter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("block_root", StringSliceToInterface(filter.In.Values))
+				qb.AddInCondition("status", StringSliceToInterface(filter.In.Values))
 			}
-		case *NullableStringFilter_NotIn:
+		case *StringFilter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("block_root", StringSliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("status", StringSliceToInterface(filter.NotIn.Values))
 			}
-		case *NullableStringFilter_IsNull:
-			qb.AddIsNullCondition("block_root")
-		case *NullableStringFilter_IsNotNull:
-			qb.AddIsNotNullCondition("block_root")
 		default:
 			// Unsupported filter type
 		}
@@ -320,7 +312,7 @@ func BuildListFctAttestationCorrectnessByEntityHeadQuery(req *ListFctAttestation
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "entity", "block_root", "attestation_count"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "entity", "status", "attestation_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -328,11 +320,11 @@ func BuildListFctAttestationCorrectnessByEntityHeadQuery(req *ListFctAttestation
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot" + ", ifNull(block_root" + ", ''" + ", ifNull(entity" + ", ''"
+		orderByClause = " ORDER BY slot_start_date_time" + ", entity" + ", status"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity", "block_root", "attestation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity", "status", "attestation_count"}
 
 	return BuildParameterizedQuery("fct_attestation_correctness_by_entity_head", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -340,19 +332,19 @@ func BuildListFctAttestationCorrectnessByEntityHeadQuery(req *ListFctAttestation
 // BuildGetFctAttestationCorrectnessByEntityHeadQuery constructs a parameterized SQL query from a GetFctAttestationCorrectnessByEntityHeadRequest
 func BuildGetFctAttestationCorrectnessByEntityHeadQuery(req *GetFctAttestationCorrectnessByEntityHeadRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
-	if req.Slot == 0 {
-		return SQLQuery{}, fmt.Errorf("primary key field slot is required")
+	if req.SlotStartDateTime == 0 {
+		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
 	}
 
 	// Build query with primary key condition
 	qb := NewQueryBuilder()
-	qb.AddCondition("slot", "=", req.Slot)
+	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot, ifNull(block_root, '', ifNull(entity, ''"
+	orderByClause := " ORDER BY slot_start_date_time, entity, status"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity", "block_root", "attestation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity", "status", "attestation_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_attestation_correctness_by_entity_head", columns, qb, orderByClause, 1, 0, options...)

@@ -7,17 +7,27 @@
     FROM
       fct_attestation_correctness_by_entity_head FINAL
   expected:
-    count: 80
+    count: 40
     min: "12145370"
     max: "12145389"
-- name: "Expected distinct block roots (forks)"
+- name: "Expected status values"
   sql: |
     SELECT
-      COUNT(DISTINCT block_root) AS block_root_count
+      COUNT(DISTINCT status) AS status_count
     FROM
       fct_attestation_correctness_by_entity_head FINAL
   expected:
-    block_root_count: 2
+    status_count: 2
+- name: "Verify status values are attested or missed"
+  sql: |
+    SELECT
+      COUNT(*) as valid_statuses
+    FROM
+      fct_attestation_correctness_by_entity_head FINAL
+    WHERE
+      status IN ('attested', 'missed')
+  expected:
+    valid_statuses: 40
 - name: "Expected distinct slots"
   sql: |
     SELECT
@@ -26,21 +36,26 @@
       fct_attestation_correctness_by_entity_head FINAL
   expected:
     slot_count: 20
-- name: "Verify fork behavior - multiple rows per slot"
+- name: "No NULL entities"
   sql: |
     SELECT
-      COUNT(*) as slots_with_multiple_block_roots
-    FROM (
-      SELECT
-        slot,
-        COUNT(DISTINCT block_root) as block_root_count
-      FROM
-        fct_attestation_correctness_by_entity_head FINAL
-      GROUP BY slot
-      HAVING block_root_count > 1
-    )
+      COUNT(*) as null_entity_count
+    FROM
+      fct_attestation_correctness_by_entity_head FINAL
+    WHERE
+      entity IS NULL
   expected:
-    slots_with_multiple_block_roots: 20
+    null_entity_count: 0
+- name: "Entity defaults to unknown when not mapped"
+  sql: |
+    SELECT
+      COUNT(DISTINCT entity) as entity_count,
+      SUM(CASE WHEN entity = 'unknown' THEN 1 ELSE 0 END) as unknown_count
+    FROM
+      fct_attestation_correctness_by_entity_head FINAL
+  expected:
+    entity_count: 1
+    unknown_count: 40
 - name: "Total attestation count matches validator table"
   sql: |
     SELECT

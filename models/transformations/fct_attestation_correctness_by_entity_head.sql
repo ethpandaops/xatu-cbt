@@ -24,8 +24,11 @@ WITH attestations_with_entity AS (
         acv.slot_start_date_time,
         acv.epoch,
         acv.epoch_start_date_time,
-        dn.source AS entity,
-        acv.block_root
+        COALESCE(dn.source, 'unknown') AS entity,
+        CASE
+            WHEN acv.block_root IS NULL THEN 'missed'
+            ELSE 'attested'
+        END AS status
     FROM `{{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_head" "database" }}`.`fct_attestation_correctness_by_validator_head` AS acv FINAL
     GLOBAL LEFT JOIN `{{ .self.database }}`.`dim_node` AS dn FINAL
         ON acv.attesting_validator_index = dn.validator_index
@@ -39,8 +42,8 @@ SELECT
     epoch,
     epoch_start_date_time,
     entity,
-    block_root,
+    status,
     COUNT(*) as attestation_count
 FROM attestations_with_entity
-GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, entity, block_root
+GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, entity, status
 SETTINGS join_use_nulls = 1
