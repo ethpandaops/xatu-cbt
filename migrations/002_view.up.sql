@@ -4,7 +4,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_beacon_committee ON CLUSTER '{cl
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_beacon_committee
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_beacon_committee)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -12,7 +12,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_attestation ON CLUSTER '{
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_attestation
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_attestation)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -20,7 +20,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_blob_sidecar ON CLUSTER '
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_blob_sidecar
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_blob_sidecar)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -28,7 +28,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_block_gossip ON CLUSTER '
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_block_gossip
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_block_gossip)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -36,7 +36,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_block ON CLUSTER '{cluste
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_block
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_block)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -44,7 +44,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_chain_reorg ON CLUSTER '{
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_chain_reorg
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_chain_reorg)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -52,7 +52,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_contribution_and_proof ON
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_contribution_and_proof
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_contribution_and_proof)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -60,7 +60,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_data_column_sidecar ON CL
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_data_column_sidecar
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_data_column_sidecar)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -68,7 +68,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_finalized_checkpoint ON C
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_finalized_checkpoint
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_finalized_checkpoint)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -76,7 +76,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_head ON CLUSTER '{cluster
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_head
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_head)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -84,7 +84,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_events_voluntary_exit ON CLUSTER
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_events_voluntary_exit
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_events_voluntary_exit)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -92,7 +92,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_proposer_duty ON CLUSTER '{clust
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_proposer_duty
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_proposer_duty)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -100,7 +100,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v1_validator_attestation_data ON CL
 SELECT
     *
 FROM
-    default.beacon_api_eth_v1_validator_attestation_data
+    cluster('{remote_cluster}', default.beacon_api_eth_v1_validator_attestation_data)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -108,7 +108,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v2_beacon_block ON CLUSTER '{cluste
 SELECT
     *
 FROM
-    default.beacon_api_eth_v2_beacon_block
+    cluster('{remote_cluster}', default.beacon_api_eth_v2_beacon_block)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -116,7 +116,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_api_eth_v3_validator_block ON CLUSTER '{clu
 SELECT
     *
 FROM
-    default.beacon_api_eth_v3_validator_block
+    cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -124,7 +124,7 @@ CREATE VIEW `${NETWORK_NAME}`.beacon_block_classification ON CLUSTER '{cluster}'
 SELECT
     *
 FROM
-    default.beacon_block_classification
+    cluster('{remote_cluster}', default.beacon_block_classification)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -132,7 +132,7 @@ CREATE VIEW `${NETWORK_NAME}`.block_native_mempool_transaction ON CLUSTER '{clus
 SELECT
     *
 FROM
-    default.block_native_mempool_transaction
+    cluster('{remote_cluster}', default.block_native_mempool_transaction)
 WHERE
     network = '`${NETWORK_NAME}`';
 
@@ -140,7 +140,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_blob_sidecar ON CLUSTER '{cluster
 SELECT
     *
 FROM
-    default.canonical_beacon_blob_sidecar
+    cluster('{remote_cluster}', default.canonical_beacon_blob_sidecar)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -148,7 +148,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_block_attester_slashing ON CLUSTE
 SELECT
     *
 FROM
-    default.canonical_beacon_block_attester_slashing
+    cluster('{remote_cluster}', default.canonical_beacon_block_attester_slashing)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -156,7 +156,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_block_bls_to_execution_change ON 
 SELECT
     *
 FROM
-    default.canonical_beacon_block_bls_to_execution_change
+    cluster('{remote_cluster}', default.canonical_beacon_block_bls_to_execution_change)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -164,7 +164,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_block_deposit ON CLUSTER '{cluste
 SELECT
     *
 FROM
-    default.canonical_beacon_block_deposit
+    cluster('{remote_cluster}', default.canonical_beacon_block_deposit)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -172,7 +172,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_block_execution_transaction ON CL
 SELECT
     *
 FROM
-    default.canonical_beacon_block_execution_transaction
+    cluster('{remote_cluster}', default.canonical_beacon_block_execution_transaction)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -180,7 +180,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_block ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.canonical_beacon_block
+    cluster('{remote_cluster}', default.canonical_beacon_block)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -188,7 +188,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_block_proposer_slashing ON CLUSTE
 SELECT
     *
 FROM
-    default.canonical_beacon_block_proposer_slashing
+    cluster('{remote_cluster}', default.canonical_beacon_block_proposer_slashing)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -196,7 +196,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_block_voluntary_exit ON CLUSTER '
 SELECT
     *
 FROM
-    default.canonical_beacon_block_voluntary_exit
+    cluster('{remote_cluster}', default.canonical_beacon_block_voluntary_exit)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -204,7 +204,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_block_withdrawal ON CLUSTER '{clu
 SELECT
     *
 FROM
-    default.canonical_beacon_block_withdrawal
+    cluster('{remote_cluster}', default.canonical_beacon_block_withdrawal)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -212,7 +212,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_committee ON CLUSTER '{cluster}' 
 SELECT
     *
 FROM
-    default.canonical_beacon_committee
+    cluster('{remote_cluster}', default.canonical_beacon_committee)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -220,7 +220,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_elaborated_attestation ON CLUSTER
 SELECT
     *
 FROM
-    default.canonical_beacon_elaborated_attestation
+    cluster('{remote_cluster}', default.canonical_beacon_elaborated_attestation)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -228,7 +228,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_proposer_duty ON CLUSTER '{cluste
 SELECT
     *
 FROM
-    default.canonical_beacon_proposer_duty
+    cluster('{remote_cluster}', default.canonical_beacon_proposer_duty)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -236,7 +236,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_validators ON CLUSTER '{cluster}'
 SELECT
     *
 FROM
-    default.canonical_beacon_validators
+    cluster('{remote_cluster}', default.canonical_beacon_validators)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -244,7 +244,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_validators_pubkeys ON CLUSTER '{c
 SELECT
     *
 FROM
-    default.canonical_beacon_validators_pubkeys
+    cluster('{remote_cluster}', default.canonical_beacon_validators_pubkeys)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -252,7 +252,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_beacon_validators_withdrawal_credentials
 SELECT
     *
 FROM
-    default.canonical_beacon_validators_withdrawal_credentials
+    cluster('{remote_cluster}', default.canonical_beacon_validators_withdrawal_credentials)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -260,7 +260,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_address_appearances ON CLUSTER
 SELECT
     *
 FROM
-    default.canonical_execution_address_appearances
+    cluster('{remote_cluster}', default.canonical_execution_address_appearances)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -268,7 +268,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_balance_diffs ON CLUSTER '{clu
 SELECT
     *
 FROM
-    default.canonical_execution_balance_diffs
+    cluster('{remote_cluster}', default.canonical_execution_balance_diffs)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -276,7 +276,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_balance_reads ON CLUSTER '{clu
 SELECT
     *
 FROM
-    default.canonical_execution_balance_reads
+    cluster('{remote_cluster}', default.canonical_execution_balance_reads)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -284,7 +284,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_block ON CLUSTER '{cluster}' A
 SELECT
     *
 FROM
-    default.canonical_execution_block
+    cluster('{remote_cluster}', default.canonical_execution_block)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -292,7 +292,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_contracts ON CLUSTER '{cluster
 SELECT
     *
 FROM
-    default.canonical_execution_contracts
+    cluster('{remote_cluster}', default.canonical_execution_contracts)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -300,7 +300,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_erc20_transfers ON CLUSTER '{c
 SELECT
     *
 FROM
-    default.canonical_execution_erc20_transfers
+    cluster('{remote_cluster}', default.canonical_execution_erc20_transfers)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -308,7 +308,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_erc721_transfers ON CLUSTER '{
 SELECT
     *
 FROM
-    default.canonical_execution_erc721_transfers
+    cluster('{remote_cluster}', default.canonical_execution_erc721_transfers)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -316,7 +316,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_four_byte_counts ON CLUSTER '{
 SELECT
     *
 FROM
-    default.canonical_execution_four_byte_counts
+    cluster('{remote_cluster}', default.canonical_execution_four_byte_counts)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -324,7 +324,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_logs ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.canonical_execution_logs
+    cluster('{remote_cluster}', default.canonical_execution_logs)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -332,7 +332,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_native_transfers ON CLUSTER '{
 SELECT
     *
 FROM
-    default.canonical_execution_native_transfers
+    cluster('{remote_cluster}', default.canonical_execution_native_transfers)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -340,7 +340,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_nonce_diffs ON CLUSTER '{clust
 SELECT
     *
 FROM
-    default.canonical_execution_nonce_diffs
+    cluster('{remote_cluster}', default.canonical_execution_nonce_diffs)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -348,7 +348,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_nonce_reads ON CLUSTER '{clust
 SELECT
     *
 FROM
-    default.canonical_execution_nonce_reads
+    cluster('{remote_cluster}', default.canonical_execution_nonce_reads)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -356,7 +356,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_storage_diffs ON CLUSTER '{clu
 SELECT
     *
 FROM
-    default.canonical_execution_storage_diffs
+    cluster('{remote_cluster}', default.canonical_execution_storage_diffs)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -364,7 +364,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_storage_reads ON CLUSTER '{clu
 SELECT
     *
 FROM
-    default.canonical_execution_storage_reads
+    cluster('{remote_cluster}', default.canonical_execution_storage_reads)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -372,7 +372,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_traces ON CLUSTER '{cluster}' 
 SELECT
     *
 FROM
-    default.canonical_execution_traces
+    cluster('{remote_cluster}', default.canonical_execution_traces)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -380,7 +380,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_transaction ON CLUSTER '{clust
 SELECT
     *
 FROM
-    default.canonical_execution_transaction
+    cluster('{remote_cluster}', default.canonical_execution_transaction)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -388,7 +388,7 @@ CREATE VIEW `${NETWORK_NAME}`.canonical_execution_transaction_structlog ON CLUST
 SELECT
     *
 FROM
-    default.canonical_execution_transaction_structlog
+    cluster('{remote_cluster}', default.canonical_execution_transaction_structlog)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -396,7 +396,7 @@ CREATE VIEW `${NETWORK_NAME}`.ethseer_validator_entity ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.ethseer_validator_entity
+    cluster('{remote_cluster}', default.ethseer_validator_entity)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -404,7 +404,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_add_peer ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_add_peer
+    cluster('{remote_cluster}', default.libp2p_add_peer)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -412,7 +412,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_connected ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_connected
+    cluster('{remote_cluster}', default.libp2p_connected)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -420,7 +420,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_deliver_message ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_deliver_message
+    cluster('{remote_cluster}', default.libp2p_deliver_message)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -428,7 +428,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_disconnected ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_disconnected
+    cluster('{remote_cluster}', default.libp2p_disconnected)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -436,7 +436,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_drop_rpc ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_drop_rpc
+    cluster('{remote_cluster}', default.libp2p_drop_rpc)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -444,7 +444,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_duplicate_message ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_duplicate_message
+    cluster('{remote_cluster}', default.libp2p_duplicate_message)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -452,7 +452,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_gossipsub_aggregate_and_proof ON CLUSTER '{
 SELECT
     *
 FROM
-    default.libp2p_gossipsub_aggregate_and_proof
+    cluster('{remote_cluster}', default.libp2p_gossipsub_aggregate_and_proof)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -460,7 +460,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_gossipsub_beacon_attestation ON CLUSTER '{c
 SELECT
     *
 FROM
-    default.libp2p_gossipsub_beacon_attestation
+    cluster('{remote_cluster}', default.libp2p_gossipsub_beacon_attestation)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -468,7 +468,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_gossipsub_beacon_block ON CLUSTER '{cluster
 SELECT
     *
 FROM
-    default.libp2p_gossipsub_beacon_block
+    cluster('{remote_cluster}', default.libp2p_gossipsub_beacon_block)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -476,7 +476,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_gossipsub_blob_sidecar ON CLUSTER '{cluster
 SELECT
     *
 FROM
-    default.libp2p_gossipsub_blob_sidecar
+    cluster('{remote_cluster}', default.libp2p_gossipsub_blob_sidecar)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -484,7 +484,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_gossipsub_data_column_sidecar ON CLUSTER '{
 SELECT
     *
 FROM
-    default.libp2p_gossipsub_data_column_sidecar
+    cluster('{remote_cluster}', default.libp2p_gossipsub_data_column_sidecar)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -492,7 +492,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_graft ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_graft
+    cluster('{remote_cluster}', default.libp2p_graft)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -500,7 +500,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_handle_metadata ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_handle_metadata
+    cluster('{remote_cluster}', default.libp2p_handle_metadata)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -508,7 +508,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_handle_status ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_handle_status
+    cluster('{remote_cluster}', default.libp2p_handle_status)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -516,7 +516,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_join ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_join
+    cluster('{remote_cluster}', default.libp2p_join)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -524,7 +524,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_leave ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_leave
+    cluster('{remote_cluster}', default.libp2p_leave)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -532,7 +532,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_peer ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_peer
+    cluster('{remote_cluster}', default.libp2p_peer)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -540,7 +540,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_prune ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_prune
+    cluster('{remote_cluster}', default.libp2p_prune)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -548,7 +548,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_publish_message ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_publish_message
+    cluster('{remote_cluster}', default.libp2p_publish_message)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -556,7 +556,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_recv_rpc ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_recv_rpc
+    cluster('{remote_cluster}', default.libp2p_recv_rpc)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -564,7 +564,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_reject_message ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_reject_message
+    cluster('{remote_cluster}', default.libp2p_reject_message)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -572,7 +572,15 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_remove_peer ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_remove_peer
+    cluster('{remote_cluster}', default.libp2p_remove_peer)
+WHERE
+    meta_network_name = '${NETWORK_NAME}';
+
+CREATE VIEW `${NETWORK_NAME}`.libp2p_rpc_data_column_custody_probe ON CLUSTER '{cluster}' AS
+SELECT
+    *
+FROM
+    cluster('{remote_cluster}', default.libp2p_rpc_data_column_custody_probe)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -580,7 +588,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_rpc_meta_control_graft ON CLUSTER '{cluster
 SELECT
     *
 FROM
-    default.libp2p_rpc_meta_control_graft
+    cluster('{remote_cluster}', default.libp2p_rpc_meta_control_graft)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -588,7 +596,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_rpc_meta_control_idontwant ON CLUSTER '{clu
 SELECT
     *
 FROM
-    default.libp2p_rpc_meta_control_idontwant
+    cluster('{remote_cluster}', default.libp2p_rpc_meta_control_idontwant)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -596,7 +604,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_rpc_meta_control_ihave ON CLUSTER '{cluster
 SELECT
     *
 FROM
-    default.libp2p_rpc_meta_control_ihave
+    cluster('{remote_cluster}', default.libp2p_rpc_meta_control_ihave)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -604,7 +612,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_rpc_meta_control_iwant ON CLUSTER '{cluster
 SELECT
     *
 FROM
-    default.libp2p_rpc_meta_control_iwant
+    cluster('{remote_cluster}', default.libp2p_rpc_meta_control_iwant)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -612,7 +620,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_rpc_meta_control_prune ON CLUSTER '{cluster
 SELECT
     *
 FROM
-    default.libp2p_rpc_meta_control_prune
+    cluster('{remote_cluster}', default.libp2p_rpc_meta_control_prune)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -620,7 +628,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_rpc_meta_message ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_rpc_meta_message
+    cluster('{remote_cluster}', default.libp2p_rpc_meta_message)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -628,7 +636,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_rpc_meta_subscription ON CLUSTER '{cluster}
 SELECT
     *
 FROM
-    default.libp2p_rpc_meta_subscription
+    cluster('{remote_cluster}', default.libp2p_rpc_meta_subscription)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -636,7 +644,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_send_rpc ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.libp2p_send_rpc
+    cluster('{remote_cluster}', default.libp2p_send_rpc)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -644,7 +652,7 @@ CREATE VIEW `${NETWORK_NAME}`.libp2p_synthetic_heartbeat ON CLUSTER '{cluster}' 
 SELECT
     *
 FROM
-    default.libp2p_synthetic_heartbeat
+    cluster('{remote_cluster}', default.libp2p_synthetic_heartbeat)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -652,7 +660,7 @@ CREATE VIEW `${NETWORK_NAME}`.mempool_dumpster_transaction ON CLUSTER '{cluster}
 SELECT
     *
 FROM
-    default.mempool_dumpster_transaction
+    cluster('{remote_cluster}', default.mempool_dumpster_transaction)
 WHERE
     chain_id = 1;
 
@@ -660,7 +668,7 @@ CREATE VIEW `${NETWORK_NAME}`.mempool_transaction ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.mempool_transaction
+    cluster('{remote_cluster}', default.mempool_transaction)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -668,7 +676,7 @@ CREATE VIEW `${NETWORK_NAME}`.mev_relay_bid_trace ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.mev_relay_bid_trace
+    cluster('{remote_cluster}', default.mev_relay_bid_trace)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -676,7 +684,7 @@ CREATE VIEW `${NETWORK_NAME}`.mev_relay_proposer_payload_delivered ON CLUSTER '{
 SELECT
     *
 FROM
-    default.mev_relay_proposer_payload_delivered
+    cluster('{remote_cluster}', default.mev_relay_proposer_payload_delivered)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -684,7 +692,7 @@ CREATE VIEW `${NETWORK_NAME}`.mev_relay_validator_registration ON CLUSTER '{clus
 SELECT
     *
 FROM
-    default.mev_relay_validator_registration
+    cluster('{remote_cluster}', default.mev_relay_validator_registration)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -692,7 +700,7 @@ CREATE VIEW `${NETWORK_NAME}`.node_record_consensus ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.node_record_consensus
+    cluster('{remote_cluster}', default.node_record_consensus)
 WHERE
     meta_network_name = '${NETWORK_NAME}';
 
@@ -700,6 +708,6 @@ CREATE VIEW `${NETWORK_NAME}`.node_record_execution ON CLUSTER '{cluster}' AS
 SELECT
     *
 FROM
-    default.node_record_execution
+    cluster('{remote_cluster}', default.node_record_execution)
 WHERE
     meta_network_name = '${NETWORK_NAME}';

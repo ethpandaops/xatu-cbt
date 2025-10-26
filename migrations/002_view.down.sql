@@ -69,6 +69,7 @@ DROP VIEW IF EXISTS `${NETWORK_NAME}`.libp2p_publish_message ON CLUSTER '{cluste
 DROP VIEW IF EXISTS `${NETWORK_NAME}`.libp2p_recv_rpc ON CLUSTER '{cluster}';
 DROP VIEW IF EXISTS `${NETWORK_NAME}`.libp2p_reject_message ON CLUSTER '{cluster}';
 DROP VIEW IF EXISTS `${NETWORK_NAME}`.libp2p_remove_peer ON CLUSTER '{cluster}';
+DROP VIEW IF EXISTS `${NETWORK_NAME}`.libp2p_rpc_data_column_custody_probe ON CLUSTER '{cluster}';
 DROP VIEW IF EXISTS `${NETWORK_NAME}`.libp2p_rpc_meta_control_graft ON CLUSTER '{cluster}';
 DROP VIEW IF EXISTS `${NETWORK_NAME}`.libp2p_rpc_meta_control_idontwant ON CLUSTER '{cluster}';
 DROP VIEW IF EXISTS `${NETWORK_NAME}`.libp2p_rpc_meta_control_ihave ON CLUSTER '{cluster}';

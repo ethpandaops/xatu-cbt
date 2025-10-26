@@ -11,12 +11,13 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	Network              string
-	ClickhouseHost       string
-	ClickhouseNativePort int
-	ClickhouseUsername   string
-	ClickhousePassword   string
-	ClickhouseCluster    string
+	Network                  string
+	ClickhouseHost           string
+	ClickhouseNativePort     int
+	ClickhouseDataIngestPort int
+	ClickhouseUsername       string
+	ClickhousePassword       string
+	ClickhouseCluster        string
 }
 
 // Load reads configuration from environment variables and .env file
@@ -43,6 +44,13 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("invalid CLICKHOUSE_NATIVE_PORT: %w", err)
 	}
 	cfg.ClickhouseNativePort = nativePort
+
+	// Parse data ingest port (used only for test data loading)
+	dataIngestPort, err := strconv.Atoi(getEnv("CLICKHOUSE_01_NATIVE_PORT", "9000"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid CLICKHOUSE_01_NATIVE_PORT: %w", err)
+	}
+	cfg.ClickhouseDataIngestPort = dataIngestPort
 
 	return cfg, nil
 }

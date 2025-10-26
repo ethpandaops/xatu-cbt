@@ -16,7 +16,7 @@ SELECT
     toUnixTimestamp(max(slot_start_date_time)) as max
 -- Use the default database as predicate pushdown does not work with views.
 -- This gives 2-3x the performance.
-FROM `default`.`{{ .self.table }}`
+FROM cluster('{remote_cluster}', default.`{{ .self.table }}`)
 WHERE 
     meta_network_name = '{{ .self.database }}'
 

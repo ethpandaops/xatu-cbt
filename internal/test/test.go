@@ -369,6 +369,22 @@ func (s *service) setupXatu(ctx context.Context, testName string) error {
 		return fmt.Errorf("failed to load test data: %w", err)
 	}
 
+	// 5. Start local CBT ClickHouse containers
+	s.log.Debug("Starting local CBT ClickHouse containers")
+	if err := s.docker.ComposeUp(ctx, ".", []string{"clickhouse"}); err != nil {
+		return fmt.Errorf("failed to start CBT ClickHouse: %w", err)
+	}
+
+	// 6. Wait for CBT ClickHouse containers to be healthy
+	s.log.Info("Waiting for CBT ClickHouse containers to be healthy...")
+	if err := s.docker.WaitForContainerHealthy(ctx, "xatu-cbt-clickhouse-01", 5*time.Minute); err != nil {
+		return fmt.Errorf("failed waiting for xatu-cbt-clickhouse-01: %w", err)
+	}
+	if err := s.docker.WaitForContainerHealthy(ctx, "xatu-cbt-clickhouse-02", 5*time.Minute); err != nil {
+		return fmt.Errorf("failed waiting for xatu-cbt-clickhouse-02: %w", err)
+	}
+	s.log.Info("CBT ClickHouse containers are healthy")
+
 	return nil
 }
 

@@ -9,6 +9,6 @@ interval:
 SELECT 
     min(`index`) as min,
     max(`index`) as max
-FROM `{{ .self.database }}`.`{{ .self.table }}`
+FROM cluster('{remote_cluster}', default.`{{ .self.table }}`)
 WHERE 
     meta_network_name = '{{ .self.database }}'
