@@ -1,0 +1,40 @@
+- name: "Expected size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot) AS min,
+      MAX(slot) AS max
+    FROM
+      fct_attestation_count_by_entity_head FINAL
+  expected:
+    count: 40
+    min: "12145370"
+    max: "12145389"
+- name: "Expected statuses"
+  sql: |
+    SELECT
+      COUNT(DISTINCT status) AS status_count
+    FROM
+      fct_attestation_count_by_entity_head FINAL
+  expected:
+    status_count: 2
+- name: "Total attestation count matches validator table"
+  sql: |
+    SELECT
+      SUM(attestation_count) AS total_from_aggregated
+    FROM
+      fct_attestation_count_by_entity_head FINAL
+  expected:
+    total_from_aggregated: 685007
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'fct_attestation_count_by_entity_head'
+  expected:
+    max: "2025-07-15T08:38:11Z"
+    min: "2025-07-15T08:34:23Z"
