@@ -40,10 +40,14 @@
                 <replica>
                     <host>xatu-clickhouse-01</host>
                     <port>9000</port>
+                    <user>default</user>
+                    <password>supersecret</password>
                 </replica>
                 <replica>
                     <host>xatu-clickhouse-02</host>
                     <port>9000</port>
+                    <user>default</user>
+                    <password>supersecret</password>
                 </replica>
             </shard>
         </xatu_cluster>

@@ -184,7 +184,7 @@ services:
       replicas: 1
 
   xatu-cbt-clickhouse-01:
-    image: "clickhouse/clickhouse-server:${CHVER:-latest}"
+    image: "clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-latest}"
     container_name: xatu-cbt-clickhouse-01
     hostname: xatu-cbt-clickhouse-01
     user: 101:101
@@ -224,7 +224,7 @@ services:
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
       - CLICKHOUSE_USER_READONLY_PASSWORD=${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
   xatu-cbt-clickhouse-02:
-    image: "clickhouse/clickhouse-server:${CHVER:-latest}"
+    image: "clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-latest}"
     container_name: xatu-cbt-clickhouse-02
     hostname: xatu-cbt-clickhouse-02
     user: 101:101
@@ -261,7 +261,7 @@ services:
     environment:
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
       - CLICKHOUSE_USER=default
-      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-supersecret}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
       - CLICKHOUSE_USER_READONLY_PASSWORD=${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
   xatu-cbt-clickhouse-zookeeper-01:
     image: zookeeper:3.9
