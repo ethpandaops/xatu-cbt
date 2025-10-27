@@ -33,7 +33,10 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_observation_by_node_local on clus
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
     (`slot_start_date_time`, `meta_client_name`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'Attestation observations by contributor nodes, aggregated per slot per node for performance';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_observation_by_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_observation_by_node_local ENGINE = Distributed(
