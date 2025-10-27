@@ -1,0 +1,82 @@
+- name: "Expected bounds and size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot) AS min,
+      MAX(slot) AS max
+    FROM
+      fct_prepared_block FINAL
+  expected:
+    count: 171
+    min: "12145370"
+    max: "12145390"
+
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'fct_prepared_block'
+  expected:
+    max: "2025-07-15T08:38:23Z"
+    min: "2025-07-15T08:34:23Z"
+
+- name: "Client diversity"
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_client_name) AS unique_client_names,
+      COUNT(DISTINCT meta_client_implementation) AS unique_execution_clients,
+      COUNT(DISTINCT meta_consensus_implementation) AS unique_consensus_clients
+    FROM
+      fct_prepared_block FINAL
+  expected:
+    unique_client_names: 10  # 10 unique validator nodes
+    unique_execution_clients: 1  # Xatu
+    unique_consensus_clients: 5  # lighthouse, prysm, teku, nimbus, lodestar
+
+- name: "Block values populated"
+  sql: |
+    SELECT
+      COUNT(*) AS blocks_with_exec_data
+    FROM
+      fct_prepared_block FINAL
+    WHERE
+      execution_payload_block_number > 0
+  expected:
+    blocks_with_exec_data: 171  # All blocks have execution data
+
+- name: "Block version verification"
+  sql: |
+    SELECT
+      COUNT(DISTINCT block_version) AS versions,
+      MIN(block_version) AS version_name
+    FROM
+      fct_prepared_block FINAL
+  expected:
+    versions: 1
+    version_name: "electra"
+
+- name: "Consensus client distribution"
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
+    FROM
+      fct_prepared_block FINAL
+  expected:
+    total_implementations: 5
+
+- name: "Date time fields populated"
+  sql: |
+    SELECT
+      COUNT(*) AS complete_records
+    FROM
+      fct_prepared_block FINAL
+    WHERE
+      slot_start_date_time IS NOT NULL
+      AND event_date_time IS NOT NULL
+      AND updated_date_time IS NOT NULL
+  expected:
+    complete_records: 171  # All records should have date time fields

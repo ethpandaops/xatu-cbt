@@ -1,0 +1,8 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      canonical_execution_nonce_diffs FINAL
+  expected:
+    count: 4157

@@ -1,0 +1,34 @@
+- name: "Bounds"
+  sql: |
+    SELECT
+      MAX(slot_distance) AS slot_distance,
+      MAX(propagation_distance) AS propagation_distance
+    FROM
+      fct_attestation_correctness_by_validator_head FINAL
+  expected:
+    slot_distance: "9"
+    propagation_distance: "15"
+- name: "Expected size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot) AS min,
+      MAX(slot) AS max
+    FROM
+      fct_attestation_correctness_by_validator_head FINAL
+  expected:
+    count: 685007
+    min: "12145370"
+    max: "12145389"
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'fct_attestation_correctness_by_validator_head'
+  expected:
+    max: "2025-07-15T08:38:11Z"
+    min: "2025-07-15T08:34:23Z"

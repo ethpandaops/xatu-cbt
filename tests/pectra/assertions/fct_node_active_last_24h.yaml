@@ -1,0 +1,18 @@
+- name: "Expected size"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      'fct_node_active_last_24h' FINAL
+  expected:
+    count: 0 # expected as the nodes are in the past
+- name: "Has been scheduled at least once"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      admin_cbt_scheduled FINAL
+    WHERE
+      table = 'fct_node_active_last_24h'
+  expected:
+    count: 1

@@ -1,0 +1,8 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      canonical_execution_balance_reads FINAL
+  expected:
+    count: 19778

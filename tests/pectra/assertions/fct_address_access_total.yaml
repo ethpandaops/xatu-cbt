@@ -1,0 +1,24 @@
+- name: "Expected bounds and size"
+  sql: |
+    SELECT
+      total_accounts,
+      expired_accounts,
+      total_contract_accounts,
+      expired_contracts
+    FROM
+      fct_address_access_total FINAL
+  expected:
+    total_accounts: 5824
+    expired_accounts: 0
+    total_contract_accounts: 10
+    expired_contracts: 0
+- name: "Has been scheduled at least once"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      admin_cbt_scheduled FINAL
+    WHERE
+      table = 'fct_address_access_total'
+  expected:
+    count: 1

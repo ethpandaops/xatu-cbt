@@ -1,0 +1,8 @@
+- name: "total count"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      libp2p_gossipsub_data_column_sidecar FINAL
+  expected:
+    count: 0

@@ -1,0 +1,34 @@
+- name: "Contains orphaned block"
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      fct_block_proposer FINAL
+    WHERE
+      status = 'orphaned'
+  expected:
+    count: 1
+- name: "Expected bounds and size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot) AS min,
+      MAX(slot) AS max
+    FROM
+      fct_block_proposer FINAL
+  expected:
+    count: 20
+    min: "12145370"
+    max: "12145389"
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'fct_block_proposer'
+  expected:
+    max: "2025-07-15T08:38:11Z"
+    min: "2025-07-15T08:34:23Z"
