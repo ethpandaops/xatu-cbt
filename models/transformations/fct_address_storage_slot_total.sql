@@ -27,12 +27,14 @@ block_range AS (
 total_storage_slots AS (
     SELECT COUNT(*) AS count
     FROM `{{ .self.database }}`.`int_address_storage_slot_last_access` FINAL
+    WHERE value != '0x0000000000000000000000000000000000000000000000000000000000000000'
 ),
 expired_storage_slots AS (
     -- Expired storage slots (not accessed in last 365 days)
     SELECT COUNT(*) AS count
     FROM `{{ .self.database }}`.`int_address_storage_slot_last_access` FINAL
     WHERE block_number < (SELECT min_block_number FROM block_range)
+        AND value != '0x0000000000000000000000000000000000000000000000000000000000000000'
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
