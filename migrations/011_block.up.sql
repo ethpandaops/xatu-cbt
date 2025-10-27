@@ -35,7 +35,7 @@ ORDER BY
     (`slot_start_date_time`, `block_root`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Block details for the unfinalized chain. Forks in the chain may cause multiple block roots for the same slot to be present';
 
@@ -91,7 +91,7 @@ ORDER BY
     (`slot_start_date_time`, `block_root`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Block details for the finalized chain';
 
@@ -140,7 +140,7 @@ ORDER BY
     (`slot_start_date_time`, `block_root`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Block details for the finalized chain including orphaned blocks';
 

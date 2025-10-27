@@ -16,7 +16,7 @@ ORDER BY
     (`slot_start_date_time`, `entity`, `status`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Attestation liveness aggregated by entity for the head chain. One or two rows per (slot, entity): one for attested, one for missed.';
 

@@ -30,7 +30,7 @@ ORDER BY
     (`slot_start_date_time`, `slot`, `meta_client_name`, `event_date_time`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Prepared block proposals showing what would have been built if the validator had been selected as proposer';
 

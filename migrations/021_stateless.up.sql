@@ -11,7 +11,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_top_100_by_contract_loca
 ORDER BY (`rank`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Top 100 contracts by storage slots';
 
@@ -35,7 +35,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_expired_top_100_by_contr
 ORDER BY (`rank`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Top 100 contracts by expired storage slots (not accessed in last 365 days)';
 
@@ -60,7 +60,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_access_total_local on cluster '{clust
 ORDER BY (`updated_date_time`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Address access totals and expiry statistics';
 
@@ -83,7 +83,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_total_local on cluster '
 ORDER BY (`updated_date_time`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Storage slot totals and expiry statistics';
 
@@ -107,7 +107,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_access_chunked_10000_local on cluster
 ORDER BY (`chunk_start_block_number`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Address access totals chunked by 10000 blocks';
 
@@ -131,7 +131,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_address_storage_slot_chunked_10000_local on c
 ORDER BY (`chunk_start_block_number`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Storage slot totals chunked by 10000 blocks';
 
