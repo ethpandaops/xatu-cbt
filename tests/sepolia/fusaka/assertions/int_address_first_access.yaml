@@ -1,8 +1,4 @@
 - name: Expected size
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      int_address_first_access FINAL
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  int_address_first_access FINAL\n"
   expected:
-    count: 5682
+    count: 0

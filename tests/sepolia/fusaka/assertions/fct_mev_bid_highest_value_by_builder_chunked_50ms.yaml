@@ -1,24 +1,13 @@
 - name: Expected bounds and size
-  sql: |
-    SELECT
-      COUNT(*) AS count,
-      MIN(slot) AS min,
-      MAX(slot) AS max
-    FROM
-      fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+  sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n\
+    \  fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL\n"
   expected:
     count: 58
     min: 8815935
     max: 8815949
 - name: Expected admin bounds
-  sql: |
-    SELECT
-      fromUnixTimestamp(MAX(position + interval)) AS max,
-      fromUnixTimestamp(MIN(position)) AS min
-    FROM
-      admin_cbt_incremental FINAL
-    WHERE
-      table = 'fct_mev_bid_highest_value_by_builder_chunked_50ms'
+  sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position))\
+    \ AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'fct_mev_bid_highest_value_by_builder_chunked_50ms'\n"
   expected:
-    max: '2025-10-27T00:29:48Z'
+    max: '"2025-10-27T00:29:48Z"'
     min: '2025-10-27T00:27:00Z'

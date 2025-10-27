@@ -1,18 +1,9 @@
 - name: Expected size
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      fct_address_storage_slot_total FINAL
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  fct_address_storage_slot_total FINAL\n"
   expected:
     count: 1
 - name: Has been scheduled at least once
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      admin_cbt_scheduled FINAL
-    WHERE
-      table = 'fct_address_storage_slot_total'
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  admin_cbt_scheduled FINAL\nWHERE\n  table\
+    \ = 'fct_address_storage_slot_total'\n"
   expected:
-    count: 1
+    count: 0

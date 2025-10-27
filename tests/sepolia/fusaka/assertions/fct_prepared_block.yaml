@@ -1,76 +1,43 @@
 - name: Expected bounds and size
-  sql: |
-    SELECT
-      COUNT(*) AS count,
-      MIN(slot) AS min,
-      MAX(slot) AS max
-    FROM
-      fct_prepared_block FINAL
+  sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n\
+    \  fct_prepared_block FINAL\n"
   expected:
     count: 607
     min: 8815933
     max: 8815953
 - name: Expected admin bounds
-  sql: |
-    SELECT
-      fromUnixTimestamp(MAX(position + interval)) AS max,
-      fromUnixTimestamp(MIN(position)) AS min
-    FROM
-      admin_cbt_incremental FINAL
-    WHERE
-      table = 'fct_prepared_block'
+  sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position))\
+    \ AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'fct_prepared_block'\n"
   expected:
-    max: '2025-10-27T00:30:36Z'
+    max: '"2025-10-27T00:30:36Z"'
     min: '2025-10-27T00:26:36Z'
 - name: Client diversity
-  sql: |
-    SELECT
-      COUNT(DISTINCT meta_client_name) AS unique_client_names,
-      COUNT(DISTINCT meta_client_implementation) AS unique_execution_clients,
-      COUNT(DISTINCT meta_consensus_implementation) AS unique_consensus_clients
-    FROM
-      fct_prepared_block FINAL
+  sql: "SELECT\n  COUNT(DISTINCT meta_client_name) AS unique_client_names,\n  COUNT(DISTINCT\
+    \ meta_client_implementation) AS unique_execution_clients,\n  COUNT(DISTINCT meta_consensus_implementation)\
+    \ AS unique_consensus_clients\nFROM\n  fct_prepared_block FINAL\n"
   expected:
     unique_client_names: 29
     unique_execution_clients: 1
     unique_consensus_clients: 6
 - name: Block values populated
-  sql: |
-    SELECT
-      COUNT(*) AS blocks_with_exec_data
-    FROM
-      fct_prepared_block FINAL
-    WHERE
-      execution_payload_block_number > 0
+  sql: "SELECT\n  COUNT(*) AS blocks_with_exec_data\nFROM\n  fct_prepared_block FINAL\n\
+    WHERE\n  execution_payload_block_number > 0\n"
   expected:
     blocks_with_exec_data: 607
 - name: Block version verification
-  sql: |
-    SELECT
-      COUNT(DISTINCT block_version) AS versions,
-      MIN(block_version) AS version_name
-    FROM
-      fct_prepared_block FINAL
+  sql: "SELECT\n  COUNT(DISTINCT block_version) AS versions,\n  MIN(block_version)\
+    \ AS version_name\nFROM\n  fct_prepared_block FINAL\n"
   expected:
     versions: 1
     version_name: fulu
 - name: Consensus client distribution
-  sql: |
-    SELECT
-      COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
-    FROM
-      fct_prepared_block FINAL
+  sql: "SELECT\n  COUNT(DISTINCT meta_consensus_implementation) AS total_implementations\n\
+    FROM\n  fct_prepared_block FINAL\n"
   expected:
     total_implementations: 6
 - name: Date time fields populated
-  sql: |
-    SELECT
-      COUNT(*) AS complete_records
-    FROM
-      fct_prepared_block FINAL
-    WHERE
-      slot_start_date_time IS NOT NULL
-      AND event_date_time IS NOT NULL
-      AND updated_date_time IS NOT NULL
+  sql: "SELECT\n  COUNT(*) AS complete_records\nFROM\n  fct_prepared_block FINAL\n\
+    WHERE\n  slot_start_date_time IS NOT NULL\n  AND event_date_time IS NOT NULL\n\
+    \  AND updated_date_time IS NOT NULL\n"
   expected:
     complete_records: 607
