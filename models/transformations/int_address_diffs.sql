@@ -23,44 +23,46 @@ WITH get_tx_success AS (
   SELECT 
     lower(transaction_hash) AS transaction_hash,
     transaction_index
-  FROM `{{ index .dep "{{external}}" "canonical_execution_transaction" "database" }}`.`canonical_execution_transaction` FINAL
+  FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }} FINAL
   WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-  AND success = true
+    AND success = true
+    AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 all_address_diffs AS (
     SELECT 
       lower(address) AS address, 
       block_number, 
       lower(transaction_hash) AS transaction_hash 
-    FROM `{{ index .dep "{{external}}" "canonical_execution_balance_diffs" "database" }}`.`canonical_execution_balance_diffs` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_execution_balance_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    
+      AND meta_network_name = '{{ .env.NETWORK }}'
     UNION ALL
     
     SELECT 
       lower(address) AS address, 
       block_number, 
       lower(transaction_hash) AS transaction_hash 
-    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_execution_storage_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    
+      AND meta_network_name = '{{ .env.NETWORK }}'
     UNION ALL
     
     SELECT 
       lower(address) AS address, 
       block_number, 
       lower(transaction_hash) AS transaction_hash 
-    FROM `{{ index .dep "{{external}}" "canonical_execution_nonce_diffs" "database" }}`.`canonical_execution_nonce_diffs` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_execution_nonce_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    
+      AND meta_network_name = '{{ .env.NETWORK }}'
     UNION ALL
     
     SELECT 
       lower(contract_address) AS address, 
       block_number, 
       lower(transaction_hash) AS transaction_hash 
-    FROM `{{ index .dep "{{external}}" "canonical_execution_contracts" "database" }}`.`canonical_execution_contracts` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 address_diffs AS (
   SELECT
