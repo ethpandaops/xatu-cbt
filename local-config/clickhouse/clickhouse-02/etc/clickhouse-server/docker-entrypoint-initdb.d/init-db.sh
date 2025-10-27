@@ -21,7 +21,7 @@ cat <<EOT >> /etc/clickhouse-server/users.d/default.xml
 EOT
 
 cat <<EOT >> /etc/clickhouse-server/config.d/users.xml
-<clickhouse>
+<clickhouse replace="true">
     <remote_servers>
         <cluster_2S_1R>
             <shard>
@@ -41,12 +41,6 @@ cat <<EOT >> /etc/clickhouse-server/config.d/users.xml
             <shard>
                 <replica>
                     <host>xatu-clickhouse-01</host>
-                    $([ -n "${CLICKHOUSE_PASSWORD}" ] && echo "<password replace=\"true\">${CLICKHOUSE_PASSWORD}</password>")
-                </replica>
-            </shard>
-            <shard>
-                <replica>
-                    <host>xatu-clickhouse-02</host>
                     $([ -n "${CLICKHOUSE_PASSWORD}" ] && echo "<password replace=\"true\">${CLICKHOUSE_PASSWORD}</password>")
                 </replica>
             </shard>
