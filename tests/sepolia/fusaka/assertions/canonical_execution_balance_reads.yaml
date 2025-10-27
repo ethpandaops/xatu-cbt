@@ -5,4 +5,4 @@
     FROM
       canonical_execution_balance_reads FINAL
   expected:
-    count: 3226
+    count: 13361

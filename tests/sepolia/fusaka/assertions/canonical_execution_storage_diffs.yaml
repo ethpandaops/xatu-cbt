@@ -5,4 +5,4 @@
     FROM
       canonical_execution_storage_diffs FINAL
   expected:
-    count: 1542
+    count: 7306

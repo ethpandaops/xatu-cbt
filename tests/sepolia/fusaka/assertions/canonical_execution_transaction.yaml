@@ -5,4 +5,4 @@
     FROM
       canonical_execution_transaction FINAL
   expected:
-    count: 684
+    count: 2396

@@ -1,4 +1,4 @@
-- name: "Expected size"
+- name: Expected size
   sql: |
     SELECT
       COUNT(*) AS count
@@ -6,7 +6,7 @@
       dim_node FINAL
   expected:
     count: 1973
-- name: "Has been scheduled at least once"
+- name: Has been scheduled at least once
   sql: |
     SELECT
       COUNT(*) AS count

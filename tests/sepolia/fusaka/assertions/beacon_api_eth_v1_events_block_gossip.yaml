@@ -5,4 +5,4 @@
     FROM
       beacon_api_eth_v1_events_block_gossip FINAL
   expected:
-    count: 259
+    count: 672

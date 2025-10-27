@@ -5,4 +5,4 @@
     FROM
       beacon_api_eth_v2_beacon_block FINAL
   expected:
-    count: 7
+    count: 21

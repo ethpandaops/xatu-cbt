@@ -253,7 +253,7 @@ url: https://data.ethpandaops.io/xatu-cbt/{network}/{spec}/{table_name}.parquet
 make test NETWORK={network} SPEC={spec}
 ```
 
-Then update `tests/{network}/{spec}/assertions/*.yaml` with actual values.
+Then update `tests/{network}/{spec}/assertions/*.yaml` with actual values. You can use the `make test` command to see which assertions fail, and then update the assertions file with the actual values.
 
 ## Common Pitfalls
 

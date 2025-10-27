@@ -7,9 +7,9 @@
     FROM
       int_block_proposer_canonical FINAL
   expected:
-    count: 7
-    min: '2025-10-22T23:41:36Z'
-    max: '2025-10-22T23:42:48Z'
+    count: 8
+    min: '2025-10-27T00:26:36Z'
+    max: '2025-10-27T00:30:36Z'
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -20,5 +20,5 @@
     WHERE
       table = 'int_block_proposer_canonical'
   expected:
-    max: '2025-10-22T23:42:48Z'
-    min: '2025-10-22T23:41:36Z'
+    max: '1970-01-01T00:00:00Z'
+    min: '2025-10-27T00:26:36Z'

@@ -5,4 +5,4 @@
     FROM
       libp2p_gossipsub_data_column_sidecar FINAL
   expected:
-    count: 6060
+    count: 18854

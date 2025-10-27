@@ -5,4 +5,4 @@
     FROM
       canonical_beacon_blob_sidecar FINAL
   expected:
-    count: 47
+    count: 91

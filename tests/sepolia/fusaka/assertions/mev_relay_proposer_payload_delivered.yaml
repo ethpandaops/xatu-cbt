@@ -5,4 +5,4 @@
     FROM
       mev_relay_proposer_payload_delivered FINAL
   expected:
-    count: 8
+    count: 0

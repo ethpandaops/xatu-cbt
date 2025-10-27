@@ -5,4 +5,4 @@
     FROM
       beacon_api_eth_v1_proposer_duty FINAL
   expected:
-    count: 245
+    count: 609

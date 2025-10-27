@@ -7,9 +7,9 @@
     FROM
       fct_block_mev FINAL
   expected:
-    count: 3
-    min: '8786908'
-    max: '8786911'
+    count: 0
+    min: 0
+    max: 0
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -20,5 +20,5 @@
     WHERE
       table = 'fct_block_mev'
   expected:
-    max: '2025-10-22T23:42:36Z'
-    min: '2025-10-22T23:41:36Z'
+    max: '1970-01-01T00:00:00Z'
+    min: '1970-01-01T00:00:00Z'

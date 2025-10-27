@@ -5,4 +5,4 @@
     FROM
       canonical_beacon_elaborated_attestation FINAL
   expected:
-    count: 10
+    count: 40

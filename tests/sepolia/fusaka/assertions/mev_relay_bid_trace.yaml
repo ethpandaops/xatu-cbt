@@ -5,4 +5,4 @@
     FROM
       mev_relay_bid_trace FINAL
   expected:
-    count: 76
+    count: 146

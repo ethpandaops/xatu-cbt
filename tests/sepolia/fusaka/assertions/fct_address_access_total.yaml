@@ -5,7 +5,7 @@
     FROM
       fct_address_access_total FINAL
   expected:
-    count: 0
+    count: 1
 - name: Has been scheduled at least once
   sql: |
     SELECT

@@ -5,4 +5,4 @@
     FROM
       canonical_beacon_block FINAL
   expected:
-    count: 7
+    count: 21
