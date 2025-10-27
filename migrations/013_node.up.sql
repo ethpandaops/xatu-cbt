@@ -12,7 +12,12 @@ CREATE TABLE `${NETWORK_NAME}`.dim_node_local on cluster '{cluster}' (
     `updated_date_time`
 )
 ORDER BY
-    (`validator_index`) COMMENT 'Node information for validators';
+    (`validator_index`)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
+COMMENT 'Node information for validators';
 
 CREATE TABLE `${NETWORK_NAME}`.dim_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.dim_node_local ENGINE = Distributed(
     '{cluster}',

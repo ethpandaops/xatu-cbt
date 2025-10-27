@@ -117,8 +117,9 @@ def fetch_ethseer_validators(ch_url, database_name):
     SELECT 
         `index` AS validator_index,
         entity AS source
-    FROM `{database_name}`.ethseer_validator_entity
+    FROM cluster('{{remote_cluster}}', default.ethseer_validator_entity)
     FINAL
+    WHERE meta_network_name = '{database_name}'
     FORMAT JSONCompact
     """
     

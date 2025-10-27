@@ -66,6 +66,6 @@ SELECT
     argMin(meta_client_geo_autonomous_system_organization, seen_slot_start_diff) AS meta_client_geo_autonomous_system_organization,
     argMin(meta_consensus_version, seen_slot_start_diff) AS meta_consensus_version,
     argMin(meta_consensus_implementation, seen_slot_start_diff) AS meta_consensus_implementation
-FROM `{{ index .dep "{{transformation}}" "int_attestation_first_seen" "database" }}`.`int_attestation_first_seen` FINAL
+FROM {{ index .dep "{{transformation}}" "int_attestation_first_seen" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 GROUP BY slot_start_date_time, meta_client_name

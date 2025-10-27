@@ -74,8 +74,8 @@ func (d *dataLoader) LoadTestData(ctx context.Context, dataDir string) error {
 		return nil
 	}
 
-	// Create ClickHouse connection
-	conn, err := clickhouse.Connect(cfg)
+	// Create ClickHouse connection using the data ingest port
+	conn, err := clickhouse.ConnectForDataIngest(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to connect to clickhouse: %w", err)
 	}

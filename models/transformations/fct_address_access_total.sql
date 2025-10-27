@@ -26,7 +26,8 @@ block_range AS (
 ),
 total_contracts AS (
     SELECT COUNT(DISTINCT contract_address) AS count
-    FROM `{{ .self.database }}`.`canonical_execution_contracts` FINAL
+    FROM cluster('{remote_cluster}', default.`canonical_execution_contracts`) FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
 ),
 total_accounts AS (
     SELECT COUNT(*) AS count
@@ -44,7 +45,8 @@ expired_contracts AS (
     FROM `{{ .self.database }}`.`int_address_last_access` AS a FINAL
     GLOBAL INNER JOIN (
     SELECT DISTINCT lower(contract_address) AS contract_address
-    FROM `{{ .self.database }}`.`canonical_execution_contracts` FINAL
+    FROM cluster('{remote_cluster}', default.`canonical_execution_contracts`) FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
     ) AS c
     ON a.address = c.contract_address
     WHERE a.block_number < (SELECT min_block_number FROM block_range)

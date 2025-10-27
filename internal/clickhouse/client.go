@@ -13,10 +13,19 @@ import (
 
 // Connect establishes a connection to ClickHouse using native protocol
 func Connect(cfg *config.Config) (driver.Conn, error) {
+	return connect(cfg, cfg.ClickhouseNativePort)
+}
+
+// ConnectForDataIngest establishes a connection to ClickHouse using the data ingest port
+func ConnectForDataIngest(cfg *config.Config) (driver.Conn, error) {
+	return connect(cfg, cfg.ClickhouseDataIngestPort)
+}
+
+func connect(cfg *config.Config, port int) (driver.Conn, error) {
 	// Use "default" database for initial connection
 	// We'll create the network database after connecting
 	options := &clickhouse.Options{
-		Addr: []string{fmt.Sprintf("%s:%d", cfg.ClickhouseHost, cfg.ClickhouseNativePort)},
+		Addr: []string{fmt.Sprintf("%s:%d", cfg.ClickhouseHost, port)},
 		Auth: clickhouse.Auth{
 			Database: "default",
 			Username: cfg.ClickhouseUsername,

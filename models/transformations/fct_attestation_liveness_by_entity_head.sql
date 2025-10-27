@@ -29,8 +29,8 @@ WITH attestations_with_entity AS (
             WHEN acv.block_root IS NULL THEN 'missed'
             ELSE 'attested'
         END AS status
-    FROM `{{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_head" "database" }}`.`fct_attestation_correctness_by_validator_head` AS acv FINAL
-    GLOBAL LEFT JOIN `{{ .self.database }}`.`dim_node` AS dn FINAL
+    FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_head" "helpers" "from" }} AS acv FINAL
+    GLOBAL LEFT JOIN {{ index .dep "{{transformation}}" "dim_node" "helpers" "from" }} AS dn FINAL
         ON acv.attesting_validator_index = dn.validator_index
     WHERE acv.slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 )

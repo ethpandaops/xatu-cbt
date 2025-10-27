@@ -25,8 +25,9 @@ WITH validator_indices AS (
         epoch,
         epoch_start_date_time,
         arrayJoin(validators) AS validator_index
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_committee" "database" }}`.`canonical_beacon_committee` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_beacon_committee" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+      AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
 -- Get the events for the attestations that were captured
@@ -45,8 +46,9 @@ attestations AS (
         target_root,
         arrayJoin(validators) AS attesting_validator_index,
         block_slot - slot AS inclusion_distance
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_elaborated_attestation" "database" }}`.`canonical_beacon_elaborated_attestation` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_beacon_elaborated_attestation" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+      AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
 -- Make sure we only have events for validators in the validator_indices table

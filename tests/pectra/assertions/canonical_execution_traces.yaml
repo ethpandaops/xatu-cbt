@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      canonical_execution_traces FINAL
+      cluster('{remote_cluster}', default.canonical_execution_traces) FINAL
   expected:
     count: 25444

@@ -25,37 +25,44 @@ SELECT
     address,
     max(block_number) AS block_number
 FROM (
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_nonce_reads" "database" }}`.`canonical_execution_nonce_reads` FINAL
+    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_nonce_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_nonce_diffs" "database" }}`.`canonical_execution_nonce_diffs` FINAL
+    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_nonce_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_balance_diffs" "database" }}`.`canonical_execution_balance_diffs` FINAL
+    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_balance_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_balance_reads" "database" }}`.`canonical_execution_balance_reads` FINAL
+    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_balance_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs` FINAL
+    SELECT lower(address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_storage_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(contract_address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads` FINAL
+    SELECT lower(contract_address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_storage_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
-    SELECT lower(contract_address) as address, block_number FROM `{{ index .dep "{{external}}" "canonical_execution_contracts" "database" }}`.`canonical_execution_contracts` FINAL
+    SELECT lower(contract_address) as address, block_number FROM {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
 )
 GROUP BY address;

@@ -28,8 +28,9 @@ WITH bids AS (
       timestamp_ms,
       relay_name,
       toInt64(timestamp_ms - (toUnixTimestamp(slot_start_date_time) * 1000)) AS bid_slot_start_diff
-  FROM `{{ index .dep "{{external}}" "mev_relay_bid_trace" "database" }}`.`mev_relay_bid_trace` FINAL
+  FROM {{ index .dep "{{external}}" "mev_relay_bid_trace" "helpers" "from" }} FINAL
   WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
     AND bid_slot_start_diff >= -12000
     AND bid_slot_start_diff < 12000
 ),
