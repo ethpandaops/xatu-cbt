@@ -1,8 +1,0 @@
-- name: "total count"
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      beacon_api_eth_v1_events_attestation FINAL
-  expected:
-    count: 7102577

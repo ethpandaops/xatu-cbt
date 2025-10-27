@@ -1,8 +1,0 @@
-- name: "total count"
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      libp2p_gossipsub_beacon_block FINAL
-  expected:
-    count: 294

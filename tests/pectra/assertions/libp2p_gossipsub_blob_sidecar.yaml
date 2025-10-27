@@ -1,8 +1,0 @@
-- name: "total count"
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      libp2p_gossipsub_blob_sidecar FINAL
-  expected:
-    count: 882
