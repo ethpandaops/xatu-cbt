@@ -29,7 +29,7 @@ pre_6780_destructs AS (
     block_number AS block_num,
     transaction_index,
     false AS is_alive
-  FROM `{{ index .dep "{{transformation}}" "int_pre_6780_accounts_destructs" "database" }}`.`int_pre_6780_accounts_destructs`
+  FROM {{ index .dep "{{transformation}}" "int_pre_6780_accounts_destructs" "helpers" "from" }} FINAL
   WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 ),
 -- Post-6780 destructs: dead only if is_same_tx = true
@@ -42,7 +42,7 @@ post_6780_destructs AS (
       WHEN is_same_tx = true THEN false  -- Account actually destroyed
       ELSE true                           -- Account not destroyed, just cleared
     END AS is_alive
-  FROM `{{ index .dep "{{transformation}}" "int_post_6780_accounts_destructs" "database" }}`.`int_post_6780_accounts_destructs`
+  FROM {{ index .dep "{{transformation}}" "int_post_6780_accounts_destructs" "helpers" "from" }} FINAL
   WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 ),
 -- Diffs: always mark as alive (use existing last_tx_index column)
@@ -52,7 +52,7 @@ diffs AS (
     block_number AS block_num,
     last_tx_index AS transaction_index,
     true AS is_alive
-  FROM `{{ index .dep "{{transformation}}" "int_address_diffs" "database" }}`.`int_address_diffs`
+  FROM {{ index .dep "{{transformation}}" "int_address_diffs" "helpers" "from" }} FINAL
   WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 ),
 -- Combine all events
