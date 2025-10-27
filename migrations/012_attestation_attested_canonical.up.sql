@@ -22,7 +22,7 @@ ORDER BY
     (`slot_start_date_time`, `block_root`, `attesting_validator_index`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Attested head of a block for the unfinalized chain.';
 
@@ -52,7 +52,7 @@ ORDER BY
     (`slot_start_date_time`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Attestation correctness of a block for the finalized chain';
 
@@ -89,7 +89,7 @@ ORDER BY
     (`slot_start_date_time`, `attesting_validator_index`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Attestation correctness by validator for the finalized chain';
 
@@ -120,7 +120,7 @@ ORDER BY
     (`slot_start_date_time`, `attesting_validator_index`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Attestation correctness by validator for the finalized chain';
 

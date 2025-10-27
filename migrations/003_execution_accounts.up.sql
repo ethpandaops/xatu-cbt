@@ -10,7 +10,7 @@ ORDER BY
     (address)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Table for accounts last access data';
 
@@ -34,7 +34,7 @@ ORDER BY
     (address)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Table for accounts first access data';
 
@@ -58,7 +58,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_address_storage_slot_last_access_local on clu
 ORDER BY (address, slot_key)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Table for storage last access data';
 
@@ -83,7 +83,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_address_storage_slot_first_access_local on cl
 ORDER BY (address, slot_key)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Table for storage first access data';
 

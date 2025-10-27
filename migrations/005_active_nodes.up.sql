@@ -25,7 +25,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_node_active_last_24h_local on cluster '{clust
     (`meta_client_name`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Active nodes for the network';
 

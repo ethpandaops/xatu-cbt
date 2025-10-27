@@ -16,7 +16,7 @@ ORDER BY
     (`slot_start_date_time`, `proposer_validator_index`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Block proposers for the unfinalized chain';
 
@@ -52,7 +52,7 @@ ORDER BY
     (`slot_start_date_time`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Block proposers for the finalized chain';
 
@@ -82,7 +82,7 @@ ORDER BY
     (`slot_start_date_time`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'Block proposers for the finalized chain including orphaned blocks';
 

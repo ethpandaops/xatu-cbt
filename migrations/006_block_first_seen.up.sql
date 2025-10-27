@@ -32,7 +32,7 @@ ORDER BY
     (`slot_start_date_time`, `block_root`, `meta_client_name`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only=false
 COMMENT 'When the block was first seen on the network by a sentry node';
 
