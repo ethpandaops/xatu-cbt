@@ -13,7 +13,8 @@ permissions:
 jobs:
   discover-tests:
     name: Discover test directories
-    runs-on: ubuntu-latest
+    runs-on:
+      - ubuntu-latest
     outputs:
       tests: ${{ steps.set-tests.outputs.tests }}
     steps:
@@ -33,7 +34,8 @@ jobs:
     name: Test ${{ matrix.test }}
     needs: discover-tests
     if: needs.discover-tests.outputs.tests != '[]'
-    runs-on: ubuntu-latest
+    runs-on:
+      - ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
