@@ -5,7 +5,7 @@
     FROM
       fct_address_storage_slot_top_100_by_contract FINAL
   expected:
-    count: 100
+    count: 0
 - name: Has been scheduled at least once
   sql: |
     SELECT

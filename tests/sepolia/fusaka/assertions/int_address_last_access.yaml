@@ -5,4 +5,4 @@
     FROM
       int_address_last_access FINAL
   expected:
-    count: 0
+    count: 5682

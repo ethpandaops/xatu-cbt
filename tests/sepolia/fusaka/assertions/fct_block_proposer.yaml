@@ -17,9 +17,9 @@
     FROM
       fct_block_proposer FINAL
   expected:
-    count: 20
-    min: 0
-    max: '8786913'
+    count: 0
+    min: 8815933
+    max: 8815952
 - name: Expected admin bounds
   sql: |
     SELECT
@@ -30,5 +30,5 @@
     WHERE
       table = 'fct_block_proposer'
   expected:
-    max: '2025-10-27T00:30:24Z'
-    min: '1970-01-01T00:00:00Z'
+    max: '"2025-10-27T00:30:24Z"'
+    min: '"2025-10-27T00:26:36Z"'

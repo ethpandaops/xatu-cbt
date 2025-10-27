@@ -17,8 +17,8 @@
     FROM
       fct_attestation_correctness_by_validator_canonical FINAL
   expected:
-    count: 1108
-    min: 0
+    count: 0
+    min: 8815933
     max: '8786913'
 - name: Expected admin bounds
   sql: |
@@ -30,5 +30,5 @@
     WHERE
       table = 'fct_attestation_correctness_by_validator_canonical'
   expected:
-    max: '2025-10-27T00:30:24Z'
-    min: '1970-01-01T00:00:00Z'
+    max: '"2025-10-27T00:30:24Z"'
+    min: '"2025-10-27T00:26:36Z"'

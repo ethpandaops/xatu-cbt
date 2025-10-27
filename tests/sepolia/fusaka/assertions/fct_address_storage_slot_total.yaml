@@ -15,4 +15,4 @@
     WHERE
       table = 'fct_address_storage_slot_total'
   expected:
-    count: 0
+    count: 1
