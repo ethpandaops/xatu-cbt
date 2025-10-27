@@ -71,7 +71,7 @@ func (d *dockerManager) ComposeUp(ctx context.Context, dir string, profiles []st
 		args = append(args, "--profile", profile)
 	}
 
-	args = append(args, "up", "-d")
+	args = append(args, "up", "-d", "--force-recreate")
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Dir = dir

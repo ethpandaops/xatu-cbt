@@ -45,12 +45,6 @@ cat <<EOT >> /etc/clickhouse-server/config.d/users.xml
                     $([ -n "${CLICKHOUSE_PASSWORD}" ] && echo "<password replace=\"true\">${CLICKHOUSE_PASSWORD}</password>")
                 </replica>
             </shard>
-            <shard>
-                <replica>
-                    <host>xatu-clickhouse-02</host>
-                    $([ -n "${CLICKHOUSE_PASSWORD}" ] && echo "<password replace=\"true\">${CLICKHOUSE_PASSWORD}</password>")
-                </replica>
-            </shard>
         </xatu_cluster>
 
     </remote_servers>
