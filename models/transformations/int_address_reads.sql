@@ -22,35 +22,37 @@ WITH get_tx_success AS (
   SELECT
     lower(transaction_hash) AS transaction_hash,
     transaction_index
-  FROM `{{ index .dep "{{external}}" "canonical_execution_transaction" "database" }}`.`canonical_execution_transaction` FINAL
+  FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }} FINAL
   WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-  AND success = true
+    AND success = true
+    AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 all_address_reads AS (
     SELECT 
       lower(address) AS address, 
       block_number, 
       lower(transaction_hash) AS transaction_hash 
-    FROM `{{ index .dep "{{external}}" "canonical_execution_balance_reads" "database" }}`.`canonical_execution_balance_reads` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_execution_balance_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    
+      AND meta_network_name = '{{ .env.NETWORK }}'
     UNION ALL
     
     SELECT 
       lower(contract_address) AS address, 
       block_number, 
       lower(transaction_hash) AS transaction_hash 
-    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_execution_storage_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    
+      AND meta_network_name = '{{ .env.NETWORK }}'
     UNION ALL
     
     SELECT 
       lower(address) AS address, 
       block_number, 
       lower(transaction_hash) AS transaction_hash 
-    FROM `{{ index .dep "{{external}}" "canonical_execution_nonce_reads" "database" }}`.`canonical_execution_nonce_reads` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_execution_nonce_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 address_reads AS (
   SELECT
