@@ -27,15 +27,7 @@ ORDER BY
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 4,
-    min_age_to_force_merge_on_partition_only=false,
-    max_replicated_merges_in_queue = 64,
-    max_replicated_merges_with_ttl_in_queue = 32
-    number_of_free_entries_in_pool_to_lower_max_size_of_merge = 8,
-    max_bytes_to_merge_at_min_space_in_pool = 512e6,
-    max_bytes_to_merge_at_max_space_in_pool = 8e9,
-    parts_to_delay_insert = 300,
-    parts_to_throw_insert = 600,
-    merge_max_block_size = 8192
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'MEV relay proposer payload delivered for a block on the unfinalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_mev_head_local ENGINE = Distributed(
@@ -81,15 +73,7 @@ ORDER BY
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 4,
-    min_age_to_force_merge_on_partition_only=false,
-    max_replicated_merges_in_queue = 64,
-    max_replicated_merges_with_ttl_in_queue = 32
-    number_of_free_entries_in_pool_to_lower_max_size_of_merge = 8,
-    max_bytes_to_merge_at_min_space_in_pool = 512e6,
-    max_bytes_to_merge_at_max_space_in_pool = 8e9,
-    parts_to_delay_insert = 300,
-    parts_to_throw_insert = 600,
-    merge_max_block_size = 8192
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'MEV relay proposer payload delivered for a block on the finalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.int_block_mev_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_mev_canonical_local ENGINE = Distributed(
@@ -129,15 +113,7 @@ ORDER BY
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 4,
-    min_age_to_force_merge_on_partition_only=false,
-    max_replicated_merges_in_queue = 64,
-    max_replicated_merges_with_ttl_in_queue = 32
-    number_of_free_entries_in_pool_to_lower_max_size_of_merge = 8,
-    max_bytes_to_merge_at_min_space_in_pool = 512e6,
-    max_bytes_to_merge_at_max_space_in_pool = 8e9,
-    parts_to_delay_insert = 300,
-    parts_to_throw_insert = 600,
-    merge_max_block_size = 8192
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'MEV relay proposer payload delivered for a block on the finalized chain including orphaned blocks';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_block_mev ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_mev_local ENGINE = Distributed(
@@ -176,15 +152,7 @@ ORDER BY
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 4,
-    min_age_to_force_merge_on_partition_only=false,
-    max_replicated_merges_in_queue = 64,
-    max_replicated_merges_with_ttl_in_queue = 32
-    number_of_free_entries_in_pool_to_lower_max_size_of_merge = 8,
-    max_bytes_to_merge_at_min_space_in_pool = 512e6,
-    max_bytes_to_merge_at_max_space_in_pool = 8e9,
-    parts_to_delay_insert = 300,
-    parts_to_throw_insert = 600,
-    merge_max_block_size = 8192
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'Highest value bid from each builder per slot broken down by 50ms chunks. Each block_hash appears in the chunk determined by its earliest bid timestamp. Only includes bids within -12000ms to +12000ms of slot start time';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms_local ENGINE = Distributed(
@@ -219,15 +187,7 @@ ORDER BY
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 4,
-    min_age_to_force_merge_on_partition_only=false,
-    max_replicated_merges_in_queue = 64,
-    max_replicated_merges_with_ttl_in_queue = 32
-    number_of_free_entries_in_pool_to_lower_max_size_of_merge = 8,
-    max_bytes_to_merge_at_min_space_in_pool = 512e6,
-    max_bytes_to_merge_at_max_space_in_pool = 8e9,
-    parts_to_delay_insert = 300,
-    parts_to_throw_insert = 600,
-    merge_max_block_size = 8192
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'Total number of MEV relay bids for a slot by relay';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local ENGINE = Distributed(

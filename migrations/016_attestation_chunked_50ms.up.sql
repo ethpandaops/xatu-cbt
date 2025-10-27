@@ -17,15 +17,7 @@ ORDER BY
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 4,
-    min_age_to_force_merge_on_partition_only=false,
-    max_replicated_merges_in_queue = 64,
-    max_replicated_merges_with_ttl_in_queue = 32
-    number_of_free_entries_in_pool_to_lower_max_size_of_merge = 8,
-    max_bytes_to_merge_at_min_space_in_pool = 512e6,
-    max_bytes_to_merge_at_max_space_in_pool = 8e9,
-    parts_to_delay_insert = 300,
-    parts_to_throw_insert = 600,
-    merge_max_block_size = 8192
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'Attestations first seen on the unfinalized chain broken down by 50ms chunks. Only includes attestations that were seen within 12000ms of the slot start time. There can be multiple block roots + chunk_slot_start_diff for the same slot, it most likely means votes for prior slot blocks';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms_local ENGINE = Distributed(
