@@ -8,7 +8,7 @@
       int_block_blob_count_canonical FINAL
   expected:
     count: 21
-    min: '1970-01-01T00:00:00Z'
+    min: '2025-10-27T00:26:36Z'
     max: '2025-10-27T00:30:36Z'
 - name: Expected admin bounds
   sql: |
@@ -21,4 +21,4 @@
       table = 'int_block_blob_count_canonical'
   expected:
     max: '2025-10-27T00:30:36Z'
-    min: '1970-01-01T00:00:00Z'
+    min: '2025-10-27T00:26:36Z'

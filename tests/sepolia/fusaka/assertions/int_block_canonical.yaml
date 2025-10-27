@@ -7,7 +7,7 @@
     FROM
       int_block_canonical FINAL
   expected:
-    count: 0
+    count: 21
     min: '2025-10-27T00:26:36Z'
     max: '2025-10-27T00:30:36Z'
 - name: Expected admin bounds
@@ -20,5 +20,5 @@
     WHERE
       table = 'int_block_canonical'
   expected:
-    max: '1970-01-01T00:00:00Z'
+    max: '2025-10-27T00:30:36Z'
     min: '2025-10-27T00:26:36Z'

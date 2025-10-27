@@ -9,7 +9,7 @@
   expected:
     count: 660
     min: '2025-10-27T00:26:36Z'
-    max: '1970-01-01T00:00:00Z'
+    max: '2025-10-27T00:30:24Z'
 - name: Expected admin bounds
   sql: |
     SELECT

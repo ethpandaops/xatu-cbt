@@ -15,4 +15,4 @@
     WHERE
       table = 'fct_address_access_chunked_10000'
   expected:
-    count: 0
+    count: 1
