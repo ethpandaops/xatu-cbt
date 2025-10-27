@@ -26,11 +26,12 @@ get_tx_success AS (
   SELECT
     lower(transaction_hash) AS transaction_hash,
     transaction_index
-  FROM `{{ index .dep "{{external}}" "canonical_execution_transaction" "database" }}`.`canonical_execution_transaction` FINAL
+  FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }} FINAL
   WHERE
     block_number >= 19426587  -- EIP-6780 block
     AND block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND success = true
+    AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 address_events AS (
   SELECT
@@ -39,11 +40,12 @@ address_events AS (
     lower(transaction_hash) AS transaction_hash,
     max(CASE WHEN relationship = 'create' THEN 1 ELSE 0 END) AS has_create,
     max(CASE WHEN relationship = 'suicide' THEN 1 ELSE 0 END) AS has_suicide
-  FROM `{{ index .dep "{{external}}" "canonical_execution_address_appearances" "database" }}`.`canonical_execution_address_appearances` FINAL
+  FROM {{ index .dep "{{external}}" "canonical_execution_address_appearances" "helpers" "from" }} FINAL
   WHERE
     block_number >= 19426587  -- EIP-6780 block
     AND block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND relationship IN ('create', 'suicide')
+    AND meta_network_name = '{{ .env.NETWORK }}'
   GROUP BY 
     address,
     block_number,

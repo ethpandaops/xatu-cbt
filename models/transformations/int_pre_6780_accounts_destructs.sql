@@ -25,11 +25,12 @@ get_tx_success AS (
   SELECT
     lower(transaction_hash) AS transaction_hash,
     transaction_index
-  FROM `{{ index .dep "{{external}}" "canonical_execution_transaction" "database" }}`.`canonical_execution_transaction` FINAL
+  FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }} FINAL
   WHERE
     block_number < 19426587  -- EIP-6780 block
     AND block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND success = true
+    AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 -- Before EIP161 was activated, there was a DoS attack by calling SELFDESTRUCT on contracts 
 -- and sending 0 ETH to newly seen addresses, which results in empty accounts created.
@@ -38,24 +39,25 @@ pre_eip161_empty_accounts AS (
     lower(action_to) AS address,
     block_number,
     lower(transaction_hash) AS tx_hash
-  FROM `{{ index .dep "{{external}}" "canonical_execution_traces" "database" }}`.`canonical_execution_traces` FINAL
+  FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }} FINAL
   WHERE
     action_type = 'suicide'
     AND block_number < 2675000  -- EIP-161 block
     AND block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND action_value = '0'
+    AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 self_destructs AS (
   SELECT
     lower(action_from) AS address,
     block_number,
     lower(transaction_hash) AS tx_hash
-  FROM `{{ index .dep "{{external}}" "canonical_execution_traces" "database" }}`.`canonical_execution_traces` FINAL
+  FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }} FINAL
   WHERE
     action_type = 'suicide'
     AND block_number < 19426587  -- EIP-6780 block
     AND block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-  
+    AND meta_network_name = '{{ .env.NETWORK }}'
   UNION ALL
   
   SELECT address, block_number, tx_hash 
