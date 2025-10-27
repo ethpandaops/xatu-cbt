@@ -27,7 +27,7 @@ WITH canonical AS (
         block_root,
         proposer_validator_index,
         proposer_pubkey
-    FROM `{{ index .dep "{{transformation}}" "int_block_proposer_canonical" "database" }}`.`int_block_proposer_canonical` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_block_proposer_canonical" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -35,7 +35,7 @@ head_blocks AS (
     SELECT DISTINCT
         slot,
         block_root
-    FROM `{{ index .dep "{{transformation}}" "fct_block_proposer_head" "database" }}`.`fct_block_proposer_head` FINAL
+    FROM {{ index .dep "{{transformation}}" "fct_block_proposer_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND block_root IS NOT NULL
 )

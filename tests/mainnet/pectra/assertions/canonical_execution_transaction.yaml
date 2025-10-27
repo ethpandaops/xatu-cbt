@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      canonical_execution_transaction FINAL
+      cluster('{remote_cluster}', default.canonical_execution_transaction) FINAL
   expected:
     count: 4139

@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      canonical_execution_address_appearances FINAL
+      cluster('{remote_cluster}', default.canonical_execution_address_appearances) FINAL
   expected:
     count: 74445

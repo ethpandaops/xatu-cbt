@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      beacon_api_eth_v1_events_block FINAL
+      cluster('{remote_cluster}', default.beacon_api_eth_v1_events_block) FINAL
   expected:
     count: 2205

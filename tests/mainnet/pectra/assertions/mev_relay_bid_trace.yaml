@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      mev_relay_bid_trace FINAL
+      cluster('{remote_cluster}', default.mev_relay_bid_trace) FINAL
   expected:
     count: 329038

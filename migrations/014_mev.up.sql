@@ -24,7 +24,10 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_head_local on cluster '{cluster}' (
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
     (`slot_start_date_time`, `block_root`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'MEV relay proposer payload delivered for a block on the unfinalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_mev_head_local ENGINE = Distributed(
@@ -67,7 +70,10 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_mev_canonical_local on cluster '{cluste
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
     (`slot_start_date_time`, `block_root`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'MEV relay proposer payload delivered for a block on the finalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.int_block_mev_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_mev_canonical_local ENGINE = Distributed(
@@ -104,7 +110,10 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_local on cluster '{cluster}' (
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
     (`slot_start_date_time`, `block_root`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'MEV relay proposer payload delivered for a block on the finalized chain including orphaned blocks';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_block_mev ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_mev_local ENGINE = Distributed(
@@ -140,7 +149,10 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
     (`slot_start_date_time`, `chunk_slot_start_diff`, `builder_pubkey`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'Highest value bid from each builder per slot broken down by 50ms chunks. Each block_hash appears in the chunk determined by its earliest bid timestamp. Only includes bids within -12000ms to +12000ms of slot start time';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms_local ENGINE = Distributed(
@@ -172,7 +184,10 @@ CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local on cluster '{clu
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
     (`slot_start_date_time`, `relay_name`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'Total number of MEV relay bids for a slot by relay';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local ENGINE = Distributed(

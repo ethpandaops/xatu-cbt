@@ -25,6 +25,7 @@ SELECT
     epoch_start_date_time,
     block_root,
     max(blob_index) + 1 AS blob_count
-FROM `{{ index .dep "{{external}}" "canonical_beacon_blob_sidecar" "database" }}`.`canonical_beacon_blob_sidecar` FINAL
+FROM {{ index .dep "{{external}}" "canonical_beacon_blob_sidecar" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
 GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root;

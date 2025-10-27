@@ -12,7 +12,12 @@ CREATE TABLE `${NETWORK_NAME}`.int_beacon_committee_head_local on cluster '{clus
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `committee_index`) COMMENT 'Beacon committee head for the unfinalized chain';
+    (`slot_start_date_time`, `committee_index`)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
+COMMENT 'Beacon committee head for the unfinalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.int_beacon_committee_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_beacon_committee_head_local ENGINE = Distributed(
     '{cluster}',

@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      canonical_execution_balance_reads FINAL
+      cluster('{remote_cluster}', default.canonical_execution_balance_reads) FINAL
   expected:
     count: 19778

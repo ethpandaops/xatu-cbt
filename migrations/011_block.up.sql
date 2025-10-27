@@ -33,7 +33,10 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_head_local on cluster '{cluster}' (
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
     (`slot_start_date_time`, `block_root`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'Block details for the unfinalized chain. Forks in the chain may cause multiple block roots for the same slot to be present';
 
 
@@ -86,7 +89,10 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_canonical_local on cluster '{cluster}' 
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
     (`slot_start_date_time`, `block_root`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'Block details for the finalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.int_block_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_canonical_local ENGINE = Distributed(
@@ -132,7 +138,10 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_local on cluster '{cluster}' (
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
     (`slot_start_date_time`, `block_root`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild',
+    min_age_to_force_merge_seconds = 4,
+    min_age_to_force_merge_on_partition_only=false
 COMMENT 'Block details for the finalized chain including orphaned blocks';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_block ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_local ENGINE = Distributed(

@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      canonical_execution_storage_diffs FINAL
+      cluster('{remote_cluster}', default.canonical_execution_storage_diffs) FINAL
   expected:
     count: 12011

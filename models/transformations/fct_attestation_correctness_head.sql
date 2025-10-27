@@ -25,7 +25,7 @@ WITH slots AS (
         epoch,
         epoch_start_date_time,
         block_root
-    FROM `{{ index .dep "{{transformation}}" "fct_block_proposer_head" "database" }}`.`fct_block_proposer_head` FINAL
+    FROM {{ index .dep "{{transformation}}" "fct_block_proposer_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -37,7 +37,7 @@ votes_per_block_root AS (
         epoch_start_date_time,
         block_root,
         COUNT(*) as votes_head
-    FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_head" "database" }}`.`int_attestation_attested_head` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_attestation_attested_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
 ),
@@ -49,7 +49,7 @@ total_votes_per_slot AS (
         epoch,
         epoch_start_date_time,
         COUNT(*) as total_votes
-    FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_head" "database" }}`.`int_attestation_attested_head` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_attestation_attested_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time
 ),
@@ -61,7 +61,7 @@ votes_max AS (
         epoch,
         epoch_start_date_time,
         COUNT(DISTINCT arrayJoin(validators)) as votes_max
-    FROM `{{ index .dep "{{transformation}}" "int_beacon_committee_head" "database" }}`.`int_beacon_committee_head` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_beacon_committee_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time
 ),

@@ -28,8 +28,9 @@ WITH proposer_duties AS (
         epoch_start_date_time,
         proposer_validator_index,
         proposer_pubkey
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "database" }}`.`beacon_api_eth_v1_proposer_duty` FINAL
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
 block_gossip AS (
@@ -39,8 +40,9 @@ block_gossip AS (
         epoch,
         epoch_start_date_time,
         block as block_root
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "database" }}`.`beacon_api_eth_v1_events_block_gossip` FINAL
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
 block_events AS (
@@ -50,8 +52,9 @@ block_events AS (
         epoch,
         epoch_start_date_time,
         block as block_root
-    FROM `{{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "database" }}`.`beacon_api_eth_v1_events_block` FINAL
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
 gossipsub_blocks AS (
@@ -62,8 +65,9 @@ gossipsub_blocks AS (
         epoch_start_date_time,
         block as block_root,
         proposer_index
-    FROM `{{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "database" }}`.`libp2p_gossipsub_beacon_block` FINAL
+    FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
 all_blocks AS (

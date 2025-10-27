@@ -26,7 +26,7 @@ WITH blocks AS (
         epoch_start_date_time,
         block_root,
         `status`
-    FROM `{{ index .dep "{{transformation}}" "fct_block_proposer" "database" }}`.`fct_block_proposer` FINAL
+    FROM {{ index .dep "{{transformation}}" "fct_block_proposer" "helpers" "from" }} FINAL
     WHERE slot_start_date_time >= fromUnixTimestamp({{ .bounds.start }}) - INTERVAL '768 SECOND' -- look back 64 slots to get what block was attested to
         AND slot_start_date_time <= fromUnixTimestamp({{ .bounds.end }})
 ),
@@ -40,7 +40,7 @@ attestations AS (
         block_root,
         attesting_validator_index,
         inclusion_distance
-    FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "database" }}`.`int_attestation_attested_canonical` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
@@ -51,8 +51,9 @@ duties AS (
         epoch,
         epoch_start_date_time,
         arrayJoin(validators) AS attesting_validator_index
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_committee" "database" }}`.`canonical_beacon_committee` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_beacon_committee" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+      AND meta_network_name = '{{ .env.NETWORK }}'
 )
 
 -- We need a row for every `duties` row

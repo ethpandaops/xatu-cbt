@@ -24,8 +24,9 @@ WITH all_storage_data AS (
         transaction_index,
         internal_index,
         to_value AS value
-    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_diffs" "database" }}`.`canonical_execution_storage_diffs` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_execution_storage_diffs" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
     
@@ -36,8 +37,9 @@ WITH all_storage_data AS (
         transaction_index,
         internal_index,
         value
-    FROM `{{ index .dep "{{external}}" "canonical_execution_storage_reads" "database" }}`.`canonical_execution_storage_reads` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_execution_storage_reads" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
 )
 SELECT
     address,

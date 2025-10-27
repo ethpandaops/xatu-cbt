@@ -37,7 +37,7 @@ votes_per_block_root AS (
         epoch_start_date_time,
         block_root,
         COUNT(*) as votes_head
-    FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "database" }}`.`int_attestation_attested_canonical` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
 ),
@@ -49,7 +49,7 @@ total_votes_per_slot AS (
         epoch,
         epoch_start_date_time,
         COUNT(*) as total_votes
-    FROM `{{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "database" }}`.`int_attestation_attested_canonical` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time
 ),
@@ -61,8 +61,9 @@ votes_max AS (
         epoch,
         epoch_start_date_time,
         COUNT(DISTINCT arrayJoin(validators)) as votes_max
-    FROM `{{ index .dep "{{external}}" "canonical_beacon_committee" "database" }}`.`canonical_beacon_committee` FINAL
+    FROM {{ index .dep "{{external}}" "canonical_beacon_committee" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+      AND meta_network_name = '{{ .env.NETWORK }}'
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time
 ),
 

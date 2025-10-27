@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      canonical_execution_storage_reads FINAL
+      cluster('{remote_cluster}', default.canonical_execution_storage_reads) FINAL
   expected:
     count: 35145
