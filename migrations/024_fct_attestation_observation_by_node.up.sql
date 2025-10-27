@@ -1,11 +1,12 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_by_node_local on cluster '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_attestation_observation_by_node_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
     `epoch` UInt32 COMMENT 'The epoch number containing the slot' CODEC(DoubleDelta, ZSTD(1)),
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
-    `attestation_count` UInt32 COMMENT 'Number of attestations first seen by this node in this slot' CODEC(DoubleDelta, ZSTD(1)),
-    `avg_seen_slot_start_diff` Float32 COMMENT 'Average time from slot start to see attestations (milliseconds)' CODEC(ZSTD(1)),
+    `attestation_count` UInt32 COMMENT 'Number of attestations observed by this node in this slot' CODEC(DoubleDelta, ZSTD(1)),
+    `avg_seen_slot_start_diff` UInt32 COMMENT 'Average time from slot start to see attestations (milliseconds, rounded)' CODEC(DoubleDelta, ZSTD(1)),
+    `median_seen_slot_start_diff` UInt32 COMMENT 'Median time from slot start to see attestations (milliseconds, rounded)' CODEC(DoubleDelta, ZSTD(1)),
     `min_seen_slot_start_diff` UInt32 COMMENT 'Minimum time from slot start to see an attestation (milliseconds)' CODEC(DoubleDelta, ZSTD(1)),
     `max_seen_slot_start_diff` UInt32 COMMENT 'Maximum time from slot start to see an attestation (milliseconds)' CODEC(DoubleDelta, ZSTD(1)),
     `block_root` String COMMENT 'Representative beacon block root (from most common attestation target)' CODEC(ZSTD(1)),
@@ -33,16 +34,16 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_by_node_local on clust
 ORDER BY
     (`slot_start_date_time`, `meta_client_name`)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Attestations first seen by contributor nodes, aggregated per slot per node for performance';
+COMMENT 'Attestation observations by contributor nodes, aggregated per slot per node for performance';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_by_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_first_seen_by_node_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_attestation_observation_by_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_observation_by_node_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_attestation_first_seen_by_node_local,
+    fct_attestation_observation_by_node_local,
     cityHash64(`slot_start_date_time`, `meta_client_name`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_by_node_local ON CLUSTER '{cluster}'
+ALTER TABLE `${NETWORK_NAME}`.fct_attestation_observation_by_node_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

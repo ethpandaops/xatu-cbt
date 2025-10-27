@@ -5,7 +5,7 @@
       MIN(slot_start_date_time) AS min,
       MAX(slot_start_date_time) AS max
     FROM
-      fct_attestation_first_seen_by_node FINAL
+      fct_attestation_observation_by_node FINAL
   expected:
     count: 558
     min: "2025-07-15T08:34:23Z"
@@ -19,7 +19,7 @@
     FROM
       admin_cbt_incremental FINAL
     WHERE
-      table = 'fct_attestation_first_seen_by_node'
+      table = 'fct_attestation_observation_by_node'
   expected:
     max: "2025-07-15T08:38:11Z"
     min: "2025-07-15T08:34:23Z"
@@ -32,7 +32,7 @@
     ),
     fact_count AS (
       SELECT SUM(attestation_count) AS total
-      FROM fct_attestation_first_seen_by_node FINAL
+      FROM fct_attestation_observation_by_node FINAL
     )
     SELECT
       s.total AS source_total,
@@ -52,21 +52,25 @@
       MAX(attestation_count) <= 100000 AS max_count_reasonable,
       MIN(min_seen_slot_start_diff) >= 0 AS fastest_valid,
       MAX(max_seen_slot_start_diff) <= 1000000 AS slowest_reasonable,
+      MIN(median_seen_slot_start_diff) >= 0 AS median_valid,
+      MAX(median_seen_slot_start_diff) <= 1000000 AS median_reasonable,
       COUNT(DISTINCT meta_client_name) >= 10 AS has_nodes
     FROM
-      fct_attestation_first_seen_by_node FINAL
+      fct_attestation_observation_by_node FINAL
   expected:
     min_count: 1
     has_attestations: 1
     max_count_reasonable: 1
     fastest_valid: 1
     slowest_reasonable: 1
+    median_valid: 1
+    median_reasonable: 1
     has_nodes: 1
 
 - name: "No rows with zero attestations"
   sql: |
     SELECT COUNT(*) AS invalid_rows
-    FROM fct_attestation_first_seen_by_node FINAL
+    FROM fct_attestation_observation_by_node FINAL
     WHERE attestation_count = 0
   expected:
     invalid_rows: 0
@@ -75,6 +79,6 @@
   sql: |
     SELECT
       MIN(avg_seen_slot_start_diff) >= 0 AS min_avg_valid
-    FROM fct_attestation_first_seen_by_node FINAL
+    FROM fct_attestation_observation_by_node FINAL
   expected:
     min_avg_valid: 1

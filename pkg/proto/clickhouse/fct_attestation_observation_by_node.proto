@@ -9,9 +9,9 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Attestations first seen by contributor nodes, aggregated per slot per node for performance
+// Attestation observations by contributor nodes, aggregated per slot per node for performance
 
-message FctAttestationFirstSeenByNode {
+message FctAttestationObservationByNode {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // The slot number
@@ -22,52 +22,54 @@ message FctAttestationFirstSeenByNode {
   uint32 epoch = 14;
   // The wall clock time when the epoch started
   uint32 epoch_start_date_time = 15;
-  // Number of attestations first seen by this node in this slot
+  // Number of attestations observed by this node in this slot
   uint32 attestation_count = 16;
-  // Average time from slot start to see attestations (milliseconds)
-  float avg_seen_slot_start_diff = 17;
+  // Average time from slot start to see attestations (milliseconds, rounded)
+  uint32 avg_seen_slot_start_diff = 17;
+  // Median time from slot start to see attestations (milliseconds, rounded)
+  uint32 median_seen_slot_start_diff = 18;
   // Minimum time from slot start to see an attestation (milliseconds)
-  uint32 min_seen_slot_start_diff = 18;
+  uint32 min_seen_slot_start_diff = 19;
   // Maximum time from slot start to see an attestation (milliseconds)
-  uint32 max_seen_slot_start_diff = 19;
+  uint32 max_seen_slot_start_diff = 20;
   // Representative beacon block root (from most common attestation target)
-  string block_root = 20;
+  string block_root = 21;
   // Username of the node
-  string username = 21;
+  string username = 22;
   // ID of the node
-  string node_id = 22;
+  string node_id = 23;
   // Classification of the node, e.g. "individual", "corporate", "internal" (aka ethPandaOps) or "unclassified"
-  string classification = 23;
+  string classification = 24;
   // Name of the client
-  string meta_client_name = 24;
+  string meta_client_name = 25;
   // Version of the client
-  string meta_client_version = 25;
+  string meta_client_version = 26;
   // Implementation of the client
-  string meta_client_implementation = 26;
+  string meta_client_implementation = 27;
   // City of the client
-  string meta_client_geo_city = 27;
+  string meta_client_geo_city = 28;
   // Country of the client
-  string meta_client_geo_country = 28;
+  string meta_client_geo_country = 29;
   // Country code of the client
-  string meta_client_geo_country_code = 29;
+  string meta_client_geo_country_code = 30;
   // Continent code of the client
-  string meta_client_geo_continent_code = 30;
+  string meta_client_geo_continent_code = 31;
   // Longitude of the client
-  google.protobuf.DoubleValue meta_client_geo_longitude = 31;
+  google.protobuf.DoubleValue meta_client_geo_longitude = 32;
   // Latitude of the client
-  google.protobuf.DoubleValue meta_client_geo_latitude = 32;
+  google.protobuf.DoubleValue meta_client_geo_latitude = 33;
   // Autonomous system number of the client
-  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 33;
+  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 34;
   // Autonomous system organization of the client
-  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 34;
+  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 35;
   // Ethereum consensus client version
-  string meta_consensus_version = 35;
+  string meta_consensus_version = 36;
   // Ethereum consensus client implementation
-  string meta_consensus_implementation = 36;
+  string meta_consensus_implementation = 37;
 }
 
-// Request for listing fct_attestation_first_seen_by_node records
-message ListFctAttestationFirstSeenByNodeRequest {
+// Request for listing fct_attestation_observation_by_node records
+message ListFctAttestationObservationByNodeRequest {
   // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: slot)
   UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
 
@@ -82,92 +84,94 @@ message ListFctAttestationFirstSeenByNodeRequest {
   UInt32Filter epoch = 5 [(google.api.field_behavior) = OPTIONAL];
   // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
   UInt32Filter epoch_start_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by attestation_count - Number of attestations first seen by this node in this slot (optional)
+  // Filter by attestation_count - Number of attestations observed by this node in this slot (optional)
   UInt32Filter attestation_count = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by avg_seen_slot_start_diff - Average time from slot start to see attestations (milliseconds) (optional)
-  google.protobuf.FloatValue avg_seen_slot_start_diff = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_seen_slot_start_diff - Average time from slot start to see attestations (milliseconds, rounded) (optional)
+  UInt32Filter avg_seen_slot_start_diff = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by median_seen_slot_start_diff - Median time from slot start to see attestations (milliseconds, rounded) (optional)
+  UInt32Filter median_seen_slot_start_diff = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by min_seen_slot_start_diff - Minimum time from slot start to see an attestation (milliseconds) (optional)
-  UInt32Filter min_seen_slot_start_diff = 9 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter min_seen_slot_start_diff = 10 [(google.api.field_behavior) = OPTIONAL];
   // Filter by max_seen_slot_start_diff - Maximum time from slot start to see an attestation (milliseconds) (optional)
-  UInt32Filter max_seen_slot_start_diff = 10 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter max_seen_slot_start_diff = 11 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_root - Representative beacon block root (from most common attestation target) (optional)
-  StringFilter block_root = 11 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter block_root = 12 [(google.api.field_behavior) = OPTIONAL];
   // Filter by username - Username of the node (optional)
-  StringFilter username = 12 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter username = 13 [(google.api.field_behavior) = OPTIONAL];
   // Filter by node_id - ID of the node (optional)
-  StringFilter node_id = 13 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter node_id = 14 [(google.api.field_behavior) = OPTIONAL];
   // Filter by classification - Classification of the node, e.g. "individual", "corporate", "internal" (aka ethPandaOps) or "unclassified" (optional)
-  StringFilter classification = 14 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter classification = 15 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_version - Version of the client (optional)
-  StringFilter meta_client_version = 15 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter meta_client_version = 16 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_implementation - Implementation of the client (optional)
-  StringFilter meta_client_implementation = 16 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter meta_client_implementation = 17 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_geo_city - City of the client (optional)
-  StringFilter meta_client_geo_city = 17 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter meta_client_geo_city = 18 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_geo_country - Country of the client (optional)
-  StringFilter meta_client_geo_country = 18 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter meta_client_geo_country = 19 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_geo_country_code - Country code of the client (optional)
-  StringFilter meta_client_geo_country_code = 19 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter meta_client_geo_country_code = 20 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_geo_continent_code - Continent code of the client (optional)
-  StringFilter meta_client_geo_continent_code = 20 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter meta_client_geo_continent_code = 21 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_geo_longitude - Longitude of the client (optional)
-  google.protobuf.DoubleValue meta_client_geo_longitude = 21 [(google.api.field_behavior) = OPTIONAL];
+  google.protobuf.DoubleValue meta_client_geo_longitude = 22 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_geo_latitude - Latitude of the client (optional)
-  google.protobuf.DoubleValue meta_client_geo_latitude = 22 [(google.api.field_behavior) = OPTIONAL];
+  google.protobuf.DoubleValue meta_client_geo_latitude = 23 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_geo_autonomous_system_number - Autonomous system number of the client (optional)
-  NullableUInt32Filter meta_client_geo_autonomous_system_number = 23 [(google.api.field_behavior) = OPTIONAL];
+  NullableUInt32Filter meta_client_geo_autonomous_system_number = 24 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_client_geo_autonomous_system_organization - Autonomous system organization of the client (optional)
-  NullableStringFilter meta_client_geo_autonomous_system_organization = 24 [(google.api.field_behavior) = OPTIONAL];
+  NullableStringFilter meta_client_geo_autonomous_system_organization = 25 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_consensus_version - Ethereum consensus client version (optional)
-  StringFilter meta_consensus_version = 25 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter meta_consensus_version = 26 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_consensus_implementation - Ethereum consensus client implementation (optional)
-  StringFilter meta_consensus_implementation = 26 [(google.api.field_behavior) = OPTIONAL];
+  StringFilter meta_consensus_implementation = 27 [(google.api.field_behavior) = OPTIONAL];
 
-  // The maximum number of fct_attestation_first_seen_by_node to return.
+  // The maximum number of fct_attestation_observation_by_node to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 27 [(google.api.field_behavior) = OPTIONAL];
-  // A page token, received from a previous `ListFctAttestationFirstSeenByNode` call.
+  int32 page_size = 28 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctAttestationObservationByNode` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 28 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 29 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 29 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 30 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Response for listing fct_attestation_first_seen_by_node records
-message ListFctAttestationFirstSeenByNodeResponse {
-  // The list of fct_attestation_first_seen_by_node.
-  repeated FctAttestationFirstSeenByNode fct_attestation_first_seen_by_node = 1;
+// Response for listing fct_attestation_observation_by_node records
+message ListFctAttestationObservationByNodeResponse {
+  // The list of fct_attestation_observation_by_node.
+  repeated FctAttestationObservationByNode fct_attestation_observation_by_node = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// Request for getting a single fct_attestation_first_seen_by_node record by primary key
-message GetFctAttestationFirstSeenByNodeRequest {
+// Request for getting a single fct_attestation_observation_by_node record by primary key
+message GetFctAttestationObservationByNodeRequest {
   // The wall clock time when the slot started
   uint32 slot_start_date_time = 1; // Primary key (required)
 }
 
-// Response for getting a single fct_attestation_first_seen_by_node record
-message GetFctAttestationFirstSeenByNodeResponse {
-  FctAttestationFirstSeenByNode item = 1;
+// Response for getting a single fct_attestation_observation_by_node record
+message GetFctAttestationObservationByNodeResponse {
+  FctAttestationObservationByNode item = 1;
 }
 
-// Query fct_attestation_first_seen_by_node data
-service FctAttestationFirstSeenByNodeService {
+// Query fct_attestation_observation_by_node data
+service FctAttestationObservationByNodeService {
   // List records | Retrieve paginated results with optional filtering
-  rpc List(ListFctAttestationFirstSeenByNodeRequest) returns (ListFctAttestationFirstSeenByNodeResponse) {
+  rpc List(ListFctAttestationObservationByNodeRequest) returns (ListFctAttestationObservationByNodeResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_attestation_first_seen_by_node"
+      get: "/api/v1/fct_attestation_observation_by_node"
     };
   }
   // Get record | Retrieve a single record by slot_start_date_time
-  rpc Get(GetFctAttestationFirstSeenByNodeRequest) returns (GetFctAttestationFirstSeenByNodeResponse) {
+  rpc Get(GetFctAttestationObservationByNodeRequest) returns (GetFctAttestationObservationByNodeResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_attestation_first_seen_by_node/{slot_start_date_time}"
+      get: "/api/v1/fct_attestation_observation_by_node/{slot_start_date_time}"
     };
   }
 }

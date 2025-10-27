@@ -1,5 +1,5 @@
 ---
-table: fct_attestation_first_seen_by_node
+table: fct_attestation_observation_by_node
 type: incremental
 interval:
   type: slot
@@ -22,7 +22,8 @@ SELECT
     argMin(epoch, seen_slot_start_diff) AS epoch,
     argMin(epoch_start_date_time, seen_slot_start_diff) AS epoch_start_date_time,
     COUNT(*) as attestation_count,
-    AVG(seen_slot_start_diff) as avg_seen_slot_start_diff,
+    round(AVG(seen_slot_start_diff)) as avg_seen_slot_start_diff,
+    round(quantile(0.5)(seen_slot_start_diff)) as median_seen_slot_start_diff,
     MIN(seen_slot_start_diff) as min_seen_slot_start_diff,
     MAX(seen_slot_start_diff) as max_seen_slot_start_diff,
     argMax(block_root, seen_slot_start_diff) AS block_root,
