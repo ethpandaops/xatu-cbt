@@ -28,9 +28,15 @@ block_range AS (
         AND execution_payload_block_number IS NOT NULL
         AND slot_start_date_time >= (SELECT slot_start_date_time - INTERVAL 365 DAY FROM latest_block)
 ),
+accounts_alive AS (
+  SELECT address
+  FROM `{{ .self.database }}`.`int_accounts_alive` FINAL
+  WHERE is_alive = true
+),
 total_contracts AS (
-    SELECT COUNT(DISTINCT contract_address) AS count
+    SELECT COUNT(DISTINCT c.contract_address) AS count
     FROM {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} FINAL
+    GLOBAL INNER JOIN accounts_alive a ON lower(c.contract_address) = a.address
     WHERE meta_network_name = '{{ .env.NETWORK }}'
 ),
 total_accounts AS (
@@ -40,17 +46,19 @@ total_accounts AS (
 expired_accounts AS (
     -- Expired accounts (not accessed in last 365 days)
     SELECT COUNT(*) AS count
-    FROM {{ index .dep "{{transformation}}" "int_address_last_access" "helpers" "from" }} FINAL
-    WHERE block_number < (SELECT min_block_number FROM block_range)
+    FROM {{ index .dep "{{transformation}}" "int_address_last_access" "helpers" "from" }} al FINAL
+    GLOBAL INNER JOIN accounts_alive a ON a.address = al.address
+    WHERE al.block_number < (SELECT min_block_number FROM block_range)
 ),
 expired_contracts AS (
     -- Expired contracts (not accessed in last 365 days)
     SELECT COUNT(*) AS count
     FROM {{ index .dep "{{transformation}}" "int_address_last_access" "helpers" "from" }} AS a FINAL
     GLOBAL INNER JOIN (
-    SELECT DISTINCT lower(contract_address) AS contract_address
-    FROM {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} FINAL
-    WHERE meta_network_name = '{{ .env.NETWORK }}'
+        SELECT DISTINCT lower(c.contract_address) AS contract_address
+        FROM {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} c FINAL
+        GLOBAL INNER JOIN accounts_alive a ON lower(c.contract_address) = a.address
+        WHERE meta_network_name = '{{ .env.NETWORK }}'
     ) AS c
     ON a.address = c.contract_address
     WHERE a.block_number < (SELECT min_block_number FROM block_range)

@@ -18,6 +18,7 @@ SELECT
   address AS contract_address,
   count(*) AS total_storage_slots
 FROM {{ index .dep "{{transformation}}" "int_address_storage_slot_last_access" "helpers" "from" }} FINAL
+WHERE value != '0x0000000000000000000000000000000000000000000000000000000000000000'
 GROUP BY address
 ORDER BY rank ASC
 LIMIT 100;
