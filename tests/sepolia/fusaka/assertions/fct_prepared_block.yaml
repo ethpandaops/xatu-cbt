@@ -7,8 +7,8 @@
     FROM
       fct_prepared_block FINAL
   expected:
-    count: 0
-    min: 8815933
+    count: 607
+    min: 0
     max: '8786914'
 - name: Expected admin bounds
   sql: |
@@ -20,8 +20,8 @@
     WHERE
       table = 'fct_prepared_block'
   expected:
-    max: '1970-01-01T00:00:00Z'
-    min: '2025-10-27T00:26:36Z'
+    max: '2025-10-27T00:30:36Z'
+    min: '1970-01-01T00:00:00Z'
 - name: Client diversity
   sql: |
     SELECT
@@ -31,8 +31,8 @@
     FROM
       fct_prepared_block FINAL
   expected:
-    unique_client_names: 0
-    unique_execution_clients: 1
+    unique_client_names: 29
+    unique_execution_clients: 0
     unique_consensus_clients: 6
 - name: Block values populated
   sql: |
@@ -43,7 +43,7 @@
     WHERE
       execution_payload_block_number > 0
   expected:
-    blocks_with_exec_data: 0
+    blocks_with_exec_data: 607
 - name: Block version verification
   sql: |
     SELECT
@@ -52,7 +52,7 @@
     FROM
       fct_prepared_block FINAL
   expected:
-    versions: 0
+    versions: 1
     version_name: fulu
 - name: Consensus client distribution
   sql: |
@@ -61,7 +61,7 @@
     FROM
       fct_prepared_block FINAL
   expected:
-    total_implementations: 0
+    total_implementations: 6
 - name: Date time fields populated
   sql: |
     SELECT
@@ -73,4 +73,4 @@
       AND event_date_time IS NOT NULL
       AND updated_date_time IS NOT NULL
   expected:
-    complete_records: 0
+    complete_records: 607

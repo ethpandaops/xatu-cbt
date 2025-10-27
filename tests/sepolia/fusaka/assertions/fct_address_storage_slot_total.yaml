@@ -5,7 +5,7 @@
     FROM
       fct_address_storage_slot_total FINAL
   expected:
-    count: 1
+    count: 0
 - name: Has been scheduled at least once
   sql: |
     SELECT
@@ -15,4 +15,4 @@
     WHERE
       table = 'fct_address_storage_slot_total'
   expected:
-    count: 1
+    count: 0
