@@ -36,15 +36,8 @@
         </cluster_2S_1R>
         <xatu_cluster>
             <shard>
-                <internal_replication>true</internal_replication>
                 <replica>
                     <host>xatu-clickhouse-01</host>
-                    <port>9000</port>
-                    <user>default</user>
-                    <password>supersecret</password>
-                </replica>
-                <replica>
-                    <host>xatu-clickhouse-02</host>
                     <port>9000</port>
                     <user>default</user>
                     <password>supersecret</password>
