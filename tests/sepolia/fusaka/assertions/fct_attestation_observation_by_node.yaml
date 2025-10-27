@@ -1,0 +1,34 @@
+- name: Expected bounds and size
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot_start_date_time) AS min,
+      MAX(slot_start_date_time) AS max
+    FROM
+      fct_attestation_observation_by_node FINAL
+  expected:
+    count: 0
+    min: '2025-10-27T00:26:36Z'
+    max: '2025-10-27T00:30:24Z'
+- name: Expected admin bounds
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'fct_attestation_observation_by_node'
+  expected:
+    max: '1970-01-01T00:00:00Z'
+    min: '2025-10-27T00:26:36Z'
+- name: Expected number of scheduled runs
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      admin_cbt_scheduled FINAL
+    WHERE
+      table = 'fct_attestation_observation_by_node'
+  expected:
+    count: 0
