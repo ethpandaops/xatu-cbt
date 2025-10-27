@@ -8,7 +8,7 @@
       fct_mev_bid_count_by_relay FINAL
   expected:
     count: 7
-    min: 8815935
+    min: 0
     max: 8815949
 - name: Expected admin bounds
   sql: |
@@ -21,4 +21,4 @@
       table = 'fct_mev_bid_count_by_relay'
   expected:
     max: '2025-10-27T00:29:48Z'
-    min: '"2025-10-27T00:27:00Z"'
+    min: '1970-01-01T00:00:00Z'

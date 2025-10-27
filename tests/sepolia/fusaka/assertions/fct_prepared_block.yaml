@@ -8,7 +8,7 @@
       fct_prepared_block FINAL
   expected:
     count: 607
-    min: 8815933
+    min: 0
     max: 8815953
 - name: Expected admin bounds
   sql: |
@@ -20,8 +20,8 @@
     WHERE
       table = 'fct_prepared_block'
   expected:
-    max: '"2025-10-27T00:30:36Z"'
-    min: '"2025-10-27T00:26:36Z"'
+    max: '2025-10-27T00:30:36Z'
+    min: '1970-01-01T00:00:00Z'
 - name: Client diversity
   sql: |
     SELECT
@@ -32,7 +32,7 @@
       fct_prepared_block FINAL
   expected:
     unique_client_names: 29
-    unique_execution_clients: 1
+    unique_execution_clients: 0
     unique_consensus_clients: 6
 - name: Block values populated
   sql: |

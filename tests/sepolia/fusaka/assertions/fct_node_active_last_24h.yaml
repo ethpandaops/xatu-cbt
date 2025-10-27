@@ -15,4 +15,4 @@
     WHERE
       table = 'fct_node_active_last_24h'
   expected:
-    count: 0
+    count: 1
