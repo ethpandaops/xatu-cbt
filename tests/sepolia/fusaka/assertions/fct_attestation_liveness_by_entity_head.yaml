@@ -7,7 +7,7 @@
     FROM
       fct_attestation_liveness_by_entity_head FINAL
   expected:
-    count: 0
+    count: 347
     min: '2025-10-27T00:26:36Z'
     max: '2025-10-27T00:30:24Z'
 - name: Expected admin bounds
