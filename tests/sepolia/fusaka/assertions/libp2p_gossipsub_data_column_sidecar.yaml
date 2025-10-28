@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      libp2p_gossipsub_data_column_sidecar FINAL
+      cluster('{remote_cluster}', default.libp2p_gossipsub_data_column_sidecar)
   expected:
     count: 18854

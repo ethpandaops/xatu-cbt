@@ -22,13 +22,13 @@
 - name: Block version verification
   sql: "SELECT\n  COUNT(DISTINCT block_version) AS versions,\n  MIN(block_version) AS version_name\nFROM\n  fct_prepared_block FINAL\n"
   expected:
-    versions: 0
+    versions: 1
     version_name: fulu
 - name: Consensus client distribution
   sql: "SELECT\n  COUNT(DISTINCT meta_consensus_implementation) AS total_implementations\nFROM\n  fct_prepared_block FINAL\n"
   expected:
-    total_implementations: 0
+    total_implementations: 6
 - name: Date time fields populated
   sql: "SELECT\n  COUNT(*) AS complete_records\nFROM\n  fct_prepared_block FINAL\nWHERE\n  slot_start_date_time IS NOT NULL\n  AND event_date_time IS NOT NULL\n  AND updated_date_time IS NOT NULL\n"
   expected:
-    complete_records: 0
+    complete_records: 607

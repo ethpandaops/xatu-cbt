@@ -7,5 +7,5 @@
 - name: Expected admin bounds
   sql: "SELECT\n  MAX(position + interval) AS max,\n  MIN(position) AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'int_address_storage_slot_last_access'\n"
   expected:
-    max: 0
+    max: 9497923
     min: 9497903

@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      libp2p_gossipsub_blob_sidecar FINAL
+      cluster('{remote_cluster}', default.libp2p_gossipsub_blob_sidecar)
   expected:
     count: 0

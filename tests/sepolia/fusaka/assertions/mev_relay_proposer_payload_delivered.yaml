@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      mev_relay_proposer_payload_delivered FINAL
+      cluster('{remote_cluster}', default.mev_relay_proposer_payload_delivered)
   expected:
     count: 0

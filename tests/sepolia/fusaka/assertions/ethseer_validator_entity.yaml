@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      ethseer_validator_entity FINAL
+      cluster('{remote_cluster}', default.ethseer_validator_entity)
   expected:
     count: 1973

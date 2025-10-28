@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      canonical_beacon_block FINAL
+      cluster('{remote_cluster}', default.canonical_beacon_block)
   expected:
     count: 21

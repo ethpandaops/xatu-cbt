@@ -3,6 +3,6 @@
     SELECT
       COUNT(*) AS count
     FROM
-      libp2p_gossipsub_beacon_attestation FINAL
+      cluster('{remote_cluster}', default.libp2p_gossipsub_beacon_attestation)
   expected:
     count: 4142
