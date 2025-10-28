@@ -70,6 +70,19 @@ func (s *service) Stop() error {
 func (s *service) RunTest(ctx context.Context, testName string, skipSetup bool) error {
 	s.log.WithField("test", testName).Info("Running test")
 
+	// Extract network from testName (format: network/spec)
+	network, err := s.extractNetworkFromTestName(testName)
+	if err != nil {
+		return fmt.Errorf("failed to extract network from test name: %w", err)
+	}
+
+	// Set NETWORK environment variable for all downstream operations
+	// This ensures config, docker-compose, and CBT all use the correct network
+	s.log.WithField("network", network).Info("Setting NETWORK environment variable from test path")
+	if err := os.Setenv("NETWORK", network); err != nil {
+		return fmt.Errorf("failed to set NETWORK environment variable: %w", err)
+	}
+
 	// Resolve test paths from network/spec format (e.g., mainnet/pectra, sepolia/fusaka)
 	testDir, dataDir, assertionsDir := s.resolveTestPaths(testName)
 
@@ -131,6 +144,16 @@ func (s *service) Teardown(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// extractNetworkFromTestName extracts the network name from the test name
+// Format: network/spec (e.g., "mainnet/pectra" -> "mainnet", "sepolia/fusaka" -> "sepolia")
+func (s *service) extractNetworkFromTestName(testName string) (string, error) {
+	parts := strings.Split(testName, "/")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("test name must be in network/spec format (e.g., mainnet/pectra), got: %s", testName)
+	}
+	return parts[0], nil
 }
 
 // resolveTestPaths resolves test directory structure

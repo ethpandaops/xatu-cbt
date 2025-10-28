@@ -6,7 +6,7 @@
 - name: Expected size
   sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n  fct_attestation_correctness_by_validator_head FINAL\n"
   expected:
-    count: 0
+    count: 1108
     min: 0
     max: 8815952
 - name: Expected admin bounds

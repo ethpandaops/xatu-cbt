@@ -5,7 +5,7 @@
 - name: Expected bounds and size
   sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n  fct_block_blob_count FINAL\n"
   expected:
-    count: 0
+    count: 40
     min: 0
     max: 8815952
 - name: Expected admin bounds

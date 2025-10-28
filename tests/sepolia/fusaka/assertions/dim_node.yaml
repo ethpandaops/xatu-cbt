@@ -5,7 +5,7 @@
     FROM
       dim_node FINAL
   expected:
-    count: 0
+    count: 1973
 - name: Has been scheduled at least once
   sql: |
     SELECT
