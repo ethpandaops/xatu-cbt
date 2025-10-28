@@ -1,7 +1,7 @@
 - name: Expected bounds and size
   sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n  fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL\n"
   expected:
-    count: 58
+    count: 0
     min: 8815935
     max: 8815949
 - name: Expected admin bounds

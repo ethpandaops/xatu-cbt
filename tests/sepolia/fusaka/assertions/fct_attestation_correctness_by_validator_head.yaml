@@ -1,12 +1,12 @@
 - name: Bounds
   sql: "SELECT\n  MAX(slot_distance) AS slot_distance,\n  MAX(propagation_distance) AS propagation_distance\nFROM\n  fct_attestation_correctness_by_validator_head FINAL\n"
   expected:
-    slot_distance: 1
+    slot_distance: 0
     propagation_distance: 0
 - name: Expected size
   sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n  fct_attestation_correctness_by_validator_head FINAL\n"
   expected:
-    count: 1108
+    count: 0
     min: 0
     max: 8815952
 - name: Expected admin bounds

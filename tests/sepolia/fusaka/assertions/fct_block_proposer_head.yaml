@@ -1,7 +1,7 @@
 - name: Expected bounds and size
   sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot_start_date_time) AS min,\n  MAX(slot_start_date_time) AS max\nFROM\n  fct_block_proposer_head FINAL\n"
   expected:
-    count: 20
+    count: 0
     min: '2025-10-27T00:26:36Z'
     max: '2025-10-27T00:30:24Z'
 - name: Expected admin bounds

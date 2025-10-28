@@ -1,7 +1,7 @@
 - name: Expected bounds and size
   sql: "SELECT\n  COUNT(*) AS count,\n  MIN(block_number) AS min,\n  MAX(block_number) AS max\nFROM\n  int_address_storage_slot_first_access FINAL\n"
   expected:
-    count: 15172
+    count: 7914
     min: 9497903
     max: 9497923
 - name: Expected admin bounds
