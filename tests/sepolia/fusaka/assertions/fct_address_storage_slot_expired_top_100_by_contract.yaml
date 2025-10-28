@@ -1,10 +1,8 @@
 - name: Expected size
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  fct_address_storage_slot_expired_top_100_by_contract\
-    \ FINAL\n"
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  fct_address_storage_slot_expired_top_100_by_contract FINAL\n"
   expected:
     count: 0
 - name: Has been scheduled at least once
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  admin_cbt_scheduled FINAL\nWHERE\n  table\
-    \ = 'fct_address_storage_slot_expired_top_100_by_contract'\n"
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  admin_cbt_scheduled FINAL\nWHERE\n  table = 'fct_address_storage_slot_expired_top_100_by_contract'\n"
   expected:
-    count: 0
+    count: 1
