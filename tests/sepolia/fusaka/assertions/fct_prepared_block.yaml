@@ -1,24 +1,24 @@
 - name: Expected bounds and size
   sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n  fct_prepared_block FINAL\n"
   expected:
-    count: 0
+    count: 607
     min: 8815933
     max: 8815953
 - name: Expected admin bounds
   sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position)) AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'fct_prepared_block'\n"
   expected:
-    max: '1970-01-01T00:00:00Z'
+    max: '2025-10-27T00:30:36Z'
     min: '2025-10-27T00:26:36Z'
 - name: Client diversity
   sql: "SELECT\n  COUNT(DISTINCT meta_client_name) AS unique_client_names,\n  COUNT(DISTINCT meta_client_implementation) AS unique_execution_clients,\n  COUNT(DISTINCT meta_consensus_implementation) AS unique_consensus_clients\nFROM\n  fct_prepared_block FINAL\n"
   expected:
-    unique_client_names: 0
+    unique_client_names: 29
     unique_execution_clients: 1
     unique_consensus_clients: 6
 - name: Block values populated
   sql: "SELECT\n  COUNT(*) AS blocks_with_exec_data\nFROM\n  fct_prepared_block FINAL\nWHERE\n  execution_payload_block_number > 0\n"
   expected:
-    blocks_with_exec_data: 0
+    blocks_with_exec_data: 607
 - name: Block version verification
   sql: "SELECT\n  COUNT(DISTINCT block_version) AS versions,\n  MIN(block_version) AS version_name\nFROM\n  fct_prepared_block FINAL\n"
   expected:
