@@ -15,10 +15,11 @@ import (
 
 // Common errors
 var (
-	ErrTestDirNotExist     = errors.New("test directory does not exist")
-	ErrCBTEngineNotRunning = errors.New("CBT engine is not running")
-	ErrAssertionTimeout    = errors.New("timeout reached while running assertions")
-	ErrNetworkNotSet       = errors.New("NETWORK environment variable is not set")
+	ErrTestDirNotExist      = errors.New("test directory does not exist")
+	ErrCBTEngineNotRunning  = errors.New("CBT engine is not running")
+	ErrAssertionTimeout     = errors.New("timeout reached while running assertions")
+	ErrNetworkNotSet        = errors.New("NETWORK environment variable is not set")
+	ErrInvalidTestNameFormat = errors.New("test name must be in network/spec format (e.g., mainnet/pectra)")
 )
 
 // Service provides test orchestration functionality
@@ -151,7 +152,7 @@ func (s *service) Teardown(ctx context.Context) error {
 func (s *service) extractNetworkFromTestName(testName string) (string, error) {
 	parts := strings.Split(testName, "/")
 	if len(parts) < 2 {
-		return "", fmt.Errorf("test name must be in network/spec format (e.g., mainnet/pectra), got: %s", testName)
+		return "", fmt.Errorf("%w, got: %s", ErrInvalidTestNameFormat, testName)
 	}
 	return parts[0], nil
 }
