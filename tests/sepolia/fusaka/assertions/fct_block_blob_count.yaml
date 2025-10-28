@@ -1,18 +1,15 @@
 - name: Contains orphaned block
-  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  fct_block_blob_count FINAL\nWHERE\n \
-    \ status = 'orphaned'\n"
+  sql: "SELECT\n  COUNT(*) AS count\nFROM\n  fct_block_blob_count FINAL\nWHERE\n  status = 'orphaned'\n"
   expected:
     count: 20
 - name: Expected bounds and size
-  sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n\
-    \  fct_block_blob_count FINAL\n"
+  sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n  fct_block_blob_count FINAL\n"
   expected:
     count: 40
     min: 0
     max: 8815952
 - name: Expected admin bounds
-  sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position))\
-    \ AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'fct_block_blob_count'\n"
+  sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position)) AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'fct_block_blob_count'\n"
   expected:
     max: '2025-10-27T00:30:24Z'
     min: '1970-01-01T00:00:00Z'
