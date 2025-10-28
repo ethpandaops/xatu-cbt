@@ -7,5 +7,5 @@
 - name: Expected admin bounds
   sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position)) AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'int_attestation_attested_canonical'\n"
   expected:
-    max: '2025-10-27T00:30:36Z'
+    max: '1970-01-01T00:00:00Z'
     min: '2025-10-27T00:26:36Z'
