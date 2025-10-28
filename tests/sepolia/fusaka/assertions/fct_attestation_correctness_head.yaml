@@ -9,5 +9,5 @@
   sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position))\
     \ AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'fct_attestation_correctness_head'\n"
   expected:
-    max"'2025-10-27T00:30:24Z'
-    min"'1970-01-01T00:00:00Z'
+    max: '2025-10-27T00:30:24Z'
+    min: '1970-01-01T00:00:00Z'
