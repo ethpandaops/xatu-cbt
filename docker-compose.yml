@@ -177,7 +177,7 @@ services:
     command: ["--config", "/config/${NETWORK}.yaml"]
     restart: unless-stopped
     ports:
-      - "8080:8080"  # Frontend port
+      - "${CBT_FRONTEND_PORT:-8081}:8080"  # Frontend port
     networks:
       - xatu_xatu-net
     deploy:

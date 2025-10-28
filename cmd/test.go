@@ -53,7 +53,7 @@ Examples:
 			TestsDir:      "tests",
 			XatuRepoURL:   "https://github.com/ethpandaops/xatu",
 			XatuRef:       "", // Will use XATU_REF env var or default to master
-			Timeout:       10 * time.Minute,
+			Timeout:       30 * time.Minute, // Increased from 10min to allow CBT transformations to complete
 			CheckInterval: 10 * time.Second,
 		}
 
