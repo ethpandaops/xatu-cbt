@@ -126,3 +126,4 @@ make proto
 - Before committing changes to transformation models
 
 The generated protobuf files in `pkg/proto/clickhouse/` are used by CBT for type safety and schema validation. Each transformation model must have corresponding `.proto`, `.go`, and `.pb.go` files.
+
