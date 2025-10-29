@@ -10,7 +10,7 @@ import "clickhouse/annotations.proto";
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Attestation liveness aggregated by entity and epoch for the head chain. Reduces slot-level data by ~32x.
 
-message FctAttestationLivenessByEntityHeadEpoch {
+message FctAttestationLivenessByEntityEpochHead {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // The epoch number
@@ -25,8 +25,8 @@ message FctAttestationLivenessByEntityHeadEpoch {
   uint64 attestation_count = 16;
 }
 
-// Request for listing fct_attestation_liveness_by_entity_head_epoch records
-message ListFctAttestationLivenessByEntityHeadEpochRequest {
+// Request for listing fct_attestation_liveness_by_entity_epoch_head records
+message ListFctAttestationLivenessByEntityEpochHeadRequest {
   // Filter by epoch_start_date_time - The wall clock time when the epoch started (PRIMARY KEY - required unless using alternatives: epoch)
   UInt32Filter epoch_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
 
@@ -43,11 +43,11 @@ message ListFctAttestationLivenessByEntityHeadEpochRequest {
   // Filter by attestation_count - Sum of attestations for this epoch/entity/status combination (optional)
   UInt64Filter attestation_count = 6 [(google.api.field_behavior) = OPTIONAL];
 
-  // The maximum number of fct_attestation_liveness_by_entity_head_epoch to return.
+  // The maximum number of fct_attestation_liveness_by_entity_epoch_head to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 7 [(google.api.field_behavior) = OPTIONAL];
-  // A page token, received from a previous `ListFctAttestationLivenessByEntityHeadEpoch` call.
+  // A page token, received from a previous `ListFctAttestationLivenessByEntityEpochHead` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 8 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
@@ -56,38 +56,38 @@ message ListFctAttestationLivenessByEntityHeadEpochRequest {
   string order_by = 9 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Response for listing fct_attestation_liveness_by_entity_head_epoch records
-message ListFctAttestationLivenessByEntityHeadEpochResponse {
-  // The list of fct_attestation_liveness_by_entity_head_epoch.
-  repeated FctAttestationLivenessByEntityHeadEpoch fct_attestation_liveness_by_entity_head_epoch = 1;
+// Response for listing fct_attestation_liveness_by_entity_epoch_head records
+message ListFctAttestationLivenessByEntityEpochHeadResponse {
+  // The list of fct_attestation_liveness_by_entity_epoch_head.
+  repeated FctAttestationLivenessByEntityEpochHead fct_attestation_liveness_by_entity_epoch_head = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// Request for getting a single fct_attestation_liveness_by_entity_head_epoch record by primary key
-message GetFctAttestationLivenessByEntityHeadEpochRequest {
+// Request for getting a single fct_attestation_liveness_by_entity_epoch_head record by primary key
+message GetFctAttestationLivenessByEntityEpochHeadRequest {
   // The wall clock time when the epoch started
   uint32 epoch_start_date_time = 1; // Primary key (required)
 }
 
-// Response for getting a single fct_attestation_liveness_by_entity_head_epoch record
-message GetFctAttestationLivenessByEntityHeadEpochResponse {
-  FctAttestationLivenessByEntityHeadEpoch item = 1;
+// Response for getting a single fct_attestation_liveness_by_entity_epoch_head record
+message GetFctAttestationLivenessByEntityEpochHeadResponse {
+  FctAttestationLivenessByEntityEpochHead item = 1;
 }
 
-// Query fct_attestation_liveness_by_entity_head_epoch data
-service FctAttestationLivenessByEntityHeadEpochService {
+// Query fct_attestation_liveness_by_entity_epoch_head data
+service FctAttestationLivenessByEntityEpochHeadService {
   // List records | Retrieve paginated results with optional filtering
-  rpc List(ListFctAttestationLivenessByEntityHeadEpochRequest) returns (ListFctAttestationLivenessByEntityHeadEpochResponse) {
+  rpc List(ListFctAttestationLivenessByEntityEpochHeadRequest) returns (ListFctAttestationLivenessByEntityEpochHeadResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_attestation_liveness_by_entity_head_epoch"
+      get: "/api/v1/fct_attestation_liveness_by_entity_epoch_head"
     };
   }
   // Get record | Retrieve a single record by epoch_start_date_time
-  rpc Get(GetFctAttestationLivenessByEntityHeadEpochRequest) returns (GetFctAttestationLivenessByEntityHeadEpochResponse) {
+  rpc Get(GetFctAttestationLivenessByEntityEpochHeadRequest) returns (GetFctAttestationLivenessByEntityEpochHeadResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_attestation_liveness_by_entity_head_epoch/{epoch_start_date_time}"
+      get: "/api/v1/fct_attestation_liveness_by_entity_epoch_head/{epoch_start_date_time}"
     };
   }
 }

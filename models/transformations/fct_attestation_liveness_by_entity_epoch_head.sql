@@ -1,5 +1,5 @@
 ---
-table: fct_attestation_liveness_by_entity_head_epoch
+table: fct_attestation_liveness_by_entity_epoch_head
 type: incremental
 interval:
   type: slot

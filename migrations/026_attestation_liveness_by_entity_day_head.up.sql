@@ -1,5 +1,5 @@
 -- Create local table with ReplicatedReplacingMergeTree
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_day_head_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `date` Date COMMENT 'The calendar date' CODEC(DoubleDelta, ZSTD(1)),
     `entity` String COMMENT 'The entity (staking provider) associated with the validators, unknown if not mapped' CODEC(ZSTD(1)),
@@ -19,9 +19,9 @@ SETTINGS
 COMMENT 'Attestation liveness aggregated by entity and day for the head chain. Reduces epoch-level data by ~225x.';
 
 -- Create distributed table wrapper
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_daily ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_daily_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_day_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_day_head_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_attestation_liveness_by_entity_head_daily_local,
+    fct_attestation_liveness_by_entity_day_head_local,
     cityHash64(`date`)
 );

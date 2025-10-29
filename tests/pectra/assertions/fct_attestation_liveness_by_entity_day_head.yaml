@@ -1,15 +1,15 @@
-- name: "Epoch table has data"
+- name: "Day table has data"
   sql: |
     SELECT
       COUNT(*) AS row_count
-    FROM fct_attestation_liveness_by_entity_head_epoch FINAL
+    FROM fct_attestation_liveness_by_entity_day_head FINAL
   expected:
     row_count: 0
 
 - name: "No NULL entities"
   sql: |
     SELECT count(*) as null_count
-    FROM fct_attestation_liveness_by_entity_head_epoch FINAL
+    FROM fct_attestation_liveness_by_entity_day_head FINAL
     WHERE entity IS NULL OR entity = ''
   expected:
     null_count: 0

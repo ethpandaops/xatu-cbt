@@ -1,5 +1,5 @@
 -- Create local table with ReplicatedReplacingMergeTree
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_epoch_local ON CLUSTER '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_epoch_head_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `epoch` UInt32 COMMENT 'The epoch number' CODEC(DoubleDelta, ZSTD(1)),
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
@@ -20,15 +20,15 @@ SETTINGS
 COMMENT 'Attestation liveness aggregated by entity and epoch for the head chain. Reduces slot-level data by ~32x.';
 
 -- Create distributed table wrapper
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_epoch ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_epoch_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_epoch_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_epoch_head_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_attestation_liveness_by_entity_head_epoch_local,
+    fct_attestation_liveness_by_entity_epoch_head_local,
     cityHash64(`epoch`)
 );
 
 -- Add secondary projection for efficient epoch number queries
-ALTER TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_epoch_local ON CLUSTER '{cluster}'
+ALTER TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_epoch_head_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_epoch
 (
     SELECT *

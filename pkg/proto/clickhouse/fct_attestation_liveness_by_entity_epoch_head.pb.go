@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.2
 // 	protoc        (unknown)
-// source: fct_attestation_liveness_by_entity_head_epoch.proto
+// source: fct_attestation_liveness_by_entity_epoch_head.proto
 
 package clickhouse
 
@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type FctAttestationLivenessByEntityHeadEpoch struct {
+type FctAttestationLivenessByEntityEpochHead struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -41,23 +41,23 @@ type FctAttestationLivenessByEntityHeadEpoch struct {
 	AttestationCount uint64 `protobuf:"varint,16,opt,name=attestation_count,json=attestationCount,proto3" json:"attestation_count,omitempty"`
 }
 
-func (x *FctAttestationLivenessByEntityHeadEpoch) Reset() {
-	*x = FctAttestationLivenessByEntityHeadEpoch{}
+func (x *FctAttestationLivenessByEntityEpochHead) Reset() {
+	*x = FctAttestationLivenessByEntityEpochHead{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[0]
+		mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *FctAttestationLivenessByEntityHeadEpoch) String() string {
+func (x *FctAttestationLivenessByEntityEpochHead) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FctAttestationLivenessByEntityHeadEpoch) ProtoMessage() {}
+func (*FctAttestationLivenessByEntityEpochHead) ProtoMessage() {}
 
-func (x *FctAttestationLivenessByEntityHeadEpoch) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[0]
+func (x *FctAttestationLivenessByEntityEpochHead) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -68,55 +68,55 @@ func (x *FctAttestationLivenessByEntityHeadEpoch) ProtoReflect() protoreflect.Me
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FctAttestationLivenessByEntityHeadEpoch.ProtoReflect.Descriptor instead.
-func (*FctAttestationLivenessByEntityHeadEpoch) Descriptor() ([]byte, []int) {
-	return file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use FctAttestationLivenessByEntityEpochHead.ProtoReflect.Descriptor instead.
+func (*FctAttestationLivenessByEntityEpochHead) Descriptor() ([]byte, []int) {
+	return file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *FctAttestationLivenessByEntityHeadEpoch) GetUpdatedDateTime() uint32 {
+func (x *FctAttestationLivenessByEntityEpochHead) GetUpdatedDateTime() uint32 {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return 0
 }
 
-func (x *FctAttestationLivenessByEntityHeadEpoch) GetEpoch() uint32 {
+func (x *FctAttestationLivenessByEntityEpochHead) GetEpoch() uint32 {
 	if x != nil {
 		return x.Epoch
 	}
 	return 0
 }
 
-func (x *FctAttestationLivenessByEntityHeadEpoch) GetEpochStartDateTime() uint32 {
+func (x *FctAttestationLivenessByEntityEpochHead) GetEpochStartDateTime() uint32 {
 	if x != nil {
 		return x.EpochStartDateTime
 	}
 	return 0
 }
 
-func (x *FctAttestationLivenessByEntityHeadEpoch) GetEntity() string {
+func (x *FctAttestationLivenessByEntityEpochHead) GetEntity() string {
 	if x != nil {
 		return x.Entity
 	}
 	return ""
 }
 
-func (x *FctAttestationLivenessByEntityHeadEpoch) GetStatus() string {
+func (x *FctAttestationLivenessByEntityEpochHead) GetStatus() string {
 	if x != nil {
 		return x.Status
 	}
 	return ""
 }
 
-func (x *FctAttestationLivenessByEntityHeadEpoch) GetAttestationCount() uint64 {
+func (x *FctAttestationLivenessByEntityEpochHead) GetAttestationCount() uint64 {
 	if x != nil {
 		return x.AttestationCount
 	}
 	return 0
 }
 
-// Request for listing fct_attestation_liveness_by_entity_head_epoch records
-type ListFctAttestationLivenessByEntityHeadEpochRequest struct {
+// Request for listing fct_attestation_liveness_by_entity_epoch_head records
+type ListFctAttestationLivenessByEntityEpochHeadRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -133,11 +133,11 @@ type ListFctAttestationLivenessByEntityHeadEpochRequest struct {
 	Epoch *UInt32Filter `protobuf:"bytes,5,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// Filter by attestation_count - Sum of attestations for this epoch/entity/status combination (optional)
 	AttestationCount *UInt64Filter `protobuf:"bytes,6,opt,name=attestation_count,json=attestationCount,proto3" json:"attestation_count,omitempty"`
-	// The maximum number of fct_attestation_liveness_by_entity_head_epoch to return.
+	// The maximum number of fct_attestation_liveness_by_entity_epoch_head to return.
 	// If unspecified, at most 100 items will be returned.
 	// The maximum value is 10000; values above 10000 will be coerced to 10000.
 	PageSize int32 `protobuf:"varint,7,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListFctAttestationLivenessByEntityHeadEpoch` call.
+	// A page token, received from a previous `ListFctAttestationLivenessByEntityEpochHead` call.
 	// Provide this to retrieve the subsequent page.
 	PageToken string `protobuf:"bytes,8,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// The order of results. Format: comma-separated list of fields.
@@ -146,23 +146,23 @@ type ListFctAttestationLivenessByEntityHeadEpochRequest struct {
 	OrderBy string `protobuf:"bytes,9,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) Reset() {
-	*x = ListFctAttestationLivenessByEntityHeadEpochRequest{}
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) Reset() {
+	*x = ListFctAttestationLivenessByEntityEpochHeadRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[1]
+		mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) String() string {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctAttestationLivenessByEntityHeadEpochRequest) ProtoMessage() {}
+func (*ListFctAttestationLivenessByEntityEpochHeadRequest) ProtoMessage() {}
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[1]
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -173,104 +173,104 @@ func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) ProtoReflect() prot
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctAttestationLivenessByEntityHeadEpochRequest.ProtoReflect.Descriptor instead.
-func (*ListFctAttestationLivenessByEntityHeadEpochRequest) Descriptor() ([]byte, []int) {
-	return file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use ListFctAttestationLivenessByEntityEpochHeadRequest.ProtoReflect.Descriptor instead.
+func (*ListFctAttestationLivenessByEntityEpochHeadRequest) Descriptor() ([]byte, []int) {
+	return file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) GetEpochStartDateTime() *UInt32Filter {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) GetEpochStartDateTime() *UInt32Filter {
 	if x != nil {
 		return x.EpochStartDateTime
 	}
 	return nil
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) GetEntity() *StringFilter {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) GetEntity() *StringFilter {
 	if x != nil {
 		return x.Entity
 	}
 	return nil
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) GetStatus() *StringFilter {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) GetStatus() *StringFilter {
 	if x != nil {
 		return x.Status
 	}
 	return nil
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) GetUpdatedDateTime() *UInt32Filter {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) GetUpdatedDateTime() *UInt32Filter {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return nil
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) GetEpoch() *UInt32Filter {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) GetEpoch() *UInt32Filter {
 	if x != nil {
 		return x.Epoch
 	}
 	return nil
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) GetAttestationCount() *UInt64Filter {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) GetAttestationCount() *UInt64Filter {
 	if x != nil {
 		return x.AttestationCount
 	}
 	return nil
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) GetPageSize() int32 {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) GetPageToken() string {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
 	}
 	return ""
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochRequest) GetOrderBy() string {
+func (x *ListFctAttestationLivenessByEntityEpochHeadRequest) GetOrderBy() string {
 	if x != nil {
 		return x.OrderBy
 	}
 	return ""
 }
 
-// Response for listing fct_attestation_liveness_by_entity_head_epoch records
-type ListFctAttestationLivenessByEntityHeadEpochResponse struct {
+// Response for listing fct_attestation_liveness_by_entity_epoch_head records
+type ListFctAttestationLivenessByEntityEpochHeadResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The list of fct_attestation_liveness_by_entity_head_epoch.
-	FctAttestationLivenessByEntityHeadEpoch []*FctAttestationLivenessByEntityHeadEpoch `protobuf:"bytes,1,rep,name=fct_attestation_liveness_by_entity_head_epoch,json=fctAttestationLivenessByEntityHeadEpoch,proto3" json:"fct_attestation_liveness_by_entity_head_epoch,omitempty"`
+	// The list of fct_attestation_liveness_by_entity_epoch_head.
+	FctAttestationLivenessByEntityEpochHead []*FctAttestationLivenessByEntityEpochHead `protobuf:"bytes,1,rep,name=fct_attestation_liveness_by_entity_epoch_head,json=fctAttestationLivenessByEntityEpochHead,proto3" json:"fct_attestation_liveness_by_entity_epoch_head,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochResponse) Reset() {
-	*x = ListFctAttestationLivenessByEntityHeadEpochResponse{}
+func (x *ListFctAttestationLivenessByEntityEpochHeadResponse) Reset() {
+	*x = ListFctAttestationLivenessByEntityEpochHeadResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[2]
+		mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochResponse) String() string {
+func (x *ListFctAttestationLivenessByEntityEpochHeadResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctAttestationLivenessByEntityHeadEpochResponse) ProtoMessage() {}
+func (*ListFctAttestationLivenessByEntityEpochHeadResponse) ProtoMessage() {}
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[2]
+func (x *ListFctAttestationLivenessByEntityEpochHeadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -281,27 +281,27 @@ func (x *ListFctAttestationLivenessByEntityHeadEpochResponse) ProtoReflect() pro
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctAttestationLivenessByEntityHeadEpochResponse.ProtoReflect.Descriptor instead.
-func (*ListFctAttestationLivenessByEntityHeadEpochResponse) Descriptor() ([]byte, []int) {
-	return file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use ListFctAttestationLivenessByEntityEpochHeadResponse.ProtoReflect.Descriptor instead.
+func (*ListFctAttestationLivenessByEntityEpochHeadResponse) Descriptor() ([]byte, []int) {
+	return file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochResponse) GetFctAttestationLivenessByEntityHeadEpoch() []*FctAttestationLivenessByEntityHeadEpoch {
+func (x *ListFctAttestationLivenessByEntityEpochHeadResponse) GetFctAttestationLivenessByEntityEpochHead() []*FctAttestationLivenessByEntityEpochHead {
 	if x != nil {
-		return x.FctAttestationLivenessByEntityHeadEpoch
+		return x.FctAttestationLivenessByEntityEpochHead
 	}
 	return nil
 }
 
-func (x *ListFctAttestationLivenessByEntityHeadEpochResponse) GetNextPageToken() string {
+func (x *ListFctAttestationLivenessByEntityEpochHeadResponse) GetNextPageToken() string {
 	if x != nil {
 		return x.NextPageToken
 	}
 	return ""
 }
 
-// Request for getting a single fct_attestation_liveness_by_entity_head_epoch record by primary key
-type GetFctAttestationLivenessByEntityHeadEpochRequest struct {
+// Request for getting a single fct_attestation_liveness_by_entity_epoch_head record by primary key
+type GetFctAttestationLivenessByEntityEpochHeadRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -310,23 +310,23 @@ type GetFctAttestationLivenessByEntityHeadEpochRequest struct {
 	EpochStartDateTime uint32 `protobuf:"varint,1,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"` // Primary key (required)
 }
 
-func (x *GetFctAttestationLivenessByEntityHeadEpochRequest) Reset() {
-	*x = GetFctAttestationLivenessByEntityHeadEpochRequest{}
+func (x *GetFctAttestationLivenessByEntityEpochHeadRequest) Reset() {
+	*x = GetFctAttestationLivenessByEntityEpochHeadRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[3]
+		mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctAttestationLivenessByEntityHeadEpochRequest) String() string {
+func (x *GetFctAttestationLivenessByEntityEpochHeadRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctAttestationLivenessByEntityHeadEpochRequest) ProtoMessage() {}
+func (*GetFctAttestationLivenessByEntityEpochHeadRequest) ProtoMessage() {}
 
-func (x *GetFctAttestationLivenessByEntityHeadEpochRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[3]
+func (x *GetFctAttestationLivenessByEntityEpochHeadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -337,44 +337,44 @@ func (x *GetFctAttestationLivenessByEntityHeadEpochRequest) ProtoReflect() proto
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctAttestationLivenessByEntityHeadEpochRequest.ProtoReflect.Descriptor instead.
-func (*GetFctAttestationLivenessByEntityHeadEpochRequest) Descriptor() ([]byte, []int) {
-	return file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use GetFctAttestationLivenessByEntityEpochHeadRequest.ProtoReflect.Descriptor instead.
+func (*GetFctAttestationLivenessByEntityEpochHeadRequest) Descriptor() ([]byte, []int) {
+	return file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetFctAttestationLivenessByEntityHeadEpochRequest) GetEpochStartDateTime() uint32 {
+func (x *GetFctAttestationLivenessByEntityEpochHeadRequest) GetEpochStartDateTime() uint32 {
 	if x != nil {
 		return x.EpochStartDateTime
 	}
 	return 0
 }
 
-// Response for getting a single fct_attestation_liveness_by_entity_head_epoch record
-type GetFctAttestationLivenessByEntityHeadEpochResponse struct {
+// Response for getting a single fct_attestation_liveness_by_entity_epoch_head record
+type GetFctAttestationLivenessByEntityEpochHeadResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Item *FctAttestationLivenessByEntityHeadEpoch `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	Item *FctAttestationLivenessByEntityEpochHead `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
 }
 
-func (x *GetFctAttestationLivenessByEntityHeadEpochResponse) Reset() {
-	*x = GetFctAttestationLivenessByEntityHeadEpochResponse{}
+func (x *GetFctAttestationLivenessByEntityEpochHeadResponse) Reset() {
+	*x = GetFctAttestationLivenessByEntityEpochHeadResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[4]
+		mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctAttestationLivenessByEntityHeadEpochResponse) String() string {
+func (x *GetFctAttestationLivenessByEntityEpochHeadResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctAttestationLivenessByEntityHeadEpochResponse) ProtoMessage() {}
+func (*GetFctAttestationLivenessByEntityEpochHeadResponse) ProtoMessage() {}
 
-func (x *GetFctAttestationLivenessByEntityHeadEpochResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[4]
+func (x *GetFctAttestationLivenessByEntityEpochHeadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -385,24 +385,24 @@ func (x *GetFctAttestationLivenessByEntityHeadEpochResponse) ProtoReflect() prot
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctAttestationLivenessByEntityHeadEpochResponse.ProtoReflect.Descriptor instead.
-func (*GetFctAttestationLivenessByEntityHeadEpochResponse) Descriptor() ([]byte, []int) {
-	return file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use GetFctAttestationLivenessByEntityEpochHeadResponse.ProtoReflect.Descriptor instead.
+func (*GetFctAttestationLivenessByEntityEpochHeadResponse) Descriptor() ([]byte, []int) {
+	return file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetFctAttestationLivenessByEntityHeadEpochResponse) GetItem() *FctAttestationLivenessByEntityHeadEpoch {
+func (x *GetFctAttestationLivenessByEntityEpochHeadResponse) GetItem() *FctAttestationLivenessByEntityEpochHead {
 	if x != nil {
 		return x.Item
 	}
 	return nil
 }
 
-var File_fct_attestation_liveness_by_entity_head_epoch_proto protoreflect.FileDescriptor
+var File_fct_attestation_liveness_by_entity_epoch_head_proto protoreflect.FileDescriptor
 
-var file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDesc = []byte{
+var file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDesc = []byte{
 	0x0a, 0x33, 0x66, 0x63, 0x74, 0x5f, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f,
 	0x6e, 0x5f, 0x6c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x5f, 0x62, 0x79, 0x5f, 0x65, 0x6e,
-	0x74, 0x69, 0x74, 0x79, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x2e,
+	0x74, 0x69, 0x74, 0x79, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x03, 0x63, 0x62, 0x74, 0x1a, 0x0c, 0x63, 0x6f, 0x6d, 0x6d,
 	0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
 	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73,
@@ -412,8 +412,8 @@ var file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDesc = []byte{
 	0x75, 0x73, 0x65, 0x2f, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xfb, 0x01, 0x0a, 0x27, 0x46, 0x63, 0x74, 0x41, 0x74, 0x74,
 	0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73,
-	0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45, 0x70, 0x6f, 0x63,
-	0x68, 0x12, 0x2a, 0x0a, 0x11, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x64, 0x61, 0x74,
+	0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x48, 0x65, 0x61,
+	0x64, 0x12, 0x2a, 0x0a, 0x11, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x64, 0x5f, 0x64, 0x61, 0x74,
 	0x65, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0f, 0x75, 0x70,
 	0x64, 0x61, 0x74, 0x65, 0x64, 0x44, 0x61, 0x74, 0x65, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x14, 0x0a,
 	0x05, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x18, 0x0c, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x05, 0x65, 0x70,
@@ -428,8 +428,8 @@ var file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDesc = []byte{
 	0x04, 0x52, 0x10, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x43, 0x6f,
 	0x75, 0x6e, 0x74, 0x22, 0xc1, 0x04, 0x0a, 0x32, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x63, 0x74, 0x41,
 	0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e, 0x65,
-	0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45, 0x70,
-	0x6f, 0x63, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x58, 0x0a, 0x15, 0x65, 0x70,
+	0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x48,
+	0x65, 0x61, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x58, 0x0a, 0x15, 0x65, 0x70,
 	0x6f, 0x63, 0x68, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x74,
 	0x69, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x63, 0x62, 0x74, 0x2e,
 	0x55, 0x49, 0x6e, 0x74, 0x33, 0x32, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x42, 0x12, 0xe0, 0x41,
@@ -464,60 +464,60 @@ var file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDesc = []byte{
 	0x5f, 0x62, 0x79, 0x18, 0x09, 0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x01, 0x52, 0x07,
 	0x6f, 0x72, 0x64, 0x65, 0x72, 0x42, 0x79, 0x22, 0xec, 0x01, 0x0a, 0x33, 0x4c, 0x69, 0x73, 0x74,
 	0x46, 0x63, 0x74, 0x41, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69,
-	0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65,
-	0x61, 0x64, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
+	0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70,
+	0x6f, 0x63, 0x68, 0x48, 0x65, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
 	0x8c, 0x01, 0x0a, 0x2d, 0x66, 0x63, 0x74, 0x5f, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x5f, 0x6c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x5f, 0x62, 0x79, 0x5f,
-	0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x5f, 0x65, 0x70, 0x6f, 0x63,
-	0x68, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2c, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x46, 0x63,
+	0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f, 0x68, 0x65, 0x61,
+	0x64, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2c, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x46, 0x63,
 	0x74, 0x41, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65,
-	0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64,
-	0x45, 0x70, 0x6f, 0x63, 0x68, 0x52, 0x27, 0x66, 0x63, 0x74, 0x41, 0x74, 0x74, 0x65, 0x73, 0x74,
+	0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63,
+	0x68, 0x48, 0x65, 0x61, 0x64, 0x52, 0x27, 0x66, 0x63, 0x74, 0x41, 0x74, 0x74, 0x65, 0x73, 0x74,
 	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45,
-	0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x12, 0x26,
+	0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x48, 0x65, 0x61, 0x64, 0x12, 0x26,
 	0x0a, 0x0f, 0x6e, 0x65, 0x78, 0x74, 0x5f, 0x70, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x6f, 0x6b, 0x65,
 	0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x6e, 0x65, 0x78, 0x74, 0x50, 0x61, 0x67,
 	0x65, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x66, 0x0a, 0x31, 0x47, 0x65, 0x74, 0x46, 0x63, 0x74,
 	0x41, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e,
-	0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45,
-	0x70, 0x6f, 0x63, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x31, 0x0a, 0x15, 0x65,
+	0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68,
+	0x48, 0x65, 0x61, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x31, 0x0a, 0x15, 0x65,
 	0x70, 0x6f, 0x63, 0x68, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x64, 0x61, 0x74, 0x65, 0x5f,
 	0x74, 0x69, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x12, 0x65, 0x70, 0x6f, 0x63,
 	0x68, 0x53, 0x74, 0x61, 0x72, 0x74, 0x44, 0x61, 0x74, 0x65, 0x54, 0x69, 0x6d, 0x65, 0x22, 0x76,
 	0x0a, 0x32, 0x47, 0x65, 0x74, 0x46, 0x63, 0x74, 0x41, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74,
 	0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74,
-	0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x52, 0x65, 0x73, 0x70,
+	0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x48, 0x65, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70,
 	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x40, 0x0a, 0x04, 0x69, 0x74, 0x65, 0x6d, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x2c, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x46, 0x63, 0x74, 0x41, 0x74, 0x74, 0x65,
 	0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x42,
-	0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45, 0x70, 0x6f, 0x63, 0x68,
+	0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x48, 0x65, 0x61, 0x64,
 	0x52, 0x04, 0x69, 0x74, 0x65, 0x6d, 0x32, 0xbb, 0x03, 0x0a, 0x2e, 0x46, 0x63, 0x74, 0x41, 0x74,
 	0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73,
-	0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45, 0x70, 0x6f,
-	0x63, 0x68, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0xb8, 0x01, 0x0a, 0x04, 0x4c, 0x69,
+	0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x48, 0x65,
+	0x61, 0x64, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0xb8, 0x01, 0x0a, 0x04, 0x4c, 0x69,
 	0x73, 0x74, 0x12, 0x37, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x63, 0x74,
 	0x41, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e,
-	0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45,
-	0x70, 0x6f, 0x63, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x38, 0x2e, 0x63, 0x62,
+	0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68,
+	0x48, 0x65, 0x61, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x38, 0x2e, 0x63, 0x62,
 	0x74, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x63, 0x74, 0x41, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61,
 	0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e,
-	0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x52, 0x65, 0x73,
+	0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x48, 0x65, 0x61, 0x64, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3d, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x37, 0x12, 0x35, 0x2f,
 	0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x66, 0x63, 0x74, 0x5f, 0x61, 0x74, 0x74, 0x65, 0x73,
 	0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x5f,
-	0x62, 0x79, 0x5f, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x5f, 0x65,
-	0x70, 0x6f, 0x63, 0x68, 0x12, 0xcd, 0x01, 0x0a, 0x03, 0x47, 0x65, 0x74, 0x12, 0x36, 0x2e, 0x63,
+	0x62, 0x79, 0x5f, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f,
+	0x68, 0x65, 0x61, 0x64, 0x12, 0xcd, 0x01, 0x0a, 0x03, 0x47, 0x65, 0x74, 0x12, 0x36, 0x2e, 0x63,
 	0x62, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x46, 0x63, 0x74, 0x41, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61,
 	0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e,
-	0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x52, 0x65, 0x71,
+	0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63, 0x68, 0x48, 0x65, 0x61, 0x64, 0x52, 0x65, 0x71,
 	0x75, 0x65, 0x73, 0x74, 0x1a, 0x37, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x47, 0x65, 0x74, 0x46, 0x63,
 	0x74, 0x41, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x69, 0x76, 0x65,
-	0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x48, 0x65, 0x61, 0x64,
-	0x45, 0x70, 0x6f, 0x63, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x55, 0x82,
+	0x6e, 0x65, 0x73, 0x73, 0x42, 0x79, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x45, 0x70, 0x6f, 0x63,
+	0x68, 0x48, 0x65, 0x61, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x55, 0x82,
 	0xd3, 0xe4, 0x93, 0x02, 0x4f, 0x12, 0x4d, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x66,
 	0x63, 0x74, 0x5f, 0x61, 0x74, 0x74, 0x65, 0x73, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6c,
 	0x69, 0x76, 0x65, 0x6e, 0x65, 0x73, 0x73, 0x5f, 0x62, 0x79, 0x5f, 0x65, 0x6e, 0x74, 0x69, 0x74,
-	0x79, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x2f, 0x7b, 0x65, 0x70,
+	0x79, 0x5f, 0x65, 0x70, 0x6f, 0x63, 0x68, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x2f, 0x7b, 0x65, 0x70,
 	0x6f, 0x63, 0x68, 0x5f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x74,
 	0x69, 0x6d, 0x65, 0x7d, 0x42, 0x36, 0x5a, 0x34, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
 	0x6f, 0x6d, 0x2f, 0x65, 0x74, 0x68, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x6f, 0x70, 0x73, 0x2f, 0x78,
@@ -527,41 +527,41 @@ var file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDesc = []byte{
 }
 
 var (
-	file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescOnce sync.Once
-	file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescData = file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDesc
+	file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescOnce sync.Once
+	file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescData = file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDesc
 )
 
-func file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescGZIP() []byte {
-	file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescOnce.Do(func() {
-		file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescData)
+func file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescGZIP() []byte {
+	file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescOnce.Do(func() {
+		file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescData)
 	})
-	return file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDescData
+	return file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDescData
 }
 
-var file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_fct_attestation_liveness_by_entity_head_epoch_proto_goTypes = []any{
-	(*FctAttestationLivenessByEntityHeadEpoch)(nil),             // 0: cbt.FctAttestationLivenessByEntityHeadEpoch
-	(*ListFctAttestationLivenessByEntityHeadEpochRequest)(nil),  // 1: cbt.ListFctAttestationLivenessByEntityHeadEpochRequest
-	(*ListFctAttestationLivenessByEntityHeadEpochResponse)(nil), // 2: cbt.ListFctAttestationLivenessByEntityHeadEpochResponse
-	(*GetFctAttestationLivenessByEntityHeadEpochRequest)(nil),   // 3: cbt.GetFctAttestationLivenessByEntityHeadEpochRequest
-	(*GetFctAttestationLivenessByEntityHeadEpochResponse)(nil),  // 4: cbt.GetFctAttestationLivenessByEntityHeadEpochResponse
+var file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_fct_attestation_liveness_by_entity_epoch_head_proto_goTypes = []any{
+	(*FctAttestationLivenessByEntityEpochHead)(nil),             // 0: cbt.FctAttestationLivenessByEntityEpochHead
+	(*ListFctAttestationLivenessByEntityEpochHeadRequest)(nil),  // 1: cbt.ListFctAttestationLivenessByEntityEpochHeadRequest
+	(*ListFctAttestationLivenessByEntityEpochHeadResponse)(nil), // 2: cbt.ListFctAttestationLivenessByEntityEpochHeadResponse
+	(*GetFctAttestationLivenessByEntityEpochHeadRequest)(nil),   // 3: cbt.GetFctAttestationLivenessByEntityEpochHeadRequest
+	(*GetFctAttestationLivenessByEntityEpochHeadResponse)(nil),  // 4: cbt.GetFctAttestationLivenessByEntityEpochHeadResponse
 	(*UInt32Filter)(nil), // 5: cbt.UInt32Filter
 	(*StringFilter)(nil), // 6: cbt.StringFilter
 	(*UInt64Filter)(nil), // 7: cbt.UInt64Filter
 }
-var file_fct_attestation_liveness_by_entity_head_epoch_proto_depIdxs = []int32{
-	5,  // 0: cbt.ListFctAttestationLivenessByEntityHeadEpochRequest.epoch_start_date_time:type_name -> cbt.UInt32Filter
-	6,  // 1: cbt.ListFctAttestationLivenessByEntityHeadEpochRequest.entity:type_name -> cbt.StringFilter
-	6,  // 2: cbt.ListFctAttestationLivenessByEntityHeadEpochRequest.status:type_name -> cbt.StringFilter
-	5,  // 3: cbt.ListFctAttestationLivenessByEntityHeadEpochRequest.updated_date_time:type_name -> cbt.UInt32Filter
-	5,  // 4: cbt.ListFctAttestationLivenessByEntityHeadEpochRequest.epoch:type_name -> cbt.UInt32Filter
-	7,  // 5: cbt.ListFctAttestationLivenessByEntityHeadEpochRequest.attestation_count:type_name -> cbt.UInt64Filter
-	0,  // 6: cbt.ListFctAttestationLivenessByEntityHeadEpochResponse.fct_attestation_liveness_by_entity_head_epoch:type_name -> cbt.FctAttestationLivenessByEntityHeadEpoch
-	0,  // 7: cbt.GetFctAttestationLivenessByEntityHeadEpochResponse.item:type_name -> cbt.FctAttestationLivenessByEntityHeadEpoch
-	1,  // 8: cbt.FctAttestationLivenessByEntityHeadEpochService.List:input_type -> cbt.ListFctAttestationLivenessByEntityHeadEpochRequest
-	3,  // 9: cbt.FctAttestationLivenessByEntityHeadEpochService.Get:input_type -> cbt.GetFctAttestationLivenessByEntityHeadEpochRequest
-	2,  // 10: cbt.FctAttestationLivenessByEntityHeadEpochService.List:output_type -> cbt.ListFctAttestationLivenessByEntityHeadEpochResponse
-	4,  // 11: cbt.FctAttestationLivenessByEntityHeadEpochService.Get:output_type -> cbt.GetFctAttestationLivenessByEntityHeadEpochResponse
+var file_fct_attestation_liveness_by_entity_epoch_head_proto_depIdxs = []int32{
+	5,  // 0: cbt.ListFctAttestationLivenessByEntityEpochHeadRequest.epoch_start_date_time:type_name -> cbt.UInt32Filter
+	6,  // 1: cbt.ListFctAttestationLivenessByEntityEpochHeadRequest.entity:type_name -> cbt.StringFilter
+	6,  // 2: cbt.ListFctAttestationLivenessByEntityEpochHeadRequest.status:type_name -> cbt.StringFilter
+	5,  // 3: cbt.ListFctAttestationLivenessByEntityEpochHeadRequest.updated_date_time:type_name -> cbt.UInt32Filter
+	5,  // 4: cbt.ListFctAttestationLivenessByEntityEpochHeadRequest.epoch:type_name -> cbt.UInt32Filter
+	7,  // 5: cbt.ListFctAttestationLivenessByEntityEpochHeadRequest.attestation_count:type_name -> cbt.UInt64Filter
+	0,  // 6: cbt.ListFctAttestationLivenessByEntityEpochHeadResponse.fct_attestation_liveness_by_entity_epoch_head:type_name -> cbt.FctAttestationLivenessByEntityEpochHead
+	0,  // 7: cbt.GetFctAttestationLivenessByEntityEpochHeadResponse.item:type_name -> cbt.FctAttestationLivenessByEntityEpochHead
+	1,  // 8: cbt.FctAttestationLivenessByEntityEpochHeadService.List:input_type -> cbt.ListFctAttestationLivenessByEntityEpochHeadRequest
+	3,  // 9: cbt.FctAttestationLivenessByEntityEpochHeadService.Get:input_type -> cbt.GetFctAttestationLivenessByEntityEpochHeadRequest
+	2,  // 10: cbt.FctAttestationLivenessByEntityEpochHeadService.List:output_type -> cbt.ListFctAttestationLivenessByEntityEpochHeadResponse
+	4,  // 11: cbt.FctAttestationLivenessByEntityEpochHeadService.Get:output_type -> cbt.GetFctAttestationLivenessByEntityEpochHeadResponse
 	10, // [10:12] is the sub-list for method output_type
 	8,  // [8:10] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
@@ -569,15 +569,15 @@ var file_fct_attestation_liveness_by_entity_head_epoch_proto_depIdxs = []int32{
 	0,  // [0:8] is the sub-list for field type_name
 }
 
-func init() { file_fct_attestation_liveness_by_entity_head_epoch_proto_init() }
-func file_fct_attestation_liveness_by_entity_head_epoch_proto_init() {
-	if File_fct_attestation_liveness_by_entity_head_epoch_proto != nil {
+func init() { file_fct_attestation_liveness_by_entity_epoch_head_proto_init() }
+func file_fct_attestation_liveness_by_entity_epoch_head_proto_init() {
+	if File_fct_attestation_liveness_by_entity_epoch_head_proto != nil {
 		return
 	}
 	file_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*FctAttestationLivenessByEntityHeadEpoch); i {
+		file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[0].Exporter = func(v any, i int) any {
+			switch v := v.(*FctAttestationLivenessByEntityEpochHead); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -588,8 +588,8 @@ func file_fct_attestation_liveness_by_entity_head_epoch_proto_init() {
 				return nil
 			}
 		}
-		file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctAttestationLivenessByEntityHeadEpochRequest); i {
+		file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[1].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctAttestationLivenessByEntityEpochHeadRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -600,8 +600,8 @@ func file_fct_attestation_liveness_by_entity_head_epoch_proto_init() {
 				return nil
 			}
 		}
-		file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctAttestationLivenessByEntityHeadEpochResponse); i {
+		file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctAttestationLivenessByEntityEpochHeadResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -612,8 +612,8 @@ func file_fct_attestation_liveness_by_entity_head_epoch_proto_init() {
 				return nil
 			}
 		}
-		file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[3].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctAttestationLivenessByEntityHeadEpochRequest); i {
+		file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[3].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctAttestationLivenessByEntityEpochHeadRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -624,8 +624,8 @@ func file_fct_attestation_liveness_by_entity_head_epoch_proto_init() {
 				return nil
 			}
 		}
-		file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes[4].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctAttestationLivenessByEntityHeadEpochResponse); i {
+		file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes[4].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctAttestationLivenessByEntityEpochHeadResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -641,18 +641,18 @@ func file_fct_attestation_liveness_by_entity_head_epoch_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDesc,
+			RawDescriptor: file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_fct_attestation_liveness_by_entity_head_epoch_proto_goTypes,
-		DependencyIndexes: file_fct_attestation_liveness_by_entity_head_epoch_proto_depIdxs,
-		MessageInfos:      file_fct_attestation_liveness_by_entity_head_epoch_proto_msgTypes,
+		GoTypes:           file_fct_attestation_liveness_by_entity_epoch_head_proto_goTypes,
+		DependencyIndexes: file_fct_attestation_liveness_by_entity_epoch_head_proto_depIdxs,
+		MessageInfos:      file_fct_attestation_liveness_by_entity_epoch_head_proto_msgTypes,
 	}.Build()
-	File_fct_attestation_liveness_by_entity_head_epoch_proto = out.File
-	file_fct_attestation_liveness_by_entity_head_epoch_proto_rawDesc = nil
-	file_fct_attestation_liveness_by_entity_head_epoch_proto_goTypes = nil
-	file_fct_attestation_liveness_by_entity_head_epoch_proto_depIdxs = nil
+	File_fct_attestation_liveness_by_entity_epoch_head_proto = out.File
+	file_fct_attestation_liveness_by_entity_epoch_head_proto_rawDesc = nil
+	file_fct_attestation_liveness_by_entity_epoch_head_proto_goTypes = nil
+	file_fct_attestation_liveness_by_entity_epoch_head_proto_depIdxs = nil
 }

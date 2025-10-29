@@ -10,7 +10,7 @@ import "clickhouse/annotations.proto";
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Attestation liveness aggregated by entity and day for the head chain. Reduces epoch-level data by ~225x.
 
-message FctAttestationLivenessByEntityHeadDaily {
+message FctAttestationLivenessByEntityDayHead {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // The calendar date
@@ -23,8 +23,8 @@ message FctAttestationLivenessByEntityHeadDaily {
   uint64 attestation_count = 15;
 }
 
-// Request for listing fct_attestation_liveness_by_entity_head_daily records
-message ListFctAttestationLivenessByEntityHeadDailyRequest {
+// Request for listing fct_attestation_liveness_by_entity_day_head records
+message ListFctAttestationLivenessByEntityDayHeadRequest {
   // Filter by date - The calendar date (PRIMARY KEY - required)
   StringFilter date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
@@ -39,11 +39,11 @@ message ListFctAttestationLivenessByEntityHeadDailyRequest {
   // Filter by attestation_count - Sum of attestations for this date/entity/status combination (optional)
   UInt64Filter attestation_count = 5 [(google.api.field_behavior) = OPTIONAL];
 
-  // The maximum number of fct_attestation_liveness_by_entity_head_daily to return.
+  // The maximum number of fct_attestation_liveness_by_entity_day_head to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 6 [(google.api.field_behavior) = OPTIONAL];
-  // A page token, received from a previous `ListFctAttestationLivenessByEntityHeadDaily` call.
+  // A page token, received from a previous `ListFctAttestationLivenessByEntityDayHead` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 7 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
@@ -52,38 +52,38 @@ message ListFctAttestationLivenessByEntityHeadDailyRequest {
   string order_by = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Response for listing fct_attestation_liveness_by_entity_head_daily records
-message ListFctAttestationLivenessByEntityHeadDailyResponse {
-  // The list of fct_attestation_liveness_by_entity_head_daily.
-  repeated FctAttestationLivenessByEntityHeadDaily fct_attestation_liveness_by_entity_head_daily = 1;
+// Response for listing fct_attestation_liveness_by_entity_day_head records
+message ListFctAttestationLivenessByEntityDayHeadResponse {
+  // The list of fct_attestation_liveness_by_entity_day_head.
+  repeated FctAttestationLivenessByEntityDayHead fct_attestation_liveness_by_entity_day_head = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// Request for getting a single fct_attestation_liveness_by_entity_head_daily record by primary key
-message GetFctAttestationLivenessByEntityHeadDailyRequest {
+// Request for getting a single fct_attestation_liveness_by_entity_day_head record by primary key
+message GetFctAttestationLivenessByEntityDayHeadRequest {
   // The calendar date
   string date = 1; // Primary key (required)
 }
 
-// Response for getting a single fct_attestation_liveness_by_entity_head_daily record
-message GetFctAttestationLivenessByEntityHeadDailyResponse {
-  FctAttestationLivenessByEntityHeadDaily item = 1;
+// Response for getting a single fct_attestation_liveness_by_entity_day_head record
+message GetFctAttestationLivenessByEntityDayHeadResponse {
+  FctAttestationLivenessByEntityDayHead item = 1;
 }
 
-// Query fct_attestation_liveness_by_entity_head_daily data
-service FctAttestationLivenessByEntityHeadDailyService {
+// Query fct_attestation_liveness_by_entity_day_head data
+service FctAttestationLivenessByEntityDayHeadService {
   // List records | Retrieve paginated results with optional filtering
-  rpc List(ListFctAttestationLivenessByEntityHeadDailyRequest) returns (ListFctAttestationLivenessByEntityHeadDailyResponse) {
+  rpc List(ListFctAttestationLivenessByEntityDayHeadRequest) returns (ListFctAttestationLivenessByEntityDayHeadResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_attestation_liveness_by_entity_head_daily"
+      get: "/api/v1/fct_attestation_liveness_by_entity_day_head"
     };
   }
   // Get record | Retrieve a single record by date
-  rpc Get(GetFctAttestationLivenessByEntityHeadDailyRequest) returns (GetFctAttestationLivenessByEntityHeadDailyResponse) {
+  rpc Get(GetFctAttestationLivenessByEntityDayHeadRequest) returns (GetFctAttestationLivenessByEntityDayHeadResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_attestation_liveness_by_entity_head_daily/{date}"
+      get: "/api/v1/fct_attestation_liveness_by_entity_day_head/{date}"
     };
   }
 }
