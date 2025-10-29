@@ -98,12 +98,14 @@ proto:
 		exit 1; \
 	fi; \
 	TABLES=$$(ls models/transformations/*.{sql,yml,yaml} 2>/dev/null | xargs -n1 basename | sed -E 's/\.(sql|yml|yaml)$$//' | tr '\n' ',' | sed 's/,$$//'); \
-	HOST=$${CLICKHOUSE_HOST:-xatu-cbt-clickhouse-01}; \
+	HOST=$${CLICKHOUSE_HOST:-xatu-clickhouse-01}; \
+	USER=$${CLICKHOUSE_USERNAME:-default}; \
+	PASS=$${CLICKHOUSE_PASSWORD:-}; \
 	docker run --rm -v "$$(pwd):/workspace" \
 		--user "$$(id -u):$$(id -g)" \
 		--network xatu_xatu-net \
 		ethpandaops/clickhouse-proto-gen \
-		--dsn "clickhouse://xatu-cbt-clickhouse-01:9000/$$NETWORK" \
+		--dsn "clickhouse://$$USER:$$PASS@xatu-clickhouse-01:9000/$$NETWORK" \
 		--tables "admin_incremental,$$TABLES" \
 		--out /workspace/pkg/proto/clickhouse \
 		--package cbt \
