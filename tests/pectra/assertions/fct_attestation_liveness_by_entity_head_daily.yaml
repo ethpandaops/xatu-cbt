@@ -1,0 +1,111 @@
+tests:
+  # Test 1: Verify date bounds and row counts
+  - name: date_bounds_and_counts
+    description: Validates date range and row counts
+    sql: |
+      SELECT
+        min(date) as min_date,
+        max(date) as max_date,
+        count(*) as row_count
+      FROM {{ .database }}.fct_attestation_liveness_by_entity_head_daily
+    assertions:
+      - column: min_date
+        operator: gte
+        value: '2020-01-01'
+      - column: max_date
+        operator: gte
+        value: '2020-01-01'
+      - column: row_count
+        operator: gt
+        value: 0
+
+  # Test 2: Verify status values
+  - name: valid_status_values
+    description: Ensures status is only 'attested' or 'missed'
+    sql: |
+      SELECT DISTINCT status
+      FROM {{ .database }}.fct_attestation_liveness_by_entity_head_daily
+    assertions:
+      - column: status
+        operator: in
+        value: ['attested', 'missed']
+
+  # Test 3: Verify no NULL entities
+  - name: no_null_entities
+    description: Ensures all rows have an entity value
+    sql: |
+      SELECT count(*) as null_entity_count
+      FROM {{ .database }}.fct_attestation_liveness_by_entity_head_daily
+      WHERE entity IS NULL OR entity = ''
+    assertions:
+      - column: null_entity_count
+        operator: eq
+        value: 0
+
+  # Test 4: Verify aggregation correctness (compare daily sum to epoch sum)
+  - name: aggregation_correctness
+    description: Validates SUM(attestation_count) matches epoch-level data
+    sql: |
+      WITH daily_agg AS (
+        SELECT
+          date,
+          entity,
+          status,
+          SUM(attestation_count) as daily_total
+        FROM {{ .database }}.fct_attestation_liveness_by_entity_head_daily
+        WHERE date = (SELECT min(date) FROM {{ .database }}.fct_attestation_liveness_by_entity_head_daily)
+        GROUP BY date, entity, status
+      ),
+      epoch_agg AS (
+        SELECT
+          toDate(epoch_start_date_time) as date,
+          entity,
+          status,
+          SUM(attestation_count) as epoch_total
+        FROM {{ .database }}.fct_attestation_liveness_by_entity_head_epoch
+        WHERE toDate(epoch_start_date_time) = (SELECT min(date) FROM {{ .database }}.fct_attestation_liveness_by_entity_head_daily)
+        GROUP BY toDate(epoch_start_date_time), entity, status
+      )
+      SELECT
+        count(*) as mismatch_count
+      FROM daily_agg
+      FULL OUTER JOIN epoch_agg USING (date, entity, status)
+      WHERE daily_agg.daily_total != epoch_agg.epoch_total
+    assertions:
+      - column: mismatch_count
+        operator: eq
+        value: 0
+
+  # Test 5: Verify no duplicate dates per entity/status
+  - name: no_duplicate_dates
+    description: Ensures each date/entity/status combination appears only once
+    sql: |
+      SELECT
+        date,
+        entity,
+        status,
+        count(*) as duplicate_count
+      FROM {{ .database }}.fct_attestation_liveness_by_entity_head_daily
+      GROUP BY date, entity, status
+      HAVING count(*) > 1
+    assertions:
+      - sql: SELECT count(*) as total_duplicates FROM (__PREVIOUS_QUERY__)
+        column: total_duplicates
+        operator: eq
+        value: 0
+
+  # Test 6: Admin bounds verification
+  - name: admin_bounds_verification
+    description: Verifies admin bounds function returns valid min/max
+    sql: |
+      SELECT
+        min as min_bound,
+        max as max_bound
+      FROM {{ .database }}.fct_attestation_liveness_by_entity_head_daily_bounds
+    assertions:
+      - column: min_bound
+        operator: gte
+        value: 0
+      - column: max_bound
+        operator: gte
+        value: 0
