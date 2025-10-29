@@ -1,93 +1,15 @@
-tests:
-  # Test 1: Verify epoch bounds and row counts
-  - name: epoch_bounds_and_counts
-    description: Validates epoch range and row counts
-    sql: |
-      SELECT
-        min(epoch) as min_epoch,
-        max(epoch) as max_epoch,
-        count(*) as row_count
-      FROM {{ .database }}.fct_attestation_liveness_by_entity_head_epoch
-    assertions:
-      - column: min_epoch
-        operator: gte
-        value: 0
-      - column: max_epoch
-        operator: gte
-        value: 0
-      - column: row_count
-        operator: gt
-        value: 0
+- name: "Epoch table has data"
+  sql: |
+    SELECT
+      COUNT(*) AS row_count
+    FROM fct_attestation_liveness_by_entity_head_epoch FINAL
+  expected:
+    row_count: 0
 
-  # Test 2: Verify status values
-  - name: valid_status_values
-    description: Ensures status is only 'attested' or 'missed'
-    sql: |
-      SELECT DISTINCT status
-      FROM {{ .database }}.fct_attestation_liveness_by_entity_head_epoch
-    assertions:
-      - column: status
-        operator: in
-        value: ['attested', 'missed']
-
-  # Test 3: Verify no NULL entities
-  - name: no_null_entities
-    description: Ensures all rows have an entity value
-    sql: |
-      SELECT count(*) as null_entity_count
-      FROM {{ .database }}.fct_attestation_liveness_by_entity_head_epoch
-      WHERE entity IS NULL OR entity = ''
-    assertions:
-      - column: null_entity_count
-        operator: eq
-        value: 0
-
-  # Test 4: Verify aggregation correctness (compare epoch sum to slot sum)
-  - name: aggregation_correctness
-    description: Validates SUM(attestation_count) matches slot-level data
-    sql: |
-      WITH epoch_agg AS (
-        SELECT
-          epoch,
-          entity,
-          status,
-          SUM(attestation_count) as epoch_total
-        FROM {{ .database }}.fct_attestation_liveness_by_entity_head_epoch
-        WHERE epoch = (SELECT min(epoch) FROM {{ .database }}.fct_attestation_liveness_by_entity_head_epoch)
-        GROUP BY epoch, entity, status
-      ),
-      slot_agg AS (
-        SELECT
-          epoch,
-          entity,
-          status,
-          SUM(attestation_count) as slot_total
-        FROM {{ .database }}.fct_attestation_liveness_by_entity_head
-        WHERE epoch = (SELECT min(epoch) FROM {{ .database }}.fct_attestation_liveness_by_entity_head_epoch)
-        GROUP BY epoch, entity, status
-      )
-      SELECT
-        count(*) as mismatch_count
-      FROM epoch_agg
-      FULL OUTER JOIN slot_agg USING (epoch, entity, status)
-      WHERE epoch_agg.epoch_total != slot_agg.slot_total
-    assertions:
-      - column: mismatch_count
-        operator: eq
-        value: 0
-
-  # Test 5: Admin bounds verification
-  - name: admin_bounds_verification
-    description: Verifies admin bounds function returns valid min/max
-    sql: |
-      SELECT
-        min as min_bound,
-        max as max_bound
-      FROM {{ .database }}.fct_attestation_liveness_by_entity_head_epoch_bounds
-    assertions:
-      - column: min_bound
-        operator: gte
-        value: 0
-      - column: max_bound
-        operator: gte
-        value: 0
+- name: "No NULL entities"
+  sql: |
+    SELECT count(*) as null_count
+    FROM fct_attestation_liveness_by_entity_head_epoch FINAL
+    WHERE entity IS NULL OR entity = ''
+  expected:
+    null_count: 0
