@@ -32,34 +32,42 @@ message FctDataColumnAvailabilityBySlot {
   uint32 wallclock_request_epoch_start_date_time = 19;
   // Column index being probed (0-127)
   uint64 column_index = 20;
+  // Beacon block root for this slot (from earliest observation, handles reorgs, NULL if unavailable)
+  google.protobuf.StringValue beacon_block_root = 21;
+  // Number of unique block roots observed (>1 indicates reorg/fork)
+  uint32 beacon_block_root_variants = 22;
   // Number of blobs in the slot (max column_rows_count)
-  uint32 blob_count = 21;
+  uint32 blob_count = 23;
   // Count of successful probes
-  uint32 success_count = 22;
+  uint32 success_count = 24;
   // Count of failed probes (result = failure)
-  uint32 failure_count = 23;
+  uint32 failure_count = 25;
   // Count of missing probes (result = missing)
-  uint32 missing_count = 24;
+  uint32 missing_count = 26;
   // Total count of probes
-  uint32 probe_count = 25;
+  uint32 probe_count = 27;
   // Availability percentage (success / total * 100) rounded to 2 decimal places
-  double availability_pct = 26;
+  double availability_pct = 28;
   // Minimum response time in milliseconds for successful probes only
-  uint32 min_response_time_ms = 27;
+  uint32 min_response_time_ms = 29;
   // Median (p50) response time in milliseconds for successful probes only
-  uint32 p50_response_time_ms = 28;
+  uint32 p50_response_time_ms = 30;
   // 95th percentile response time in milliseconds for successful probes only
-  uint32 p95_response_time_ms = 29;
+  uint32 p95_response_time_ms = 31;
   // 99th percentile response time in milliseconds for successful probes only
-  uint32 p99_response_time_ms = 30;
+  uint32 p99_response_time_ms = 32;
   // Maximum response time in milliseconds for successful probes only
-  uint32 max_response_time_ms = 31;
+  uint32 max_response_time_ms = 33;
   // Count of unique peers probed
-  uint32 unique_peer_count = 32;
+  uint32 unique_peer_count = 34;
   // Count of unique client names
-  uint32 unique_client_count = 33;
+  uint32 unique_client_count = 35;
   // Count of unique client implementations
-  uint32 unique_implementation_count = 34;
+  uint32 unique_implementation_count = 36;
+  // Count of observations from active RPC custody probes
+  uint32 custody_probe_count = 37;
+  // Count of observations from passive gossipsub propagation
+  uint32 gossipsub_count = 38;
 }
 
 // Request for listing fct_data_column_availability_by_slot records
@@ -87,46 +95,54 @@ message ListFctDataColumnAvailabilityBySlotRequest {
   UInt32Filter wallclock_request_epoch = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by wallclock_request_epoch_start_date_time - The start time for the wallclock epoch when the request was sent (optional)
   UInt32Filter wallclock_request_epoch_start_date_time = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by beacon_block_root - Beacon block root for this slot (from earliest observation, handles reorgs, NULL if unavailable) (optional)
+  NullableStringFilter beacon_block_root = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by beacon_block_root_variants - Number of unique block roots observed (>1 indicates reorg/fork) (optional)
+  UInt32Filter beacon_block_root_variants = 12 [(google.api.field_behavior) = OPTIONAL];
   // Filter by blob_count - Number of blobs in the slot (max column_rows_count) (optional)
-  UInt32Filter blob_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter blob_count = 13 [(google.api.field_behavior) = OPTIONAL];
   // Filter by success_count - Count of successful probes (optional)
-  UInt32Filter success_count = 12 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter success_count = 14 [(google.api.field_behavior) = OPTIONAL];
   // Filter by failure_count - Count of failed probes (result = failure) (optional)
-  UInt32Filter failure_count = 13 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter failure_count = 15 [(google.api.field_behavior) = OPTIONAL];
   // Filter by missing_count - Count of missing probes (result = missing) (optional)
-  UInt32Filter missing_count = 14 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter missing_count = 16 [(google.api.field_behavior) = OPTIONAL];
   // Filter by probe_count - Total count of probes (optional)
-  UInt32Filter probe_count = 15 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter probe_count = 17 [(google.api.field_behavior) = OPTIONAL];
   // Filter by availability_pct - Availability percentage (success / total * 100) rounded to 2 decimal places (optional)
-  google.protobuf.DoubleValue availability_pct = 16 [(google.api.field_behavior) = OPTIONAL];
+  google.protobuf.DoubleValue availability_pct = 18 [(google.api.field_behavior) = OPTIONAL];
   // Filter by min_response_time_ms - Minimum response time in milliseconds for successful probes only (optional)
-  UInt32Filter min_response_time_ms = 17 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter min_response_time_ms = 19 [(google.api.field_behavior) = OPTIONAL];
   // Filter by p50_response_time_ms - Median (p50) response time in milliseconds for successful probes only (optional)
-  UInt32Filter p50_response_time_ms = 18 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter p50_response_time_ms = 20 [(google.api.field_behavior) = OPTIONAL];
   // Filter by p95_response_time_ms - 95th percentile response time in milliseconds for successful probes only (optional)
-  UInt32Filter p95_response_time_ms = 19 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter p95_response_time_ms = 21 [(google.api.field_behavior) = OPTIONAL];
   // Filter by p99_response_time_ms - 99th percentile response time in milliseconds for successful probes only (optional)
-  UInt32Filter p99_response_time_ms = 20 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter p99_response_time_ms = 22 [(google.api.field_behavior) = OPTIONAL];
   // Filter by max_response_time_ms - Maximum response time in milliseconds for successful probes only (optional)
-  UInt32Filter max_response_time_ms = 21 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter max_response_time_ms = 23 [(google.api.field_behavior) = OPTIONAL];
   // Filter by unique_peer_count - Count of unique peers probed (optional)
-  UInt32Filter unique_peer_count = 22 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter unique_peer_count = 24 [(google.api.field_behavior) = OPTIONAL];
   // Filter by unique_client_count - Count of unique client names (optional)
-  UInt32Filter unique_client_count = 23 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter unique_client_count = 25 [(google.api.field_behavior) = OPTIONAL];
   // Filter by unique_implementation_count - Count of unique client implementations (optional)
-  UInt32Filter unique_implementation_count = 24 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter unique_implementation_count = 26 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by custody_probe_count - Count of observations from active RPC custody probes (optional)
+  UInt32Filter custody_probe_count = 27 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gossipsub_count - Count of observations from passive gossipsub propagation (optional)
+  UInt32Filter gossipsub_count = 28 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_data_column_availability_by_slot to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 25 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 29 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctDataColumnAvailabilityBySlot` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 26 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 30 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 27 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 31 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_data_column_availability_by_slot records
