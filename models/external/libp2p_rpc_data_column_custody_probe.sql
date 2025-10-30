@@ -1,5 +1,5 @@
 ---
-table: libp2p_gossipsub_data_column_sidecar
+table: libp2p_rpc_data_column_custody_probe
 cache:
   incremental_scan_interval: 5s
   full_scan_interval: 24h
