@@ -1,0 +1,64 @@
+- name: total count
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block)
+  expected:
+    count: 607
+- name: unique clients
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_client_name) AS unique_clients
+    FROM
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block)
+  expected:
+    unique_clients: 29
+- name: slot range
+  sql: |
+    SELECT
+      MIN(slot) AS min_slot,
+      MAX(slot) AS max_slot
+    FROM
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block)
+  expected:
+    min_slot: 8815933
+    max_slot: 8815953
+- name: has execution and consensus clients
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_client_implementation) AS execution_clients,
+      COUNT(DISTINCT meta_consensus_implementation) AS consensus_clients
+    FROM
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block)
+  expected:
+    execution_clients: 1
+    consensus_clients: 6
+- name: block version consistency
+  sql: |
+    SELECT
+      COUNT(DISTINCT block_version) AS versions,
+      MIN(block_version) AS version_name
+    FROM
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block)
+  expected:
+    versions: 1
+    version_name: fulu
+- name: execution payload data present
+  sql: |
+    SELECT
+      COUNT(*) AS blocks_with_exec_data
+    FROM
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block)
+    WHERE
+      execution_payload_block_number > 0
+  expected:
+    blocks_with_exec_data: 607
+- name: consensus implementations detail
+  sql: |
+    SELECT
+      COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
+    FROM
+      cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block)
+  expected:
+    total_implementations: 6

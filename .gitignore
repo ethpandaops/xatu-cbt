@@ -9,6 +9,9 @@ bin/**
 /xatu-cbt
 .gocache/
 
+# Output directory for test data
+output/
+
 # Go coverage
 *.coverprofile
 coverage.txt

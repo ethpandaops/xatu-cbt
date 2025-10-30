@@ -1,0 +1,24 @@
+- name: Expected bounds and size
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(slot_start_date_time) AS min,
+      MAX(slot_start_date_time) AS max
+    FROM
+      fct_head_first_seen_by_node FINAL
+  expected:
+    count: 660
+    min: '2025-10-27T00:26:36Z'
+    max: '2025-10-27T00:30:24Z'
+- name: Expected admin bounds
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'fct_head_first_seen_by_node'
+  expected:
+    max: '2025-10-27T00:30:24Z'
+    min: '2025-10-27T00:26:36Z'

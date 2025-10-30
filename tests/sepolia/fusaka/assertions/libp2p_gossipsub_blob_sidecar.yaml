@@ -1,0 +1,8 @@
+- name: total count
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      cluster('{remote_cluster}', default.libp2p_gossipsub_blob_sidecar)
+  expected:
+    count: 0

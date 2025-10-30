@@ -1,0 +1,8 @@
+- name: total count
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      cluster('{remote_cluster}', default.canonical_execution_nonce_reads)
+  expected:
+    count: 8620

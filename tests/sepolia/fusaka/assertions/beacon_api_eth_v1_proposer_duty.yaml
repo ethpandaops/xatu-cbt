@@ -1,0 +1,8 @@
+- name: total count
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      cluster('{remote_cluster}', default.beacon_api_eth_v1_proposer_duty)
+  expected:
+    count: 609

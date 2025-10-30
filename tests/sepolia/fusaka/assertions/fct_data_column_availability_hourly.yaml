@@ -1,0 +1,80 @@
+- name: Row count should be greater than zero
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      fct_data_column_availability_hourly FINAL
+  assertions:
+    - type: greater_than
+      column: count
+      value: 0
+
+- name: Column index should be in valid range (0-127)
+  sql: |
+    SELECT
+      MIN(column_index) AS min_col,
+      MAX(column_index) AS max_col
+    FROM
+      fct_data_column_availability_hourly FINAL
+  assertions:
+    - type: greater_than_or_equal
+      column: min_col
+      value: 0
+    - type: less_than_or_equal
+      column: max_col
+      value: 127
+
+- name: Epoch count should be reasonable (1-10 epochs per hour)
+  sql: |
+    SELECT
+      MIN(epoch_count) AS min_epochs,
+      MAX(epoch_count) AS max_epochs
+    FROM
+      fct_data_column_availability_hourly FINAL
+  assertions:
+    - type: greater_than
+      column: min_epochs
+      value: 0
+    - type: less_than_or_equal
+      column: max_epochs
+      value: 10
+
+- name: Average availability percentage should be valid (0-100)
+  sql: |
+    SELECT
+      MIN(avg_availability_pct) AS min_pct,
+      MAX(avg_availability_pct) AS max_pct
+    FROM
+      fct_data_column_availability_hourly FINAL
+  assertions:
+    - type: greater_than_or_equal
+      column: min_pct
+      value: 0
+    - type: less_than_or_equal
+      column: max_pct
+      value: 100
+
+- name: Total probe count should be greater than zero
+  sql: |
+    SELECT
+      MIN(total_probe_count) AS min_probes
+    FROM
+      fct_data_column_availability_hourly FINAL
+  assertions:
+    - type: greater_than
+      column: min_probes
+      value: 0
+
+- name: Hour start time should be hourly boundaries
+  sql: |
+    SELECT
+      COUNT(*) AS count
+    FROM
+      fct_data_column_availability_hourly FINAL
+    WHERE
+      toMinute(hour_start_date_time) != 0
+      OR toSecond(hour_start_date_time) != 0
+  assertions:
+    - type: equal
+      column: count
+      value: 0

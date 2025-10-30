@@ -1,0 +1,11 @@
+- name: Expected size
+  sql: "SELECT\n  COUNT(*) AS count,\n  MIN(slot) AS min,\n  MAX(slot) AS max\nFROM\n  fct_attestation_correctness_canonical FINAL\n"
+  expected:
+    count: 21
+    min: 8815933
+    max: 8815953
+- name: Expected admin bounds
+  sql: "SELECT\n  fromUnixTimestamp(MAX(position + interval)) AS max,\n  fromUnixTimestamp(MIN(position)) AS min\nFROM\n  admin_cbt_incremental FINAL\nWHERE\n  table = 'fct_attestation_correctness_canonical'\n"
+  expected:
+    max: '2025-10-27T00:30:36Z'
+    min: '2025-10-27T00:26:36Z'

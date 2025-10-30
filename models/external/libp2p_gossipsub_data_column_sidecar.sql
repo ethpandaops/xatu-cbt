@@ -7,11 +7,11 @@ interval:
   type: slot
 lag: 12
 ---
-SELECT 
+SELECT
     toUnixTimestamp(min(slot_start_date_time)) as min,
     toUnixTimestamp(max(slot_start_date_time)) as max
 FROM {{ .self.helpers.from }}
-WHERE 
+WHERE
     meta_network_name = '{{ .env.NETWORK }}'
 {{ if .cache.is_incremental_scan }}
     AND (
