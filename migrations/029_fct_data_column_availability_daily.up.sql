@@ -23,8 +23,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_daily_local on clust
 ) PARTITION BY toYYYYMM(date)
 ORDER BY
     (`date`, `column_index`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Data column availability by day and column index for PeerDAS heatmap window-level view';
+SETTINGS
+  deduplicate_merge_projection_mode = 'rebuild',
+  min_age_to_force_merge_seconds = 384,
+  min_age_to_force_merge_on_partition_only=false
+COMMENT 'Data column availability by day and column index';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_daily ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_data_column_availability_daily_local ENGINE = Distributed(
     '{cluster}',

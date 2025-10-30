@@ -33,9 +33,12 @@ CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_by_slot_local on clu
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `column_index`, `slot`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Data column availability by slot and column index for PeerDAS heatmap visualization';
+    (`slot_start_date_time`, `column_index`)
+SETTINGS
+  deduplicate_merge_projection_mode = 'rebuild',
+  min_age_to_force_merge_seconds = 384,
+  min_age_to_force_merge_on_partition_only=false
+COMMENT 'Data column availability by slot and column index';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_by_slot ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_data_column_availability_by_slot_local ENGINE = Distributed(
     '{cluster}',

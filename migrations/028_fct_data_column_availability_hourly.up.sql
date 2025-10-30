@@ -23,8 +23,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_hourly_local on clus
 ) PARTITION BY toStartOfMonth(hour_start_date_time)
 ORDER BY
     (`hour_start_date_time`, `column_index`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Data column availability by hour and column index for PeerDAS heatmap day-level drill-down';
+SETTINGS
+  deduplicate_merge_projection_mode = 'rebuild',
+  min_age_to_force_merge_seconds = 384,
+  min_age_to_force_merge_on_partition_only=false
+COMMENT 'Data column availability by hour and column index';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_hourly ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_data_column_availability_hourly_local ENGINE = Distributed(
     '{cluster}',

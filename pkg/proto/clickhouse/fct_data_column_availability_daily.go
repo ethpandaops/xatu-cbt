@@ -8,11 +8,6 @@ import (
 )
 
 // BuildListFctDataColumnAvailabilityDailyQuery constructs a parameterized SQL query from a ListFctDataColumnAvailabilityDailyRequest
-//
-// Available projections:
-//   - p_by_date_column (primary key: date)
-//
-// Use WithProjection() option to select a specific projection.
 func BuildListFctDataColumnAvailabilityDailyQuery(req *ListFctDataColumnAvailabilityDailyRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate that at least one primary key is provided
 	// Primary keys can come from base table or projections
