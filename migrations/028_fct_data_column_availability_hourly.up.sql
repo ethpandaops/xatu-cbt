@@ -33,9 +33,3 @@ CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_hourly ON CLUSTER '{
     cityHash64(`hour_start_date_time`, `column_index`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_data_column_availability_hourly_local ON CLUSTER '{cluster}'
-ADD PROJECTION p_by_hour_column
-(
-    SELECT *
-    ORDER BY (`hour_start_date_time`, `column_index`)
-);
