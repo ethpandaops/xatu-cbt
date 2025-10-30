@@ -9,7 +9,7 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Data column availability by day and column index for PeerDAS heatmap window-level view
+// Data column availability by day and column index
 
 message FctDataColumnAvailabilityDaily {
   // Timestamp when the record was last updated

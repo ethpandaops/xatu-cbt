@@ -912,7 +912,7 @@ func BuildListFctDataColumnAvailabilityBySlotQuery(req *ListFctDataColumnAvailab
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", column_index" + ", slot"
+		orderByClause = " ORDER BY slot_start_date_time" + ", column_index"
 	}
 
 	// Build column list
@@ -933,7 +933,7 @@ func BuildGetFctDataColumnAvailabilityBySlotQuery(req *GetFctDataColumnAvailabil
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, column_index, slot"
+	orderByClause := " ORDER BY slot_start_date_time, column_index"
 
 	// Build column list
 	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "wallclock_request_slot", "toUnixTimestamp(`wallclock_request_slot_start_date_time`) AS `wallclock_request_slot_start_date_time`", "wallclock_request_epoch", "toUnixTimestamp(`wallclock_request_epoch_start_date_time`) AS `wallclock_request_epoch_start_date_time`", "column_index", "NULLIF(`beacon_block_root`, repeat('\x00', 66)) AS `beacon_block_root`", "toUInt32(`beacon_block_root_variants`) AS `beacon_block_root_variants`", "toUInt32(`blob_count`) AS `blob_count`", "success_count", "failure_count", "missing_count", "probe_count", "availability_pct", "min_response_time_ms", "p50_response_time_ms", "p95_response_time_ms", "p99_response_time_ms", "max_response_time_ms", "unique_peer_count", "unique_client_count", "unique_implementation_count", "custody_probe_count", "gossipsub_count"}

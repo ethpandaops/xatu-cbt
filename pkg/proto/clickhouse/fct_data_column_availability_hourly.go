@@ -8,11 +8,6 @@ import (
 )
 
 // BuildListFctDataColumnAvailabilityHourlyQuery constructs a parameterized SQL query from a ListFctDataColumnAvailabilityHourlyRequest
-//
-// Available projections:
-//   - p_by_hour_column (primary key: hour_start_date_time)
-//
-// Use WithProjection() option to select a specific projection.
 func BuildListFctDataColumnAvailabilityHourlyQuery(req *ListFctDataColumnAvailabilityHourlyRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate that at least one primary key is provided
 	// Primary keys can come from base table or projections

@@ -129,6 +129,44 @@ func BuildListFctDataColumnAvailabilityByEpochQuery(req *ListFctDataColumnAvaila
 		}
 	}
 
+	// Add filter for column: slot_start_date_time
+	if req.SlotStartDateTime != nil {
+		switch filter := req.SlotStartDateTime.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("slot_start_date_time", "=", DateTimeValue{filter.Eq})
+		case *UInt32Filter_Ne:
+			qb.AddCondition("slot_start_date_time", "!=", DateTimeValue{filter.Ne})
+		case *UInt32Filter_Lt:
+			qb.AddCondition("slot_start_date_time", "<", DateTimeValue{filter.Lt})
+		case *UInt32Filter_Lte:
+			qb.AddCondition("slot_start_date_time", "<=", DateTimeValue{filter.Lte})
+		case *UInt32Filter_Gt:
+			qb.AddCondition("slot_start_date_time", ">", DateTimeValue{filter.Gt})
+		case *UInt32Filter_Gte:
+			qb.AddCondition("slot_start_date_time", ">=", DateTimeValue{filter.Gte})
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("slot_start_date_time", DateTimeValue{filter.Between.Min}, DateTimeValue{filter.Between.Max.GetValue()})
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				converted := make([]interface{}, len(filter.In.Values))
+				for i, v := range filter.In.Values {
+					converted[i] = DateTimeValue{v}
+				}
+				qb.AddInCondition("slot_start_date_time", converted)
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				converted := make([]interface{}, len(filter.NotIn.Values))
+				for i, v := range filter.NotIn.Values {
+					converted[i] = DateTimeValue{v}
+				}
+				qb.AddNotInCondition("slot_start_date_time", converted)
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: column_index
 	if req.ColumnIndex != nil {
 		switch filter := req.ColumnIndex.Filter.(type) {
@@ -520,7 +558,7 @@ func BuildListFctDataColumnAvailabilityByEpochQuery(req *ListFctDataColumnAvaila
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "epoch", "epoch_start_date_time", "column_index", "slot_count", "total_probe_count", "total_success_count", "total_failure_count", "total_missing_count", "avg_availability_pct", "min_availability_pct", "max_availability_pct", "min_response_time_ms", "avg_p50_response_time_ms", "avg_p95_response_time_ms", "avg_p99_response_time_ms", "max_response_time_ms", "max_blob_count"}
+		validFields := []string{"updated_date_time", "epoch", "epoch_start_date_time", "slot_start_date_time", "column_index", "slot_count", "total_probe_count", "total_success_count", "total_failure_count", "total_missing_count", "avg_availability_pct", "min_availability_pct", "max_availability_pct", "min_response_time_ms", "avg_p50_response_time_ms", "avg_p95_response_time_ms", "avg_p99_response_time_ms", "max_response_time_ms", "max_blob_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -528,11 +566,11 @@ func BuildListFctDataColumnAvailabilityByEpochQuery(req *ListFctDataColumnAvaila
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY epoch_start_date_time" + ", column_index" + ", epoch"
+		orderByClause = " ORDER BY epoch_start_date_time" + ", column_index"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "column_index", "slot_count", "total_probe_count", "total_success_count", "total_failure_count", "total_missing_count", "avg_availability_pct", "min_availability_pct", "max_availability_pct", "min_response_time_ms", "avg_p50_response_time_ms", "avg_p95_response_time_ms", "avg_p99_response_time_ms", "max_response_time_ms", "toUInt32(`max_blob_count`) AS `max_blob_count`"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "column_index", "slot_count", "total_probe_count", "total_success_count", "total_failure_count", "total_missing_count", "avg_availability_pct", "min_availability_pct", "max_availability_pct", "min_response_time_ms", "avg_p50_response_time_ms", "avg_p95_response_time_ms", "avg_p99_response_time_ms", "max_response_time_ms", "toUInt32(`max_blob_count`) AS `max_blob_count`"}
 
 	return BuildParameterizedQuery("fct_data_column_availability_by_epoch", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -549,10 +587,10 @@ func BuildGetFctDataColumnAvailabilityByEpochQuery(req *GetFctDataColumnAvailabi
 	qb.AddCondition("epoch_start_date_time", "=", req.EpochStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY epoch_start_date_time, column_index, epoch"
+	orderByClause := " ORDER BY epoch_start_date_time, column_index"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "column_index", "slot_count", "total_probe_count", "total_success_count", "total_failure_count", "total_missing_count", "avg_availability_pct", "min_availability_pct", "max_availability_pct", "min_response_time_ms", "avg_p50_response_time_ms", "avg_p95_response_time_ms", "avg_p99_response_time_ms", "max_response_time_ms", "toUInt32(`max_blob_count`) AS `max_blob_count`"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "column_index", "slot_count", "total_probe_count", "total_success_count", "total_failure_count", "total_missing_count", "avg_availability_pct", "min_availability_pct", "max_availability_pct", "min_response_time_ms", "avg_p50_response_time_ms", "avg_p95_response_time_ms", "avg_p99_response_time_ms", "max_response_time_ms", "toUInt32(`max_blob_count`) AS `max_blob_count`"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_data_column_availability_by_epoch", columns, qb, orderByClause, 1, 0, options...)
