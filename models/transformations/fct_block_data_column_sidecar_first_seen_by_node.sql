@@ -1,5 +1,5 @@
 ---
-table: fct_block_data_column_first_seen_by_node
+table: fct_block_data_column_sidecar_first_seen_by_node
 type: incremental
 interval:
   type: slot

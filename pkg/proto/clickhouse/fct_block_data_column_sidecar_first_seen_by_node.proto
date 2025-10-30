@@ -11,7 +11,7 @@ import "clickhouse/annotations.proto";
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // When the data column was first seen on the network by a sentry node
 
-message FctBlockDataColumnFirstSeenByNode {
+message FctBlockDataColumnSidecarFirstSeenByNode {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Source of the event
@@ -64,8 +64,8 @@ message FctBlockDataColumnFirstSeenByNode {
   string meta_consensus_implementation = 35;
 }
 
-// Request for listing fct_block_data_column_first_seen_by_node records
-message ListFctBlockDataColumnFirstSeenByNodeRequest {
+// Request for listing fct_block_data_column_sidecar_first_seen_by_node records
+message ListFctBlockDataColumnSidecarFirstSeenByNodeRequest {
   // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: slot)
   UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
 
@@ -121,11 +121,11 @@ message ListFctBlockDataColumnFirstSeenByNodeRequest {
   // Filter by meta_consensus_implementation - Ethereum consensus client implementation (optional)
   StringFilter meta_consensus_implementation = 25 [(google.api.field_behavior) = OPTIONAL];
 
-  // The maximum number of fct_block_data_column_first_seen_by_node to return.
+  // The maximum number of fct_block_data_column_sidecar_first_seen_by_node to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 26 [(google.api.field_behavior) = OPTIONAL];
-  // A page token, received from a previous `ListFctBlockDataColumnFirstSeenByNode` call.
+  // A page token, received from a previous `ListFctBlockDataColumnSidecarFirstSeenByNode` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 27 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
@@ -134,38 +134,38 @@ message ListFctBlockDataColumnFirstSeenByNodeRequest {
   string order_by = 28 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Response for listing fct_block_data_column_first_seen_by_node records
-message ListFctBlockDataColumnFirstSeenByNodeResponse {
-  // The list of fct_block_data_column_first_seen_by_node.
-  repeated FctBlockDataColumnFirstSeenByNode fct_block_data_column_first_seen_by_node = 1;
+// Response for listing fct_block_data_column_sidecar_first_seen_by_node records
+message ListFctBlockDataColumnSidecarFirstSeenByNodeResponse {
+  // The list of fct_block_data_column_sidecar_first_seen_by_node.
+  repeated FctBlockDataColumnSidecarFirstSeenByNode fct_block_data_column_sidecar_first_seen_by_node = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// Request for getting a single fct_block_data_column_first_seen_by_node record by primary key
-message GetFctBlockDataColumnFirstSeenByNodeRequest {
+// Request for getting a single fct_block_data_column_sidecar_first_seen_by_node record by primary key
+message GetFctBlockDataColumnSidecarFirstSeenByNodeRequest {
   // The wall clock time when the slot started
   uint32 slot_start_date_time = 1; // Primary key (required)
 }
 
-// Response for getting a single fct_block_data_column_first_seen_by_node record
-message GetFctBlockDataColumnFirstSeenByNodeResponse {
-  FctBlockDataColumnFirstSeenByNode item = 1;
+// Response for getting a single fct_block_data_column_sidecar_first_seen_by_node record
+message GetFctBlockDataColumnSidecarFirstSeenByNodeResponse {
+  FctBlockDataColumnSidecarFirstSeenByNode item = 1;
 }
 
-// Query fct_block_data_column_first_seen_by_node data
-service FctBlockDataColumnFirstSeenByNodeService {
+// Query fct_block_data_column_sidecar_first_seen_by_node data
+service FctBlockDataColumnSidecarFirstSeenByNodeService {
   // List records | Retrieve paginated results with optional filtering
-  rpc List(ListFctBlockDataColumnFirstSeenByNodeRequest) returns (ListFctBlockDataColumnFirstSeenByNodeResponse) {
+  rpc List(ListFctBlockDataColumnSidecarFirstSeenByNodeRequest) returns (ListFctBlockDataColumnSidecarFirstSeenByNodeResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_block_data_column_first_seen_by_node"
+      get: "/api/v1/fct_block_data_column_sidecar_first_seen_by_node"
     };
   }
   // Get record | Retrieve a single record by slot_start_date_time
-  rpc Get(GetFctBlockDataColumnFirstSeenByNodeRequest) returns (GetFctBlockDataColumnFirstSeenByNodeResponse) {
+  rpc Get(GetFctBlockDataColumnSidecarFirstSeenByNodeRequest) returns (GetFctBlockDataColumnSidecarFirstSeenByNodeResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_block_data_column_first_seen_by_node/{slot_start_date_time}"
+      get: "/api/v1/fct_block_data_column_sidecar_first_seen_by_node/{slot_start_date_time}"
     };
   }
 }
