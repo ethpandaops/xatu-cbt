@@ -1,19 +1,12 @@
 ---
 table: fct_data_column_availability_hourly
-type: incremental
-interval:
-  type: slot
-  max: 50000
-schedules:
-  forwardfill: "@every 5s"
-  backfill: "@every 30s"
+type: scheduled
+schedule: "@every 5m"
 tags:
   - hourly
   - data_column
   - peerdas
   - custody
-dependencies:
-  - "{{transformation}}.fct_data_column_availability_by_epoch"
 ---
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 SELECT
@@ -51,9 +44,15 @@ FROM (
         round(avg(avg_p99_response_time_ms)) AS avg_p99_response_time_ms,
         round(max(max_response_time_ms)) AS max_response_time_ms,
         max(max_blob_count) AS max_blob_count
-    FROM {{ index .dep "{{transformation}}" "fct_data_column_availability_by_epoch" "helpers" "from" }} FINAL
-    WHERE epoch_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    FROM `{{ .self.database }}`.`fct_data_column_availability_by_epoch` FINAL
+    WHERE toStartOfHour(epoch_start_date_time) >= now() - INTERVAL 19 DAY
     GROUP BY
         toStartOfHour(epoch_start_date_time),
         column_index
-)
+);
+
+DELETE FROM `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
+{{ if .clickhouse.cluster }}
+ON CLUSTER '{{ .clickhouse.cluster }}'
+{{ end }}
+WHERE updated_date_time != fromUnixTimestamp({{ .task.start }})

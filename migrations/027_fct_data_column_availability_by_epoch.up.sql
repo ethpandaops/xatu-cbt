@@ -2,6 +2,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_by_epoch_local on cl
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `epoch` UInt32 COMMENT 'Epoch number' CODEC(DoubleDelta, ZSTD(1)),
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
+    `slot_start_date_time` DateTime COMMENT 'Earliest slot start time in this epoch (used for CBT position tracking)' CODEC(DoubleDelta, ZSTD(1)),
     `column_index` UInt64 COMMENT 'Column index (0-127)' CODEC(ZSTD(1)),
     `slot_count` UInt32 COMMENT 'Number of slots in this epoch aggregation' CODEC(ZSTD(1)),
     `total_probe_count` UInt64 COMMENT 'Total probe count across all slots' CODEC(DoubleDelta, ZSTD(1)),

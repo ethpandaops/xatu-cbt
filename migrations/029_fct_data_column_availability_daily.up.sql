@@ -33,9 +33,3 @@ CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_daily ON CLUSTER '{c
     cityHash64(`date`, `column_index`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_data_column_availability_daily_local ON CLUSTER '{cluster}'
-ADD PROJECTION p_by_date_column
-(
-    SELECT *
-    ORDER BY (`date`, `column_index`)
-);

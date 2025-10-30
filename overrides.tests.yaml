@@ -26,6 +26,12 @@ models:
     fct_node_active_last_24h:
       config:
         schedule: "@every 30s"
+    fct_data_column_availability_hourly:
+      config:
+        schedule: "@every 30s"
+    fct_data_column_availability_daily:
+      config:
+        schedule: "@every 30s"
     beacon_api_eth_v1_beacon_committee:
       config:
         lag: 12

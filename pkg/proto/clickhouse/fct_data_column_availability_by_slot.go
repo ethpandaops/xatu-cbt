@@ -363,6 +363,70 @@ func BuildListFctDataColumnAvailabilityBySlotQuery(req *ListFctDataColumnAvailab
 		}
 	}
 
+	// Add filter for column: beacon_block_root
+	if req.BeaconBlockRoot != nil {
+		switch filter := req.BeaconBlockRoot.Filter.(type) {
+		case *NullableStringFilter_Eq:
+			qb.AddCondition("beacon_block_root", "=", filter.Eq)
+		case *NullableStringFilter_Ne:
+			qb.AddCondition("beacon_block_root", "!=", filter.Ne)
+		case *NullableStringFilter_Contains:
+			qb.AddLikeCondition("beacon_block_root", "%" + filter.Contains + "%")
+		case *NullableStringFilter_StartsWith:
+			qb.AddLikeCondition("beacon_block_root", filter.StartsWith + "%")
+		case *NullableStringFilter_EndsWith:
+			qb.AddLikeCondition("beacon_block_root", "%" + filter.EndsWith)
+		case *NullableStringFilter_Like:
+			qb.AddLikeCondition("beacon_block_root", filter.Like)
+		case *NullableStringFilter_NotLike:
+			qb.AddNotLikeCondition("beacon_block_root", filter.NotLike)
+		case *NullableStringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("beacon_block_root", StringSliceToInterface(filter.In.Values))
+			}
+		case *NullableStringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("beacon_block_root", StringSliceToInterface(filter.NotIn.Values))
+			}
+		case *NullableStringFilter_IsNull:
+			qb.AddIsNullCondition("beacon_block_root")
+		case *NullableStringFilter_IsNotNull:
+			qb.AddIsNotNullCondition("beacon_block_root")
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: beacon_block_root_variants
+	if req.BeaconBlockRootVariants != nil {
+		switch filter := req.BeaconBlockRootVariants.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("beacon_block_root_variants", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("beacon_block_root_variants", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("beacon_block_root_variants", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("beacon_block_root_variants", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("beacon_block_root_variants", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("beacon_block_root_variants", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("beacon_block_root_variants", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("beacon_block_root_variants", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("beacon_block_root_variants", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: blob_count
 	if req.BlobCount != nil {
 		switch filter := req.BlobCount.Filter.(type) {
@@ -755,6 +819,66 @@ func BuildListFctDataColumnAvailabilityBySlotQuery(req *ListFctDataColumnAvailab
 		}
 	}
 
+	// Add filter for column: custody_probe_count
+	if req.CustodyProbeCount != nil {
+		switch filter := req.CustodyProbeCount.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("custody_probe_count", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("custody_probe_count", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("custody_probe_count", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("custody_probe_count", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("custody_probe_count", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("custody_probe_count", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("custody_probe_count", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("custody_probe_count", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("custody_probe_count", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: gossipsub_count
+	if req.GossipsubCount != nil {
+		switch filter := req.GossipsubCount.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("gossipsub_count", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("gossipsub_count", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("gossipsub_count", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("gossipsub_count", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("gossipsub_count", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("gossipsub_count", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("gossipsub_count", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("gossipsub_count", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("gossipsub_count", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -780,7 +904,7 @@ func BuildListFctDataColumnAvailabilityBySlotQuery(req *ListFctDataColumnAvailab
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "wallclock_request_slot", "wallclock_request_slot_start_date_time", "wallclock_request_epoch", "wallclock_request_epoch_start_date_time", "column_index", "blob_count", "success_count", "failure_count", "missing_count", "probe_count", "availability_pct", "min_response_time_ms", "p50_response_time_ms", "p95_response_time_ms", "p99_response_time_ms", "max_response_time_ms", "unique_peer_count", "unique_client_count", "unique_implementation_count"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "wallclock_request_slot", "wallclock_request_slot_start_date_time", "wallclock_request_epoch", "wallclock_request_epoch_start_date_time", "column_index", "beacon_block_root", "beacon_block_root_variants", "blob_count", "success_count", "failure_count", "missing_count", "probe_count", "availability_pct", "min_response_time_ms", "p50_response_time_ms", "p95_response_time_ms", "p99_response_time_ms", "max_response_time_ms", "unique_peer_count", "unique_client_count", "unique_implementation_count", "custody_probe_count", "gossipsub_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -792,7 +916,7 @@ func BuildListFctDataColumnAvailabilityBySlotQuery(req *ListFctDataColumnAvailab
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "wallclock_request_slot", "toUnixTimestamp(`wallclock_request_slot_start_date_time`) AS `wallclock_request_slot_start_date_time`", "wallclock_request_epoch", "toUnixTimestamp(`wallclock_request_epoch_start_date_time`) AS `wallclock_request_epoch_start_date_time`", "column_index", "toUInt32(`blob_count`) AS `blob_count`", "success_count", "failure_count", "missing_count", "probe_count", "availability_pct", "min_response_time_ms", "p50_response_time_ms", "p95_response_time_ms", "p99_response_time_ms", "max_response_time_ms", "unique_peer_count", "unique_client_count", "unique_implementation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "wallclock_request_slot", "toUnixTimestamp(`wallclock_request_slot_start_date_time`) AS `wallclock_request_slot_start_date_time`", "wallclock_request_epoch", "toUnixTimestamp(`wallclock_request_epoch_start_date_time`) AS `wallclock_request_epoch_start_date_time`", "column_index", "NULLIF(`beacon_block_root`, repeat('\x00', 66)) AS `beacon_block_root`", "toUInt32(`beacon_block_root_variants`) AS `beacon_block_root_variants`", "toUInt32(`blob_count`) AS `blob_count`", "success_count", "failure_count", "missing_count", "probe_count", "availability_pct", "min_response_time_ms", "p50_response_time_ms", "p95_response_time_ms", "p99_response_time_ms", "max_response_time_ms", "unique_peer_count", "unique_client_count", "unique_implementation_count", "custody_probe_count", "gossipsub_count"}
 
 	return BuildParameterizedQuery("fct_data_column_availability_by_slot", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -812,7 +936,7 @@ func BuildGetFctDataColumnAvailabilityBySlotQuery(req *GetFctDataColumnAvailabil
 	orderByClause := " ORDER BY slot_start_date_time, column_index, slot"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "wallclock_request_slot", "toUnixTimestamp(`wallclock_request_slot_start_date_time`) AS `wallclock_request_slot_start_date_time`", "wallclock_request_epoch", "toUnixTimestamp(`wallclock_request_epoch_start_date_time`) AS `wallclock_request_epoch_start_date_time`", "column_index", "toUInt32(`blob_count`) AS `blob_count`", "success_count", "failure_count", "missing_count", "probe_count", "availability_pct", "min_response_time_ms", "p50_response_time_ms", "p95_response_time_ms", "p99_response_time_ms", "max_response_time_ms", "unique_peer_count", "unique_client_count", "unique_implementation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "wallclock_request_slot", "toUnixTimestamp(`wallclock_request_slot_start_date_time`) AS `wallclock_request_slot_start_date_time`", "wallclock_request_epoch", "toUnixTimestamp(`wallclock_request_epoch_start_date_time`) AS `wallclock_request_epoch_start_date_time`", "column_index", "NULLIF(`beacon_block_root`, repeat('\x00', 66)) AS `beacon_block_root`", "toUInt32(`beacon_block_root_variants`) AS `beacon_block_root_variants`", "toUInt32(`blob_count`) AS `blob_count`", "success_count", "failure_count", "missing_count", "probe_count", "availability_pct", "min_response_time_ms", "p50_response_time_ms", "p95_response_time_ms", "p99_response_time_ms", "max_response_time_ms", "unique_peer_count", "unique_client_count", "unique_implementation_count", "custody_probe_count", "gossipsub_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_data_column_availability_by_slot", columns, qb, orderByClause, 1, 0, options...)
