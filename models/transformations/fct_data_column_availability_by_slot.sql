@@ -74,15 +74,15 @@ SELECT
     slot_start_date_time,
     epoch,
     epoch_start_date_time,
-    -- Use argMin to pick wallclock values from earliest observation
+    -- Use argMin to pick wallclock values from earliest observation (by actual timestamp)
     -- This allows custody probe and gossipsub to combine properly
-    argMin(wallclock_request_slot, response_time_ms) AS wallclock_request_slot,
-    argMin(wallclock_request_slot_start_date_time, response_time_ms) AS wallclock_request_slot_start_date_time,
-    argMin(wallclock_request_epoch, response_time_ms) AS wallclock_request_epoch,
-    argMin(wallclock_request_epoch_start_date_time, response_time_ms) AS wallclock_request_epoch_start_date_time,
+    argMin(wallclock_request_slot, wallclock_request_slot_start_date_time) AS wallclock_request_slot,
+    argMin(wallclock_request_slot_start_date_time, wallclock_request_slot_start_date_time) AS wallclock_request_slot_start_date_time,
+    argMin(wallclock_request_epoch, wallclock_request_slot_start_date_time) AS wallclock_request_epoch,
+    argMin(wallclock_request_epoch_start_date_time, wallclock_request_slot_start_date_time) AS wallclock_request_epoch_start_date_time,
     column_index,
     -- Pick beacon_block_root from earliest observation (handles reorgs/forks)
-    argMin(beacon_block_root, response_time_ms) AS beacon_block_root,
+    argMin(beacon_block_root, wallclock_request_slot_start_date_time) AS beacon_block_root,
     -- Track number of unique block roots (>1 indicates reorg/fork)
     uniqExact(combined_sources.beacon_block_root) AS beacon_block_root_variants,
     max(blob_count_raw) AS blob_count,
@@ -91,11 +91,12 @@ SELECT
     countIf(result = 'missing') AS missing_count,
     count(*) AS probe_count,
     round((success_count * 100.0 / probe_count), 2) AS availability_pct,
-    if(success_count > 0, round(minIf(response_time_ms, result = 'success')), 0) AS min_response_time_ms,
-    if(success_count > 0, round(quantileIf(0.50)(response_time_ms, result = 'success')), 0) AS p50_response_time_ms,
-    if(success_count > 0, round(quantileIf(0.95)(response_time_ms, result = 'success')), 0) AS p95_response_time_ms,
-    if(success_count > 0, round(quantileIf(0.99)(response_time_ms, result = 'success')), 0) AS p99_response_time_ms,
-    if(success_count > 0, round(maxIf(response_time_ms, result = 'success')), 0) AS max_response_time_ms,
+    -- Response time metrics only from custody probes (RPC latency, not gossipsub propagation)
+    round(minIf(response_time_ms, result = 'success' AND source = 'custody_probe')) AS min_response_time_ms,
+    round(quantileIf(0.50)(response_time_ms, result = 'success' AND source = 'custody_probe')) AS p50_response_time_ms,
+    round(quantileIf(0.95)(response_time_ms, result = 'success' AND source = 'custody_probe')) AS p95_response_time_ms,
+    round(quantileIf(0.99)(response_time_ms, result = 'success' AND source = 'custody_probe')) AS p99_response_time_ms,
+    round(maxIf(response_time_ms, result = 'success' AND source = 'custody_probe')) AS max_response_time_ms,
     countDistinct(peer_id_unique_key) AS unique_peer_count,
     countDistinct(meta_client_name) AS unique_client_count,
     countDistinct(meta_client_implementation) AS unique_implementation_count,
