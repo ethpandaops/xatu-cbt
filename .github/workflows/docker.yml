@@ -17,9 +17,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on:
-      - self-hosted-ghr
-      - size-s-x64
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -52,23 +50,23 @@ jobs:
         id: cbt_digest
         run: |
           CBT_TAG="${{ steps.cbt_tag.outputs.tag }}"
-          
+
           # Get the digest of the CBT image
           DIGEST=$(docker manifest inspect ethpandaops/cbt:${CBT_TAG} --verbose | jq -r '.Descriptor.digest' | cut -d: -f2 | cut -c1-12)
-          
+
           # If we can't get the digest, try a different approach
           if [ -z "$DIGEST" ] || [ "$DIGEST" = "null" ]; then
             # Pull the image metadata and get the digest
             docker pull ethpandaops/cbt:${CBT_TAG} --quiet
             DIGEST=$(docker inspect ethpandaops/cbt:${CBT_TAG} --format='{{.RepoDigests}}' | grep -oE 'sha256:[a-f0-9]{64}' | head -1 | cut -d: -f2 | cut -c1-12)
           fi
-          
+
           # If still no digest, use a timestamp as fallback
           if [ -z "$DIGEST" ] || [ "$DIGEST" = "null" ]; then
             DIGEST=$(date +%Y%m%d%H%M%S)
             echo "Warning: Could not fetch CBT image digest, using timestamp: $DIGEST"
           fi
-          
+
           echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
           echo "CBT image digest: ${DIGEST}"
 
