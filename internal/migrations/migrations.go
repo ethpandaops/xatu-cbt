@@ -29,7 +29,7 @@ func PrepareAndRun(cfg *config.Config) error {
 	migrationsDir := "migrations"
 
 	// Copy and process migration files
-	if procErr := processMigrationFiles(migrationsDir, tempDir, cfg.Network); procErr != nil {
+	if procErr := processMigrationFiles(migrationsDir, tempDir, cfg.Network, cfg.ExternalModelCluster); procErr != nil {
 		return fmt.Errorf("failed to process migration files: %w", procErr)
 	}
 
@@ -72,8 +72,8 @@ func PrepareAndRun(cfg *config.Config) error {
 	return nil
 }
 
-// processMigrationFiles copies migration files from source to dest, substituting ${NETWORK_NAME}
-func processMigrationFiles(sourceDir, destDir, network string) error {
+// processMigrationFiles copies migration files from source to dest, substituting ${NETWORK_NAME} and ${EXTERNAL_MODEL_CLUSTER}
+func processMigrationFiles(sourceDir, destDir, network, externalCluster string) error {
 	// Read all files from source directory
 	entries, err := os.ReadDir(sourceDir)
 	if err != nil {
@@ -102,6 +102,8 @@ func processMigrationFiles(sourceDir, destDir, network string) error {
 
 		// Replace ${NETWORK_NAME} with actual network
 		processedContent := strings.ReplaceAll(string(content), "${NETWORK_NAME}", network)
+		// Replace ${EXTERNAL_MODEL_CLUSTER} with actual external cluster
+		processedContent = strings.ReplaceAll(processedContent, "${EXTERNAL_MODEL_CLUSTER}", externalCluster)
 
 		// Write processed content to destination
 		if err := os.WriteFile(destPath, []byte(processedContent), 0o600); err != nil {
@@ -151,7 +153,7 @@ func GetMigrationStatus(cfg *config.Config) (version uint, dirty bool, err error
 	}()
 
 	// Copy migration files (needed for migrate instance)
-	if procErr := processMigrationFiles("migrations", tempDir, cfg.Network); procErr != nil {
+	if procErr := processMigrationFiles("migrations", tempDir, cfg.Network, cfg.ExternalModelCluster); procErr != nil {
 		return 0, false, fmt.Errorf("failed to process migration files: %w", procErr)
 	}
 
@@ -184,11 +186,11 @@ func GetMigrationStatus(cfg *config.Config) (version uint, dirty bool, err error
 
 // CopyMigrationsToDirectory copies and processes migration files to a specific directory
 // This is useful for debugging or manual inspection
-func CopyMigrationsToDirectory(sourceDir, destDir, network string) error {
+func CopyMigrationsToDirectory(sourceDir, destDir, network, externalCluster string) error {
 	// Create destination directory if it doesn't exist
 	if err := os.MkdirAll(destDir, 0o750); err != nil {
 		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
 
-	return processMigrationFiles(sourceDir, destDir, network)
+	return processMigrationFiles(sourceDir, destDir, network, externalCluster)
 }
