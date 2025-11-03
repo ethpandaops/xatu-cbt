@@ -18,6 +18,7 @@ type Config struct {
 	ClickhouseUsername       string
 	ClickhousePassword       string
 	ClickhouseCluster        string
+	ExternalModelCluster     string
 }
 
 // Load reads configuration from environment variables and .env file
@@ -31,11 +32,12 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		Network:            getEnv("NETWORK", "mainnet"),
-		ClickhouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
-		ClickhouseUsername: getEnv("CLICKHOUSE_USERNAME", "default"),
-		ClickhousePassword: getEnv("CLICKHOUSE_PASSWORD", ""),
-		ClickhouseCluster:  getEnv("CLICKHOUSE_CLUSTER", ""),
+		Network:              getEnv("NETWORK", "mainnet"),
+		ClickhouseHost:       getEnv("CLICKHOUSE_HOST", "localhost"),
+		ClickhouseUsername:   getEnv("CLICKHOUSE_USERNAME", "default"),
+		ClickhousePassword:   getEnv("CLICKHOUSE_PASSWORD", ""),
+		ClickhouseCluster:    getEnv("CLICKHOUSE_CLUSTER", ""),
+		ExternalModelCluster: getEnv("EXTERNAL_MODEL_CLUSTER", ""),
 	}
 
 	// Parse numeric values
@@ -73,19 +75,26 @@ func (c *Config) String() string {
 		clusterDisplay = "(single-node)"
 	}
 
+	externalClusterDisplay := c.ExternalModelCluster
+	if externalClusterDisplay == "" {
+		externalClusterDisplay = "(not set)"
+	}
+
 	return fmt.Sprintf(`Current Configuration:
 ======================
-Network:                %s
-ClickHouse Host:        %s
-ClickHouse Native Port: %d
-ClickHouse Username:    %s
-ClickHouse Password:    %s
-ClickHouse Cluster:     %s`,
+Network:                  %s
+ClickHouse Host:          %s
+ClickHouse Native Port:   %d
+ClickHouse Username:      %s
+ClickHouse Password:      %s
+ClickHouse Cluster:       %s
+External Model Cluster:   %s`,
 		c.Network,
 		c.ClickhouseHost,
 		c.ClickhouseNativePort,
 		c.ClickhouseUsername,
 		passwordDisplay,
 		clusterDisplay,
+		externalClusterDisplay,
 	)
 }
