@@ -27,6 +27,7 @@ WITH combined_events AS (
         propagation_slot_start_diff,
         block_root,
         column_index,
+        kzg_commitments_count,
         meta_client_name,
         meta_client_version,
         meta_client_implementation,
@@ -55,6 +56,7 @@ WITH combined_events AS (
         propagation_slot_start_diff,
         beacon_block_root AS block_root,
         column_index,
+        kzg_commitments_count,
         meta_client_name,
         meta_client_version,
         meta_client_implementation,
@@ -92,6 +94,7 @@ SELECT
     MIN(propagation_slot_start_diff) as seen_slot_start_diff,
     block_root,
     column_index,
+    coalesce(argMin(kzg_commitments_count, propagation_slot_start_diff), 0) AS row_count,
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
             splitByChar('/', meta_client_name)[2]
