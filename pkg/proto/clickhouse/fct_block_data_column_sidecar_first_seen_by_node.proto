@@ -30,6 +30,8 @@ message FctBlockDataColumnSidecarFirstSeenByNode {
   string block_root = 18;
   // The data column index
   uint32 column_index = 19;
+  // The number of rows (blobs) in the data column sidecar
+  uint32 row_count = 36;
   // Username of the node
   string username = 20;
   // ID of the node
@@ -120,6 +122,8 @@ message ListFctBlockDataColumnSidecarFirstSeenByNodeRequest {
   StringFilter meta_consensus_version = 24 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_consensus_implementation - Ethereum consensus client implementation (optional)
   StringFilter meta_consensus_implementation = 25 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by row_count - The number of rows (blobs) in the data column sidecar (optional)
+  UInt32Filter row_count = 29 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_block_data_column_sidecar_first_seen_by_node to return.
   // If unspecified, at most 100 items will be returned.
