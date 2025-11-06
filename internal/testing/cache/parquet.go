@@ -76,11 +76,11 @@ func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64
 }
 
 // Start initializes the cache by loading the manifest
-func (c *parquetCache) Start(ctx context.Context) error {
+func (c *parquetCache) Start(_ context.Context) error {
 	c.log.WithField("cache_dir", c.cacheDir).Debug("starting parquet cache")
 
 	// Create cache directory if it doesn't exist
-	if err := os.MkdirAll(c.cacheDir, 0755); err != nil {
+	if err := os.MkdirAll(c.cacheDir, 0755); err != nil { //nolint:gosec // G301: Cache directory with standard permissions
 		return fmt.Errorf("creating cache directory: %w", err)
 	}
 
@@ -281,7 +281,7 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 
 	// Create temporary file
 	tmpPath := filepath.Join(c.cacheDir, urlHash+".tmp")
-	tmpFile, err := os.Create(tmpPath)
+	tmpFile, err := os.Create(tmpPath) //nolint:gosec // G304: Path constructed from safe hash
 	if err != nil {
 		return "", fmt.Errorf("creating temp file: %w", err)
 	}
@@ -368,7 +368,7 @@ func (c *parquetCache) updateLastUsed(urlHash string) error {
 func (c *parquetCache) loadManifest() error {
 	manifestPath := filepath.Join(c.cacheDir, manifestFilename)
 
-	data, err := os.ReadFile(manifestPath)
+	data, err := os.ReadFile(manifestPath) //nolint:gosec // G304: Reading cache manifest from safe path
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil // No manifest yet
@@ -395,7 +395,7 @@ func (c *parquetCache) saveManifest() error {
 		return fmt.Errorf("marshaling manifest: %w", err)
 	}
 
-	if err := os.WriteFile(manifestPath, data, 0644); err != nil {
+	if err := os.WriteFile(manifestPath, data, 0644); err != nil { //nolint:gosec // G306: Cache manifest with standard permissions
 		return fmt.Errorf("writing manifest: %w", err)
 	}
 

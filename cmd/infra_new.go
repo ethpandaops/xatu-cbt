@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/ethpandaops/xatu-cbt/internal/infra"
+	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -130,14 +132,14 @@ func createInfraManagers(log logrus.FieldLogger) (infra.DockerManager, infra.Cli
 	return dockerManager, chManager
 }
 
-func runInfraStart(cmd *cobra.Command, args []string) error {
+func runInfraStart(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	// Setup logger
 	log := newLogger(false)
 
-	fmt.Println("Starting platform infrastructure...")
+	log.Info("starting platform infrastructure")
 
 	// Get working directory
 	wd, err := os.Getwd()
@@ -146,58 +148,124 @@ func runInfraStart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Ensure xatu repository exists (needed for xatu-clickhouse configs)
-	fmt.Println("Ensuring xatu repository...")
-	if _, err := ensureXatuRepo(log, wd, xatuRepoURL, xatuRef); err != nil {
-		return err
+	log.Info("ensuring xatu repository")
+	if _, repoErr := ensureXatuRepo(log, wd, xatuRepoURL, xatuRef); repoErr != nil {
+		return repoErr
 	}
 
 	// Create infrastructure managers
-	_, chManager := createInfraManagers(log)
+	dockerManager, chManager := createInfraManagers(log)
 
 	// Start infrastructure
-	if err := chManager.Start(ctx); err != nil {
-		return fmt.Errorf("starting infrastructure: %w", err)
+	if startErr := chManager.Start(ctx); startErr != nil {
+		return fmt.Errorf("starting infrastructure: %w", startErr)
 	}
 
 	fmt.Println("\n✓ Platform infrastructure started successfully")
-	fmt.Printf("\nCBT ClickHouse URL: %s\n", infraClickhouseURL)
-	fmt.Printf("Redis URL: %s\n", infraRedisURL)
+
+	// Get and display all services
+	services, err := dockerManager.GetAllServices(ctx)
+	if err != nil {
+		log.WithError(err).Debug("failed to get service information")
+	} else if len(services) > 0 {
+		fmt.Println()
+		displayServicesTable(services)
+	}
+
+	// Display connection information
+	fmt.Printf("\nConnection Information:\n")
+	fmt.Printf("  CBT ClickHouse URL:  %s\n", infraClickhouseURL)
+	fmt.Printf("  Xatu ClickHouse URL: %s\n", config.GetXatuClickHouseURL())
+	fmt.Printf("  Redis URL:           %s\n", infraRedisURL)
 	fmt.Printf("\nReady for testing and development!\n")
+	fmt.Printf("\nRun 'xatu-cbt infra stop' to tear down, or 'xatu-cbt infra reset' to clear volumes.\n")
 
 	return nil
 }
 
-func runInfraStop(cmd *cobra.Command, args []string) error {
+// displayServicesTable renders a table of services with their status and ports
+func displayServicesTable(services []infra.ServiceInfo) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Service", "Type", "Status", "Ports"})
+	table.SetBorder(true)
+	table.SetRowLine(false)
+	table.SetAutoWrapText(false)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+
+	// Categorize services for better display
+	for _, svc := range services {
+		serviceType := categorizeService(svc.Name)
+		status := svc.Status
+		ports := svc.Ports
+		if ports == "" {
+			ports = "-"
+		}
+
+		table.Append([]string{svc.Name, serviceType, status, ports})
+	}
+
+	fmt.Println("Platform Services:")
+	table.Render()
+}
+
+// categorizeService returns the type/category of a service based on its name
+func categorizeService(name string) string {
+	switch {
+	case strings.HasPrefix(name, "xatu-cbt-clickhouse-zookeeper"):
+		return "Coordination"
+	case strings.HasPrefix(name, "xatu-cbt-clickhouse"):
+		return "CBT Cluster"
+	case strings.HasPrefix(name, "xatu-clickhouse"):
+		return "Xatu Cluster"
+	case strings.HasPrefix(name, "xatu-cbt-redis"):
+		return "State Management"
+	default:
+		return "Other"
+	}
+}
+
+func runInfraStop(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	// Setup logger
 	log := newLogger(false)
 
-	fmt.Println("Stopping platform infrastructure...")
+	log.Info("stopping platform infrastructure")
 
 	// Create infrastructure managers
-	_, chManager := createInfraManagers(log)
+	dockerManager, chManager := createInfraManagers(log)
 
-	// Cleanup test databases if requested
-	if infraCleanupTestDBs {
-		fmt.Println("Cleaning up ephemeral test databases...")
+	// Check if infrastructure is running
+	running, err := dockerManager.IsRunning(ctx)
+	if err != nil {
+		log.WithError(err).Debug("failed to check if running")
+	}
+
+	// Only cleanup databases if infrastructure is running
+	if running && infraCleanupTestDBs {
+		log.Info("cleaning up ephemeral databases")
 		if err := chManager.CleanupEphemeralDatabases(ctx, 0); err != nil {
 			log.WithError(err).Warn("failed to cleanup test databases")
 		}
+	} else if !running {
+		log.Debug("infrastructure not running, skipping database cleanup")
 	}
 
-	// Stop infrastructure
+	// Stop infrastructure (safe to call even if already stopped)
 	if err := chManager.Stop(); err != nil {
 		return fmt.Errorf("stopping infrastructure: %w", err)
 	}
 
 	fmt.Println("\n✓ Platform infrastructure stopped successfully")
+	fmt.Println("\nVolumes are preserved to maintain data.")
+	fmt.Println("To remove all volumes and start fresh, run: xatu-cbt infra reset")
 
 	return nil
 }
 
-func runInfraStatus(cmd *cobra.Command, args []string) error {
+func runInfraStatus(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -240,7 +308,7 @@ func runInfraStatus(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runInfraReset(cmd *cobra.Command, args []string) error {
+func runInfraReset(_ *cobra.Command, _ []string) error {
 	// Setup logger
 	log := newLogger(false)
 

@@ -98,7 +98,7 @@ func (r *migrationRunner) RunMigrations(ctx context.Context, conn *sql.DB, dbNam
 	// ANTI-FLAKE #12: Respect context cancellation during migration
 	select {
 	case <-ctx.Done():
-		return fmt.Errorf("migration cancelled: %w", ctx.Err())
+		return fmt.Errorf("migration canceled: %w", ctx.Err())
 	case err := <-done:
 		if err != nil {
 			return err
@@ -134,7 +134,7 @@ func (r *migrationRunner) createTemplatedFS(dbName string) (fs.FS, error) {
 		}
 
 		// Read migration file
-		content, err := os.ReadFile(filepath.Join(r.migrationDir, filename))
+		content, err := os.ReadFile(filepath.Join(r.migrationDir, filename)) //nolint:gosec // G304: Reading migration files from trusted directory
 		if err != nil {
 			return nil, fmt.Errorf("reading migration file %s: %w", filename, err)
 		}
@@ -291,8 +291,8 @@ func (r *migrationRunner) qualifyCreateStatements(sql, dbName string) string {
 			}
 
 			// Check for "IF NOT EXISTS" clause (only for CREATE TABLE)
-			if isCreateTable && len(parts) >= 5 && strings.ToUpper(parts[2]) == "IF" &&
-			   strings.ToUpper(parts[3]) == "NOT" && strings.ToUpper(parts[4]) == "EXISTS" {
+			if isCreateTable && len(parts) >= 5 && strings.EqualFold(parts[2], "IF") &&
+			   strings.EqualFold(parts[3], "NOT") && strings.EqualFold(parts[4], "EXISTS") {
 				objNameIdx = 5 // Skip to table name after "IF NOT EXISTS"
 			}
 

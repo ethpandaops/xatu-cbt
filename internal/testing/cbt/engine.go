@@ -79,7 +79,7 @@ func (e *engine) Stop() error {
 
 	for _, containerName := range containers {
 		e.log.WithField("container", containerName).Debug("killing CBT container")
-		killCmd := exec.Command("docker", "kill", containerName)
+		killCmd := exec.Command("docker", "kill", containerName) //nolint:gosec // G204: Docker command with trusted container name
 		if err := killCmd.Run(); err != nil {
 			e.log.WithError(err).WithField("container", containerName).Warn("failed to kill container")
 		}
@@ -172,7 +172,7 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 	execCtx, cancel := context.WithTimeout(ctx, executionTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(execCtx, "docker", args...)
+	cmd := exec.CommandContext(execCtx, "docker", args...) //nolint:gosec // G204: Docker command with controlled arguments
 
 	// Capture output
 	var stdout, stderr bytes.Buffer
@@ -190,7 +190,7 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 
 	// Ensure container is killed on exit
 	defer func() {
-		killCmd := exec.Command("docker", "kill", containerName)
+		killCmd := exec.Command("docker", "kill", containerName) //nolint:gosec // G204: Docker cleanup with trusted container name
 		_ = killCmd.Run() // Ignore errors - container may already be stopped
 
 		// Remove from tracking
@@ -420,7 +420,7 @@ func (e *engine) waitForAdminTables(ctx context.Context, conn *sql.DB, dbName st
 
 				for _, tableName := range adminTables {
 					// Try to actually query the table to ensure it's not just metadata
-					query := fmt.Sprintf(`SELECT count() FROM %s.%s LIMIT 1`, dbName, tableName)
+					query := fmt.Sprintf(`SELECT count() FROM %s.%s LIMIT 1`, dbName, tableName) //nolint:gosec // G201: Safe SQL with controlled identifiers
 					var count uint64
 					if err := conn.QueryRowContext(ctx, query).Scan(&count); err != nil {
 						e.log.WithError(err).WithField("table", tableName).Debug("table exists but not queryable yet, waiting")
@@ -447,7 +447,7 @@ func (e *engine) waitForAdminTables(ctx context.Context, conn *sql.DB, dbName st
 
 // getCompletedModels returns models that have entries in the admin table
 func (e *engine) getCompletedModels(ctx context.Context, conn *sql.DB, dbName, adminTable string) (map[string]bool, error) {
-	query := fmt.Sprintf(`SELECT DISTINCT table FROM %s.%s`, dbName, adminTable)
+	query := fmt.Sprintf(`SELECT DISTINCT table FROM %s.%s`, dbName, adminTable) //nolint:gosec // G201: Safe SQL with controlled identifiers
 
 	rows, err := conn.QueryContext(ctx, query)
 	if err != nil {
@@ -473,7 +473,7 @@ func (e *engine) tableExists(ctx context.Context, conn *sql.DB, dbName, tableNam
 		SELECT count()
 		FROM system.tables
 		WHERE database = '%s' AND name = '%s'
-	`, dbName, tableName)
+	`, dbName, tableName) //nolint:gosec // G201: Safe SQL with controlled identifiers
 
 	var count uint64
 	err := conn.QueryRowContext(ctx, query).Scan(&count)
@@ -486,7 +486,7 @@ func (e *engine) tableExists(ctx context.Context, conn *sql.DB, dbName, tableNam
 
 // getModelType reads a model file and determines if it's incremental or scheduled
 func (e *engine) getModelType(filePath string) string {
-	data, err := os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath) //nolint:gosec // G304: Reading model files from trusted paths
 	if err != nil {
 		e.log.WithError(err).Warn("failed to read model file, assuming scheduled")
 		return modelTypeScheduled

@@ -2,6 +2,7 @@ package infra
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -10,6 +11,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ServiceInfo holds information about a running service
+type ServiceInfo struct {
+	Name   string
+	Status string
+	Ports  string
+}
+
 // DockerManager manages docker-compose lifecycle
 type DockerManager interface {
 	Start(ctx context.Context) error
@@ -17,6 +25,7 @@ type DockerManager interface {
 	Reset() error
 	IsRunning(ctx context.Context) (bool, error)
 	GetContainerStatus(ctx context.Context, service string) (string, error)
+	GetAllServices(ctx context.Context) ([]ServiceInfo, error)
 }
 
 type dockerManager struct {
@@ -85,7 +94,7 @@ func (m *dockerManager) Stop() error {
 		return fmt.Errorf("executing docker-compose down: %w", err)
 	}
 
-	m.log.Info("docker-compose services stopped (volumes preserved)")
+	m.log.Info("docker-compose services stopped")
 
 	return nil
 }
@@ -171,6 +180,93 @@ func (m *dockerManager) GetContainerStatus(ctx context.Context, service string) 
 	}
 
 	return "unknown", nil
+}
+
+// GetAllServices returns detailed information about all running services
+func (m *dockerManager) GetAllServices(ctx context.Context) ([]ServiceInfo, error) {
+	m.log.Debug("getting all services")
+
+	args := []string{
+		"compose",
+		"-f", m.composeFile,
+		"-p", m.projectName,
+		"ps", "--format", "json",
+	}
+
+	output, err := m.execComposeOutput(ctx, args...)
+	if err != nil {
+		return nil, fmt.Errorf("executing docker-compose ps: %w", err)
+	}
+
+	// Parse the JSON output line by line (each line is a separate JSON object)
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	services := make([]ServiceInfo, 0, len(lines))
+
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+
+		// Parse basic fields from the line
+		// We'll extract name, status, and ports manually as the format is consistent
+		var data map[string]any
+		if err := parseJSON([]byte(line), &data); err != nil {
+			m.log.WithError(err).Debug("failed to parse service json")
+			continue
+		}
+
+		name := ""
+		if n, ok := data["Service"].(string); ok {
+			name = n
+		}
+
+		status := ""
+		if s, ok := data["State"].(string); ok {
+			status = s
+			// Also check Health if available
+			if h, ok := data["Health"].(string); ok && h != "" {
+				status = fmt.Sprintf("%s (%s)", s, h)
+			}
+		}
+
+		ports := ""
+		if p, ok := data["Publishers"].([]any); ok && len(p) > 0 {
+			portStrs := make([]string, 0, len(p))
+			for _, pub := range p {
+				if pubMap, ok := pub.(map[string]any); ok {
+					publishedPort := ""
+					targetPort := ""
+					if pp, ok := pubMap["PublishedPort"].(float64); ok {
+						publishedPort = fmt.Sprintf("%.0f", pp)
+					}
+					if tp, ok := pubMap["TargetPort"].(float64); ok {
+						targetPort = fmt.Sprintf("%.0f", tp)
+					}
+					if publishedPort != "" && targetPort != "" {
+						portStrs = append(portStrs, fmt.Sprintf("%s->%s", publishedPort, targetPort))
+					}
+				}
+			}
+			if len(portStrs) > 0 {
+				ports = strings.Join(portStrs, ", ")
+			}
+		}
+
+		if name != "" {
+			services = append(services, ServiceInfo{
+				Name:   name,
+				Status: status,
+				Ports:  ports,
+			})
+		}
+	}
+
+	return services, nil
+}
+
+// parseJSON is a simple helper to unmarshal JSON
+func parseJSON(data []byte, v any) error {
+	return json.Unmarshal(data, v)
 }
 
 // execComposeOutput executes a docker-compose command and returns output

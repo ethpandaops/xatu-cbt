@@ -67,8 +67,8 @@ func (m *manager) Start(ctx context.Context) error {
 		return fmt.Errorf("opening xatu clickhouse connection: %w", err)
 	}
 
-	if err := xatuConn.PingContext(ctx); err != nil {
-		return fmt.Errorf("pinging xatu clickhouse: %w", err)
+	if pingErr := xatuConn.PingContext(ctx); pingErr != nil {
+		return fmt.Errorf("pinging xatu clickhouse: %w", pingErr)
 	}
 
 	// Connect to cbt cluster (transformations)
@@ -194,7 +194,7 @@ func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 		FROM system.tables
 		WHERE database = 'default'
 		AND name = '%s%s'
-	`, config.SchemaMigrationsPrefix, config.DefaultDatabase)
+	`, config.SchemaMigrationsPrefix, config.DefaultDatabase) //nolint:gosec // G201: Safe SQL with controlled identifiers
 	err := m.xatuConn.QueryRowContext(queryCtx, checkSQL).Scan(&count)
 
 	if err != nil || count == 0 {
@@ -209,7 +209,7 @@ func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 	countSQL := fmt.Sprintf(`
 		SELECT COUNT(*)
 		FROM %s.%s%s
-	`, config.DefaultDatabase, config.SchemaMigrationsPrefix, config.DefaultDatabase)
+	`, config.DefaultDatabase, config.SchemaMigrationsPrefix, config.DefaultDatabase) //nolint:gosec // G201: Safe SQL with controlled identifiers
 	err = m.xatuConn.QueryRowContext(queryCtx2, countSQL).Scan(&migrationCount)
 
 	return err == nil && migrationCount > 0
@@ -229,10 +229,10 @@ func (m *manager) clearNetworkTables(ctx context.Context, network string, clearM
 	}
 	defer func() { _ = rows.Close() }()
 
-	var objects []struct {
+	objects := make([]struct {
 		name   string
 		engine string
-	}
+	}, 0, 10)
 	for rows.Next() {
 		var obj struct {
 			name   string
@@ -428,7 +428,7 @@ func (m *manager) loadParquetFile(ctx context.Context, log *logrus.Entry, tableN
 
 	// Load into _local table directly - ReplicatedMergeTree will automatically sync to all replicas
 	localTableName := tableName + "_local"
-	insertSQL := fmt.Sprintf(
+	insertSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers and file path
 		"INSERT INTO `default`.`%s` SELECT * FROM file('%s', Parquet)",
 		localTableName, filePath,
 	)

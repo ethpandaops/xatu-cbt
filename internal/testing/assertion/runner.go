@@ -284,8 +284,8 @@ func (r *runner) queryToMap(ctx context.Context, dbName, sqlQuery string) (map[s
 	defer func() { _ = conn.Close() }()
 
 	// Set database on this specific connection
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s", dbName)); err != nil {
-		return nil, fmt.Errorf("setting database: %w", err)
+	if _, execErr := conn.ExecContext(ctx, fmt.Sprintf("USE %s", dbName)); execErr != nil {
+		return nil, fmt.Errorf("setting database: %w", execErr)
 	}
 
 	// Execute query on same connection that has USE database set

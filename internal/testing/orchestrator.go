@@ -161,7 +161,7 @@ func (o *orchestrator) Stop() error {
 
 	// Flush Redis to clean up any stale state
 	o.log.Debug("flushing Redis cache on shutdown")
-	flushCmd := exec.Command("docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHALL")
+	flushCmd := exec.Command("docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHALL") //nolint:gosec // G204: Docker command with trusted container name
 	if err := flushCmd.Run(); err != nil {
 		o.log.WithError(err).Warn("failed to flush redis on shutdown")
 		errs = append(errs, fmt.Errorf("flushing redis: %w", err))
@@ -570,9 +570,9 @@ func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.T
 		localPaths := make(map[string]string, len(resolution.ParquetURLs))
 		for tableName, url := range resolution.ParquetURLs {
 			o.log.WithField("table", tableName).Info("fetching parquet file")
-			path, err := o.cache.Get(ctx, url, tableName)
-			if err != nil {
-				result.Error = fmt.Errorf("fetching parquet file for %s: %w", tableName, err)
+			path, cacheErr := o.cache.Get(ctx, url, tableName)
+			if cacheErr != nil {
+				result.Error = fmt.Errorf("fetching parquet file for %s: %w", tableName, cacheErr)
 				result.Duration = time.Since(start)
 				return result, result.Error
 			}
@@ -589,8 +589,8 @@ func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.T
 
 		logCtx.Info("preparing network database")
 
-		if err := o.dbManager.PrepareNetworkDatabase(ctx, testConfig.Network); err != nil {
-			result.Error = fmt.Errorf("preparing network database: %w", err)
+		if prepErr := o.dbManager.PrepareNetworkDatabase(ctx, testConfig.Network); prepErr != nil {
+			result.Error = fmt.Errorf("preparing network database: %w", prepErr)
 			result.Duration = time.Since(start)
 			return result, result.Error
 		}
@@ -598,8 +598,8 @@ func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.T
 		// 5. Load parquet data into xatu cluster network database
 		logCtx.Info("loading parquet data")
 
-		if err := o.dbManager.LoadParquetData(ctx, testConfig.Network, localPaths); err != nil {
-			result.Error = fmt.Errorf("loading parquet data: %w", err)
+		if loadErr := o.dbManager.LoadParquetData(ctx, testConfig.Network, localPaths); loadErr != nil {
+			result.Error = fmt.Errorf("loading parquet data: %w", loadErr)
 			result.Duration = time.Since(start)
 			return result, result.Error
 		}
@@ -618,8 +618,8 @@ func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.T
 
 	// Ensure cleanup on failure
 	defer func() {
-		if err := o.dbManager.DropDatabase(context.Background(), dbName); err != nil {
-			o.log.WithError(err).WithField("database", dbName).Error("failed to drop test database")
+		if dropErr := o.dbManager.DropDatabase(context.Background(), dbName); dropErr != nil {
+			o.log.WithError(dropErr).WithField("database", dbName).Error("failed to drop test database")
 		}
 	}()
 
@@ -657,15 +657,15 @@ func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.T
 		// CBT performs initial scans immediately on startup and caches results
 		// If we don't clear cache first, it will read stale values from previous runs
 		o.log.Info("clearing Redis cache before starting CBT")
-		if err := o.flushRedisCache(ctx); err != nil {
-			o.log.WithError(err).Warn("failed to clear Redis cache (non-fatal)")
+		if flushErr := o.flushRedisCache(ctx); flushErr != nil {
+			o.log.WithError(flushErr).Warn("failed to clear Redis cache (non-fatal)")
 		}
 
 		// Pass allModels for config (so CBT knows about all dependencies)
 		// Wait for result.Transformations (all transformation models including dependencies)
 		// This ensures we wait for dependencies to complete, not just the target model
-		if err := o.cbtEngine.RunTransformations(ctx, testConfig.Network, dbName, allModels, result.Transformations); err != nil {
-			result.Error = fmt.Errorf("running transformations: %w", err)
+		if runErr := o.cbtEngine.RunTransformations(ctx, testConfig.Network, dbName, allModels, result.Transformations); runErr != nil {
+			result.Error = fmt.Errorf("running transformations: %w", runErr)
 			result.Duration = time.Since(start)
 			return result, result.Error
 		}
@@ -813,7 +813,7 @@ func (o *orchestrator) ensureNetworkPrepared(ctx context.Context, network, spec 
 func (o *orchestrator) flushRedisCache(ctx context.Context) error {
 	// Use docker exec to flush Redis database
 	// This is simpler than managing a Redis client connection
-	cmd := exec.CommandContext(ctx, "docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHDB")
+	cmd := exec.CommandContext(ctx, "docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHDB") //nolint:gosec // G204: Docker command with trusted container name
 	if cmdOutput, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("flushing redis: %w (output: %s)", err, string(cmdOutput))
 	}

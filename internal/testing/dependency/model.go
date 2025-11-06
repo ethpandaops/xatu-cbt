@@ -67,7 +67,7 @@ func (p *parser) ParseModel(path string, modelType ModelType) (*Model, error) {
 	}).Debug("parsing model file")
 
 	// Read file content
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(path) //nolint:gosec // G304: Reading model files from trusted paths
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}

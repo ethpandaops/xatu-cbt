@@ -49,7 +49,7 @@ func NewClickHouseManager(log logrus.FieldLogger, dockerManager DockerManager, c
 
 // Start starts the ClickHouse cluster and waits for health
 func (m *clickhouseManager) Start(ctx context.Context) error {
-	m.log.Info("starting ClickHouse cluster")
+	m.log.Info("starting clickhouse cluster")
 
 	// Start docker-compose
 	if err := m.dockerManager.Start(ctx); err != nil {
@@ -61,14 +61,14 @@ func (m *clickhouseManager) Start(ctx context.Context) error {
 		return fmt.Errorf("waiting for health: %w", err)
 	}
 
-	m.log.Info("ClickHouse cluster started and healthy")
+	m.log.Info("clickhouse cluster started and healthy")
 
 	return nil
 }
 
 // Stop stops the ClickHouse cluster
 func (m *clickhouseManager) Stop() error {
-	m.log.Info("stopping ClickHouse cluster")
+	m.log.Info("stopping clickhouse cluster")
 
 	// Close connection if open
 	if m.conn != nil {
@@ -83,7 +83,7 @@ func (m *clickhouseManager) Stop() error {
 		return fmt.Errorf("stopping docker compose: %w", err)
 	}
 
-	m.log.Info("ClickHouse cluster stopped")
+	m.log.Info("clickhouse cluster stopped")
 
 	return nil
 }
@@ -110,18 +110,20 @@ func (m *clickhouseManager) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
-// CleanupEphemeralDatabases drops test databases older than maxAge
+// CleanupEphemeralDatabases drops test databases.
+// If maxAge is 0, all test databases are dropped. Otherwise, only databases
+// older than maxAge are dropped (based on creation time if available).
 func (m *clickhouseManager) CleanupEphemeralDatabases(ctx context.Context, maxAge time.Duration) error {
-	m.log.WithField("max_age", maxAge).Info("cleaning up ephemeral test databases")
+	m.log.WithField("max_age", maxAge).Info("cleaning up ephemeral databases")
 
 	conn, err := m.getConnection()
 	if err != nil {
 		return fmt.Errorf("getting connection: %w", err)
 	}
 
-	// Query for test databases
+	// Query for test databases - only select name since metadata columns vary by ClickHouse version
 	query := `
-		SELECT name, metadata_modification_time
+		SELECT name
 		FROM system.databases
 		WHERE name LIKE 'test_%'
 	`
@@ -137,28 +139,17 @@ func (m *clickhouseManager) CleanupEphemeralDatabases(ctx context.Context, maxAg
 	}()
 
 	var dropped int
-	now := time.Now()
 
 	for rows.Next() {
 		var dbName string
-		var modTime time.Time
 
-		if err := rows.Scan(&dbName, &modTime); err != nil {
+		if err := rows.Scan(&dbName); err != nil {
 			m.log.WithError(err).Warn("failed to scan database row")
 			continue
 		}
 
-		// Check if database is older than maxAge
-		age := now.Sub(modTime)
-		if maxAge > 0 && age < maxAge {
-			continue
-		}
-
 		// Drop database
-		m.log.WithFields(logrus.Fields{
-			"database": dbName,
-			"age":      age,
-		}).Info("dropping ephemeral test database")
+		m.log.WithField("database", dbName).Info("dropping ephemeral test database")
 
 		dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER cluster_2S_1R", dbName)
 		if _, err := conn.ExecContext(ctx, dropSQL); err != nil {
@@ -176,7 +167,7 @@ func (m *clickhouseManager) CleanupEphemeralDatabases(ctx context.Context, maxAg
 
 // waitForHealth waits for ClickHouse to become healthy
 func (m *clickhouseManager) waitForHealth(ctx context.Context, timeout time.Duration) error {
-	m.log.Debug("waiting for ClickHouse to become healthy")
+	m.log.Debug("waiting for clickhouse to become healthy")
 
 	deadline := time.Now().Add(timeout)
 	ticker := time.NewTicker(healthCheckInterval)
@@ -188,7 +179,7 @@ func (m *clickhouseManager) waitForHealth(ctx context.Context, timeout time.Dura
 			return ctx.Err()
 		case <-ticker.C:
 			if err := m.HealthCheck(ctx); err == nil {
-				m.log.Debug("ClickHouse is healthy")
+				m.log.Debug("clickhouse is healthy")
 				return nil
 			}
 
@@ -196,7 +187,7 @@ func (m *clickhouseManager) waitForHealth(ctx context.Context, timeout time.Dura
 				return errClickHouseHealthTimeout
 			}
 
-			m.log.Debug("ClickHouse not ready yet, retrying...")
+			m.log.Debug("clickhouse not ready yet, retrying...")
 		}
 	}
 }

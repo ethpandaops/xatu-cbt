@@ -4,6 +4,7 @@ package cbt
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -170,7 +171,7 @@ func (g *configGenerator) GenerateForModels(network, dbName string, models []str
 		return fmt.Errorf("marshaling config: %w", err)
 	}
 
-	if err := os.WriteFile(outputPath, data, 0644); err != nil {
+	if err := os.WriteFile(outputPath, data, 0644); err != nil { //nolint:gosec // G306: Config file with standard permissions
 		return fmt.Errorf("writing config file: %w", err)
 	}
 
@@ -194,7 +195,7 @@ func (g *configGenerator) buildModelPaths(models []string) (externalPaths, trans
 		transformPath := filepath.Join(g.transformationDir, modelName+".sql")
 		if _, statErr := os.Stat(transformPath); statErr == nil {
 			// Use container path
-			transformationPaths = append(transformationPaths, filepath.Join("/models/transformations", modelName+".sql"))
+			transformationPaths = append(transformationPaths, path.Join("/models/transformations", modelName+".sql"))
 			continue
 		}
 
@@ -202,7 +203,7 @@ func (g *configGenerator) buildModelPaths(models []string) (externalPaths, trans
 		transformYmlPath := filepath.Join(g.transformationDir, modelName+".yml")
 		if _, statErr := os.Stat(transformYmlPath); statErr == nil {
 			// Use container path
-			transformationPaths = append(transformationPaths, filepath.Join("/models/transformations", modelName+".yml"))
+			transformationPaths = append(transformationPaths, path.Join("/models/transformations", modelName+".yml"))
 			continue
 		}
 
@@ -210,7 +211,7 @@ func (g *configGenerator) buildModelPaths(models []string) (externalPaths, trans
 		externalPath := filepath.Join(g.externalDir, modelName+".sql")
 		if _, statErr := os.Stat(externalPath); statErr == nil {
 			// Use container path
-			externalPaths = append(externalPaths, filepath.Join("/models/external", modelName+".sql"))
+			externalPaths = append(externalPaths, path.Join("/models/external", modelName+".sql"))
 			continue
 		}
 
@@ -218,7 +219,7 @@ func (g *configGenerator) buildModelPaths(models []string) (externalPaths, trans
 		externalYmlPath := filepath.Join(g.externalDir, modelName+".yml")
 		if _, statErr := os.Stat(externalYmlPath); statErr == nil {
 			// Use container path
-			externalPaths = append(externalPaths, filepath.Join("/models/external", modelName+".yml"))
+			externalPaths = append(externalPaths, path.Join("/models/external", modelName+".yml"))
 			continue
 		}
 

@@ -117,7 +117,7 @@ func setupCleanupHandler(orchestrator testing.Orchestrator) {
 func runTestsWithConfig(
 	ctx context.Context,
 	cmd *cobra.Command,
-	modelCount int,
+	_ int,
 	testRunner func(testing.Orchestrator) ([]*testing.TestResult, error),
 ) error {
 	// Setup orchestrator
@@ -129,14 +129,14 @@ func runTestsWithConfig(
 	// Setup signal handling for cleanup on Ctrl+C
 	setupCleanupHandler(orchestrator)
 	defer func() {
-		if err := orchestrator.Stop(); err != nil {
-			logrus.WithError(err).Error("error stopping orchestrator")
+		if stopErr := orchestrator.Stop(); stopErr != nil {
+			logrus.WithError(stopErr).Error("error stopping orchestrator")
 		}
 	}()
 
 	// Start orchestrator
-	if err := orchestrator.Start(ctx); err != nil {
-		return fmt.Errorf("starting orchestrator: %w", err)
+	if startErr := orchestrator.Start(ctx); startErr != nil {
+		return fmt.Errorf("starting orchestrator: %w", startErr)
 	}
 
 	// Run tests (orchestrator handles all output internally)
@@ -193,7 +193,7 @@ func runTestModels(cmd *cobra.Command, args []string) error {
 	})
 }
 
-func runTestSpec(cmd *cobra.Command, args []string) error {
+func runTestSpec(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
@@ -202,7 +202,7 @@ func runTestSpec(cmd *cobra.Command, args []string) error {
 	})
 }
 
-func setupOrchestrator(cmd *cobra.Command) (testing.Orchestrator, error) {
+func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
 	// Setup logger
 	log := newLogger(testVerbose)
 

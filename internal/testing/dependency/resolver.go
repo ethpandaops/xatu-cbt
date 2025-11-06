@@ -130,8 +130,8 @@ func (r *resolver) ResolveAndValidate(testConfig *config.TestConfig) (*Resolutio
 	}
 
 	// Detect circular dependencies
-	if err := r.detectCircularDependencies(transformations); err != nil {
-		return nil, err
+	if circErr := r.detectCircularDependencies(transformations); circErr != nil {
+		return nil, circErr
 	}
 
 	// Extract leaf external tables

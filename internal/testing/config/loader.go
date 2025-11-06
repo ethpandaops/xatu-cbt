@@ -156,7 +156,7 @@ func (l *loader) LoadForModels(spec, network string, modelNames []string) (map[s
 
 // loadFile reads and parses a YAML test config file
 func (l *loader) loadFile(path string) (*TestConfig, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // G304: Reading test config from trusted paths
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}

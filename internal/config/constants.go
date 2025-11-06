@@ -6,35 +6,48 @@ import (
 )
 
 const (
-	// ClickHouse cluster names
-	XatuClusterName = "xatu_cluster"  // 1 shard, 2 replicas (external data)
-	CBTClusterName  = "cluster_2S_1R" // 2 shards, 1 replica (transformations)
+	// XatuClusterName is the ClickHouse cluster name for external data (1 shard, 2 replicas).
+	XatuClusterName = "xatu_cluster"
+	// CBTClusterName is the ClickHouse cluster name for transformations (2 shards, 1 replica).
+	CBTClusterName = "cluster_2S_1R"
 
-	// Docker
-	DockerNetwork       = "xatu_xatu-net"
-	CBTDockerImage      = "ethpandaops/cbt:debian-latest"
-	RedisContainerName  = "xatu-cbt-redis"
+	// DockerNetwork is the Docker network name for xatu services.
+	DockerNetwork = "xatu_xatu-net"
+	// CBTDockerImage is the Docker image used for CBT operations.
+	CBTDockerImage = "ethpandaops/cbt:debian-latest"
+	// RedisContainerName is the name of the Redis container.
+	RedisContainerName = "xatu-cbt-redis"
+	// ClickHouseContainer is the name of the ClickHouse container.
 	ClickHouseContainer = "xatu-cbt-clickhouse-01"
 
-	// Docker Compose
+	// PlatformComposeFile is the Docker Compose file for the platform infrastructure.
 	PlatformComposeFile = "docker-compose.platform.yml"
-	ProjectName         = "xatu-cbt-platform"
+	// ProjectName is the Docker Compose project name.
+	ProjectName = "xatu-cbt-platform"
 
-	// File paths (relative to project root)
-	ModelsExternalDir       = "models/external"
+	// ModelsExternalDir is the directory path for external models.
+	ModelsExternalDir = "models/external"
+	// ModelsTransformationsDir is the directory path for transformation models.
 	ModelsTransformationsDir = "models/transformations"
-	ModelsDir               = "models"
-	MigrationsDir           = "migrations"
-	TestsDir                = "tests"
+	// ModelsDir is the base models directory path.
+	ModelsDir = "models"
+	// MigrationsDir is the directory path for database migrations.
+	MigrationsDir = "migrations"
+	// TestsDir is the directory path for tests.
+	TestsDir = "tests"
 
-	// Database
-	TestDatabasePrefix     = "test_"
+	// TestDatabasePrefix is the prefix used for test databases.
+	TestDatabasePrefix = "test_"
+	// SchemaMigrationsPrefix is the prefix used for schema migration tables.
 	SchemaMigrationsPrefix = "schema_migrations_"
-	DefaultDatabase        = "default"
+	// DefaultDatabase is the name of the default database.
+	DefaultDatabase = "default"
 
-	// Xatu repository
-	XatuRepoURL        = "https://github.com/ethpandaops/xatu"
-	XatuDefaultRef     = "master"
+	// XatuRepoURL is the URL of the xatu repository.
+	XatuRepoURL = "https://github.com/ethpandaops/xatu"
+	// XatuDefaultRef is the default git reference for the xatu repository.
+	XatuDefaultRef = "master"
+	// XatuMigrationsPath is the path to migrations within the xatu repository.
 	XatuMigrationsPath = "deploy/migrations/clickhouse"
 )
 

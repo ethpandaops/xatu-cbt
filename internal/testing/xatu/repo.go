@@ -2,6 +2,7 @@
 package xatu
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -90,11 +91,20 @@ func (r *RepoManager) GetMigrationDir(repoPath string) string {
 
 // gitClone clones the repository.
 func (r *RepoManager) gitClone(dest string) error {
-	cmd := exec.Command("git", "clone", "--depth", "1", "--branch", r.ref, r.repoURL, dest)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd := exec.Command("git", "clone", "--depth", "1", "--branch", r.ref, r.repoURL, dest) //nolint:gosec // G204: Git command with controlled repository URL and ref
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
+		// Only show output on error
+		if stderr.Len() > 0 {
+			_, _ = fmt.Fprintf(os.Stderr, "%s", stderr.String())
+		}
+		if stdout.Len() > 0 {
+			_, _ = fmt.Fprintf(os.Stdout, "%s", stdout.String())
+		}
 		return fmt.Errorf("git clone failed: %w", err)
 	}
 
@@ -103,12 +113,21 @@ func (r *RepoManager) gitClone(dest string) error {
 
 // gitFetch fetches latest changes (shallow fetch of specific ref).
 func (r *RepoManager) gitFetch(repoPath string) error {
-	cmd := exec.Command("git", "fetch", "origin", "--depth", "1", r.ref)
+	cmd := exec.Command("git", "fetch", "origin", "--depth", "1", r.ref) //nolint:gosec // G204: Git command with controlled ref
 	cmd.Dir = repoPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
+		// Only show output on error
+		if stderr.Len() > 0 {
+			_, _ = fmt.Fprintf(os.Stderr, "%s", stderr.String())
+		}
+		if stdout.Len() > 0 {
+			_, _ = fmt.Fprintf(os.Stdout, "%s", stdout.String())
+		}
 		return fmt.Errorf("git fetch failed: %w", err)
 	}
 
@@ -117,12 +136,21 @@ func (r *RepoManager) gitFetch(repoPath string) error {
 
 // gitCheckout checks out the desired ref.
 func (r *RepoManager) gitCheckout(repoPath string) error {
-	cmd := exec.Command("git", "checkout", r.ref)
+	cmd := exec.Command("git", "checkout", r.ref) //nolint:gosec // G204: Git command with controlled ref
 	cmd.Dir = repoPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
+		// Only show output on error
+		if stderr.Len() > 0 {
+			_, _ = fmt.Fprintf(os.Stderr, "%s", stderr.String())
+		}
+		if stdout.Len() > 0 {
+			_, _ = fmt.Fprintf(os.Stdout, "%s", stdout.String())
+		}
 		return fmt.Errorf("git checkout failed: %w", err)
 	}
 
