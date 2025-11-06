@@ -260,9 +260,9 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 	}
 
 	e.log.WithFields(logrus.Fields{
-		"total":      len(allModels),
-		"scheduled":  len(scheduledModels),
-		"database":   dbName,
+		"total":     len(allModels),
+		"scheduled": len(scheduledModels),
+		"database":  dbName,
 	}).Info("waiting for transformations to complete")
 
 	conn, err := sql.Open("clickhouse", e.clickhouseURL)
@@ -334,9 +334,9 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 
 					pendingDuration := now.Sub(modelPendingSince[model])
 
-					// OPTION 1: If pending >3min, check if table exists (handles 0-row case)
+					// OPTION 1: If pending >90s, check if table exists (handles 0-row case)
 					// Increased timeout for CI environments where transformations take longer
-					if pendingDuration > 3*time.Minute {
+					if pendingDuration > 90*time.Second {
 						tableExists, err := e.tableExists(ctx, conn, dbName, model)
 						if err != nil {
 							e.log.WithError(err).WithField("model", model).Debug("error checking table existence")

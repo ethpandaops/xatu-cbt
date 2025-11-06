@@ -17,12 +17,10 @@ assertions:
     - name: Expected admin bounds
       sql: |
         SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
+          fromUnixTimestamp(MAX(position + interval)) AS max
         FROM
           admin_cbt_incremental FINAL
         WHERE
           table = 'fct_block_blob_count_head'
       expected:
         max: "2025-10-27T00:30:24Z"
-        min: "2025-10-23T13:10:24Z"

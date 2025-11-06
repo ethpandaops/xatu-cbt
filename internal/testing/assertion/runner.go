@@ -250,8 +250,10 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 			continue
 		}
 
-		// Last attempt failed
-		result.Error = fmt.Errorf("assertion failed: expected %v, got %v", assertion.Expected, actual)
+		// Last attempt failed - normalize timestamps for clearer error messages
+		normalizedExpected := r.normalizeTimestampsInMap(assertion.Expected)
+		normalizedActual := r.normalizeTimestampsInMap(actual)
+		result.Error = fmt.Errorf("assertion failed: expected %v, got %v", normalizedExpected, normalizedActual)
 		break
 	}
 
@@ -395,6 +397,42 @@ func (r *runner) compareTimestamps(expected, actual interface{}) bool {
 	}
 
 	return false
+}
+
+// normalizeTimestampsInMap converts all timestamp values in a map to RFC3339 format for consistent display
+func (r *runner) normalizeTimestampsInMap(m map[string]interface{}) map[string]interface{} {
+	normalized := make(map[string]interface{})
+
+	for key, val := range m {
+		normalized[key] = r.normalizeTimestamp(val)
+	}
+
+	return normalized
+}
+
+// normalizeTimestamp attempts to parse a value as a timestamp and convert to RFC3339, otherwise returns original
+func (r *runner) normalizeTimestamp(val interface{}) interface{} {
+	valStr := fmt.Sprintf("%v", val)
+
+	// Try common timestamp formats
+	formats := []string{
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02 15:04:05 -0700 MST",
+		"2006-01-02 15:04:05 -0700 UTC",
+		"2006-01-02T15:04:05Z",
+		"2006-01-02 15:04:05",
+	}
+
+	for _, format := range formats {
+		if t, err := time.Parse(format, valStr); err == nil {
+			// Convert to RFC3339 for consistent display
+			return t.Format(time.RFC3339)
+		}
+	}
+
+	// Not a timestamp, return original
+	return val
 }
 
 // waitForClusterSync ensures all data is replicated across cluster nodes
