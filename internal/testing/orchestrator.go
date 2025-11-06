@@ -1,3 +1,4 @@
+// Package testing provides end-to-end test orchestration and execution.
 package testing
 
 import (
@@ -193,7 +194,7 @@ func (o *orchestrator) Stop() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("errors stopping orchestrator: %v", errs)
+		return fmt.Errorf("errors stopping orchestrator: %v", errs) //nolint:err113 // Include error list for debugging
 	}
 
 	return nil

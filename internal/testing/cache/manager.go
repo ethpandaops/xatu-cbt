@@ -1,3 +1,4 @@
+// Package cache provides local disk caching with LRU eviction for parquet files.
 package cache
 
 import (
@@ -108,7 +109,7 @@ func (m *manager) Evict(manifest *CacheManifest, maxSizeBytes int64) ([]string, 
 	}).Info("cache eviction complete")
 
 	if newSize > maxSizeBytes {
-		return deleted, fmt.Errorf("unable to free enough space: current=%d, max=%d", newSize, maxSizeBytes)
+		return deleted, fmt.Errorf("unable to free enough space: current=%d, max=%d", newSize, maxSizeBytes) //nolint:err113 // Include size values for debugging
 	}
 
 	return deleted, nil

@@ -104,7 +104,9 @@ func setupCleanupHandler(orchestrator testing.Orchestrator) {
 	go func() {
 		<-sigChan
 		logrus.Warn("\nReceived interrupt signal, cleaning up...")
-		orchestrator.Stop()
+		if err := orchestrator.Stop(); err != nil {
+			logrus.WithError(err).Error("error stopping orchestrator during cleanup")
+		}
 		os.Exit(130) // Exit code 130 = 128 + SIGINT(2)
 	}()
 }
@@ -126,7 +128,11 @@ func runTestsWithConfig(
 
 	// Setup signal handling for cleanup on Ctrl+C
 	setupCleanupHandler(orchestrator)
-	defer orchestrator.Stop()
+	defer func() {
+		if err := orchestrator.Stop(); err != nil {
+			logrus.WithError(err).Error("error stopping orchestrator")
+		}
+	}()
 
 	// Start orchestrator
 	if err := orchestrator.Start(ctx); err != nil {

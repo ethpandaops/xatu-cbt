@@ -1,3 +1,4 @@
+// Package assertion provides SQL assertion execution for validating test results.
 package assertion
 
 import (
@@ -280,7 +281,7 @@ func (r *runner) queryToMap(ctx context.Context, dbName, sql string) (map[string
 	if err != nil {
 		return nil, fmt.Errorf("getting connection from pool: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Set database on this specific connection
 	if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE %s", dbName)); err != nil {
@@ -292,7 +293,7 @@ func (r *runner) queryToMap(ctx context.Context, dbName, sql string) (map[string
 	if err != nil {
 		return nil, fmt.Errorf("executing query: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	columns, err := rows.Columns()
 	if err != nil {

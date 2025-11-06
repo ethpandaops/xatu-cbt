@@ -1,3 +1,4 @@
+// Package database provides ClickHouse database management and migration execution.
 package database
 
 import (
@@ -109,7 +110,7 @@ func (m *manager) Stop() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("errors closing connections: %v", errs)
+		return fmt.Errorf("errors closing connections: %v", errs) //nolint:err113 // Include error list for debugging
 	}
 
 	return nil
@@ -226,7 +227,7 @@ func (m *manager) clearNetworkTables(ctx context.Context, network string, clearM
 	if err != nil {
 		return fmt.Errorf("querying tables: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var objects []struct {
 		name   string

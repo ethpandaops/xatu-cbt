@@ -97,7 +97,7 @@ func (r *resolver) ResolveAndValidate(testConfig *config.TestConfig) (*Resolutio
 		// Check if it's an external model
 		externalModel, isExternal := r.externalModels[testConfig.Model]
 		if !isExternal {
-			return nil, fmt.Errorf("model %s not found in external or transformation models", testConfig.Model)
+			return nil, fmt.Errorf("model %s not found in external or transformation models", testConfig.Model) //nolint:err113 // Include model name for debugging
 		}
 
 		// External model - simple case
@@ -272,7 +272,7 @@ func (r *resolver) topologicalSort(transformations []*Model) ([]*Model, error) {
 	}
 
 	if len(sorted) != len(transformations) {
-		return nil, fmt.Errorf("circular dependency detected in transformations")
+		return nil, fmt.Errorf("circular dependency detected in transformations") //nolint:err113 // Standard validation error
 	}
 
 	return sorted, nil
@@ -294,7 +294,7 @@ func (r *resolver) validateExternalData(required []string, provided map[string]*
 	}
 
 	if len(missing) > 0 {
-		return fmt.Errorf("test config missing required external_data tables: %v", missing)
+		return fmt.Errorf("test config missing required external_data tables: %v", missing) //nolint:err113 // Include missing tables for debugging
 	}
 
 	return nil
@@ -308,7 +308,7 @@ func (r *resolver) detectCircularDependencies(transformations []*Model) error {
 	for _, model := range transformations {
 		if !visited[model.Name] {
 			if r.hasCycleDFS(model.Name, visited, recStack) {
-				return fmt.Errorf("circular dependency detected involving model %s", model.Name)
+				return fmt.Errorf("circular dependency detected involving model %s", model.Name) //nolint:err113 // Include model name for debugging
 			}
 		}
 	}

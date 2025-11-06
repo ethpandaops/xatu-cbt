@@ -1,3 +1,4 @@
+// Package infra provides infrastructure management for Docker and ClickHouse clusters.
 package infra
 
 import (
@@ -129,7 +130,11 @@ func (m *clickhouseManager) CleanupEphemeralDatabases(ctx context.Context, maxAg
 	if err != nil {
 		return fmt.Errorf("querying databases: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			m.log.WithError(err).Debug("error closing rows")
+		}
+	}()
 
 	var dropped int
 	now := time.Now()

@@ -1,3 +1,4 @@
+// Package xatu provides Xatu repository management and migration handling.
 package xatu
 
 import (

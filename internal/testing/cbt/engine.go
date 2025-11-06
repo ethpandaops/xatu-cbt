@@ -106,7 +106,7 @@ func (e *engine) RunTransformations(ctx context.Context, network, dbName string,
 	if err != nil {
 		return fmt.Errorf("creating temp directory: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	e.configPath = filepath.Join(tmpDir, "config.yml")
 	if err := e.configGen.GenerateForModels(network, dbName, allModels, e.configPath); err != nil {
@@ -255,7 +255,7 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 	if err != nil {
 		return fmt.Errorf("opening clickhouse connection: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// Hard 10-minute timeout for entire wait
 	timeout := time.NewTimer(10 * time.Minute)
@@ -281,7 +281,7 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timeout.C:
-			return fmt.Errorf("timeout waiting for transformations to complete after 10 minutes")
+			return fmt.Errorf("timeout waiting for transformations to complete after 10 minutes") //nolint:err113 // Static timeout message
 		case <-ticker.C:
 			// Check which models have completed
 			completedIncremental, err := e.getCompletedModels(ctx, conn, dbName, "admin_cbt_incremental")
@@ -392,7 +392,7 @@ func (e *engine) waitForAdminTables(ctx context.Context, conn *sql.DB, dbName st
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timeout.C:
-			return fmt.Errorf("timeout waiting for admin tables to be created")
+			return fmt.Errorf("timeout waiting for admin tables to be created") //nolint:err113 // Static timeout message
 		case <-ticker.C:
 			allExist := true
 			for _, tableName := range adminTables {
@@ -449,7 +449,7 @@ func (e *engine) getCompletedModels(ctx context.Context, conn *sql.DB, dbName, a
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	completed := make(map[string]bool)
 	for rows.Next() {

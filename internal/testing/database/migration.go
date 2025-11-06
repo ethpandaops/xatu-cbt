@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -87,7 +88,7 @@ func (r *migrationRunner) RunMigrations(ctx context.Context, conn *sql.DB, dbNam
 	// Run migrations with context monitoring
 	done := make(chan error, 1)
 	go func() {
-		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 			done <- fmt.Errorf("running migrations: %w", err)
 			return
 		}
@@ -496,8 +497,8 @@ func (d *memDir) Stat() (fs.FileInfo, error) {
 	}, nil
 }
 
-func (d *memDir) Read(p []byte) (int, error) {
-	return 0, fmt.Errorf("is a directory")
+func (d *memDir) Read(_ []byte) (int, error) {
+	return 0, fmt.Errorf("is a directory") //nolint:err113 // Standard error for directory read
 }
 
 func (d *memDir) Close() error {

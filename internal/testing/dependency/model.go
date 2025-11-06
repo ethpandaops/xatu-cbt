@@ -1,3 +1,4 @@
+// Package dependency provides model dependency resolution and topological sorting.
 package dependency
 
 import (
@@ -170,7 +171,7 @@ func (p *parser) extractFrontmatter(content string) (*Frontmatter, string, error
 	matches := re.FindStringSubmatch(content)
 
 	if len(matches) < 3 {
-		return nil, "", fmt.Errorf("no frontmatter found")
+		return nil, "", fmt.Errorf("no frontmatter found") //nolint:err113 // Standard parsing error
 	}
 
 	frontmatterYAML := matches[1]

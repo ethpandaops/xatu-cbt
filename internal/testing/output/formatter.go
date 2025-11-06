@@ -1,3 +1,4 @@
+// Package output provides formatted console output for test results.
 package output
 
 import (
@@ -68,30 +69,30 @@ func NewFormatter(
 
 // PrintPhase prints phase separator
 func (f *formatter) PrintPhase(phase string) {
-	f.blue.Fprintf(f.writer, "\n▸ %s\n", phase)
+	_, _ = f.blue.Fprintf(f.writer, "\n▸ %s\n", phase) // Ignore write errors to stdout
 }
 
 // PrintProgress prints progress with checkmark and timing
 func (f *formatter) PrintProgress(message string, duration time.Duration) {
 	if duration > 0 {
-		f.gray.Fprintf(f.writer, "%s (%s)\n", message, formatDuration(duration))
+		_, _ = f.gray.Fprintf(f.writer, "%s (%s)\n", message, formatDuration(duration)) // Ignore write errors to stdout
 	} else {
-		fmt.Fprintf(f.writer, "%s\n", message)
+		_, _ = fmt.Fprintf(f.writer, "%s\n", message) // Ignore write errors to stdout
 	}
 }
 
 // PrintSuccess prints green checkmark + message
 func (f *formatter) PrintSuccess(message string) {
-	f.green.Fprintf(f.writer, "%s\n", message)
+	_, _ = f.green.Fprintf(f.writer, "%s\n", message) // Ignore write errors to stdout
 }
 
 // PrintError prints red X + message + error details
 func (f *formatter) PrintError(message string, err error) {
-	f.red.Fprintf(f.writer, "%s", message)
+	_, _ = f.red.Fprintf(f.writer, "%s", message) // Ignore write errors to stdout
 	if err != nil {
-		f.red.Fprintf(f.writer, ": %v", err)
+		_, _ = f.red.Fprintf(f.writer, ": %v", err) // Ignore write errors to stdout
 	}
-	fmt.Fprintf(f.writer, "\n")
+	_, _ = fmt.Fprintf(f.writer, "\n") // Ignore write errors to stdout
 }
 
 // formatDuration formats duration in human-readable format
@@ -109,19 +110,19 @@ func formatDuration(d time.Duration) string {
 func (f *formatter) PrintParquetSummary() {
 	parquetMetrics := f.metrics.GetParquetMetrics()
 	output := f.parquetFormatter.Format(parquetMetrics)
-	fmt.Fprintln(f.writer, output)
+	_, _ = fmt.Fprintln(f.writer, output) // Ignore write errors to stdout
 }
 
 // PrintTestResults prints a table of test results
 func (f *formatter) PrintTestResults() {
 	testMetrics := f.metrics.GetTestMetrics()
 	output := f.resultsFormatter.Format(testMetrics)
-	fmt.Fprintln(f.writer, output)
+	_, _ = fmt.Fprintln(f.writer, output) // Ignore write errors to stdout
 }
 
 // PrintSummary prints a summary table with aggregate statistics
 func (f *formatter) PrintSummary() {
 	summary := f.metrics.GetSummary()
 	output := f.summaryFormatter.Format(summary)
-	fmt.Fprintln(f.writer, output)
+	_, _ = fmt.Fprintln(f.writer, output) // Ignore write errors to stdout
 }

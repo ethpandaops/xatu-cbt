@@ -1,3 +1,4 @@
+// Package table provides table formatting for test results and metrics.
 package table
 
 import (

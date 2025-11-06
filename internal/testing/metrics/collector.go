@@ -1,3 +1,4 @@
+// Package metrics provides test execution metrics collection and aggregation.
 package metrics
 
 import (

@@ -244,7 +244,11 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 		// Another goroutine is downloading, wait for it
 		c.log.WithField("url", url).Debug("waiting for concurrent download")
 		select {
-		case <-actual.(chan struct{}):
+		case _, ok := <-actual.(chan struct{}):
+			if !ok {
+				// Channel closed, download complete, retry Get
+				return c.Get(ctx, url, tableName)
+			}
 			// Download complete, retry Get
 			return c.Get(ctx, url, tableName)
 		case <-ctx.Done():
@@ -269,10 +273,10 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 	if err != nil {
 		return "", fmt.Errorf("downloading file: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode) //nolint:err113 // Include status code for debugging
 	}
 
 	// Create temporary file
@@ -281,7 +285,7 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 	if err != nil {
 		return "", fmt.Errorf("creating temp file: %w", err)
 	}
-	defer tmpFile.Close()
+	defer func() { _ = tmpFile.Close() }()
 
 	// Write to temp file and calculate SHA256
 	hasher := sha256.New()
@@ -289,12 +293,12 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 
 	written, err := io.Copy(writer, resp.Body)
 	if err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath) // Ignore cleanup error, already returning an error
 		return "", fmt.Errorf("writing file: %w", err)
 	}
 
 	if err := tmpFile.Close(); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath) // Ignore cleanup error, already returning an error
 		return "", fmt.Errorf("closing temp file: %w", err)
 	}
 
@@ -304,7 +308,7 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 	// Move to final location
 	finalPath := filepath.Join(c.cacheDir, urlHash)
 	if err := os.Rename(tmpPath, finalPath); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath) // Ignore cleanup error, already returning an error
 		return "", fmt.Errorf("moving file to cache: %w", err)
 	}
 

@@ -1,3 +1,4 @@
+// Package cbt provides CBT configuration generation and transformation execution.
 package cbt
 
 import (
@@ -221,7 +222,7 @@ func (g *configGenerator) buildModelPaths(models []string) (externalPaths []stri
 			continue
 		}
 
-		return nil, nil, fmt.Errorf("model %s not found in external or transformation directories", modelName)
+		return nil, nil, fmt.Errorf("model %s not found in external or transformation directories", modelName) //nolint:err113 // Include model name for debugging
 	}
 
 	return externalPaths, transformationPaths, nil
