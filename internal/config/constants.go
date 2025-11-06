@@ -1,10 +1,5 @@
 package config
 
-import (
-	"fmt"
-	"os"
-)
-
 const (
 	// XatuClusterName is the ClickHouse cluster name for external data.
 	XatuClusterName = "xatu_cluster"
@@ -47,62 +42,3 @@ const (
 	// DefaultRedisURL is the default redis url.
 	DefaultRedisURL = "redis://localhost:6380"
 )
-
-// GetCBTClickHouseURL returns the CBT ClickHouse connection URL built from environment variables.
-// This reads from the same env vars that docker-compose uses, ensuring consistency.
-func GetCBTClickHouseURL() string {
-	username := os.Getenv("CLICKHOUSE_USERNAME")
-	if username == "" {
-		username = "default"
-	}
-
-	password := os.Getenv("CLICKHOUSE_PASSWORD")
-	if password == "" {
-		password = "supersecret"
-	}
-
-	host := os.Getenv("CLICKHOUSE_HOST")
-	if host == "" {
-		host = "localhost"
-	}
-
-	// Check specific port for CBT cluster, then generic, then default
-	port := os.Getenv("CLICKHOUSE_CBT_01_NATIVE_PORT")
-	if port == "" {
-		port = os.Getenv("CLICKHOUSE_NATIVE_PORT")
-	}
-	if port == "" {
-		port = "9000"
-	}
-
-	return fmt.Sprintf("clickhouse://%s:%s@%s:%s", username, password, host, port)
-}
-
-// GetXatuClickHouseURL returns the Xatu ClickHouse connection URL built from environment variables.
-func GetXatuClickHouseURL() string {
-	username := os.Getenv("CLICKHOUSE_USERNAME")
-	if username == "" {
-		username = "default"
-	}
-
-	password := os.Getenv("CLICKHOUSE_PASSWORD")
-	if password == "" {
-		password = "supersecret"
-	}
-
-	host := os.Getenv("CLICKHOUSE_HOST")
-	if host == "" {
-		host = "localhost"
-	}
-
-	// Check specific port for Xatu cluster, then generic, then default
-	port := os.Getenv("CLICKHOUSE_XATU_01_NATIVE_PORT")
-	if port == "" {
-		port = os.Getenv("CLICKHOUSE_NATIVE_PORT")
-	}
-	if port == "" {
-		port = "9002"
-	}
-
-	return fmt.Sprintf("clickhouse://%s:%s@%s:%s", username, password, host, port)
-}

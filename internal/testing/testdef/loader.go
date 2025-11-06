@@ -1,5 +1,7 @@
-// Package config provides test configuration loading and validation.
-package config
+// Package testdef provides test definition loading and validation.
+// Test definitions specify what tests to run (model specs, assertions, external data)
+// as opposed to how to run them (see testing.TestDefinition for execution parameters).
+package testdef
 
 import (
 	"errors"
@@ -23,8 +25,10 @@ var (
 	errAssertionMissingExpected          = errors.New("assertion missing expected values")
 )
 
-// TestConfig represents a complete per-model test configuration.
-type TestConfig struct {
+// TestDefinition represents a complete per-model test specification.
+// This defines what a test should do (model, data, assertions)
+// rather than how it should execute (see testing.TestConfig).
+type TestDefinition struct {
 	Model        string                    `yaml:"model"`
 	Network      string                    `yaml:"network"`
 	Spec         string                    `yaml:"spec"`
@@ -45,11 +49,11 @@ type Assertion struct {
 	Expected map[string]interface{} `yaml:"expected"`
 }
 
-// Loader loads test configuration files.
+// Loader loads test definition files.
 type Loader interface {
-	LoadForModel(spec, network, modelName string) (*TestConfig, error)
-	LoadForSpec(spec, network string) (map[string]*TestConfig, error)
-	LoadForModels(spec, network string, modelNames []string) (map[string]*TestConfig, error)
+	LoadForModel(spec, network, modelName string) (*TestDefinition, error)
+	LoadForSpec(spec, network string) (map[string]*TestDefinition, error)
+	LoadForModels(spec, network string, modelNames []string) (map[string]*TestDefinition, error)
 }
 
 type loader struct {
@@ -57,16 +61,16 @@ type loader struct {
 	log     logrus.FieldLogger
 }
 
-// NewLoader creates a new test config loader.
+// NewLoader creates a new test definition loader.
 func NewLoader(log logrus.FieldLogger, baseDir string) Loader {
 	return &loader{
 		baseDir: baseDir,
-		log:     log.WithField("component", "config_loader"),
+		log:     log.WithField("component", "testdef_loader"),
 	}
 }
 
-// LoadForModel loads a single model's test configuration.
-func (l *loader) LoadForModel(spec, network, modelName string) (*TestConfig, error) {
+// LoadForModel loads a single model's test definition.
+func (l *loader) LoadForModel(spec, network, modelName string) (*TestDefinition, error) {
 	path := l.buildPath(network, spec, modelName)
 
 	l.log.WithFields(logrus.Fields{
@@ -74,22 +78,22 @@ func (l *loader) LoadForModel(spec, network, modelName string) (*TestConfig, err
 		"network": network,
 		"model":   modelName,
 		"path":    path,
-	}).Debug("loading test config for model")
+	}).Debug("loading test definition for model")
 
 	config, err := l.loadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("loading config from %s: %w", path, err)
 	}
 
-	if err := l.validateConfig(config); err != nil {
-		return nil, fmt.Errorf("validating config for %s: %w", modelName, err)
+	if err := l.validateDefinition(config); err != nil {
+		return nil, fmt.Errorf("validating definition for %s: %w", modelName, err)
 	}
 
 	return config, nil
 }
 
-// LoadForSpec loads all model test configurations for a spec.
-func (l *loader) LoadForSpec(spec, network string) (map[string]*TestConfig, error) {
+// LoadForSpec loads all model test definitions for a spec.
+func (l *loader) LoadForSpec(spec, network string) (map[string]*TestDefinition, error) {
 	dir := filepath.Join(l.baseDir, network, spec, "models")
 
 	entries, err := os.ReadDir(dir)
@@ -97,7 +101,7 @@ func (l *loader) LoadForSpec(spec, network string) (map[string]*TestConfig, erro
 		return nil, fmt.Errorf("reading directory %s: %w", dir, err)
 	}
 
-	configs := make(map[string]*TestConfig)
+	configs := make(map[string]*TestDefinition)
 
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
@@ -113,8 +117,8 @@ func (l *loader) LoadForSpec(spec, network string) (map[string]*TestConfig, erro
 			continue
 		}
 
-		if err := l.validateConfig(config); err != nil {
-			l.log.WithError(err).WithField("model", modelName).Warn("invalid config, skipping")
+		if err := l.validateDefinition(config); err != nil {
+			l.log.WithError(err).WithField("model", modelName).Warn("invalid definition, skipping")
 			continue
 		}
 
@@ -124,15 +128,15 @@ func (l *loader) LoadForSpec(spec, network string) (map[string]*TestConfig, erro
 	return configs, nil
 }
 
-// LoadForModels loads test configurations for specific models.
-func (l *loader) LoadForModels(spec, network string, modelNames []string) (map[string]*TestConfig, error) {
+// LoadForModels loads test definitions for specific models.
+func (l *loader) LoadForModels(spec, network string, modelNames []string) (map[string]*TestDefinition, error) {
 	l.log.WithFields(logrus.Fields{
 		"spec":    spec,
 		"network": network,
 		"models":  modelNames,
-	}).Debug("loading test configs for specific models")
+	}).Debug("loading test definitions for specific models")
 
-	configs := make(map[string]*TestConfig, len(modelNames))
+	configs := make(map[string]*TestDefinition, len(modelNames))
 
 	for _, modelName := range modelNames {
 		config, err := l.LoadForModel(spec, network, modelName)
@@ -146,14 +150,14 @@ func (l *loader) LoadForModels(spec, network string, modelNames []string) (map[s
 	return configs, nil
 }
 
-// loadFile reads and parses a YAML test config file
-func (l *loader) loadFile(path string) (*TestConfig, error) {
+// loadFile reads and parses a YAML test definition file
+func (l *loader) loadFile(path string) (*TestDefinition, error) {
 	data, err := os.ReadFile(path) //nolint:gosec // G304: Reading test config from trusted paths
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}
 
-	var config TestConfig
+	var config TestDefinition
 	if err := yaml.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("parsing yaml: %w", err)
 	}
@@ -161,23 +165,23 @@ func (l *loader) loadFile(path string) (*TestConfig, error) {
 	return &config, nil
 }
 
-// validateConfig ensures the test config is valid
-func (l *loader) validateConfig(config *TestConfig) error {
-	if config.Model == "" {
+// validateDefinition ensures the test definition is valid
+func (l *loader) validateDefinition(definition *TestDefinition) error {
+	if definition.Model == "" {
 		return errModelNameRequired
 	}
 
-	if config.Network == "" {
+	if definition.Network == "" {
 		return errNetworkRequired
 	}
 
-	if config.Spec == "" {
+	if definition.Spec == "" {
 		return errSpecRequired
 	}
 
 	// Validate external data if present
-	if config.ExternalData != nil {
-		for tableName, extData := range config.ExternalData {
+	if definition.ExternalData != nil {
+		for tableName, extData := range definition.ExternalData {
 			if extData.URL == "" {
 				return fmt.Errorf("%w: %s", errExternalTableMissingURL, tableName)
 			}
@@ -189,11 +193,11 @@ func (l *loader) validateConfig(config *TestConfig) error {
 	}
 
 	// Validate assertions
-	if len(config.Assertions) == 0 {
-		l.log.WithField("model", config.Model).Warn("no assertions defined for model")
+	if len(definition.Assertions) == 0 {
+		l.log.WithField("model", definition.Model).Warn("no assertions defined for model")
 	}
 
-	for i, assertion := range config.Assertions {
+	for i, assertion := range definition.Assertions {
 		if assertion.Name == "" {
 			return fmt.Errorf("%w at index %d", errAssertionMissingName, i)
 		}
@@ -210,7 +214,7 @@ func (l *loader) validateConfig(config *TestConfig) error {
 	return nil
 }
 
-// buildPath constructs the file path for a model's test config
+// buildPath constructs the file path for a model's test definition
 func (l *loader) buildPath(network, spec, modelName string) string {
 	return filepath.Join(l.baseDir, network, spec, "models", modelName+".yaml")
 }

@@ -13,6 +13,7 @@ import (
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // ClickHouse driver registration
 	"github.com/ethpandaops/xatu-cbt/internal/config"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/testcfg"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,18 +36,18 @@ type manager struct {
 	xatuMigrationDir string // Path to xatu migrations directory
 	forceRebuild     bool   // Force rebuild of xatu cluster even if already prepared
 	log              logrus.FieldLogger
+	config           *testcfg.TestConfig
 
 	xatuConn *sql.DB // Connection to xatu cluster
 	cbtConn  *sql.DB // Connection to cbt cluster
 }
 
-const (
-	maxParquetLoadWorkers = 10
-	queryTimeout          = 5 * time.Minute
-)
-
 // NewManager creates a new dual-cluster database manager.
-func NewManager(log logrus.FieldLogger, xatuConnStr, cbtConnStr string, migrationRunner MigrationRunner, xatuMigrationDir string, forceRebuild bool) Manager {
+func NewManager(log logrus.FieldLogger, cfg *testcfg.TestConfig, xatuConnStr, cbtConnStr string, migrationRunner MigrationRunner, xatuMigrationDir string, forceRebuild bool) Manager {
+	if cfg == nil {
+		cfg = testcfg.DefaultTestConfig()
+	}
+
 	return &manager{
 		xatuConnStr:      xatuConnStr,
 		cbtConnStr:       cbtConnStr,
@@ -54,6 +55,7 @@ func NewManager(log logrus.FieldLogger, xatuConnStr, cbtConnStr string, migratio
 		xatuMigrationDir: xatuMigrationDir,
 		forceRebuild:     forceRebuild,
 		log:              log.WithField("component", "database_manager"),
+		config:           cfg,
 	}
 }
 
@@ -129,7 +131,7 @@ func (m *manager) PrepareNetworkDatabase(ctx context.Context, _ string) error {
 	for _, db := range databases {
 		createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s", db, config.XatuClusterName)
 
-		queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+		queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 		if _, err := m.xatuConn.ExecContext(queryCtx, createSQL); err != nil {
 			cancel()
 			return fmt.Errorf("creating %s database: %w", db, err)
@@ -180,7 +182,7 @@ func (m *manager) PrepareNetworkDatabase(ctx context.Context, _ string) error {
 func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 	// Check if schema_migrations_default table exists and has migrations
 	// Note: golang-migrate creates table with format schema_migrations_{database_name}
-	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel()
 
 	var count int
@@ -196,7 +198,7 @@ func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 		return false
 	}
 
-	queryCtx2, cancel2 := context.WithTimeout(ctx, queryTimeout)
+	queryCtx2, cancel2 := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel2()
 
 	var migrationCount int
@@ -213,7 +215,7 @@ func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 // If clearMigrations is true, also drops schema_migrations tables (used with --force-rebuild)
 func (m *manager) clearNetworkTables(ctx context.Context, network string, clearMigrations bool) error {
 	// Get list of all tables, materialized views, and views
-	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel()
 
 	rows, err := m.xatuConn.QueryContext(queryCtx,
@@ -256,7 +258,7 @@ func (m *manager) clearNetworkTables(ctx context.Context, network string, clearM
 			dropSQL = fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s` ON CLUSTER %s SYNC", network, obj.name, config.XatuClusterName)
 		}
 
-		queryCtx2, cancel2 := context.WithTimeout(ctx, queryTimeout)
+		queryCtx2, cancel2 := context.WithTimeout(ctx, m.config.QueryTimeout)
 		if _, err := m.xatuConn.ExecContext(queryCtx2, dropSQL); err != nil {
 			cancel2()
 			m.log.WithError(err).WithFields(logrus.Fields{
@@ -286,7 +288,7 @@ func (m *manager) CreateTestDatabase(ctx context.Context, network, spec string) 
 	// Create database in CBT cluster (transformations only)
 	createSQL := fmt.Sprintf("CREATE DATABASE `%s` ON CLUSTER %s", dbName, config.CBTClusterName)
 
-	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel()
 
 	if _, err := m.cbtConn.ExecContext(queryCtx, createSQL); err != nil {
@@ -323,7 +325,7 @@ func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 	// Drop the database from CBT cluster
 	dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER %s", dbName, config.CBTClusterName)
 
-	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel()
 
 	if _, err := m.cbtConn.ExecContext(queryCtx, dropSQL); err != nil {
@@ -334,7 +336,7 @@ func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 	migrationTable := fmt.Sprintf("%s%s", config.SchemaMigrationsPrefix, dbName)
 	dropMigrationsSQL := fmt.Sprintf("DROP TABLE IF EXISTS `default`.`%s`", migrationTable)
 
-	queryCtx2, cancel2 := context.WithTimeout(ctx, queryTimeout)
+	queryCtx2, cancel2 := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel2()
 
 	if _, err := m.cbtConn.ExecContext(queryCtx2, dropMigrationsSQL); err != nil {
@@ -374,7 +376,7 @@ func (m *manager) LoadParquetData(ctx context.Context, _ string, dataFiles map[s
 	var wg sync.WaitGroup
 
 	// Start workers
-	for i := 0; i < maxParquetLoadWorkers; i++ {
+	for i := 0; i < m.config.MaxParquetLoadWorkers; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -424,7 +426,7 @@ func (m *manager) loadParquetFile(ctx context.Context, log *logrus.Entry, tableN
 		localTableName, filePath,
 	)
 
-	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel()
 
 	if _, err := m.xatuConn.ExecContext(queryCtx, insertSQL); err != nil {
@@ -442,7 +444,7 @@ func (m *manager) truncateExternalTable(ctx context.Context, log *logrus.Entry, 
 
 	log.WithField("table", localTableName).Debug("truncating table")
 
-	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel()
 
 	if _, err := m.xatuConn.ExecContext(queryCtx, truncateSQL); err != nil {

@@ -9,8 +9,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config holds the application configuration
-type Config struct {
+// AppConfig holds the application deployment configuration loaded from environment variables.
+type AppConfig struct {
 	Network                  string
 	ClickhouseHost           string
 	ClickhouseNativePort     int
@@ -20,8 +20,8 @@ type Config struct {
 	ClickhouseCluster        string
 }
 
-// Load reads configuration from environment variables and .env file
-func Load() (*Config, error) {
+// Load reads configuration from environment variables and .env file.
+func Load() (*AppConfig, error) {
 	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {
 		// It's okay if the file doesn't exist
@@ -30,7 +30,7 @@ func Load() (*Config, error) {
 		}
 	}
 
-	cfg := &Config{
+	cfg := &AppConfig{
 		Network:            getEnv("NETWORK", "mainnet"),
 		ClickhouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
 		ClickhouseUsername: getEnv("CLICKHOUSE_USERNAME", "default"),
@@ -55,14 +55,7 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func (c *Config) String() string {
+func (c *AppConfig) String() string {
 	passwordDisplay := "(not set)"
 	if c.ClickhousePassword != "" {
 		passwordDisplay = "********"
@@ -88,4 +81,70 @@ ClickHouse Cluster:     %s`,
 		passwordDisplay,
 		clusterDisplay,
 	)
+}
+
+// GetCBTClickHouseURL returns the CBT ClickHouse connection URL built from environment variables.
+// This reads from the same env vars that docker-compose uses, ensuring consistency.
+func GetCBTClickHouseURL() string {
+	username := os.Getenv("CLICKHOUSE_USERNAME")
+	if username == "" {
+		username = "default"
+	}
+
+	password := os.Getenv("CLICKHOUSE_PASSWORD")
+	if password == "" {
+		password = "supersecret"
+	}
+
+	host := os.Getenv("CLICKHOUSE_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	// Check specific port for CBT cluster, then generic, then default
+	port := os.Getenv("CLICKHOUSE_CBT_01_NATIVE_PORT")
+	if port == "" {
+		port = os.Getenv("CLICKHOUSE_NATIVE_PORT")
+	}
+	if port == "" {
+		port = "9000"
+	}
+
+	return fmt.Sprintf("clickhouse://%s:%s@%s:%s", username, password, host, port)
+}
+
+// GetXatuClickHouseURL returns the Xatu ClickHouse connection URL built from environment variables.
+func GetXatuClickHouseURL() string {
+	username := os.Getenv("CLICKHOUSE_USERNAME")
+	if username == "" {
+		username = "default"
+	}
+
+	password := os.Getenv("CLICKHOUSE_PASSWORD")
+	if password == "" {
+		password = "supersecret"
+	}
+
+	host := os.Getenv("CLICKHOUSE_HOST")
+	if host == "" {
+		host = "localhost"
+	}
+
+	// Check specific port for Xatu cluster, then generic, then default
+	port := os.Getenv("CLICKHOUSE_XATU_01_NATIVE_PORT")
+	if port == "" {
+		port = os.Getenv("CLICKHOUSE_NATIVE_PORT")
+	}
+	if port == "" {
+		port = "9002"
+	}
+
+	return fmt.Sprintf("clickhouse://%s:%s@%s:%s", username, password, host, port)
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

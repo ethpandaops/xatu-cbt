@@ -13,11 +13,8 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // ClickHouse driver registration
+	"github.com/ethpandaops/xatu-cbt/internal/testing/testcfg"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	modelTypeScheduled = "scheduled"
 )
 
 // Engine manages CBT engine lifecycle.
@@ -36,6 +33,7 @@ type engine struct {
 	redisURL      string
 	modelsDir     string
 	log           logrus.FieldLogger
+	config        *testcfg.TestConfig
 
 	configPath string
 
@@ -45,19 +43,22 @@ type engine struct {
 }
 
 const (
-	dockerImage      = "ethpandaops/cbt:debian-latest"
-	dockerNetwork    = "xatu_xatu-net"
-	executionTimeout = 30 * time.Minute
+	modelTypeScheduled = "scheduled"
 )
 
 // NewEngine creates a new CBT engine manager.
-func NewEngine(log logrus.FieldLogger, configGen ConfigGenerator, clickhouseURL, redisURL, modelsDir string) Engine {
+func NewEngine(log logrus.FieldLogger, cfg *testcfg.TestConfig, configGen ConfigGenerator, clickhouseURL, redisURL, modelsDir string) Engine {
+	if cfg == nil {
+		cfg = testcfg.DefaultTestConfig()
+	}
+
 	return &engine{
 		configGen:     configGen,
 		clickhouseURL: clickhouseURL,
 		redisURL:      redisURL,
 		modelsDir:     modelsDir,
 		log:           log.WithField("component", "cbt_engine"),
+		config:        cfg,
 	}
 }
 
@@ -153,16 +154,16 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 		"run",
 		"--rm",
 		"--name", containerName,
-		"--network", dockerNetwork,
+		"--network", e.config.DockerNetwork,
 		"-e", fmt.Sprintf("NETWORK=%s", network),
 		"-v", fmt.Sprintf("%s:/config/config.yml", absConfigPath),
 		"-v", fmt.Sprintf("%s:/models", absModelsDir),
-		dockerImage,
+		e.config.DockerImage,
 		"--config", "/config/config.yml",
 	}
 
 	// Start CBT container in background
-	execCtx, cancel := context.WithTimeout(ctx, executionTimeout)
+	execCtx, cancel := context.WithTimeout(ctx, e.config.ExecutionTimeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(execCtx, "docker", args...) //nolint:gosec // G204: Docker command with controlled arguments
@@ -251,8 +252,8 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 	}
 	defer func() { _ = conn.Close() }()
 
-	// Hard 10-minute timeout for entire wait
-	timeout := time.NewTimer(10 * time.Minute)
+	// Hard timeout for entire wait
+	timeout := time.NewTimer(e.config.TransformationWaitTimeout)
 	defer timeout.Stop()
 
 	// OPTION 1: Track when models first became pending
@@ -265,7 +266,7 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 		return fmt.Errorf("waiting for admin tables: %w", err)
 	}
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(e.config.InitialPollInterval)
 	defer ticker.Stop()
 
 	for {
@@ -313,7 +314,7 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 
 					// OPTION 1: If pending >90s, check if table exists (handles 0-row case)
 					// Increased timeout for CI environments where transformations take longer
-					if pendingDuration > 90*time.Second {
+					if pendingDuration > e.config.PendingModelTimeout {
 						tableExists, err := e.tableExists(ctx, conn, dbName, model)
 						if err != nil {
 							e.log.WithError(err).WithField("model", model).Debug("error checking table existence")
@@ -369,7 +370,7 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 // waitForAdminTables waits for CBT admin tables to be created
 // Returns when both admin_cbt_incremental and admin_cbt_scheduled exist.
 func (e *engine) waitForAdminTables(ctx context.Context, conn *sql.DB, dbName string, timeout *time.Timer) error {
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(e.config.AdminTablePollInterval)
 	defer ticker.Stop()
 
 	adminTables := []string{"admin_cbt_incremental", "admin_cbt_scheduled"}

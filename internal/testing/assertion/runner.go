@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/ethpandaops/xatu-cbt/internal/testing/config"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/testdef"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
@@ -40,7 +40,7 @@ var (
 type Runner interface {
 	Start(ctx context.Context) error
 	Stop() error
-	RunAssertions(ctx context.Context, dbName string, assertions []*config.Assertion) (*RunResult, error)
+	RunAssertions(ctx context.Context, dbName string, assertions []*testdef.Assertion) (*RunResult, error)
 }
 
 // RunResult contains assertion execution results.
@@ -124,7 +124,7 @@ func (r *runner) Stop() error {
 }
 
 // RunAssertions executes all assertions for a test.
-func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []*config.Assertion) (*RunResult, error) {
+func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []*testdef.Assertion) (*RunResult, error) {
 	start := time.Now()
 
 	// Execute assertions in parallel with worker pool.
@@ -176,7 +176,7 @@ func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []
 }
 
 // executeAssertion runs a single assertion with retry logic.
-func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion *config.Assertion) *Result {
+func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion *testdef.Assertion) *Result {
 	var (
 		start  = time.Now()
 		result = &Result{

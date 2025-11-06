@@ -14,7 +14,7 @@ import (
 	"github.com/ethpandaops/xatu-cbt/internal/testing/assertion"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/cache"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/cbt"
-	testconfig "github.com/ethpandaops/xatu-cbt/internal/testing/config"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/testdef"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/database"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/dependency"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
@@ -46,7 +46,7 @@ type Orchestrator interface {
 }
 
 type orchestrator struct {
-	configLoader       testconfig.Loader
+	configLoader       testdef.Loader
 	resolver           dependency.Resolver
 	cache              cache.ParquetCache
 	dbManager          database.Manager
@@ -66,7 +66,7 @@ func NewOrchestrator(
 	verbose bool,
 	writer io.Writer,
 	metricsCollector metrics.Collector,
-	configLoader testconfig.Loader,
+	configLoader testdef.Loader,
 	resolver dependency.Resolver,
 	parquetCache cache.ParquetCache,
 	dbManager database.Manager,
@@ -203,7 +203,7 @@ func (o *orchestrator) TestModels(
 	}
 
 	// Load test configs for all models.
-	testConfigs := make([]*testconfig.TestConfig, 0, len(modelNames))
+	testConfigs := make([]*testdef.TestDefinition, 0, len(modelNames))
 	for _, modelName := range modelNames {
 		testConfig, err := o.configLoader.LoadForModel(spec, network, modelName)
 		if err != nil {
@@ -236,7 +236,7 @@ func (o *orchestrator) TestSpec(ctx context.Context, network, spec string, concu
 	}
 
 	// Convert configs map to slice for consistent ordering
-	testConfigs := make([]*testconfig.TestConfig, 0, len(configs))
+	testConfigs := make([]*testdef.TestDefinition, 0, len(configs))
 	for _, cfg := range configs {
 		testConfigs = append(testConfigs, cfg)
 	}
@@ -251,7 +251,7 @@ func (o *orchestrator) TestSpec(ctx context.Context, network, spec string, concu
 func (o *orchestrator) executeTestGroup(
 	ctx context.Context,
 	network, spec string,
-	testConfigs []*testconfig.TestConfig,
+	testConfigs []*testdef.TestDefinition,
 	concurrency int,
 ) ([]*TestResult, error) {
 	var (
@@ -362,7 +362,7 @@ func (o *orchestrator) executeTestGroup(
 	// Use worker pool to run assertions with controlled concurrency.
 	type assertionJob struct {
 		index      int
-		testConfig *testconfig.TestConfig
+		testConfig *testdef.TestDefinition
 	}
 
 	var (

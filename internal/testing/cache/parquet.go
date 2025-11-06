@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/testcfg"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,6 +48,7 @@ type parquetCache struct {
 	httpClient   *http.Client
 	log          logrus.FieldLogger
 	metrics      metrics.Collector
+	config       *testcfg.TestConfig
 
 	mu       sync.RWMutex
 	manifest *Manifest
@@ -56,21 +58,24 @@ type parquetCache struct {
 }
 
 const (
-	manifestFilename       = "manifest.json"
-	defaultHTTPTimeout     = 10 * time.Minute
-	maxConcurrentDownloads = 10
+	manifestFilename = "manifest.json"
 )
 
 // NewParquetCache creates a new parquet cache manager.
-func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64, metricsCollector metrics.Collector) ParquetCache {
+func NewParquetCache(log logrus.FieldLogger, cfg *testcfg.TestConfig, cacheDir string, maxSizeBytes int64, metricsCollector metrics.Collector) ParquetCache {
+	if cfg == nil {
+		cfg = testcfg.DefaultTestConfig()
+	}
+
 	return &parquetCache{
 		cacheDir:     cacheDir,
 		maxSizeBytes: maxSizeBytes,
 		httpClient: &http.Client{
-			Timeout: defaultHTTPTimeout,
+			Timeout: cfg.DefaultHTTPTimeout,
 		},
 		log:      log.WithField("component", "parquet_cache"),
 		metrics:  metricsCollector,
+		config:   cfg,
 		manifest: &Manifest{Entries: make(map[string]*Entry)},
 	}
 }
@@ -165,7 +170,7 @@ func (c *parquetCache) Prefetch(ctx context.Context, urls map[string]string) err
 	errors := make(chan error, len(urls))
 	var wg sync.WaitGroup
 
-	for i := 0; i < maxConcurrentDownloads; i++ {
+	for i := 0; i < c.config.MaxConcurrentDownloads; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

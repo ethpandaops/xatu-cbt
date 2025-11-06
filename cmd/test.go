@@ -15,10 +15,11 @@ import (
 	"github.com/ethpandaops/xatu-cbt/internal/testing/assertion"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/cache"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/cbt"
-	testconfig "github.com/ethpandaops/xatu-cbt/internal/testing/config"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/database"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/dependency"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/testcfg"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/testdef"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -183,7 +184,8 @@ func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
 
 	xatuMigrationDir := filepath.Join(xatuRepoPath, config.XatuMigrationsPath)
 	metricsCollector := metrics.NewCollector(log)
-	configLoader := testconfig.NewLoader(log, filepath.Join(wd, config.TestsDir))
+	testConfig := testcfg.DefaultTestConfig()
+	configLoader := testdef.NewLoader(log, filepath.Join(wd, config.TestsDir))
 	parser := dependency.NewParser(log)
 	resolver := dependency.NewResolver(
 		log,
@@ -191,9 +193,9 @@ func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
 		filepath.Join(wd, config.ModelsTransformationsDir),
 		parser,
 	)
-	parquetCache := cache.NewParquetCache(log, testCacheDir, testCacheSize, metricsCollector)
+	parquetCache := cache.NewParquetCache(log, testConfig, testCacheDir, testCacheSize, metricsCollector)
 	migrationRunner := database.NewMigrationRunner(log, filepath.Join(wd, config.MigrationsDir), "")
-	dbManager := database.NewManager(log, xatuClickhouseURL, cbtClickhouseURL, migrationRunner, xatuMigrationDir, testForceRebuild)
+	dbManager := database.NewManager(log, testConfig, xatuClickhouseURL, cbtClickhouseURL, migrationRunner, xatuMigrationDir, testForceRebuild)
 	configGen := cbt.NewConfigGenerator(
 		log,
 		filepath.Join(wd, config.ModelsExternalDir),
@@ -201,7 +203,7 @@ func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
 		cbtClickhouseURL,
 		redisURL,
 	)
-	cbtEngine := cbt.NewEngine(log, configGen, cbtClickhouseURL, redisURL, filepath.Join(wd, config.ModelsDir))
+	cbtEngine := cbt.NewEngine(log, testConfig, configGen, cbtClickhouseURL, redisURL, filepath.Join(wd, config.ModelsDir))
 	assertionRunner := assertion.NewRunner(log, cbtClickhouseURL, 5, 30*time.Second)
 
 	orchestrator := testing.NewOrchestrator(

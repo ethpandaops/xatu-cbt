@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ethpandaops/xatu-cbt/internal/testing/config"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/testdef"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,7 +12,7 @@ import (
 type Resolver interface {
 	Start(ctx context.Context) error
 	Stop() error
-	ResolveAndValidate(testConfig *config.TestConfig) (*ResolutionResult, error)
+	ResolveAndValidate(testConfig *testdef.TestDefinition) (*ResolutionResult, error)
 	IsExternalModel(name string) bool
 	IsTransformationModel(name string) bool
 }
@@ -86,7 +86,7 @@ func (r *resolver) Stop() error {
 }
 
 // ResolveAndValidate performs smart dependency resolution and validation.
-func (r *resolver) ResolveAndValidate(testConfig *config.TestConfig) (*ResolutionResult, error) {
+func (r *resolver) ResolveAndValidate(testConfig *testdef.TestDefinition) (*ResolutionResult, error) {
 	// Find the target model
 	targetModel, isTransformation := r.transformationModels[testConfig.Model]
 	if !isTransformation {
@@ -269,7 +269,7 @@ func (r *resolver) topologicalSort(transformations []*Model) ([]*Model, error) {
 }
 
 // validateExternalData checks that all required external tables are provided
-func (r *resolver) validateExternalData(required []string, provided map[string]*config.ExternalTable) error {
+func (r *resolver) validateExternalData(required []string, provided map[string]*testdef.ExternalTable) error {
 	missing := make([]string, 0)
 
 	for _, tableName := range required {

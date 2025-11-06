@@ -12,11 +12,11 @@ import (
 )
 
 // Connect establishes a connection to ClickHouse using native protocol.
-func Connect(cfg *config.Config) (driver.Conn, error) {
+func Connect(cfg *config.AppConfig) (driver.Conn, error) {
 	return connect(cfg, cfg.ClickhouseNativePort)
 }
 
-func connect(cfg *config.Config, port int) (driver.Conn, error) {
+func connect(cfg *config.AppConfig, port int) (driver.Conn, error) {
 	// Use "default" database for initial connection
 	// We'll create the network database after connecting
 	options := &clickhouse.Options{
@@ -134,7 +134,7 @@ func getClusterName(cluster string) string {
 }
 
 // TestConnection tests if we can connect to ClickHouse.
-func TestConnection(cfg *config.Config) error {
+func TestConnection(cfg *config.AppConfig) error {
 	conn, err := Connect(cfg)
 	if err != nil {
 		return err
