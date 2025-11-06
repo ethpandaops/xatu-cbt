@@ -31,6 +31,8 @@ jobs:
           go-version: '1.24'
       - name: Build xatu-cbt
         run: make build
+      - name: Create cache directory
+        run: mkdir -p .parquet_cache
       - name: Start infrastructure
         id: start-infra
         run: ./bin/xatu-cbt infra start
