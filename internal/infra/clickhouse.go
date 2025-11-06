@@ -27,8 +27,8 @@ type clickhouseManager struct {
 }
 
 const (
-	healthCheckTimeout = 60 * time.Second
-	healthCheckRetries = 12
+	healthCheckTimeout  = 120 * time.Second
+	healthCheckRetries  = 12
 	healthCheckInterval = 5 * time.Second
 )
 

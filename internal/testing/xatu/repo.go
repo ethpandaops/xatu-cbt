@@ -100,9 +100,9 @@ func (r *RepoManager) gitClone(dest string) error {
 	return nil
 }
 
-// gitFetch fetches latest changes
+// gitFetch fetches latest changes (shallow fetch of specific ref)
 func (r *RepoManager) gitFetch(repoPath string) error {
-	cmd := exec.Command("git", "fetch", "origin")
+	cmd := exec.Command("git", "fetch", "origin", "--depth", "1", r.ref)
 	cmd.Dir = repoPath
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
