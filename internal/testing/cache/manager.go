@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Manager handles cache eviction policies
+// Manager handles cache eviction policies.
 type Manager interface {
 	Evict(manifest *Manifest, maxSizeBytes int64) ([]string, error)
 	GetCurrentSize(manifest *Manifest) int64
@@ -29,7 +29,7 @@ type cacheEntryWithKey struct {
 	entry *Entry
 }
 
-// NewManager creates a new cache manager
+// NewManager creates a new cache manager.
 func NewManager(cacheDir string, log logrus.FieldLogger) Manager {
 	return &manager{
 		cacheDir: cacheDir,
@@ -37,7 +37,7 @@ func NewManager(cacheDir string, log logrus.FieldLogger) Manager {
 	}
 }
 
-// GetCurrentSize calculates the total size of all cached files
+// GetCurrentSize calculates the total size of all cached files.
 func (m *manager) GetCurrentSize(manifest *Manifest) int64 {
 	var totalSize int64
 	for _, entry := range manifest.Entries {
@@ -46,7 +46,7 @@ func (m *manager) GetCurrentSize(manifest *Manifest) int64 {
 	return totalSize
 }
 
-// Evict performs LRU eviction until cache size is under maxSizeBytes
+// Evict performs LRU eviction until cache size is under maxSizeBytes.
 func (m *manager) Evict(manifest *Manifest, maxSizeBytes int64) ([]string, error) {
 	currentSize := m.GetCurrentSize(manifest)
 

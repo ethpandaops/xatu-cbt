@@ -20,7 +20,7 @@ const (
 	modelTypeScheduled = "scheduled"
 )
 
-// Engine manages CBT engine lifecycle
+// Engine manages CBT engine lifecycle.
 type Engine interface {
 	Start(ctx context.Context) error
 	Stop() error
@@ -50,7 +50,7 @@ const (
 	executionTimeout = 30 * time.Minute
 )
 
-// NewEngine creates a new CBT engine manager
+// NewEngine creates a new CBT engine manager.
 func NewEngine(log logrus.FieldLogger, configGen ConfigGenerator, clickhouseURL, redisURL, modelsDir string) Engine {
 	return &engine{
 		configGen:     configGen,
@@ -61,13 +61,11 @@ func NewEngine(log logrus.FieldLogger, configGen ConfigGenerator, clickhouseURL,
 	}
 }
 
-// Start initializes the engine (no-op for this implementation)
 func (e *engine) Start(_ context.Context) error {
 	e.log.Debug("starting cbt engine")
 	return nil
 }
 
-// Stop cleans up the engine
 func (e *engine) Stop() error {
 	e.log.Debug("stopping cbt engine")
 
@@ -95,7 +93,7 @@ func (e *engine) Stop() error {
 	return nil
 }
 
-// RunTransformations executes CBT transformations for specified models
+// RunTransformations executes CBT transformations for specified models.
 func (e *engine) RunTransformations(ctx context.Context, network, dbName string, allModels, transformationModels []string) error {
 	logCtx := e.log.WithFields(logrus.Fields{
 		"database": dbName,
@@ -208,8 +206,8 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 }
 
 // waitForTransformations polls the admin tables and verifies models have data
-// For scheduled models, it retries if the model runs but produces empty results
-// Has a hard 10-minute timeout to prevent running forever
+// For scheduled models, it retries if the model runs but produces empty results.
+// Has a hard 10-minute timeout to prevent running forever.
 func (e *engine) waitForTransformations(ctx context.Context, dbName string, models []string) error { //nolint:gocyclo // Complex transformation waiting logic with multiple state checks - refactoring risky
 	// Categorize transformation models (skip external models)
 	scheduledModels := make(map[string]bool)
@@ -369,7 +367,7 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 }
 
 // waitForAdminTables waits for CBT admin tables to be created
-// Returns when both admin_cbt_incremental and admin_cbt_scheduled exist
+// Returns when both admin_cbt_incremental and admin_cbt_scheduled exist.
 func (e *engine) waitForAdminTables(ctx context.Context, conn *sql.DB, dbName string, timeout *time.Timer) error {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()

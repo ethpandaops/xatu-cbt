@@ -10,21 +10,14 @@ const (
 	XatuClusterName = "xatu_cluster"
 	// CBTClusterName is the ClickHouse cluster name for transformations (2 shards, 1 replica).
 	CBTClusterName = "cluster_2S_1R"
-
-	// DockerNetwork is the Docker network name for xatu services.
-	DockerNetwork = "xatu_xatu-net"
-	// CBTDockerImage is the Docker image used for CBT operations.
-	CBTDockerImage = "ethpandaops/cbt:debian-latest"
 	// RedisContainerName is the name of the Redis container.
 	RedisContainerName = "xatu-cbt-redis"
 	// ClickHouseContainer is the name of the ClickHouse container.
 	ClickHouseContainer = "xatu-cbt-clickhouse-01"
-
 	// PlatformComposeFile is the Docker Compose file for the platform infrastructure.
 	PlatformComposeFile = "docker-compose.platform.yml"
 	// ProjectName is the Docker Compose project name.
 	ProjectName = "xatu-cbt-platform"
-
 	// ModelsExternalDir is the directory path for external models.
 	ModelsExternalDir = "models/external"
 	// ModelsTransformationsDir is the directory path for transformation models.
@@ -35,24 +28,17 @@ const (
 	MigrationsDir = "migrations"
 	// TestsDir is the directory path for tests.
 	TestsDir = "tests"
-
-	// TestDatabasePrefix is the prefix used for test databases.
-	TestDatabasePrefix = "test_"
 	// SchemaMigrationsPrefix is the prefix used for schema migration tables.
 	SchemaMigrationsPrefix = "schema_migrations_"
 	// DefaultDatabase is the name of the default database.
 	DefaultDatabase = "default"
-
 	// XatuRepoURL is the URL of the xatu repository.
 	XatuRepoURL = "https://github.com/ethpandaops/xatu"
 	// XatuDefaultRef is the default git reference for the xatu repository.
 	XatuDefaultRef = "master"
 	// XatuMigrationsPath is the path to migrations within the xatu repository.
 	XatuMigrationsPath = "deploy/migrations/clickhouse"
-)
-
-// Default connection strings
-const (
+	// DefaultRedisURL is the default redis url.
 	DefaultRedisURL = "redis://localhost:6380"
 )
 

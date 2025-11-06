@@ -17,7 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ParquetCache manages local caching of parquet files
+// ParquetCache manages local caching of parquet files.
 type ParquetCache interface {
 	Start(ctx context.Context) error
 	Stop() error
@@ -26,7 +26,7 @@ type ParquetCache interface {
 	Cleanup() error
 }
 
-// Entry represents metadata for a cached file
+// Entry represents metadata for a cached file.
 type Entry struct {
 	URL        string    `json:"url"`
 	SHA256     string    `json:"sha256"`
@@ -36,7 +36,7 @@ type Entry struct {
 	Table      string    `json:"table"`
 }
 
-// Manifest tracks all cached files
+// Manifest tracks all cached files.
 type Manifest struct {
 	Entries map[string]*Entry `json:"entries"` // Key: SHA256
 }
@@ -61,7 +61,7 @@ const (
 	maxConcurrentDownloads = 10
 )
 
-// NewParquetCache creates a new parquet cache manager
+// NewParquetCache creates a new parquet cache manager.
 func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64, metricsCollector metrics.Collector) ParquetCache {
 	return &parquetCache{
 		cacheDir:     cacheDir,
@@ -75,14 +75,11 @@ func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64
 	}
 }
 
-// Start initializes the cache by loading the manifest
 func (c *parquetCache) Start(_ context.Context) error {
-	// Create cache directory if it doesn't exist
 	if err := os.MkdirAll(c.cacheDir, 0o755); err != nil { //nolint:gosec // G301: Cache directory with standard permissions
 		return fmt.Errorf("creating cache directory: %w", err)
 	}
 
-	// Load manifest
 	if err := c.loadManifest(); err != nil {
 		c.log.WithError(err).Warn("failed to load manifest, starting with empty cache")
 		c.manifest = &Manifest{Entries: make(map[string]*Entry)}
@@ -96,7 +93,6 @@ func (c *parquetCache) Start(_ context.Context) error {
 	return nil
 }
 
-// Stop saves the manifest and cleans up
 func (c *parquetCache) Stop() error {
 	c.log.Debug("stopping parquet cache")
 
@@ -110,23 +106,18 @@ func (c *parquetCache) Stop() error {
 	return nil
 }
 
-// Get returns the local path to a parquet file, downloading if needed
 func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, error) {
 	startTime := time.Now()
 
-	// Calculate URL hash for cache key
 	urlHash := c.hashURL(url)
 
-	// Check if file exists in cache
 	c.mu.RLock()
 	_, exists := c.manifest.Entries[urlHash]
 	c.mu.RUnlock()
 
 	if exists {
-		// Verify file still exists on disk
 		filePath := filepath.Join(c.cacheDir, urlHash)
 		if fileInfo, err := os.Stat(filePath); err == nil {
-			// Update last used time
 			if err := c.updateLastUsed(urlHash); err != nil {
 				c.log.WithError(err).Warn("failed to update last used time")
 			}
@@ -137,7 +128,6 @@ func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, 
 				"cache_hit": "true",
 			}).Debug("fetching parquet file")
 
-			// Record cache hit metric
 			c.metrics.RecordParquetLoad(metrics.ParquetLoadMetric{
 				Table:     tableName,
 				Source:    metrics.SourceCache,
@@ -164,9 +154,8 @@ func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, 
 	return c.download(ctx, url, urlHash, tableName)
 }
 
-// Prefetch downloads multiple files concurrently
+// Prefetch downloads multiple files concurrently.
 func (c *parquetCache) Prefetch(ctx context.Context, urls map[string]string) error {
-	// Create worker pool
 	type job struct {
 		url       string
 		tableName string
@@ -176,7 +165,6 @@ func (c *parquetCache) Prefetch(ctx context.Context, urls map[string]string) err
 	errors := make(chan error, len(urls))
 	var wg sync.WaitGroup
 
-	// Start workers
 	for i := 0; i < maxConcurrentDownloads; i++ {
 		wg.Add(1)
 		go func() {
@@ -190,17 +178,14 @@ func (c *parquetCache) Prefetch(ctx context.Context, urls map[string]string) err
 		}()
 	}
 
-	// Enqueue jobs
 	for tableName, url := range urls {
 		jobs <- job{url: url, tableName: tableName}
 	}
 	close(jobs)
 
-	// Wait for completion
 	wg.Wait()
 	close(errors)
 
-	// Check for errors
 	for err := range errors {
 		return err
 	}
@@ -208,7 +193,7 @@ func (c *parquetCache) Prefetch(ctx context.Context, urls map[string]string) err
 	return nil
 }
 
-// Cleanup evicts old entries if cache size exceeds max
+// Cleanup evicts old entries if cache size exceeds max.
 func (c *parquetCache) Cleanup() error {
 	c.log.Debug("running cache cleanup")
 
@@ -248,7 +233,6 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 				// Channel closed, download complete, retry Get
 				return c.Get(ctx, url, tableName)
 			}
-			// Download complete, retry Get
 			return c.Get(ctx, url, tableName)
 		case <-ctx.Done():
 			return "", ctx.Err()
@@ -259,7 +243,6 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 		close(downloadCh)
 	}()
 
-	// Download file
 	start := time.Now()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
@@ -277,7 +260,6 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode) //nolint:err113 // Include status code for debugging
 	}
 
-	// Create temporary file
 	tmpPath := filepath.Join(c.cacheDir, urlHash+".tmp")
 	tmpFile, err := os.Create(tmpPath) //nolint:gosec // G304: Path constructed from safe hash
 	if err != nil {
@@ -285,7 +267,6 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 	}
 	defer func() { _ = tmpFile.Close() }()
 
-	// Write to temp file and calculate SHA256
 	hasher := sha256.New()
 	writer := io.MultiWriter(tmpFile, hasher)
 
@@ -300,17 +281,14 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 		return "", fmt.Errorf("closing temp file: %w", err)
 	}
 
-	// Calculate final SHA256
 	sha256Hash := hex.EncodeToString(hasher.Sum(nil))
 
-	// Move to final location
 	finalPath := filepath.Join(c.cacheDir, urlHash)
 	if err := os.Rename(tmpPath, finalPath); err != nil {
 		_ = os.Remove(tmpPath) // Ignore cleanup error, already returning an error
 		return "", fmt.Errorf("moving file to cache: %w", err)
 	}
 
-	// Update manifest
 	c.mu.Lock()
 	c.manifest.Entries[urlHash] = &Entry{
 		URL:        url,

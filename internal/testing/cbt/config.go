@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ConfigGenerator generates CBT config files
+// ConfigGenerator generates CBT config files.
 type ConfigGenerator interface {
 	GenerateForModels(network, dbName string, models []string, outputPath string) error
 }
@@ -25,12 +25,12 @@ type configGenerator struct {
 	log               logrus.FieldLogger
 }
 
-// ModelOverrides contains per-model configuration overrides
+// ModelOverrides contains per-model configuration overrides.
 type ModelOverrides struct {
 	Config struct {
 		Lag       *int              `yaml:"lag,omitempty"`
-		Schedule  string            `yaml:"schedule,omitempty"`  // For scheduled models
-		Schedules map[string]string `yaml:"schedules,omitempty"` // For incremental models (forwardfill/backfill)
+		Schedule  string            `yaml:"schedule,omitempty"`
+		Schedules map[string]string `yaml:"schedules,omitempty"`
 	} `yaml:"config"`
 }
 
@@ -38,8 +38,8 @@ type ModelOverrides struct {
 type Config struct {
 	ClickHouse struct {
 		URL         string `yaml:"url"`
-		Cluster     string `yaml:"cluster,omitempty"`     // Cluster name for ON CLUSTER queries
-		LocalSuffix string `yaml:"localSuffix,omitempty"` // Suffix for local tables (e.g., "_local")
+		Cluster     string `yaml:"cluster,omitempty"`
+		LocalSuffix string `yaml:"localSuffix,omitempty"`
 		Admin       struct {
 			Incremental struct {
 				Database string `yaml:"database"`
@@ -53,7 +53,7 @@ type Config struct {
 	} `yaml:"clickhouse"`
 	Redis struct {
 		URL    string `yaml:"url"`
-		Prefix string `yaml:"prefix"` // ANTI-FLAKE #5: Namespace keys per test
+		Prefix string `yaml:"prefix"`
 	} `yaml:"redis"`
 	Models struct {
 		External struct {
@@ -65,8 +65,8 @@ type Config struct {
 			DefaultDatabase string   `yaml:"defaultDatabase,omitempty"`
 			Paths           []string `yaml:"paths"`
 		} `yaml:"transformations"`
-		Env       map[string]string          `yaml:"env,omitempty"`       // Global environment variables for templates
-		Overrides map[string]*ModelOverrides `yaml:"overrides,omitempty"` // Model-specific overrides for testing
+		Env       map[string]string          `yaml:"env,omitempty"`
+		Overrides map[string]*ModelOverrides `yaml:"overrides,omitempty"`
 	} `yaml:"models"`
 	Scheduler struct {
 		Concurrency int `yaml:"concurrency"`
@@ -76,7 +76,7 @@ type Config struct {
 	} `yaml:"worker"`
 }
 
-// NewConfigGenerator creates a new CBT config generator
+// NewConfigGenerator creates a new CBT config generator.
 func NewConfigGenerator(
 	log logrus.FieldLogger,
 	externalDir,
@@ -93,22 +93,20 @@ func NewConfigGenerator(
 	}
 }
 
-// GenerateForModels generates a CBT config for specific models
+// GenerateForModels generates a CBT config for specific models.
 func (g *configGenerator) GenerateForModels(network, dbName string, models []string, outputPath string) error {
-	// Build model paths separated by type
+	// Build model paths separated by type.
 	externalPaths, transformationPaths, err := g.buildModelPaths(models)
 	if err != nil {
 		return fmt.Errorf("building model paths: %w", err)
 	}
 
-	// Create config structure
 	config := &Config{}
 
-	// Configure ClickHouse connection
-	// CBT uses HTTP interface, convert clickhouse:// URL to http://
 	clickhouseHTTPURL := strings.Replace(g.clickhouseURL, "clickhouse://", "http://", 1)
-	// Replace localhost with container hostname and adjust ports for Docker network access
-	// Host ports (9000 native, 8123 HTTP) are mapped differently than container internal ports
+
+	// Replace localhost with container hostname and adjust ports for Docker network access.
+	// Host ports (9000 native, 8123 HTTP) are mapped differently than container internal ports.
 	clickhouseHTTPURL = strings.Replace(clickhouseHTTPURL, "localhost:9000", "xatu-cbt-clickhouse-01:8123", 1)
 	clickhouseHTTPURL = strings.Replace(clickhouseHTTPURL, "localhost:8123", "xatu-cbt-clickhouse-01:8123", 1)
 	config.ClickHouse.URL = clickhouseHTTPURL
@@ -312,5 +310,6 @@ func (g *configGenerator) buildDefaultTestOverrides(models []string) map[string]
 	}
 
 	g.log.WithField("count", len(overrides)).Debug("generated default test overrides")
+
 	return overrides
 }

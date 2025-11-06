@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ModelType represents the category of model
+// ModelType represents the category of model.
 type ModelType string
 
 const (
@@ -22,17 +22,17 @@ const (
 	ModelTypeTransformation ModelType = "transformation"
 )
 
-// Model represents a CBT model with metadata
+// Model represents a CBT model with metadata.
 type Model struct {
 	Name         string
 	Type         ModelType
 	Path         string
-	Dependencies []string // Model names this depends on
+	Dependencies []string
 	SQL          string
-	Table        string // Table name from frontmatter or filename
+	Table        string
 }
 
-// Frontmatter represents YAML frontmatter in SQL files
+// Frontmatter represents YAML frontmatter in SQL files.
 type Frontmatter struct {
 	Table        string        `yaml:"table"`
 	Dependencies []interface{} `yaml:"dependencies"` // Can be []string or [][]string (OR dependencies)
@@ -42,7 +42,7 @@ type Frontmatter struct {
 	} `yaml:"cache,omitempty"`
 }
 
-// Parser parses model files and extracts metadata
+// Parser parses model files and extracts metadata.
 type Parser interface {
 	ParseModel(path string, modelType ModelType) (*Model, error)
 	ParseModelsInDir(dir string, modelType ModelType) ([]*Model, error)
@@ -52,17 +52,17 @@ type parser struct {
 	log logrus.FieldLogger
 }
 
-// NewParser creates a new model parser
+// NewParser creates a new model parser.
 func NewParser(log logrus.FieldLogger) Parser {
 	return &parser{
 		log: log.WithField("component", "model_parser"),
 	}
 }
 
-// ParseModel parses a single model file and extracts metadata
+// ParseModel parses a single model file and extracts metadata.
 func (p *parser) ParseModel(path string, modelType ModelType) (*Model, error) {
-	// Read file content
-	content, err := os.ReadFile(path) //nolint:gosec // G304: Reading model files from trusted paths
+	//nolint:gosec // G304: Reading model files from trusted paths
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}
@@ -70,7 +70,6 @@ func (p *parser) ParseModel(path string, modelType ModelType) (*Model, error) {
 	// Extract frontmatter
 	frontmatter, sql, err := p.extractFrontmatter(string(content))
 	if err != nil {
-		// If no frontmatter, create empty frontmatter
 		frontmatter = &Frontmatter{}
 		sql = string(content)
 	}
@@ -103,19 +102,17 @@ func (p *parser) ParseModel(path string, modelType ModelType) (*Model, error) {
 		}
 	}
 
-	model := &Model{
+	return &Model{
 		Name:         tableName,
 		Type:         modelType,
 		Path:         path,
 		Dependencies: dependencies,
 		SQL:          sql,
 		Table:        tableName,
-	}
-
-	return model, nil
+	}, nil
 }
 
-// ParseModelsInDir parses all model files in a directory
+// ParseModelsInDir parses all model files in a directory.
 func (p *parser) ParseModelsInDir(dir string, modelType ModelType) ([]*Model, error) {
 	p.log.WithFields(logrus.Fields{
 		"dir":  dir,
@@ -140,8 +137,7 @@ func (p *parser) ParseModelsInDir(dir string, modelType ModelType) ([]*Model, er
 			continue
 		}
 
-		path := filepath.Join(dir, entry.Name())
-		model, err := p.ParseModel(path, modelType)
+		model, err := p.ParseModel(filepath.Join(dir, entry.Name()), modelType)
 		if err != nil {
 			p.log.WithError(err).WithField("file", entry.Name()).Warn("failed to parse model, skipping")
 			continue
@@ -158,15 +154,19 @@ func (p *parser) ParseModelsInDir(dir string, modelType ModelType) ([]*Model, er
 // extractFrontmatter extracts YAML frontmatter from SQL content
 func (p *parser) extractFrontmatter(content string) (*Frontmatter, string, error) {
 	// Match YAML frontmatter between --- delimiters
-	re := regexp.MustCompile(`(?s)^---\s*\n(.*?)\n---\s*\n(.*)`)
-	matches := re.FindStringSubmatch(content)
+	var (
+		re      = regexp.MustCompile(`(?s)^---\s*\n(.*?)\n---\s*\n(.*)`)
+		matches = re.FindStringSubmatch(content)
+	)
 
 	if len(matches) < 3 {
 		return nil, "", fmt.Errorf("no frontmatter found") //nolint:err113 // Standard parsing error
 	}
 
-	frontmatterYAML := matches[1]
-	sql := matches[2]
+	var (
+		frontmatterYAML = matches[1]
+		sql             = matches[2]
+	)
 
 	var frontmatter Frontmatter
 	if err := yaml.Unmarshal([]byte(frontmatterYAML), &frontmatter); err != nil {
@@ -182,13 +182,15 @@ func (p *parser) extractFrontmatter(content string) (*Frontmatter, string, error
 //	{{transformation}}.table_name → table_name
 func (p *parser) normalizeDependency(dep string) string {
 	// Extract table name from {{external}}.table_name or {{transformation}}.table_name
-	re := regexp.MustCompile(`\{\{(?:external|transformation)\}\}\.(.+)`)
-	matches := re.FindStringSubmatch(dep)
+	var (
+		re      = regexp.MustCompile(`\{\{(?:external|transformation)\}\}\.(.+)`)
+		matches = re.FindStringSubmatch(dep)
+	)
 
 	if len(matches) > 1 {
 		return strings.TrimSpace(matches[1])
 	}
 
-	// If no template pattern found, return as-is (already normalized)
+	// If no template pattern found, return as-is (already normalised).
 	return strings.TrimSpace(dep)
 }

@@ -1,6 +1,3 @@
-internal/test.backup
-tests.backup
-
 # Go binaries and build artifacts
 *.exe
 *.dll

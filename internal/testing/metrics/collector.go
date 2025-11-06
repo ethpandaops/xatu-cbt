@@ -9,7 +9,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ParquetLoadSource indicates where parquet data was loaded from
+// Compile-time interface compliance check.
+var _ Collector = (*collector)(nil)
+
+// ParquetLoadSource indicates where parquet data was loaded from.
 type ParquetLoadSource string
 
 const (
@@ -19,7 +22,7 @@ const (
 	SourceS3 ParquetLoadSource = "s3"
 )
 
-// ParquetLoadMetric captures metrics about loading a parquet file
+// ParquetLoadMetric captures metrics about loading a parquet file.
 type ParquetLoadMetric struct {
 	Table     string
 	Source    ParquetLoadSource // cache or s3
@@ -28,7 +31,7 @@ type ParquetLoadMetric struct {
 	Timestamp time.Time
 }
 
-// FailedAssertionDetail captures details about a single failed assertion
+// FailedAssertionDetail captures details about a single failed assertion.
 type FailedAssertionDetail struct {
 	Name     string
 	Expected map[string]interface{}
@@ -36,7 +39,7 @@ type FailedAssertionDetail struct {
 	Error    string
 }
 
-// TestResultMetric captures metrics about a test execution
+// TestResultMetric captures metrics about a test execution.
 type TestResultMetric struct {
 	Model            string
 	Passed           bool
@@ -49,7 +52,7 @@ type TestResultMetric struct {
 	Timestamp        time.Time
 }
 
-// SummaryMetric provides aggregate statistics across all operations
+// SummaryMetric provides aggregate statistics across all operations.
 type SummaryMetric struct {
 	TotalDuration time.Duration
 	TotalTests    int
@@ -61,7 +64,7 @@ type SummaryMetric struct {
 	TotalDataSize int64   // bytes
 }
 
-// Collector interface for metrics collection
+// Collector interface for metrics collection.
 type Collector interface {
 	Start(ctx context.Context) error
 	Stop() error
@@ -81,7 +84,7 @@ type collector struct {
 	startTime      time.Time
 }
 
-// NewCollector creates a new metrics collector
+// NewCollector creates a new metrics collector.
 // Returns Collector interface, not *collector struct (per ethPandaOps standards)
 func NewCollector(log logrus.FieldLogger) Collector {
 	return &collector{
@@ -140,10 +143,12 @@ func (c *collector) GetSummary() SummaryMetric {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	totalDuration := time.Since(c.startTime)
-	cacheHits := 0
-	cacheMisses := 0
-	totalSize := int64(0)
+	var (
+		totalDuration = time.Since(c.startTime)
+		cacheHits     = 0
+		cacheMisses   = 0
+		totalSize     = int64(0)
+	)
 
 	for _, pm := range c.parquetMetrics {
 		if pm.Source == SourceCache {
@@ -154,8 +159,11 @@ func (c *collector) GetSummary() SummaryMetric {
 		totalSize += pm.SizeBytes
 	}
 
-	passed := 0
-	failed := 0
+	var (
+		passed int
+		failed int
+	)
+
 	for _, tm := range c.testMetrics {
 		if tm.Passed {
 			passed++
@@ -164,7 +172,7 @@ func (c *collector) GetSummary() SummaryMetric {
 		}
 	}
 
-	cacheHitRate := 0.0
+	var cacheHitRate float64
 	if cacheHits+cacheMisses > 0 {
 		cacheHitRate = float64(cacheHits) / float64(cacheHits+cacheMisses) * 100.0
 	}
@@ -180,6 +188,3 @@ func (c *collector) GetSummary() SummaryMetric {
 		TotalDataSize: totalSize,
 	}
 }
-
-// Compile-time interface compliance check
-var _ Collector = (*collector)(nil)

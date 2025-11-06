@@ -8,7 +8,6 @@ import (
 )
 
 func TestColorHelper_FormatStatus(t *testing.T) {
-	// Disable colors for consistent testing
 	color.NoColor = true
 	defer func() { color.NoColor = false }()
 
@@ -26,7 +25,6 @@ func TestColorHelper_FormatStatus(t *testing.T) {
 }
 
 func TestColorHelper_FormatAssertions(t *testing.T) {
-	// Disable colors for consistent testing
 	color.NoColor = true
 	defer func() { color.NoColor = false }()
 
@@ -67,7 +65,6 @@ func TestColorHelper_FormatAssertions(t *testing.T) {
 }
 
 func TestColorHelper_FormatPercentage(t *testing.T) {
-	// Disable colors for consistent testing
 	color.NoColor = true
 	defer func() { color.NoColor = false }()
 
@@ -109,14 +106,12 @@ func TestColorHelper_FormatPercentage(t *testing.T) {
 }
 
 func TestColorHelper_ColorsDisabledWhenNoColor(t *testing.T) {
-	// Enable NoColor flag
 	color.NoColor = true
 	defer func() { color.NoColor = false }()
 
 	helper := NewColorHelper()
 	assert.False(t, helper.enabled)
 
-	// Should return plain text
 	assert.Equal(t, "test", helper.Success("test"))
 	assert.Equal(t, "test", helper.Failure("test"))
 	assert.Equal(t, "test", helper.Warning("test"))

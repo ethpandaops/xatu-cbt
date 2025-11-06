@@ -9,14 +9,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ResultsFormatter formats test results as a table
+// ResultsFormatter formats test results as a table.
 type ResultsFormatter struct {
-	log    logrus.FieldLogger
+	log      logrus.FieldLogger
 	renderer *Renderer
 	colors   *ColorHelper
 }
 
-// NewResultsFormatter creates a new results table formatter
+// NewResultsFormatter creates a new results table formatter.
 func NewResultsFormatter(log logrus.FieldLogger, renderer *Renderer) *ResultsFormatter {
 	return &ResultsFormatter{
 		log:      log.WithField("component", "table.results_formatter"),
@@ -25,19 +25,23 @@ func NewResultsFormatter(log logrus.FieldLogger, renderer *Renderer) *ResultsFor
 	}
 }
 
-// Format converts test result metrics into a formatted table string with failure details
+// Format converts test result metrics into a formatted table string with failure details.
 func (f *ResultsFormatter) Format(testMetrics []metrics.TestResultMetric) string {
 	if len(testMetrics) == 0 {
 		return "No tests executed"
 	}
 
-	headers := []string{"Model", "Status", "Assertions", "Duration", "Details"}
-	rows := make([][]string, 0, len(testMetrics))
-	failedTests := make([]metrics.TestResultMetric, 0)
+	var (
+		headers     = []string{"Model", "Status", "Assertions", "Duration", "Details"}
+		rows        = make([][]string, 0, len(testMetrics))
+		failedTests = make([]metrics.TestResultMetric, 0)
+	)
 
 	for _, metric := range testMetrics {
-		status := f.colors.FormatStatus(metric.Passed)
-		details := ""
+		var (
+			status  = f.colors.FormatStatus(metric.Passed)
+			details string
+		)
 
 		if !metric.Passed { //nolint:nestif // Test result formatting - refactoring risky
 			failedTests = append(failedTests, metric)
@@ -47,22 +51,26 @@ func (f *ResultsFormatter) Format(testMetrics []metrics.TestResultMetric) string
 					metric.AssertionsFailed,
 					metric.AssertionsTotal))
 			}
+
 			if metric.ErrorMessage != "" {
 				// Truncate long error messages
 				errMsg := metric.ErrorMessage
 				if len(errMsg) > 50 {
 					errMsg = errMsg[:47] + "..."
 				}
+
 				if details != "" {
 					details += " - "
 				}
+
 				details += f.colors.Muted(errMsg)
 			}
 		}
 
 		assertionInfo := f.colors.FormatAssertions(
 			metric.AssertionsPassed,
-			metric.AssertionsTotal)
+			metric.AssertionsTotal,
+		)
 
 		rows = append(rows, []string{
 			metric.Model,
@@ -99,37 +107,56 @@ func (f *ResultsFormatter) formatFailureDetails(failedTests []metrics.TestResult
 		if len(test.FailedAssertions) == 0 { //nolint:nestif // Error formatting logic - refactoring risky
 			// No specific assertion details, show general error
 			if test.ErrorMessage != "" {
-				builder.WriteString(fmt.Sprintf("  %s: %s\n",
-					f.colors.Failure("Error"),
-					test.ErrorMessage))
+				builder.WriteString(
+					fmt.Sprintf("  %s: %s\n",
+						f.colors.Failure("Error"),
+						test.ErrorMessage,
+					),
+				)
 			} else {
-				builder.WriteString(fmt.Sprintf("  %s: Test failed (no details available)\n",
-					f.colors.Failure("Error")))
+				builder.WriteString(
+					fmt.Sprintf(
+						"  %s: Test failed (no details available)\n",
+						f.colors.Failure("Error"),
+					),
+				)
 			}
 		} else {
 			// Show detailed assertion failures
 			for _, assertion := range test.FailedAssertions {
-				builder.WriteString(fmt.Sprintf("  %s %s: %s\n",
-					f.colors.Failure("✗"),
-					f.colors.Bold("Assertion"),
-					assertion.Name))
+				builder.WriteString(
+					fmt.Sprintf("  %s %s: %s\n",
+						f.colors.Failure("✗"),
+						f.colors.Bold("Assertion"),
+						assertion.Name,
+					),
+				)
 
 				if len(assertion.Expected) > 0 {
-					builder.WriteString(fmt.Sprintf("    %s: %v\n",
-						f.colors.Info("Expected"),
-						formatMap(assertion.Expected)))
+					builder.WriteString(
+						fmt.Sprintf("    %s: %v\n",
+							f.colors.Info("Expected"),
+							formatMap(assertion.Expected),
+						),
+					)
 				}
 
 				if len(assertion.Actual) > 0 {
-					builder.WriteString(fmt.Sprintf("    %s: %v\n",
-						f.colors.Warning("Actual"),
-						formatMap(assertion.Actual)))
+					builder.WriteString(
+						fmt.Sprintf("    %s: %v\n",
+							f.colors.Warning("Actual"),
+							formatMap(assertion.Actual),
+						),
+					)
 				}
 
 				if assertion.Error != "" {
-					builder.WriteString(fmt.Sprintf("    %s: %s\n",
-						f.colors.Failure("Error"),
-						assertion.Error))
+					builder.WriteString(
+						fmt.Sprintf("    %s: %s\n",
+							f.colors.Failure("Error"),
+							assertion.Error,
+						),
+					)
 				}
 			}
 		}

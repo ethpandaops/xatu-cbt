@@ -16,7 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Manager handles dual-cluster database lifecycle
+// Manager handles dual-cluster database lifecycle.
 // - xatu cluster: Network databases (mainnet, sepolia) with external data
 // - cbt cluster: Ephemeral test databases with transformations
 type Manager interface {
@@ -45,7 +45,7 @@ const (
 	queryTimeout          = 5 * time.Minute
 )
 
-// NewManager creates a new dual-cluster database manager
+// NewManager creates a new dual-cluster database manager.
 func NewManager(log logrus.FieldLogger, xatuConnStr, cbtConnStr string, migrationRunner MigrationRunner, xatuMigrationDir string, forceRebuild bool) Manager {
 	return &manager{
 		xatuConnStr:      xatuConnStr,
@@ -57,11 +57,9 @@ func NewManager(log logrus.FieldLogger, xatuConnStr, cbtConnStr string, migratio
 	}
 }
 
-// Start opens connections to both ClickHouse clusters
 func (m *manager) Start(ctx context.Context) error {
 	m.log.Debug("starting database manager")
 
-	// Connect to xatu cluster (external data)
 	xatuConn, err := sql.Open("clickhouse", m.xatuConnStr)
 	if err != nil {
 		return fmt.Errorf("opening xatu clickhouse connection: %w", err)
@@ -71,7 +69,6 @@ func (m *manager) Start(ctx context.Context) error {
 		return fmt.Errorf("pinging xatu clickhouse: %w", pingErr)
 	}
 
-	// Connect to cbt cluster (transformations)
 	cbtConn, err := sql.Open("clickhouse", m.cbtConnStr)
 	if err != nil {
 		_ = xatuConn.Close()
@@ -91,7 +88,6 @@ func (m *manager) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop closes both connections
 func (m *manager) Stop() error {
 	m.log.Debug("stopping database manager")
 
@@ -116,9 +112,9 @@ func (m *manager) Stop() error {
 	return nil
 }
 
-// PrepareNetworkDatabase ensures required databases exist in xatu cluster and runs migrations
-// This is called once per test suite (not per test) to prepare the external data cluster
-// Network parameter is used for tracking only - all data goes into 'default' database in xatu cluster
+// PrepareNetworkDatabase ensures required databases exist in xatu cluster and runs migrations.
+// This is called once per test suite (not per test) to prepare the external data cluster.
+// Network parameter is used for tracking only - all data goes into 'default' database in xatu cluster.
 func (m *manager) PrepareNetworkDatabase(ctx context.Context, _ string) error {
 	logCtx := m.log.WithField("cluster", "xatu")
 	logCtx.Info("preparing database")
@@ -156,7 +152,6 @@ func (m *manager) PrepareNetworkDatabase(ctx context.Context, _ string) error {
 			}
 		}
 
-		// Run xatu migrations in xatu cluster default database
 		if m.xatuMigrationDir != "" {
 			xatuMigrationStart := time.Now()
 			logCtx.Info("running migrations")
@@ -201,7 +196,6 @@ func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 		return false
 	}
 
-	// Check if migrations table has entries
 	queryCtx2, cancel2 := context.WithTimeout(ctx, queryTimeout)
 	defer cancel2()
 
@@ -277,7 +271,7 @@ func (m *manager) clearNetworkTables(ctx context.Context, network string, clearM
 	return nil
 }
 
-// CreateTestDatabase creates an ephemeral test database in CBT cluster for transformations
+// CreateTestDatabase creates an ephemeral test database in CBT cluster for transformations.
 func (m *manager) CreateTestDatabase(ctx context.Context, network, spec string) (string, error) {
 	dbName := m.generateDatabaseName(network, spec)
 
@@ -319,7 +313,7 @@ func (m *manager) CreateTestDatabase(ctx context.Context, network, spec string) 
 	return dbName, nil
 }
 
-// DropDatabase drops a test database from CBT cluster and cleans up migrations table
+// DropDatabase drops a test database from CBT cluster and cleans up migrations table.
 func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 	logCtx := m.log.WithFields(logrus.Fields{
 		"cluster":  "xatu-cbt",
@@ -352,7 +346,7 @@ func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 	return nil
 }
 
-// LoadParquetData loads parquet files into default database in xatu cluster
+// LoadParquetData loads parquet files into default database in xatu cluster.
 // network parameter is used for logging only - all data goes into 'default' database
 func (m *manager) LoadParquetData(ctx context.Context, _ string, dataFiles map[string]string) error {
 	logCtx := m.log.WithField("cluster", "xatu")

@@ -7,13 +7,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ParquetFormatter formats parquet loading metrics as a table
+// ParquetFormatter formats parquet loading metrics as a table.
 type ParquetFormatter struct {
 	log      logrus.FieldLogger
 	renderer *Renderer
 }
 
-// NewParquetFormatter creates a new parquet table formatter
+// NewParquetFormatter creates a new parquet table formatter.
 func NewParquetFormatter(log logrus.FieldLogger, renderer *Renderer) *ParquetFormatter {
 	return &ParquetFormatter{
 		log:      log.WithField("component", "table.parquet_formatter"),
@@ -21,14 +21,16 @@ func NewParquetFormatter(log logrus.FieldLogger, renderer *Renderer) *ParquetFor
 	}
 }
 
-// Format converts parquet loading metrics into a formatted table string
+// Format converts parquet loading metrics into a formatted table string.
 func (f *ParquetFormatter) Format(parquetMetrics []metrics.ParquetLoadMetric) string {
 	if len(parquetMetrics) == 0 {
 		return "No parquet files loaded"
 	}
 
-	headers := []string{"Table", "Source", "Size", "Duration"}
-	rows := make([][]string, 0, len(parquetMetrics))
+	var (
+		headers = []string{"Table", "Source", "Size", "Duration"}
+		rows    = make([][]string, 0, len(parquetMetrics))
+	)
 
 	for _, metric := range parquetMetrics {
 		rows = append(rows, []string{

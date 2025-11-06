@@ -30,6 +30,7 @@ func NewRepoManager(log logrus.FieldLogger, workDir, repoURL, ref string) *RepoM
 	if repoURL == "" {
 		repoURL = defaultXatuRepoURL
 	}
+
 	if ref == "" {
 		ref = defaultXatuRef
 	}
@@ -42,20 +43,22 @@ func NewRepoManager(log logrus.FieldLogger, workDir, repoURL, ref string) *RepoM
 	}
 }
 
+// GetMigrationDir returns the path to xatu's migration directory.
+func (r *RepoManager) GetMigrationDir(repoPath string) string {
+	return filepath.Join(repoPath, "deploy", "migrations", "clickhouse")
+}
+
 // EnsureRepo ensures the xatu repository is cloned and at the correct ref.
 func (r *RepoManager) EnsureRepo() (string, error) {
 	repoPath := filepath.Join(r.workDir, xatuDirName)
 
-	// Check if repo already exists
 	if _, err := os.Stat(filepath.Join(repoPath, ".git")); err == nil {
 		r.log.WithField("path", repoPath).Debug("xatu repository already exists")
 
-		// Fetch latest changes
 		if err := r.gitFetch(repoPath); err != nil {
 			r.log.WithError(err).Warn("failed to fetch latest changes, continuing with existing repo")
 		}
 
-		// Checkout the desired ref
 		if err := r.gitCheckout(repoPath); err != nil {
 			return "", fmt.Errorf("checking out ref %s: %w", r.ref, err)
 		}
@@ -63,7 +66,6 @@ func (r *RepoManager) EnsureRepo() (string, error) {
 		return repoPath, nil
 	}
 
-	// Clone the repository
 	r.log.WithFields(logrus.Fields{
 		"url": r.repoURL,
 		"ref": r.ref,
@@ -74,7 +76,6 @@ func (r *RepoManager) EnsureRepo() (string, error) {
 		return "", fmt.Errorf("cloning repository: %w", err)
 	}
 
-	// Checkout the desired ref
 	if err := r.gitCheckout(repoPath); err != nil {
 		return "", fmt.Errorf("checking out ref %s: %w", r.ref, err)
 	}
@@ -82,11 +83,6 @@ func (r *RepoManager) EnsureRepo() (string, error) {
 	r.log.Info("xatu repository ready")
 
 	return repoPath, nil
-}
-
-// GetMigrationDir returns the path to xatu's migration directory.
-func (r *RepoManager) GetMigrationDir(repoPath string) string {
-	return filepath.Join(repoPath, "deploy", "migrations", "clickhouse")
 }
 
 // gitClone clones the repository.
@@ -98,13 +94,14 @@ func (r *RepoManager) gitClone(dest string) error {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		// Only show output on error
 		if stderr.Len() > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "%s", stderr.String())
 		}
+
 		if stdout.Len() > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "%s", stdout.String())
 		}
+
 		return fmt.Errorf("git clone failed: %w", err)
 	}
 
@@ -121,13 +118,14 @@ func (r *RepoManager) gitFetch(repoPath string) error {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		// Only show output on error
 		if stderr.Len() > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "%s", stderr.String())
 		}
+
 		if stdout.Len() > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "%s", stdout.String())
 		}
+
 		return fmt.Errorf("git fetch failed: %w", err)
 	}
 
@@ -144,13 +142,14 @@ func (r *RepoManager) gitCheckout(repoPath string) error {
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
-		// Only show output on error
 		if stderr.Len() > 0 {
 			_, _ = fmt.Fprintf(os.Stderr, "%s", stderr.String())
 		}
+
 		if stdout.Len() > 0 {
 			_, _ = fmt.Fprintf(os.Stdout, "%s", stdout.String())
 		}
+
 		return fmt.Errorf("git checkout failed: %w", err)
 	}
 

@@ -17,13 +17,6 @@ func runInteractive() {
 
 	for {
 		options := []interactive.MenuOption{
-			// NOTE: Test management now uses CLI commands
-			// Use: ./xatu-cbt test models <model> --spec <spec> --network <network>
-			// {
-			// 	Name:        "🧪 Test Management",
-			// 	Description: "Run tests and manage test environments",
-			// 	Action:      showTestMenu,
-			// },
 			{
 				Name:        "🗄️  Network Management",
 				Description: "Setup, teardown, and configure network databases",
@@ -61,21 +54,18 @@ func showNetworkMenu() error {
 				Name:        "Setup",
 				Description: "Validate config and setup ClickHouse database (safe to run multiple times)",
 				Action: func() error {
-					// First show the config and get confirmation
 					if err := actions.Setup(true, false); err != nil {
 						fmt.Printf("\n❌ Error: %v\n", err)
 						interactive.PauseForEnter()
 						return nil
 					}
 
-					// Ask for confirmation
 					if !interactive.Confirm("Do you want to proceed with the setup?") {
 						fmt.Println("Setup canceled.")
 						interactive.PauseForEnter()
 						return nil
 					}
 
-					// Run the actual setup
 					if err := actions.Setup(true, true); err != nil {
 						fmt.Printf("\n❌ Error: %v\n", err)
 						interactive.PauseForEnter()
@@ -90,21 +80,18 @@ func showNetworkMenu() error {
 				Name:        "Teardown",
 				Description: "Drop ClickHouse database for the configured network (destructive)",
 				Action: func() error {
-					// First show the config and get confirmation
 					if err := actions.Teardown(true, false); err != nil {
 						fmt.Printf("\n❌ Error: %v\n", err)
 						interactive.PauseForEnter()
 						return nil
 					}
 
-					// Ask for confirmation
 					if !interactive.Confirm("⚠️  Are you SURE you want to drop the database? This cannot be undone!") {
 						fmt.Println("Teardown canceled.")
 						interactive.PauseForEnter()
 						return nil
 					}
 
-					// Run the actual teardown
 					if err := actions.Teardown(true, true); err != nil {
 						fmt.Printf("\n❌ Error: %v\n", err)
 						interactive.PauseForEnter()

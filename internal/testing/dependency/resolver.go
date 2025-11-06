@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Resolver builds dependency graphs, validates completeness, and determines execution order
+// Resolver builds dependency graphs, validates completeness, and determines execution order.
 type Resolver interface {
 	Start(ctx context.Context) error
 	Stop() error
@@ -17,7 +17,7 @@ type Resolver interface {
 	IsTransformationModel(name string) bool
 }
 
-// ResolutionResult contains dependency resolution output
+// ResolutionResult contains dependency resolution output.
 type ResolutionResult struct {
 	TargetModel          *Model            // The model being tested
 	TransformationModels []*Model          // Transformations in execution order (topologically sorted)
@@ -36,7 +36,7 @@ type resolver struct {
 	transformationModels map[string]*Model
 }
 
-// NewResolver creates a new dependency resolver
+// NewResolver creates a new dependency resolver.
 func NewResolver(log logrus.FieldLogger, externalDir, transformationDir string, parser Parser) Resolver {
 	return &resolver{
 		externalDir:          externalDir,
@@ -48,7 +48,6 @@ func NewResolver(log logrus.FieldLogger, externalDir, transformationDir string, 
 	}
 }
 
-// Start initializes the resolver by parsing all models
 func (r *resolver) Start(_ context.Context) error {
 	r.log.Debug("starting dependency resolver")
 
@@ -81,13 +80,12 @@ func (r *resolver) Start(_ context.Context) error {
 	return nil
 }
 
-// Stop cleans up the resolver
 func (r *resolver) Stop() error {
 	r.log.Debug("stopping dependency resolver")
 	return nil
 }
 
-// ResolveAndValidate performs smart dependency resolution and validation
+// ResolveAndValidate performs smart dependency resolution and validation.
 func (r *resolver) ResolveAndValidate(testConfig *config.TestConfig) (*ResolutionResult, error) {
 	// Find the target model
 	targetModel, isTransformation := r.transformationModels[testConfig.Model]
@@ -195,7 +193,7 @@ func (r *resolver) buildDependencyGraph(modelName string, visited map[string]boo
 }
 
 // extractLeafExternalTables finds all external table dependencies
-// For OR dependencies (multiple options), includes all of them since SQL may reference all
+// For OR dependencies (multiple options), includes all of them since SQL may reference all.
 func (r *resolver) extractLeafExternalTables(transformations []*Model) []string {
 	externalSet := make(map[string]bool)
 
@@ -333,13 +331,13 @@ func (r *resolver) hasCycleDFS(modelName string, visited, recStack map[string]bo
 	return false
 }
 
-// IsExternalModel checks if a model exists in the external models directory
+// IsExternalModel checks if a model exists in the external models directory.
 func (r *resolver) IsExternalModel(name string) bool {
 	_, exists := r.externalModels[name]
 	return exists
 }
 
-// IsTransformationModel checks if a model exists in the transformations directory
+// IsTransformationModel checks if a model exists in the transformations directory.
 func (r *resolver) IsTransformationModel(name string) bool {
 	_, exists := r.transformationModels[name]
 	return exists

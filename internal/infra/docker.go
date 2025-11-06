@@ -11,14 +11,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ServiceInfo holds information about a running service
+const (
+	commandTimeout = 2 * time.Minute
+)
+
+// ServiceInfo holds information about a running service.
 type ServiceInfo struct {
 	Name   string
 	Status string
 	Ports  string
 }
 
-// DockerManager manages docker-compose lifecycle
+// DockerManager manages docker-compose lifecycle.
 type DockerManager interface {
 	Start(ctx context.Context) error
 	Stop() error
@@ -34,11 +38,7 @@ type dockerManager struct {
 	log         logrus.FieldLogger
 }
 
-const (
-	commandTimeout = 2 * time.Minute
-)
-
-// NewDockerManager creates a new docker-compose manager
+// NewDockerManager creates a new docker-compose manager.
 func NewDockerManager(log logrus.FieldLogger, composeFile, projectName string) DockerManager {
 	return &dockerManager{
 		composeFile: composeFile,
@@ -47,7 +47,7 @@ func NewDockerManager(log logrus.FieldLogger, composeFile, projectName string) D
 	}
 }
 
-// Start starts docker-compose services
+// Start starts docker-compose services.
 func (m *dockerManager) Start(ctx context.Context) error {
 	m.log.WithFields(logrus.Fields{
 		"compose_file": m.composeFile,
@@ -62,7 +62,7 @@ func (m *dockerManager) Start(ctx context.Context) error {
 		"--wait",
 	}
 
-	if err := m.execCompose(ctx, args...); err != nil {
+	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose up: %w", err)
 	}
 
@@ -71,7 +71,7 @@ func (m *dockerManager) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop stops docker-compose services (volumes are preserved)
+// Stop stops docker-compose services (volumes are preserved).
 func (m *dockerManager) Stop() error {
 	m.log.WithFields(logrus.Fields{
 		"compose_file": m.composeFile,
@@ -86,11 +86,9 @@ func (m *dockerManager) Stop() error {
 		"-f", m.composeFile,
 		"-p", m.projectName,
 		"down",
-		// Note: Volumes are preserved to keep xatu-clickhouse data persistent
-		// Use 'infra reset' command to remove volumes
 	}
 
-	if err := m.execCompose(ctx, args...); err != nil {
+	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose down: %w", err)
 	}
 
@@ -99,7 +97,7 @@ func (m *dockerManager) Stop() error {
 	return nil
 }
 
-// Reset stops services and removes all volumes
+// Reset stops services and removes all volumes.
 func (m *dockerManager) Reset() error {
 	m.log.WithFields(logrus.Fields{
 		"compose_file": m.composeFile,
@@ -114,10 +112,10 @@ func (m *dockerManager) Reset() error {
 		"-f", m.composeFile,
 		"-p", m.projectName,
 		"down",
-		"-v", // Remove volumes for complete reset
+		"-v",
 	}
 
-	if err := m.execCompose(ctx, args...); err != nil {
+	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose down: %w", err)
 	}
 
@@ -126,7 +124,7 @@ func (m *dockerManager) Reset() error {
 	return nil
 }
 
-// IsRunning checks if containers are running
+// IsRunning checks if containers are running.
 func (m *dockerManager) IsRunning(ctx context.Context) (bool, error) {
 	m.log.Debug("checking if containers are running")
 
@@ -142,7 +140,6 @@ func (m *dockerManager) IsRunning(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("executing docker-compose ps: %w", err)
 	}
 
-	// If output is not empty, containers are running
 	running := strings.TrimSpace(string(output)) != ""
 
 	m.log.WithField("running", running).Debug("container status checked")
@@ -150,7 +147,7 @@ func (m *dockerManager) IsRunning(ctx context.Context) (bool, error) {
 	return running, nil
 }
 
-// GetContainerStatus returns the status of a specific service
+// GetContainerStatus returns the status of a specific service.
 func (m *dockerManager) GetContainerStatus(ctx context.Context, service string) (string, error) {
 	m.log.WithField("service", service).Debug("getting container status")
 
@@ -171,8 +168,6 @@ func (m *dockerManager) GetContainerStatus(ctx context.Context, service string) 
 		return "unknown", nil
 	}
 
-	// Parse status from output
-	// Format: NAME  IMAGE  COMMAND  SERVICE  CREATED  STATUS  PORTS
 	statusLine := lines[len(lines)-1]
 	fields := strings.Fields(statusLine)
 	if len(fields) >= 6 {
@@ -182,7 +177,7 @@ func (m *dockerManager) GetContainerStatus(ctx context.Context, service string) 
 	return "unknown", nil
 }
 
-// GetAllServices returns detailed information about all running services
+// GetAllServices returns detailed information about all running services.
 func (m *dockerManager) GetAllServices(ctx context.Context) ([]ServiceInfo, error) { //nolint:gocyclo // Complex Docker service parsing - refactoring would risk breaking Docker integration
 	m.log.Debug("getting all services")
 
@@ -198,7 +193,6 @@ func (m *dockerManager) GetAllServices(ctx context.Context) ([]ServiceInfo, erro
 		return nil, fmt.Errorf("executing docker-compose ps: %w", err)
 	}
 
-	// Parse the JSON output line by line (each line is a separate JSON object)
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 	services := make([]ServiceInfo, 0, len(lines))
 
@@ -207,48 +201,58 @@ func (m *dockerManager) GetAllServices(ctx context.Context) ([]ServiceInfo, erro
 			continue
 		}
 
-		// Parse basic fields from the line
-		// We'll extract name, status, and ports manually as the format is consistent
 		var data map[string]any
-		if err := parseJSON([]byte(line), &data); err != nil {
+		if err := json.Unmarshal([]byte(line), &data); err != nil {
 			m.log.WithError(err).Debug("failed to parse service json")
+
 			continue
 		}
 
-		name := ""
+		var (
+			name   string
+			status string
+			ports  string
+		)
+
 		if n, ok := data["Service"].(string); ok {
 			name = n
 		}
 
-		status := ""
 		if s, ok := data["State"].(string); ok {
 			status = s
-			// Also check Health if available
 			if h, ok := data["Health"].(string); ok && h != "" {
 				status = fmt.Sprintf("%s (%s)", s, h)
 			}
 		}
 
-		ports := ""
-		if p, ok := data["Publishers"].([]any); ok && len(p) > 0 { //nolint:nestif // Complex port parsing logic - refactoring risky
+		//nolint:nestif // Complex port parsing logic.
+		if p, ok := data["Publishers"].([]any); ok && len(p) > 0 {
 			portStrs := make([]string, 0, len(p))
+
 			for _, pub := range p {
 				pubMap, ok := pub.(map[string]any)
 				if !ok {
 					continue
 				}
-				publishedPort := ""
-				targetPort := ""
+
+				var (
+					publishedPort string
+					targetPort    string
+				)
+
 				if pp, ok := pubMap["PublishedPort"].(float64); ok {
 					publishedPort = fmt.Sprintf("%.0f", pp)
 				}
+
 				if tp, ok := pubMap["TargetPort"].(float64); ok {
 					targetPort = fmt.Sprintf("%.0f", tp)
 				}
+
 				if publishedPort != "" && targetPort != "" {
 					portStrs = append(portStrs, fmt.Sprintf("%s->%s", publishedPort, targetPort))
 				}
 			}
+
 			if len(portStrs) > 0 {
 				ports = strings.Join(portStrs, ", ")
 			}
@@ -266,12 +270,7 @@ func (m *dockerManager) GetAllServices(ctx context.Context) ([]ServiceInfo, erro
 	return services, nil
 }
 
-// parseJSON is a simple helper to unmarshal JSON
-func parseJSON(data []byte, v any) error {
-	return json.Unmarshal(data, v)
-}
-
-// execComposeOutput executes a docker-compose command and returns output
+// execComposeOutput executes a docker-compose command and returns output.
 func (m *dockerManager) execComposeOutput(ctx context.Context, args ...string) ([]byte, error) {
 	execCtx, cancel := context.WithTimeout(ctx, commandTimeout)
 	defer cancel()
@@ -285,10 +284,4 @@ func (m *dockerManager) execComposeOutput(ctx context.Context, args ...string) (
 	}
 
 	return output, nil
-}
-
-// execCompose executes a docker-compose command and discards output
-func (m *dockerManager) execCompose(ctx context.Context, args ...string) error {
-	_, err := m.execComposeOutput(ctx, args...)
-	return err
 }

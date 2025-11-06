@@ -24,27 +24,20 @@ import (
 )
 
 var (
-	// Errors
-	errTestsFailed = fmt.Errorf("some tests failed")
-
-	// Test command flags
-	testNetwork      string
-	testSpec         string
-	testTimeout      time.Duration
-	testVerbose      bool
-	testCacheDir     string
-	testCacheSize    int64
-	testConcurrency  int
-	testForceRebuild bool
-
-	// Connection strings
-	xatuClickhouseURL string // xatu-clickhouse cluster (external data)
-	cbtClickhouseURL  string // xatu-cbt-clickhouse cluster (transformations)
+	errTestsFailed    = fmt.Errorf("some tests failed")
+	testNetwork       string
+	testSpec          string
+	testTimeout       time.Duration
+	testVerbose       bool
+	testCacheDir      string
+	testCacheSize     int64
+	testConcurrency   int
+	testForceRebuild  bool
+	xatuClickhouseURL string
+	cbtClickhouseURL  string
 	redisURL          string
-
-	// Xatu repository
-	xatuRepoURL string
-	xatuRef     string
+	xatuRepoURL       string
+	xatuRef           string
 )
 
 // testCmd represents the test command
@@ -97,20 +90,6 @@ Example:
 	SilenceUsage: true,
 }
 
-// setupCleanupHandler sets up signal handling for graceful cleanup on Ctrl+C.
-func setupCleanupHandler(orchestrator testing.Orchestrator) {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigChan
-		logrus.Warn("\nReceived interrupt signal, cleaning up...")
-		if err := orchestrator.Stop(); err != nil {
-			logrus.WithError(err).Error("error stopping orchestrator during cleanup")
-		}
-		os.Exit(130) // Exit code 130 = 128 + SIGINT(2)
-	}()
-}
-
 // runTestsWithConfig sets up the orchestrator, runs tests, and returns results.
 // The testRunner function is called to execute the actual tests.
 // Output is handled by the orchestrator's internal formatter.
@@ -120,13 +99,11 @@ func runTestsWithConfig(
 	_ int,
 	testRunner func(testing.Orchestrator) ([]*testing.TestResult, error),
 ) error {
-	// Setup orchestrator
 	orchestrator, err := setupOrchestrator(cmd)
 	if err != nil {
 		return fmt.Errorf("setting up orchestrator: %w", err)
 	}
 
-	// Setup signal handling for cleanup on Ctrl+C
 	setupCleanupHandler(orchestrator)
 	defer func() {
 		if stopErr := orchestrator.Stop(); stopErr != nil {
@@ -134,18 +111,15 @@ func runTestsWithConfig(
 		}
 	}()
 
-	// Start orchestrator
 	if startErr := orchestrator.Start(ctx); startErr != nil {
 		return fmt.Errorf("starting orchestrator: %w", startErr)
 	}
 
-	// Run tests (orchestrator handles all output internally)
 	results, err := testRunner(orchestrator)
 	if err != nil {
 		return fmt.Errorf("running tests: %w", err)
 	}
 
-	// Return exit code
 	if hasFailures(results) {
 		return errTestsFailed
 	}
@@ -154,11 +128,8 @@ func runTestsWithConfig(
 }
 
 func init() {
-	// Add test subcommands
 	testCmd.AddCommand(testModelsCmd)
 	testCmd.AddCommand(testSpecCmd)
-
-	// Persistent flags for all test commands
 	testCmd.PersistentFlags().StringVar(&testNetwork, "network", "mainnet", "Network name (mainnet, sepolia)")
 	testCmd.PersistentFlags().StringVar(&testSpec, "spec", "pectra", "Spec name (pectra, fusaka)")
 	testCmd.PersistentFlags().DurationVar(&testTimeout, "timeout", 30*time.Minute, "Test timeout")
@@ -167,13 +138,9 @@ func init() {
 	testCmd.PersistentFlags().Int64Var(&testCacheSize, "cache-max-size", 10*1024*1024*1024, "Max cache size in bytes (10GB)")
 	testCmd.PersistentFlags().IntVar(&testConcurrency, "concurrency", 10, "Number of tests to run in parallel")
 	testCmd.PersistentFlags().BoolVar(&testForceRebuild, "force-rebuild", false, "Force rebuild of xatu cluster (clear tables and re-run migrations)")
-
-	// Connection flags (dynamically built from environment variables)
 	testCmd.PersistentFlags().StringVar(&xatuClickhouseURL, "xatu-clickhouse-url", config.GetXatuClickHouseURL(), "Xatu ClickHouse cluster URL (external data)")
 	testCmd.PersistentFlags().StringVar(&cbtClickhouseURL, "cbt-clickhouse-url", config.GetCBTClickHouseURL(), "CBT ClickHouse cluster URL (transformations)")
 	testCmd.PersistentFlags().StringVar(&redisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
-
-	// Xatu repository flags
 	testCmd.PersistentFlags().StringVar(&xatuRepoURL, "xatu-repo", config.XatuRepoURL, "Xatu repository URL")
 	testCmd.PersistentFlags().StringVar(&xatuRef, "xatu-ref", config.XatuDefaultRef, "Xatu repository ref (branch/tag/commit)")
 }
@@ -182,7 +149,6 @@ func runTestModels(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	// Parse comma-separated model names
 	modelNames := strings.Split(args[0], ",")
 	for i, name := range modelNames {
 		modelNames[i] = strings.TrimSpace(name)
@@ -203,26 +169,20 @@ func runTestSpec(cmd *cobra.Command, _ []string) error {
 }
 
 func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
-	// Setup logger
 	log := newLogger(testVerbose)
 
-	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("getting working directory: %w", err)
 	}
 
-	// Initialize xatu repository
 	xatuRepoPath, err := ensureXatuRepo(log, wd, xatuRepoURL, xatuRef)
 	if err != nil {
 		return nil, err
 	}
+
 	xatuMigrationDir := filepath.Join(xatuRepoPath, config.XatuMigrationsPath)
-
-	// Create metrics collector
 	metricsCollector := metrics.NewCollector(log)
-
-	// Initialize components
 	configLoader := testconfig.NewLoader(log, filepath.Join(wd, config.TestsDir))
 	parser := dependency.NewParser(log)
 	resolver := dependency.NewResolver(
@@ -244,7 +204,6 @@ func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
 	cbtEngine := cbt.NewEngine(log, configGen, cbtClickhouseURL, redisURL, filepath.Join(wd, config.ModelsDir))
 	assertionRunner := assertion.NewRunner(log, cbtClickhouseURL, 5, 30*time.Second)
 
-	// Create orchestrator with verbose flag, writer, and metrics collector
 	orchestrator := testing.NewOrchestrator(
 		log,
 		testVerbose,
@@ -259,6 +218,20 @@ func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
 	)
 
 	return orchestrator, nil
+}
+
+// setupCleanupHandler sets up signal handling for graceful cleanup on Ctrl+C.
+func setupCleanupHandler(orchestrator testing.Orchestrator) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		logrus.Warn("\nReceived interrupt signal, cleaning up...")
+		if err := orchestrator.Stop(); err != nil {
+			logrus.WithError(err).Error("error stopping orchestrator during cleanup")
+		}
+		os.Exit(130) // Exit code 130 = 128 + SIGINT(2)
+	}()
 }
 
 func hasFailures(results []*testing.TestResult) bool {

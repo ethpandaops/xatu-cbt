@@ -23,15 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Orchestrator coordinates end-to-end test execution
-type Orchestrator interface {
-	Start(ctx context.Context) error
-	Stop() error
-	TestModels(ctx context.Context, network, spec string, modelNames []string, concurrency int) ([]*TestResult, error)
-	TestSpec(ctx context.Context, network, spec string, concurrency int) ([]*TestResult, error)
-}
-
-// TestResult contains comprehensive test results for a single model
+// TestResult contains comprehensive test results for a single model.
 type TestResult struct {
 	Model            string
 	Network          string
@@ -45,26 +37,30 @@ type TestResult struct {
 	Error            error
 }
 
+// Orchestrator coordinates end-to-end test execution.
+type Orchestrator interface {
+	Start(ctx context.Context) error
+	Stop() error
+	TestModels(ctx context.Context, network, spec string, modelNames []string, concurrency int) ([]*TestResult, error)
+	TestSpec(ctx context.Context, network, spec string, concurrency int) ([]*TestResult, error)
+}
+
 type orchestrator struct {
-	configLoader    testconfig.Loader
-	resolver        dependency.Resolver
-	cache           cache.ParquetCache
-	dbManager       database.Manager
-	cbtEngine       cbt.Engine
-	assertionRunner assertion.Runner
-	log             logrus.FieldLogger
-
-	// Metrics and output formatting
-	metrics   metrics.Collector
-	formatter output.Formatter
-	verbose   bool
-
-	// Track prepared network databases (key: "network")
+	configLoader       testconfig.Loader
+	resolver           dependency.Resolver
+	cache              cache.ParquetCache
+	dbManager          database.Manager
+	cbtEngine          cbt.Engine
+	assertionRunner    assertion.Runner
+	log                logrus.FieldLogger
+	metrics            metrics.Collector
+	formatter          output.Formatter
+	verbose            bool
 	preparedNetworks   map[string]bool
 	preparedNetworksMu sync.Mutex
 }
 
-// NewOrchestrator creates a new test orchestrator
+// NewOrchestrator creates a new test orchestrator.
 func NewOrchestrator(
 	log logrus.FieldLogger,
 	verbose bool,
@@ -77,17 +73,17 @@ func NewOrchestrator(
 	cbtEngine cbt.Engine,
 	assertionRunner assertion.Runner,
 ) Orchestrator {
-	// Create table rendering components
-	tableRenderer := table.NewRenderer(log)
-	parquetFormatter := table.NewParquetFormatter(log, tableRenderer)
-	resultsFormatter := table.NewResultsFormatter(log, tableRenderer)
-	summaryFormatter := table.NewSummaryFormatter(log, tableRenderer)
+	var (
+		tableRenderer    = table.NewRenderer(log)
+		parquetFormatter = table.NewParquetFormatter(log, tableRenderer)
+		resultsFormatter = table.NewResultsFormatter(log, tableRenderer)
+		summaryFormatter = table.NewSummaryFormatter(log, tableRenderer)
+	)
 
-	// Create output formatter with all dependencies
-	// Use os.Stdout as default if writer is nil
 	if writer == nil {
 		writer = os.Stdout
 	}
+
 	outputFormatter := output.NewFormatter(
 		writer,
 		verbose,
@@ -113,36 +109,29 @@ func NewOrchestrator(
 	}
 }
 
-// Start initializes all services
 func (o *orchestrator) Start(ctx context.Context) error {
 	o.log.Debug("starting test orchestrator")
 
-	// Start metrics collector
 	if err := o.metrics.Start(ctx); err != nil {
 		return fmt.Errorf("starting metrics collector: %w", err)
 	}
 
-	// Start dependency resolver
 	if err := o.resolver.Start(ctx); err != nil {
 		return fmt.Errorf("starting resolver: %w", err)
 	}
 
-	// Start parquet cache
 	if err := o.cache.Start(ctx); err != nil {
 		return fmt.Errorf("starting cache: %w", err)
 	}
 
-	// Start database manager
 	if err := o.dbManager.Start(ctx); err != nil {
 		return fmt.Errorf("starting database manager: %w", err)
 	}
 
-	// Start assertion runner
 	if err := o.assertionRunner.Start(ctx); err != nil {
 		return fmt.Errorf("starting assertion runner: %w", err)
 	}
 
-	// Start CBT engine
 	if err := o.cbtEngine.Start(ctx); err != nil {
 		return fmt.Errorf("starting cbt engine: %w", err)
 	}
@@ -152,15 +141,13 @@ func (o *orchestrator) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop cleans up all services
 func (o *orchestrator) Stop() error {
 	o.log.Debug("stopping test orchestrator")
 
 	var errs []error
 
-	// Flush Redis to clean up any stale state
-	o.log.Debug("flushing redis cache")
-	flushCmd := exec.Command("docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHALL") //nolint:gosec // G204: Docker command with trusted container name
+	//nolint:gosec // G204: Docker command with trusted container name
+	flushCmd := exec.Command("docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHALL")
 	if err := flushCmd.Run(); err != nil {
 		errs = append(errs, fmt.Errorf("flushing redis: %w", err))
 	}
@@ -185,7 +172,6 @@ func (o *orchestrator) Stop() error {
 		errs = append(errs, fmt.Errorf("stopping resolver: %w", err))
 	}
 
-	// Stop metrics collector
 	if err := o.metrics.Stop(); err != nil {
 		errs = append(errs, fmt.Errorf("stopping metrics collector: %w", err))
 	}
@@ -197,9 +183,14 @@ func (o *orchestrator) Stop() error {
 	return nil
 }
 
-// TestModels tests multiple models using grouped execution
-// All tests for the same (network, spec) share one database and one CBT container
-func (o *orchestrator) TestModels(ctx context.Context, network, spec string, modelNames []string, concurrency int) ([]*TestResult, error) {
+// TestModels tests multiple models using grouped execution.
+// All tests for the same (network, spec) share one database and one CBT container.
+func (o *orchestrator) TestModels(
+	ctx context.Context,
+	network, spec string,
+	modelNames []string,
+	concurrency int,
+) ([]*TestResult, error) {
 	o.log.WithFields(logrus.Fields{
 		"network":     network,
 		"spec":        spec,
@@ -211,22 +202,22 @@ func (o *orchestrator) TestModels(ctx context.Context, network, spec string, mod
 		concurrency = 1
 	}
 
-	// Load test configs for all models
+	// Load test configs for all models.
 	testConfigs := make([]*testconfig.TestConfig, 0, len(modelNames))
 	for _, modelName := range modelNames {
 		testConfig, err := o.configLoader.LoadForModel(spec, network, modelName)
 		if err != nil {
 			return nil, fmt.Errorf("loading test config for %s: %w", modelName, err)
 		}
+
 		testConfigs = append(testConfigs, testConfig)
 	}
 
-	// Execute all tests as a group (shared database, shared CBT container)
 	return o.executeTestGroup(ctx, network, spec, testConfigs, concurrency)
 }
 
-// TestSpec tests all models in a spec using grouped execution
-// All tests for a (network, spec) share one database and one CBT container
+// TestSpec tests all models in a spec using grouped execution.
+// All tests for a (network, spec) share one database and one CBT container.
 func (o *orchestrator) TestSpec(ctx context.Context, network, spec string, concurrency int) ([]*TestResult, error) {
 	o.log.WithFields(logrus.Fields{
 		"network":     network,
@@ -250,50 +241,55 @@ func (o *orchestrator) TestSpec(ctx context.Context, network, spec string, concu
 		testConfigs = append(testConfigs, cfg)
 	}
 
-	// Execute all tests as a group (shared database, shared CBT container)
 	return o.executeTestGroup(ctx, network, spec, testConfigs, concurrency)
 }
 
 // executeTestGroup performs grouped test execution for a (network, spec)
 // All tests share one database and one CBT container for optimal performance
-func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec string, testConfigs []*testconfig.TestConfig, concurrency int) ([]*TestResult, error) { //nolint:gocyclo // Complex test orchestration with multiple coordination steps - refactoring risky
-	logCtx := o.log.WithField("cluster", "xatu-cbt")
+//
+//nolint:gocyclo // Complex test orchestration with multiple coordination steps.
+func (o *orchestrator) executeTestGroup(
+	ctx context.Context,
+	network, spec string,
+	testConfigs []*testconfig.TestConfig,
+	concurrency int,
+) ([]*TestResult, error) {
+	var (
+		logCtx             = o.log.WithField("cluster", "xatu-cbt")
+		start              = time.Now()
+		allExternalTables  = make(map[string]bool)
+		allTransformations = make(map[string]bool)
+		allParquetURLs     = make(map[string]string)
+		resolutions        = make(map[string]*dependency.ResolutionResult)
+	)
 
-	start := time.Now()
-
-	// 1. Resolve dependencies for ALL models
-	allExternalTables := make(map[string]bool)
-	allTransformations := make(map[string]bool)
-	allParquetURLs := make(map[string]string)
-	resolutions := make(map[string]*dependency.ResolutionResult)
-
+	// Resolve dependencies for ALL models.
 	for _, testConfig := range testConfigs {
 		resolution, err := o.resolver.ResolveAndValidate(testConfig)
 		if err != nil {
 			return nil, fmt.Errorf("resolving dependencies for %s: %w", testConfig.Model, err)
 		}
+
 		resolutions[testConfig.Model] = resolution
 
-		// Collect unique external tables (only if they're actual CBT external models)
-		// Tables created by migrations (like dim_node) are filtered out
+		// Collect unique external tables.
 		for _, ext := range resolution.ExternalTables {
 			if o.resolver.IsExternalModel(ext) {
 				allExternalTables[ext] = true
 			}
 		}
 
-		// Collect unique transformations
+		// Collect unique transformations.
 		for _, model := range resolution.TransformationModels {
 			allTransformations[model.Name] = true
 		}
 
-		// Collect parquet URLs
+		// Collect parquet URLs.
 		for table, url := range resolution.ParquetURLs {
 			allParquetURLs[table] = url
 		}
 	}
 
-	// Convert sets to slices
 	externalTablesList := make([]string, 0, len(allExternalTables))
 	for ext := range allExternalTables {
 		externalTablesList = append(externalTablesList, ext)
@@ -316,72 +312,71 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 		"test_models":     len(testModelsList),
 	}).Info("resolved dependencies for models")
 
-	// 2. Prepare network database in xatu cluster (if not already prepared)
+	// Prepare network database in xatu cluster
 	if err := o.ensureNetworkDatabaseReady(ctx, network, allParquetURLs); err != nil {
 		return nil, fmt.Errorf("preparing network database: %w", err)
 	}
 
-	// 3. Create ONE test database in CBT cluster
+	// Create ONE test database in CBT cluster.
 	dbName, err := o.dbManager.CreateTestDatabase(ctx, network, spec)
 	if err != nil {
 		return nil, fmt.Errorf("creating test database: %w", err)
 	}
 
-	// Ensure cleanup on exit
+	// Ensure cleanup on exit.
 	defer func() {
 		if err := o.dbManager.DropDatabase(context.Background(), dbName); err != nil {
 			o.log.WithError(err).WithField("database", dbName).Error("failed to drop test database")
 		}
 	}()
 
-	// 4. Run transformations in CBT cluster (if any)
+	// Run transformations in CBT cluster.
 	if len(transformationsList) > 0 {
-		// Combine all external models and transformations for CBT config
-		// This tells CBT about all dependencies so it can run them
+		// Combine all external models and transformations for CBT config.
+		// This tells CBT about all dependencies so it can run them.
 		allModels := make([]string, 0, len(externalTablesList)+len(transformationsList))
 		allModels = append(allModels, externalTablesList...)
 		allModels = append(allModels, transformationsList...)
 
-		// IMPORTANT: Clear Redis cache BEFORE starting CBT
-		o.log.Info("clearing redis cache")
+		// Clear Redis cache BEFORE starting CBT. Clears anything stale from
+		// previous runs on the host.
 		if err := o.flushRedisCache(ctx); err != nil {
 			o.log.WithError(err).Warn("failed to clear Redis cache (non-fatal)")
 		}
 
-		// Start single CBT container
-		// Pass allModels for config (so CBT knows about all dependencies)
-		// Wait for transformationsList (all transformation models including dependencies)
-		// NOT testModelsList which may include external models that aren't transformations
+		// Start single CBT container.
+		// Pass allModels for config (so CBT knows about all dependencies).
+		// Wait for transformationsList (all transformation models including dependencies).
 		if err := o.cbtEngine.RunTransformations(ctx, network, dbName, allModels, transformationsList); err != nil {
 			return nil, fmt.Errorf("running transformations: %w", err)
 		}
 	}
 
-	// Print parquet summary table (unless verbose mode)
 	if !o.verbose {
 		o.formatter.PrintParquetSummary()
 	}
 
-	// 5. Run ALL assertions in parallel using shared database
+	// Run ALL assertions in parallel using shared database.
 	o.log.WithField("tests", len(testConfigs)).Info("running assertions")
 
-	results := make([]*TestResult, len(testConfigs))
-	var resultsMu sync.Mutex
-	var wg sync.WaitGroup
-
-	// Use worker pool to run assertions with controlled concurrency
+	// Use worker pool to run assertions with controlled concurrency.
 	type assertionJob struct {
 		index      int
 		testConfig *testconfig.TestConfig
 	}
 
-	jobs := make(chan assertionJob, len(testConfigs))
+	var (
+		results   = make([]*TestResult, len(testConfigs))
+		resultsMu sync.Mutex
+		wg        sync.WaitGroup
+		jobs      = make(chan assertionJob, len(testConfigs))
+	)
 
-	// Start workers
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+
 			for job := range jobs {
 				testConfig := job.testConfig
 				resolution := resolutions[testConfig.Model]
@@ -395,7 +390,7 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 					Transformations: extractModelNames(resolution.TransformationModels),
 				}
 
-				// Run assertions for this test
+				// Run assertions for this test.
 				assertionResults, err := o.assertionRunner.RunAssertions(ctx, dbName, testConfig.Assertions)
 				if err != nil {
 					result.Error = fmt.Errorf("running assertions: %w", err)
@@ -407,27 +402,33 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 
 				result.Duration = time.Since(start)
 
-				// Record test result metrics
-				errorMessage := ""
+				// Record test result metrics.
+				var (
+					errorMessage     string
+					assertionsTotal  = 0
+					assertionsPassed = 0
+					assertionsFailed = 0
+					failedAssertions = make([]metrics.FailedAssertionDetail, 0)
+				)
+
 				if result.Error != nil {
 					errorMessage = result.Error.Error()
 				}
-				assertionsTotal := 0
-				assertionsPassed := 0
-				assertionsFailed := 0
-				failedAssertions := []metrics.FailedAssertionDetail{}
+
 				if result.AssertionResults != nil {
 					assertionsTotal = result.AssertionResults.Total
 					assertionsPassed = result.AssertionResults.Passed
 					assertionsFailed = result.AssertionResults.Failed
 
-					// Extract failed assertion details
+					// Extract failed assertion details.
 					for _, assertionResult := range result.AssertionResults.Results {
 						if !assertionResult.Passed {
-							errMsg := ""
+							var errMsg string
+
 							if assertionResult.Error != nil {
 								errMsg = assertionResult.Error.Error()
 							}
+
 							failedAssertions = append(failedAssertions, metrics.FailedAssertionDetail{
 								Name:     assertionResult.Name,
 								Expected: assertionResult.Expected,
@@ -437,6 +438,7 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 						}
 					}
 				}
+
 				o.metrics.RecordTestResult(&metrics.TestResultMetric{
 					Model:            testConfig.Model,
 					Passed:           result.Success,
@@ -460,13 +462,13 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 		}()
 	}
 
-	// Queue assertion jobs
+	// Queue assertion jobs.
 	for i, testConfig := range testConfigs {
 		jobs <- assertionJob{index: i, testConfig: testConfig}
 	}
 	close(jobs)
 
-	// Wait for all assertions to complete
+	// Wait for all assertions to complete.
 	wg.Wait()
 
 	o.log.WithFields(logrus.Fields{
@@ -476,12 +478,10 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 		"duration": time.Since(start),
 	}).Info("all assertions completed")
 
-	// Print test results table (unless verbose mode)
 	if !o.verbose {
 		o.formatter.PrintTestResults()
 	}
 
-	// Print final summary table
 	o.formatter.PrintSummary()
 
 	return results, nil
@@ -493,12 +493,13 @@ func extractModelNames(models []*dependency.Model) []string {
 	for _, model := range models {
 		names = append(names, model.Name)
 	}
+
 	return names
 }
 
 // ensureNetworkDatabaseReady prepares the network database with parquet data if needed
 func (o *orchestrator) ensureNetworkDatabaseReady(ctx context.Context, network string, allParquetURLs map[string]string) error {
-	// Check if network is already prepared
+	// Check if network is already prepared.
 	o.preparedNetworksMu.Lock()
 	alreadyPrepared := o.preparedNetworks[network]
 	if alreadyPrepared {
@@ -509,10 +510,9 @@ func (o *orchestrator) ensureNetworkDatabaseReady(ctx context.Context, network s
 	o.preparedNetworks[network] = true
 	o.preparedNetworksMu.Unlock()
 
-	// Network needs preparation - fetch parquet files and load data
+	// Network needs preparation - fetch parquet files and load data.
 	xatuLogCtx := o.log.WithField("cluster", "xatu")
 
-	// Fetch all parquet files
 	xatuLogCtx.WithFields(logrus.Fields{
 		"count": len(allParquetURLs),
 	}).Info("fetching parquet files")
@@ -523,16 +523,17 @@ func (o *orchestrator) ensureNetworkDatabaseReady(ctx context.Context, network s
 		if err != nil {
 			return fmt.Errorf("fetching parquet file for %s: %w", tableName, err)
 		}
+
 		localPaths[tableName] = path
 	}
 
-	// Prepare network database in xatu cluster
+	// Prepare network database in xatu cluster.
 	xatuLogCtx.Info("preparing network database")
 	if err := o.dbManager.PrepareNetworkDatabase(ctx, network); err != nil {
 		return fmt.Errorf("preparing network database: %w", err)
 	}
 
-	// Load parquet data into xatu cluster network database
+	// Load parquet data into xatu cluster network database.
 	xatuLogCtx.Info("loading parquet data")
 	if err := o.dbManager.LoadParquetData(ctx, network, localPaths); err != nil {
 		return fmt.Errorf("loading parquet data: %w", err)
@@ -543,9 +544,9 @@ func (o *orchestrator) ensureNetworkDatabaseReady(ctx context.Context, network s
 
 // flushRedisCache clears Redis cache to prevent stale cached values
 func (o *orchestrator) flushRedisCache(ctx context.Context) error {
-	// Use docker exec to flush Redis database
-	// This is simpler than managing a Redis client connection
-	cmd := exec.CommandContext(ctx, "docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHDB") //nolint:gosec // G204: Docker command with trusted container name
+	// Use docker exec to flush Redis database.
+	//nolint:gosec // G204: Docker command with trusted container name.
+	cmd := exec.CommandContext(ctx, "docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHDB")
 	if cmdOutput, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("flushing redis: %w (output: %s)", err, string(cmdOutput))
 	}

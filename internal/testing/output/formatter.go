@@ -12,7 +12,7 @@ import (
 	"github.com/fatih/color"
 )
 
-// Formatter provides clean, human-friendly output
+// Formatter provides clean, human-friendly output.
 type Formatter interface {
 	PrintPhase(phase string)
 	PrintProgress(message string, duration time.Duration)
@@ -42,7 +42,7 @@ type formatter struct {
 	gray   *color.Color
 }
 
-// NewFormatter creates a new output formatter
+// NewFormatter creates a new output formatter.
 func NewFormatter(
 	writer io.Writer,
 	verbose bool,
@@ -68,12 +68,12 @@ func NewFormatter(
 	}
 }
 
-// PrintPhase prints phase separator
+// PrintPhase prints phase separator.
 func (f *formatter) PrintPhase(phase string) {
 	_, _ = f.blue.Fprintf(f.writer, "\n▸ %s\n", phase) // Ignore write errors to stdout
 }
 
-// PrintProgress prints progress with checkmark and timing
+// PrintProgress prints progress with checkmark and timing.
 func (f *formatter) PrintProgress(message string, duration time.Duration) {
 	if duration > 0 {
 		_, _ = f.gray.Fprintf(f.writer, "%s (%s)\n", message, format.Duration(duration)) // Ignore write errors to stdout
@@ -82,12 +82,12 @@ func (f *formatter) PrintProgress(message string, duration time.Duration) {
 	}
 }
 
-// PrintSuccess prints green checkmark + message
+// PrintSuccess prints green checkmark + message.
 func (f *formatter) PrintSuccess(message string) {
 	_, _ = f.green.Fprintf(f.writer, "%s\n", message) // Ignore write errors to stdout
 }
 
-// PrintError prints red X + message + error details
+// PrintError prints red X + message + error details.
 func (f *formatter) PrintError(message string, err error) {
 	_, _ = f.red.Fprintf(f.writer, "%s", message) // Ignore write errors to stdout
 	if err != nil {
@@ -96,21 +96,21 @@ func (f *formatter) PrintError(message string, err error) {
 	_, _ = fmt.Fprintf(f.writer, "\n") // Ignore write errors to stdout
 }
 
-// PrintParquetSummary prints a table summary of parquet files loaded
+// PrintParquetSummary prints a table summary of parquet files loaded.
 func (f *formatter) PrintParquetSummary() {
 	parquetMetrics := f.metrics.GetParquetMetrics()
 	output := f.parquetFormatter.Format(parquetMetrics)
 	_, _ = fmt.Fprintln(f.writer, output) // Ignore write errors to stdout
 }
 
-// PrintTestResults prints a table of test results
+// PrintTestResults prints a table of test results.
 func (f *formatter) PrintTestResults() {
 	testMetrics := f.metrics.GetTestMetrics()
 	output := f.resultsFormatter.Format(testMetrics)
 	_, _ = fmt.Fprintln(f.writer, output) // Ignore write errors to stdout
 }
 
-// PrintSummary prints a summary table with aggregate statistics
+// PrintSummary prints a summary table with aggregate statistics.
 func (f *formatter) PrintSummary() {
 	summary := f.metrics.GetSummary()
 	output := f.summaryFormatter.Format(summary)

@@ -12,6 +12,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	healthCheckTimeout  = 120 * time.Second
+	healthCheckInterval = 5 * time.Second
+)
+
 var (
 	errClickHouseHealthTimeout = errors.New("timeout waiting for ClickHouse health")
 )
@@ -28,17 +33,10 @@ type clickhouseManager struct {
 	dockerManager DockerManager
 	connStr       string
 	log           logrus.FieldLogger
-
-	conn *sql.DB
+	conn          *sql.DB
 }
 
-const (
-	healthCheckTimeout  = 120 * time.Second
-	healthCheckRetries  = 12
-	healthCheckInterval = 5 * time.Second
-)
-
-// NewClickHouseManager creates a new ClickHouse cluster manager
+// NewClickHouseManager creates a new ClickHouse cluster manager.
 func NewClickHouseManager(log logrus.FieldLogger, dockerManager DockerManager, connStr string) ClickHouseManager {
 	return &clickhouseManager{
 		dockerManager: dockerManager,
@@ -47,16 +45,14 @@ func NewClickHouseManager(log logrus.FieldLogger, dockerManager DockerManager, c
 	}
 }
 
-// Start starts the ClickHouse cluster and waits for health
+// Start starts the ClickHouse cluster and waits for health.
 func (m *clickhouseManager) Start(ctx context.Context) error {
 	m.log.Info("starting clickhouse cluster")
 
-	// Start docker-compose
 	if err := m.dockerManager.Start(ctx); err != nil {
 		return fmt.Errorf("starting docker compose: %w", err)
 	}
 
-	// Wait for health checks
 	if err := m.waitForHealth(ctx, healthCheckTimeout); err != nil {
 		return fmt.Errorf("waiting for health: %w", err)
 	}
@@ -66,11 +62,10 @@ func (m *clickhouseManager) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop stops the ClickHouse cluster
+// Stop stops the ClickHouse cluster.
 func (m *clickhouseManager) Stop() error {
 	m.log.Info("stopping clickhouse cluster")
 
-	// Close connection if open
 	if m.conn != nil {
 		if err := m.conn.Close(); err != nil {
 			m.log.WithError(err).Warn("failed to close connection")
@@ -78,7 +73,6 @@ func (m *clickhouseManager) Stop() error {
 		m.conn = nil
 	}
 
-	// Stop docker-compose
 	if err := m.dockerManager.Stop(); err != nil {
 		return fmt.Errorf("stopping docker compose: %w", err)
 	}
@@ -88,7 +82,7 @@ func (m *clickhouseManager) Stop() error {
 	return nil
 }
 
-// HealthCheck performs a health check on ClickHouse
+// HealthCheck performs a health check on ClickHouse.
 func (m *clickhouseManager) HealthCheck(ctx context.Context) error {
 	conn, err := m.getConnection()
 	if err != nil {
@@ -148,7 +142,6 @@ func (m *clickhouseManager) CleanupEphemeralDatabases(ctx context.Context, maxAg
 			continue
 		}
 
-		// Drop database
 		m.log.WithField("database", dbName).Info("dropping ephemeral test database")
 
 		dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER cluster_2S_1R", dbName)
@@ -165,7 +158,7 @@ func (m *clickhouseManager) CleanupEphemeralDatabases(ctx context.Context, maxAg
 	return nil
 }
 
-// waitForHealth waits for ClickHouse to become healthy
+// waitForHealth waits for ClickHouse to become healthy.
 func (m *clickhouseManager) waitForHealth(ctx context.Context, timeout time.Duration) error {
 	m.log.Debug("waiting for clickhouse to become healthy")
 
@@ -192,7 +185,7 @@ func (m *clickhouseManager) waitForHealth(ctx context.Context, timeout time.Dura
 	}
 }
 
-// getConnection returns or creates a connection to ClickHouse
+// getConnection returns or creates a connection to ClickHouse.
 func (m *clickhouseManager) getConnection() (*sql.DB, error) {
 	if m.conn != nil {
 		return m.conn, nil

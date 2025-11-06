@@ -23,7 +23,7 @@ var (
 	errAssertionMissingExpected          = errors.New("assertion missing expected values")
 )
 
-// TestConfig represents a complete per-model test configuration
+// TestConfig represents a complete per-model test configuration.
 type TestConfig struct {
 	Model        string                    `yaml:"model"`
 	Network      string                    `yaml:"network"`
@@ -32,20 +32,20 @@ type TestConfig struct {
 	Assertions   []*Assertion              `yaml:"assertions"`
 }
 
-// ExternalTable defines parquet data for an external table
+// ExternalTable defines parquet data for an external table.
 type ExternalTable struct {
 	URL           string `yaml:"url"`
 	NetworkColumn string `yaml:"network_column"`
 }
 
-// Assertion represents a single SQL test
+// Assertion represents a single SQL test.
 type Assertion struct {
 	Name     string                 `yaml:"name"`
 	SQL      string                 `yaml:"sql"`
 	Expected map[string]interface{} `yaml:"expected"`
 }
 
-// Loader loads test configuration files
+// Loader loads test configuration files.
 type Loader interface {
 	LoadForModel(spec, network, modelName string) (*TestConfig, error)
 	LoadForSpec(spec, network string) (map[string]*TestConfig, error)
@@ -57,7 +57,7 @@ type loader struct {
 	log     logrus.FieldLogger
 }
 
-// NewLoader creates a new test config loader
+// NewLoader creates a new test config loader.
 func NewLoader(log logrus.FieldLogger, baseDir string) Loader {
 	return &loader{
 		baseDir: baseDir,
@@ -65,7 +65,7 @@ func NewLoader(log logrus.FieldLogger, baseDir string) Loader {
 	}
 }
 
-// LoadForModel loads a single model's test configuration
+// LoadForModel loads a single model's test configuration.
 func (l *loader) LoadForModel(spec, network, modelName string) (*TestConfig, error) {
 	path := l.buildPath(network, spec, modelName)
 
@@ -88,7 +88,7 @@ func (l *loader) LoadForModel(spec, network, modelName string) (*TestConfig, err
 	return config, nil
 }
 
-// LoadForSpec loads all model test configurations for a spec
+// LoadForSpec loads all model test configurations for a spec.
 func (l *loader) LoadForSpec(spec, network string) (map[string]*TestConfig, error) {
 	dir := filepath.Join(l.baseDir, network, spec, "models")
 
@@ -124,7 +124,7 @@ func (l *loader) LoadForSpec(spec, network string) (map[string]*TestConfig, erro
 	return configs, nil
 }
 
-// LoadForModels loads test configurations for specific models
+// LoadForModels loads test configurations for specific models.
 func (l *loader) LoadForModels(spec, network string, modelNames []string) (map[string]*TestConfig, error) {
 	l.log.WithFields(logrus.Fields{
 		"spec":    spec,
