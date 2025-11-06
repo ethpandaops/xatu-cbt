@@ -34,6 +34,7 @@ var (
 	testCacheSize     int64
 	testConcurrency   int
 	testForceRebuild  bool
+	testCleanupTestDB bool
 	xatuClickhouseURL string
 	cbtClickhouseURL  string
 	redisURL          string
@@ -139,6 +140,7 @@ func init() {
 	testCmd.PersistentFlags().Int64Var(&testCacheSize, "cache-max-size", 10*1024*1024*1024, "Max cache size in bytes (10GB)")
 	testCmd.PersistentFlags().IntVar(&testConcurrency, "concurrency", 10, "Number of tests to run in parallel")
 	testCmd.PersistentFlags().BoolVar(&testForceRebuild, "force-rebuild", false, "Force rebuild of xatu cluster (clear tables and re-run migrations)")
+	testCmd.PersistentFlags().BoolVar(&testCleanupTestDB, "cleanup-test-db", false, "Cleanup test database on completion (useful for CI, disabled by default for debugging)")
 	testCmd.PersistentFlags().StringVar(&xatuClickhouseURL, "xatu-clickhouse-url", config.GetXatuClickHouseURL(), "Xatu ClickHouse cluster URL (external data)")
 	testCmd.PersistentFlags().StringVar(&cbtClickhouseURL, "cbt-clickhouse-url", config.GetCBTClickHouseURL(), "CBT ClickHouse cluster URL (transformations)")
 	testCmd.PersistentFlags().StringVar(&redisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
@@ -209,6 +211,7 @@ func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
 	orchestrator := testing.NewOrchestrator(
 		log,
 		testVerbose,
+		testCleanupTestDB,
 		os.Stdout,
 		metricsCollector,
 		configLoader,

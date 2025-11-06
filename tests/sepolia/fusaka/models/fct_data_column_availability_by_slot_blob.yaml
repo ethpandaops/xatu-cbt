@@ -15,15 +15,24 @@ assertions:
           COUNT(*) AS count
         FROM
           fct_data_column_availability_by_slot_blob FINAL
-      expected: {}
-    - name: Slot bounds should match test data range
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot bounds should match test data range (gossipsub has limited range)
       sql: |
         SELECT
           MIN(slot) AS min_slot,
           MAX(slot) AS max_slot
         FROM
           fct_data_column_availability_by_slot_blob FINAL
-      expected: {}
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 8815933
+        - type: less_than_or_equal
+          column: max_slot
+          value: 8815953
     - name: Blob index should start at 0
       sql: |
         SELECT
@@ -31,7 +40,13 @@ assertions:
           MAX(blob_index) AS max_blob
         FROM
           fct_data_column_availability_by_slot_blob FINAL
-      expected: {}
+      assertions:
+        - type: equal
+          column: min_blob
+          value: 0
+        - type: less_than_or_equal
+          column: max_blob
+          value: 15
     - name: Column index should be in valid range (0-127)
       sql: |
         SELECT
@@ -39,7 +54,13 @@ assertions:
           MAX(column_index) AS max_col
         FROM
           fct_data_column_availability_by_slot_blob FINAL
-      expected: {}
+      assertions:
+        - type: greater_than_or_equal
+          column: min_col
+          value: 0
+        - type: less_than_or_equal
+          column: max_col
+          value: 127
     - name: Availability percentage should be valid (0-100)
       sql: |
         SELECT
@@ -47,7 +68,13 @@ assertions:
           MAX(availability_pct) AS max_pct
         FROM
           fct_data_column_availability_by_slot_blob FINAL
-      expected: {}
+      assertions:
+        - type: greater_than_or_equal
+          column: min_pct
+          value: 0
+        - type: less_than_or_equal
+          column: max_pct
+          value: 100
     - name: Blob count should match between tables
       sql: |
         SELECT
@@ -55,4 +82,10 @@ assertions:
           MAX(blob_count) AS max_blobs
         FROM
           fct_data_column_availability_by_slot_blob FINAL
-      expected: {}
+      assertions:
+        - type: greater_than_or_equal
+          column: min_blobs
+          value: 1
+        - type: less_than_or_equal
+          column: max_blobs
+          value: 15

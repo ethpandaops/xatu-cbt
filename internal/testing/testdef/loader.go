@@ -22,7 +22,11 @@ var (
 	errExternalTableMissingNetworkColumn = errors.New("external table missing network_column")
 	errAssertionMissingName              = errors.New("assertion missing name")
 	errAssertionMissingSQL               = errors.New("assertion missing SQL")
-	errAssertionMissingExpected          = errors.New("assertion missing expected values")
+	errAssertionMissingChecks            = errors.New("assertion must have either 'expected' values or 'assertions' checks")
+	errTypedCheckMissingType             = errors.New("typed check missing type")
+	errTypedCheckInvalidType             = errors.New("typed check has invalid type")
+	errTypedCheckMissingColumn           = errors.New("typed check missing column")
+	errTypedCheckMissingValue            = errors.New("typed check missing value")
 )
 
 // TestDefinition represents a complete per-model test specification.
@@ -43,10 +47,21 @@ type ExternalTable struct {
 }
 
 // Assertion represents a single SQL test.
+// Supports two formats:
+// 1. Exact match: Uses Expected map for exact value comparison
+// 2. Typed checks: Uses Assertions list for comparison operators (>, <, >=, <=, ==, !=)
 type Assertion struct {
-	Name     string                 `yaml:"name"`
-	SQL      string                 `yaml:"sql"`
-	Expected map[string]interface{} `yaml:"expected"`
+	Name       string                 `yaml:"name"`
+	SQL        string                 `yaml:"sql"`
+	Expected   map[string]interface{} `yaml:"expected,omitempty"`   // Format 1: Exact match
+	Assertions []*TypedCheck          `yaml:"assertions,omitempty"` // Format 2: Typed checks
+}
+
+// TypedCheck represents a typed assertion check with a comparison operator.
+type TypedCheck struct {
+	Type   string      `yaml:"type"`   // Comparison type: equals, greater_than, less_than, etc.
+	Column string      `yaml:"column"` // Column name from SQL result
+	Value  interface{} `yaml:"value"`  // Expected value to compare against
 }
 
 // Loader loads test definition files.
@@ -165,7 +180,9 @@ func (l *loader) loadFile(path string) (*TestDefinition, error) {
 	return &config, nil
 }
 
-// validateDefinition ensures the test definition is valid
+// validateDefinition ensures the test definition is valid.
+//
+//nolint:gocyclo // conditionals in loop, fine.
 func (l *loader) validateDefinition(definition *TestDefinition) error {
 	if definition.Model == "" {
 		return errModelNameRequired
@@ -206,8 +223,58 @@ func (l *loader) validateDefinition(definition *TestDefinition) error {
 			return fmt.Errorf("%w: %s", errAssertionMissingSQL, assertion.Name)
 		}
 
-		if len(assertion.Expected) == 0 {
-			return fmt.Errorf("%w: %s", errAssertionMissingExpected, assertion.Name)
+		// Must have either Expected (exact match) OR Assertions (typed checks)
+		hasExpected := len(assertion.Expected) > 0
+		hasTypedChecks := len(assertion.Assertions) > 0
+
+		if !hasExpected && !hasTypedChecks {
+			return fmt.Errorf("%w: %s", errAssertionMissingChecks, assertion.Name)
+		}
+
+		// Validate typed checks if present
+		if hasTypedChecks {
+			if err := l.validateTypedChecks(assertion.Name, assertion.Assertions); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateTypedChecks validates typed assertion checks
+func (l *loader) validateTypedChecks(assertionName string, checks []*TypedCheck) error {
+	validTypes := map[string]bool{
+		"equals":                true,
+		"equal":                 true,
+		"not_equals":            true,
+		"not_equal":             true,
+		"greater_than":          true,
+		"gt":                    true,
+		"greater_than_or_equal": true,
+		"gte":                   true,
+		"less_than":             true,
+		"lt":                    true,
+		"less_than_or_equal":    true,
+		"lte":                   true,
+	}
+
+	for i, check := range checks {
+		if check.Type == "" {
+			return fmt.Errorf("%w: assertion %s, check %d", errTypedCheckMissingType, assertionName, i)
+		}
+
+		if !validTypes[check.Type] {
+			return fmt.Errorf("%w: assertion %s, check %d has type '%s' (must be one of: equals, not_equals, greater_than, greater_than_or_equal, less_than, less_than_or_equal)",
+				errTypedCheckInvalidType, assertionName, i, check.Type)
+		}
+
+		if check.Column == "" {
+			return fmt.Errorf("%w: assertion %s, check %d", errTypedCheckMissingColumn, assertionName, i)
+		}
+
+		if check.Value == nil {
+			return fmt.Errorf("%w: assertion %s, check %d", errTypedCheckMissingValue, assertionName, i)
 		}
 	}
 

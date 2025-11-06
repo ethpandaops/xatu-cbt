@@ -228,7 +228,19 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 		}
 
 		result.Actual = actual
-		result.Passed = r.compareResults(assertion.Expected, actual)
+
+		// Evaluate assertion based on format (exact match vs typed checks)
+		if len(assertion.Expected) > 0 {
+			// Exact match comparison
+			result.Passed = r.compareResults(assertion.Expected, actual)
+		} else if len(assertion.Assertions) > 0 {
+			// Typed checks comparison
+			passed, checkErr := r.evaluateTypedChecks(assertion.Assertions, actual)
+			result.Passed = passed
+			if checkErr != nil && !passed {
+				result.Error = checkErr
+			}
+		}
 
 		// If passed, return immediately.
 		if result.Passed {
@@ -255,10 +267,13 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 			continue
 		}
 
-		// Last attempt failed
-		normalizedExpected := r.normalizeTimestampsInMap(assertion.Expected)
-		normalizedActual := r.normalizeTimestampsInMap(actual)
-		result.Error = fmt.Errorf("assertion failed: expected %v, got %v", normalizedExpected, normalizedActual) //nolint:err113 // Dynamic error with context needed for debugging
+		// Last attempt failed - format error message based on assertion type
+		if result.Error == nil {
+			// Only generate error if not already set by evaluateTypedChecks
+			normalizedExpected := r.normalizeTimestampsInMap(assertion.Expected)
+			normalizedActual := r.normalizeTimestampsInMap(actual)
+			result.Error = fmt.Errorf("assertion failed: expected %v, got %v", normalizedExpected, normalizedActual) //nolint:err113 // Dynamic error with context needed for debugging
+		}
 
 		break
 	}
@@ -369,6 +384,145 @@ func (r *runner) compareResults(
 	}
 
 	return true
+}
+
+// evaluateTypedChecks evaluates typed assertion checks against actual query results
+func (r *runner) evaluateTypedChecks(checks []*testdef.TypedCheck, actual map[string]interface{}) (bool, error) {
+	var failedChecks []string
+
+	for _, check := range checks {
+		actualVal, exists := actual[check.Column]
+		if !exists {
+			failedChecks = append(failedChecks, fmt.Sprintf("%s: column not found in results", check.Column))
+			continue
+		}
+
+		passed, err := r.evaluateComparison(check.Type, actualVal, check.Value)
+		if err != nil {
+			return false, fmt.Errorf("evaluating check for column %s: %w", check.Column, err)
+		}
+
+		if !passed {
+			failedChecks = append(failedChecks, fmt.Sprintf("%s %s %v (actual: %v)", check.Column, check.Type, check.Value, actualVal))
+		}
+	}
+
+	if len(failedChecks) > 0 {
+		return false, fmt.Errorf("failed checks: %v", failedChecks) //nolint:err113 // Dynamic error with context needed for debugging
+	}
+
+	return true, nil
+}
+
+// evaluateComparison performs comparison based on type
+// Supports numeric and timestamp comparisons
+//
+//nolint:gocyclo // switch statement throwing it off.
+func (r *runner) evaluateComparison(comparisonType string, actual, expected interface{}) (bool, error) {
+	// Try timestamp comparison first
+	actualTime, actualIsTime := r.parseTimestamp(actual)
+	expectedTime, expectedIsTime := r.parseTimestamp(expected)
+
+	if actualIsTime && expectedIsTime {
+		return r.compareTimestampsWithOp(comparisonType, actualTime, expectedTime)
+	}
+
+	// Convert to float64 for numeric comparisons
+	actualFloat, actualIsNumeric := toFloat64(actual)
+	expectedFloat, expectedIsNumeric := toFloat64(expected)
+
+	switch comparisonType {
+	case "equals", "equal":
+		if actualIsNumeric && expectedIsNumeric {
+			return actualFloat == expectedFloat, nil
+		}
+		return fmt.Sprintf("%v", actual) == fmt.Sprintf("%v", expected), nil
+
+	case "not_equals", "not_equal":
+		if actualIsNumeric && expectedIsNumeric {
+			return actualFloat != expectedFloat, nil
+		}
+		return fmt.Sprintf("%v", actual) != fmt.Sprintf("%v", expected), nil
+
+	case "greater_than", "gt":
+		if !actualIsNumeric || !expectedIsNumeric {
+			return false, fmt.Errorf("greater_than requires numeric or timestamp values, got actual=%T expected=%T", actual, expected) //nolint:err113 // Dynamic error with type info
+		}
+		return actualFloat > expectedFloat, nil
+
+	case "greater_than_or_equal", "gte":
+		if !actualIsNumeric || !expectedIsNumeric {
+			return false, fmt.Errorf("greater_than_or_equal requires numeric or timestamp values, got actual=%T expected=%T", actual, expected) //nolint:err113 // Dynamic error with type info
+		}
+		return actualFloat >= expectedFloat, nil
+
+	case "less_than", "lt":
+		if !actualIsNumeric || !expectedIsNumeric {
+			return false, fmt.Errorf("less_than requires numeric or timestamp values, got actual=%T expected=%T", actual, expected) //nolint:err113 // Dynamic error with type info
+		}
+		return actualFloat < expectedFloat, nil
+
+	case "less_than_or_equal", "lte":
+		if !actualIsNumeric || !expectedIsNumeric {
+			return false, fmt.Errorf("less_than_or_equal requires numeric or timestamp values, got actual=%T expected=%T", actual, expected) //nolint:err113 // Dynamic error with type info
+		}
+		return actualFloat <= expectedFloat, nil
+
+	default:
+		return false, fmt.Errorf("unknown comparison type: %s", comparisonType) //nolint:err113 // Dynamic error with comparison type
+	}
+}
+
+// compareTimestampsWithOp compares two timestamps using the specified operator
+func (r *runner) compareTimestampsWithOp(comparisonType string, actual, expected time.Time) (bool, error) {
+	switch comparisonType {
+	case "equals", "equal":
+		return actual.Equal(expected), nil
+	case "not_equals", "not_equal":
+		return !actual.Equal(expected), nil
+	case "greater_than", "gt":
+		return actual.After(expected), nil
+	case "greater_than_or_equal", "gte":
+		return actual.After(expected) || actual.Equal(expected), nil
+	case "less_than", "lt":
+		return actual.Before(expected), nil
+	case "less_than_or_equal", "lte":
+		return actual.Before(expected) || actual.Equal(expected), nil
+	default:
+		return false, fmt.Errorf("unknown comparison type for timestamps: %s", comparisonType) //nolint:err113 // Dynamic error with comparison type
+	}
+}
+
+// toFloat64 attempts to convert a value to float64 for numeric comparisons
+func toFloat64(val interface{}) (float64, bool) {
+	switch v := val.(type) {
+	case float64:
+		return v, true
+	case float32:
+		return float64(v), true
+	case int:
+		return float64(v), true
+	case int8:
+		return float64(v), true
+	case int16:
+		return float64(v), true
+	case int32:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case uint:
+		return float64(v), true
+	case uint8:
+		return float64(v), true
+	case uint16:
+		return float64(v), true
+	case uint32:
+		return float64(v), true
+	case uint64:
+		return float64(v), true
+	default:
+		return 0, false
+	}
 }
 
 // parseTimestamp attempts to parse a value as a timestamp using known formats.

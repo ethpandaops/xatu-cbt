@@ -14,12 +14,12 @@ import (
 	"github.com/ethpandaops/xatu-cbt/internal/testing/assertion"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/cache"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/cbt"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/testdef"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/database"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/dependency"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/output"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/table"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/testdef"
 	"github.com/sirupsen/logrus"
 )
 
@@ -56,6 +56,7 @@ type orchestrator struct {
 	metrics            metrics.Collector
 	formatter          output.Formatter
 	verbose            bool
+	cleanupTestDB      bool
 	preparedNetworks   map[string]bool
 	preparedNetworksMu sync.Mutex
 }
@@ -64,6 +65,7 @@ type orchestrator struct {
 func NewOrchestrator(
 	log logrus.FieldLogger,
 	verbose bool,
+	cleanupTestDB bool,
 	writer io.Writer,
 	metricsCollector metrics.Collector,
 	configLoader testdef.Loader,
@@ -105,6 +107,7 @@ func NewOrchestrator(
 		metrics:          metricsCollector,
 		formatter:        outputFormatter,
 		verbose:          verbose,
+		cleanupTestDB:    cleanupTestDB,
 		preparedNetworks: make(map[string]bool),
 	}
 }
@@ -323,8 +326,13 @@ func (o *orchestrator) executeTestGroup(
 		return nil, fmt.Errorf("creating test database: %w", err)
 	}
 
-	// Ensure cleanup on exit.
+	// Cleanup test database if requested.
 	defer func() {
+		if !o.cleanupTestDB {
+			o.log.WithField("database", dbName).Debug("skipping test database cleanup (--cleanup-test-db not set)")
+			return
+		}
+
 		if err := o.dbManager.DropDatabase(context.Background(), dbName); err != nil {
 			o.log.WithError(err).WithField("database", dbName).Error("failed to drop test database")
 		}
