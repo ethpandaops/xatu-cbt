@@ -7,31 +7,31 @@ models:
         schedule: "@every 5s"
     fct_address_access_total:
       config:
-        schedule: "@every 65s"
+        schedule: "@every 5s"
     fct_address_access_chunked_10000:
       config:
-        schedule: "@every 65s"
+        schedule: "@every 5s"
     fct_address_storage_slot_chunked_10000:
       config:
-        schedule: "@every 65s"
+        schedule: "@every 5s"
     fct_address_storage_slot_expired_top_100_by_contract:
       config:
-        schedule: "@every 65s"
+        schedule: "@every 5s"
     fct_address_storage_slot_top_100_by_contract:
       config:
-        schedule: "@every 65s"
+        schedule: "@every 5s"
     fct_address_storage_slot_total:
       config:
-        schedule: "@every 65s"
+        schedule: "@every 5s"
     fct_node_active_last_24h:
       config:
-        schedule: "@every 30s"
+        schedule: "@every 5s"
     fct_data_column_availability_hourly:
       config:
-        schedule: "@every 30s"
+        schedule: "@every 5s"
     fct_data_column_availability_daily:
       config:
-        schedule: "@every 30s"
+        schedule: "@every 5s"
     beacon_api_eth_v1_beacon_committee:
       config:
         lag: 12
