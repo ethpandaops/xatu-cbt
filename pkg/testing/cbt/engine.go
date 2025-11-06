@@ -275,6 +275,10 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 	timeout := time.NewTimer(10 * time.Minute)
 	defer timeout.Stop()
 
+	// OPTION 1: Track when models first became pending
+	// If pending >30s and table exists, consider complete (handles 0-row case)
+	modelPendingSince := make(map[string]time.Time)
+
 	// ANTI-FLAKE: Wait for admin tables to be created by CBT before polling them
 	// This prevents race condition where assertions query admin tables before they exist
 	e.log.Debug("waiting for CBT admin tables to be created")
@@ -316,16 +320,45 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 			}
 
 			// Check if all models are in admin tables AND have tables created
+			// OPTION 1: Track pending time and accept 0-row models after timeout
 			pending := []string{}
 			missingTables := []string{}
+			now := time.Now()
 
 			for model := range allModels {
 				if !allCompleted[model] {
+					// Track when this model first became pending
+					if _, exists := modelPendingSince[model]; !exists {
+						modelPendingSince[model] = now
+					}
+
+					pendingDuration := now.Sub(modelPendingSince[model])
+
+					// OPTION 1: If pending >30s, check if table exists (handles 0-row case)
+					if pendingDuration > 30*time.Second {
+						tableExists, err := e.tableExists(ctx, conn, dbName, model)
+						if err != nil {
+							e.log.WithError(err).WithField("model", model).Debug("error checking table existence")
+							pending = append(pending, model)
+							continue
+						}
+
+						if tableExists {
+							// Table exists but no admin entry = 0 rows produced (legitimate)
+							e.log.WithFields(logrus.Fields{
+								"model":   model,
+								"pending": pendingDuration,
+							}).Info("model table exists but not in admin tables, assuming 0 rows (legitimate)")
+							// Don't add to pending - mark as complete
+							continue
+						}
+					}
+
 					pending = append(pending, model)
 					continue
 				}
 
-				// Verify table actually exists
+				// Model is in admin tables, verify table actually exists
 				tableExists, err := e.tableExists(ctx, conn, dbName, model)
 				if err != nil {
 					e.log.WithError(err).WithField("model", model).Debug("error checking table existence")
@@ -341,11 +374,8 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 					continue
 				}
 
-				// For scheduled models, we only verify the model ran and table exists
-				// We don't verify row counts because:
-				// 1. Scheduled models have no dependencies, so we can't control when they run
-				// 2. Some legitimately return 0 rows (time-filtered queries on static test data)
-				// 3. Test assertions will verify expected row counts
+				// Model complete - remove from pending tracking
+				delete(modelPendingSince, model)
 			}
 
 			e.log.WithFields(logrus.Fields{

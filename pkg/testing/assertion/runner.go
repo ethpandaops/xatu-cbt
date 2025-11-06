@@ -175,7 +175,7 @@ func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []
 	return result, nil
 }
 
-// executeAssertion runs a single assertion
+// executeAssertion runs a single assertion with retry logic
 func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion *config.Assertion) *AssertionResult {
 	r.log.WithField("assertion", assertion.Name).Debug("executing assertion")
 
@@ -185,25 +185,77 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 		Expected: assertion.Expected,
 	}
 
-	// Execute query with timeout
-	queryCtx, cancel := context.WithTimeout(ctx, r.timeout)
-	defer cancel()
+	// Retry logic for data not ready scenarios
+	// Handles race condition where table exists but INSERT hasn't completed
+	maxRetries := 3
+	retryDelay := 2 * time.Second
 
-	actual, err := r.queryToMap(queryCtx, dbName, assertion.SQL)
-	if err != nil {
-		result.Error = fmt.Errorf("executing query: %w", err)
-		result.Duration = time.Since(start)
-		return result
-	}
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			r.log.WithFields(logrus.Fields{
+				"assertion": assertion.Name,
+				"attempt":   attempt,
+				"max":       maxRetries,
+			}).Debug("retrying assertion")
 
-	result.Actual = actual
-	result.Passed = r.compareResults(assertion.Expected, actual)
-	result.Duration = time.Since(start)
+			select {
+			case <-ctx.Done():
+				result.Error = ctx.Err()
+				result.Duration = time.Since(start)
+				return result
+			case <-time.After(retryDelay):
+				// Exponential backoff
+				retryDelay *= 2
+			}
+		}
 
-	if !result.Passed && result.Error == nil {
+		// Execute query with timeout
+		queryCtx, cancel := context.WithTimeout(ctx, r.timeout)
+		actual, err := r.queryToMap(queryCtx, dbName, assertion.SQL)
+		cancel()
+
+		if err != nil {
+			// Only retry on "no rows" errors (data not ready yet)
+			if err.Error() == "no rows returned" && attempt < maxRetries {
+				r.log.WithField("assertion", assertion.Name).Debug("no rows returned, retrying")
+				continue
+			}
+			result.Error = fmt.Errorf("executing query: %w", err)
+			result.Duration = time.Since(start)
+			return result
+		}
+
+		result.Actual = actual
+		result.Passed = r.compareResults(assertion.Expected, actual)
+
+		// If passed, return immediately
+		if result.Passed {
+			result.Duration = time.Since(start)
+			r.log.WithFields(logrus.Fields{
+				"assertion": assertion.Name,
+				"passed":    true,
+				"attempts":  attempt + 1,
+				"duration":  result.Duration,
+			}).Debug("assertion executed")
+			return result
+		}
+
+		// If failed but not the last attempt, retry
+		if attempt < maxRetries {
+			r.log.WithFields(logrus.Fields{
+				"assertion": assertion.Name,
+				"expected":  assertion.Expected,
+				"actual":    actual,
+			}).Debug("assertion failed, will retry")
+			continue
+		}
+
+		// Last attempt failed
 		result.Error = fmt.Errorf("assertion failed: expected %v, got %v", assertion.Expected, actual)
+		break
 	}
 
+	result.Duration = time.Since(start)
 	r.log.WithFields(logrus.Fields{
 		"assertion": assertion.Name,
 		"passed":    result.Passed,

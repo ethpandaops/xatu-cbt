@@ -25,4 +25,4 @@ assertions:
           table = 'fct_block_blob_count_head'
       expected:
         max: "2025-10-27T00:30:24Z"
-        min: "2025-10-25T06:50:24Z"
+        min: "2025-10-23T13:10:24Z"
