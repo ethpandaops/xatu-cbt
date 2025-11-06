@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/ethpandaops/xatu-cbt/pkg/config"
-	"github.com/ethpandaops/xatu-cbt/pkg/infra"
+	"github.com/ethpandaops/xatu-cbt/internal/config"
+	"github.com/ethpandaops/xatu-cbt/internal/infra"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

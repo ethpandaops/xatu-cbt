@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/ethpandaops/xatu-cbt/pkg/testing/xatu"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/xatu"
 	"github.com/sirupsen/logrus"
 )
 
