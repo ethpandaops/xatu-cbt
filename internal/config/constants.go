@@ -6,14 +6,20 @@ import (
 )
 
 const (
-	// XatuClusterName is the ClickHouse cluster name for external data (1 shard, 2 replicas).
+	// XatuClusterName is the ClickHouse cluster name for external data.
 	XatuClusterName = "xatu_cluster"
-	// CBTClusterName is the ClickHouse cluster name for transformations (2 shards, 1 replica).
+	// CBTClusterName is the ClickHouse cluster name for transformations.
 	CBTClusterName = "cluster_2S_1R"
+	// ClickHouseLocalSuffix is the suffix appended to distributed table names to access local shards.
+	ClickHouseLocalSuffix = "_local"
 	// RedisContainerName is the name of the Redis container.
 	RedisContainerName = "xatu-cbt-redis"
+	// RedisContainerPort is the internal port Redis listens on within the container.
+	RedisContainerPort = "6379"
 	// ClickHouseContainer is the name of the ClickHouse container.
 	ClickHouseContainer = "xatu-cbt-clickhouse-01"
+	// ClickHouseContainerHTTPPort is the internal HTTP port ClickHouse listens on within the container.
+	ClickHouseContainerHTTPPort = "8123"
 	// PlatformComposeFile is the Docker Compose file for the platform infrastructure.
 	PlatformComposeFile = "docker-compose.platform.yml"
 	// ProjectName is the Docker Compose project name.

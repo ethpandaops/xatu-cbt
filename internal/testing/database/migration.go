@@ -62,6 +62,8 @@ func (r *migrationRunner) RunMigrations(ctx context.Context, conn *sql.DB, dbNam
 		return fmt.Errorf("creating templated migrations: %w", err)
 	}
 
+	r.log.WithField("database", dbName).Debug("running migrations, please wait")
+
 	// Create iofs source driver.
 	sourceDriver, err := iofs.New(sourceFS, ".")
 	if err != nil {
@@ -253,6 +255,125 @@ func (r *migrationRunner) templateSQL(sqlTemplate, dbName string) string {
 	return strings.TrimSpace(templated)
 }
 
+// qualifyDDLStatement processes DROP, TRUNCATE, CREATE, and ALTER statements.
+// Returns the qualified line and true if processing succeeded, original line and false otherwise.
+//
+//nolint:gocyclo // SQL parsing logic requires multiple branches for different DDL patterns
+func qualifyDDLStatement(line, upperLine string, parts []string, dbName string) (string, bool) {
+	var objNameIdx int
+
+	switch {
+	case strings.HasPrefix(upperLine, "DROP TABLE"):
+		objNameIdx = 2 // DROP TABLE table_name
+		// Check for "IF EXISTS" clause
+		if len(parts) >= 5 && strings.EqualFold(parts[2], "IF") && strings.EqualFold(parts[3], "EXISTS") {
+			objNameIdx = 4
+		}
+	case strings.HasPrefix(upperLine, "TRUNCATE TABLE"):
+		objNameIdx = 2 // TRUNCATE TABLE table_name
+	case strings.HasPrefix(upperLine, "CREATE TABLE"):
+		objNameIdx = 2 // CREATE TABLE table_name
+		// Check for "IF NOT EXISTS" clause
+		if len(parts) >= 5 && strings.EqualFold(parts[2], "IF") &&
+			strings.EqualFold(parts[3], "NOT") && strings.EqualFold(parts[4], "EXISTS") {
+			objNameIdx = 5
+		}
+	case strings.HasPrefix(upperLine, "CREATE MATERIALIZED VIEW"):
+		objNameIdx = 3 // CREATE MATERIALIZED VIEW view_name
+	case strings.HasPrefix(upperLine, "ALTER TABLE"):
+		objNameIdx = 2 // ALTER TABLE table_name
+	default:
+		return line, false
+	}
+
+	if len(parts) <= objNameIdx {
+		return line, false
+	}
+
+	objName := parts[objNameIdx]
+	if isQualified(objName, dbName) {
+		return line, false
+	}
+
+	qualifiedName := qualifyName(objName, dbName)
+	newLine := strings.Replace(line, objName, qualifiedName, 1)
+
+	// For CREATE statements, also check for AS clause on same line
+	if strings.HasPrefix(upperLine, "CREATE") && strings.Contains(strings.ToUpper(newLine), " AS ") {
+		newLine = qualifyASClauseInline(newLine, dbName)
+	}
+
+	return newLine, true
+}
+
+// qualifyASClauseInline handles AS clauses within a line (used by CREATE TABLE ... AS).
+func qualifyASClauseInline(line, dbName string) string {
+	asIndex := strings.Index(strings.ToUpper(line), " AS ")
+	if asIndex == -1 {
+		return line
+	}
+
+	beforeAS := line[:asIndex+4]
+	afterAS := strings.TrimSpace(line[asIndex+4:])
+	asParts := strings.Fields(afterAS)
+
+	if len(asParts) == 0 {
+		return line
+	}
+
+	asTableName := asParts[0]
+	if isQualified(asTableName, dbName) {
+		return line
+	}
+
+	asQualifiedName := qualifyName(asTableName, dbName)
+	afterAS = strings.Replace(afterAS, asTableName, asQualifiedName, 1)
+	return beforeAS + afterAS
+}
+
+// qualifyClauseLine processes standalone AS, TO, and FROM clauses on their own lines.
+// Returns the qualified line and true if processing succeeded, original line and false otherwise.
+func qualifyClauseLine(line, upperLine string, parts []string, dbName string) (string, bool) {
+	// Skip lines that look like column definitions (contain commas or data types)
+	if strings.Contains(line, ",") || strings.Contains(upperLine, "FIXEDSTRING") || strings.Contains(upperLine, "CODEC") {
+		return line, false
+	}
+
+	var tableName string
+
+	switch {
+	case strings.HasPrefix(upperLine, "AS ") && !strings.HasPrefix(upperLine, "AS SELECT"):
+		// Standalone AS clause (not AS SELECT which is a query)
+		if len(parts) < 2 {
+			return line, false
+		}
+		tableName = parts[1]
+	case strings.HasPrefix(upperLine, "TO "):
+		// TO clause in materialized views
+		if len(parts) < 2 {
+			return line, false
+		}
+		tableName = parts[1]
+	case strings.HasPrefix(upperLine, "FROM "):
+		// FROM clause - skip if it's a function/subquery
+		if len(parts) < 2 {
+			return line, false
+		}
+		tableName = parts[1]
+		if strings.HasPrefix(tableName, "(") {
+			return line, false
+		}
+	default:
+		return line, false
+	}
+
+	if isQualified(tableName, dbName) {
+		return line, false
+	}
+
+	return strings.Replace(line, tableName, qualifyName(tableName, dbName), 1), true
+}
+
 // qualifyCreateStatements adds database qualifier to DDL statements
 // Also qualifies unqualified table references in TO and FROM clauses.
 // Handles patterns like:
@@ -264,205 +385,31 @@ func (r *migrationRunner) templateSQL(sqlTemplate, dbName string) string {
 //	ALTER TABLE table_name ON CLUSTER ... → ALTER TABLE dbName.table_name ON CLUSTER ...
 //	TO table_name → TO dbName.table_name
 //	FROM table_name → FROM dbName.table_name (if not already qualified)
-//
-//nolint:gocyclo // Complex SQL parsing for multiple ClickHouse statement types.
 func (r *migrationRunner) qualifyCreateStatements(sqlContent, dbName string) string {
-	lines := strings.Split(sqlContent, "\n")
-	result := make([]string, 0, len(lines))
+	var (
+		lines  = strings.Split(sqlContent, "\n")
+		result = make([]string, 0, len(lines))
+	)
 
 	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		upperLine := strings.ToUpper(trimmed)
-
-		// Check if this line starts with DROP TABLE or TRUNCATE TABLE
-		// Pattern: DROP TABLE [IF EXISTS] table_name [on cluster '{cluster}'] [SYNC];
-		// Pattern: TRUNCATE TABLE table_name [on cluster '{cluster}'];
-		if strings.HasPrefix(upperLine, "DROP TABLE") || strings.HasPrefix(upperLine, "TRUNCATE TABLE") { //nolint:nestif // SQL parsing logic - refactoring risky
-			var (
-				parts      = strings.Fields(trimmed)
-				objNameIdx = 2 // Default: 0=DROP/TRUNCATE, 1=TABLE, 2=table_name
-			)
-
-			// Check for "IF EXISTS" clause (only for DROP).
-			if strings.HasPrefix(upperLine, "DROP TABLE") && len(parts) >= 5 &&
-				strings.EqualFold(parts[2], "IF") && strings.EqualFold(parts[3], "EXISTS") {
-				objNameIdx = 4 // Skip to table name after "IF EXISTS".
-			}
-
-			if len(parts) > objNameIdx {
-				objName := parts[objNameIdx]
-
-				// Only qualify if table name doesn't already have database prefix.
-				if !strings.Contains(objName, ".") && !strings.HasPrefix(objName, "`"+dbName) {
-					// Replace the unqualified table name with qualified version.
-					var (
-						qualifiedName = fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(objName, "`"))
-						newLine       = strings.Replace(line, objName, qualifiedName, 1)
-					)
-
-					result = append(result, newLine)
-
-					continue
-				}
-			}
-		}
-
-		// Check if this line starts with CREATE TABLE, CREATE MATERIALIZED VIEW, or ALTER TABLE
 		var (
-			isCreateTable            = strings.HasPrefix(upperLine, "CREATE TABLE")
-			isCreateMaterializedView = strings.HasPrefix(upperLine, "CREATE MATERIALIZED VIEW")
-			isAlterTable             = strings.HasPrefix(upperLine, "ALTER TABLE")
+			trimmed   = strings.TrimSpace(line)
+			upperLine = strings.ToUpper(trimmed)
+			parts     = strings.Fields(trimmed)
 		)
 
-		//nolint:nestif // Complex SQL statement parsing.
-		if isCreateTable || isCreateMaterializedView || isAlterTable {
-			// Extract object name and qualify it
-			// Pattern: CREATE [MATERIALIZED VIEW|TABLE] [IF NOT EXISTS] name [on cluster|to|engine|(...)]
-			// Pattern: ALTER TABLE name [on cluster] ...
-			var (
-				parts      = strings.Fields(trimmed)
-				objNameIdx = 2 // Default for CREATE TABLE and ALTER TABLE: 0=CREATE/ALTER, 1=TABLE, 2=table_name
-			)
+		// Try DDL statement qualification first (DROP, CREATE, ALTER, TRUNCATE)
+		if qualifiedLine, handled := qualifyDDLStatement(line, upperLine, parts, dbName); handled {
+			result = append(result, qualifiedLine)
 
-			if isCreateMaterializedView {
-				objNameIdx = 3 // CREATE MATERIALIZED VIEW: 0=CREATE, 1=MATERIALIZED, 2=VIEW, 3=view_name
-			}
-
-			// Check for "IF NOT EXISTS" clause (only for CREATE TABLE).
-			if isCreateTable && len(parts) >= 5 && strings.EqualFold(parts[2], "IF") &&
-				strings.EqualFold(parts[3], "NOT") && strings.EqualFold(parts[4], "EXISTS") {
-				objNameIdx = 5 // Skip to table name after "IF NOT EXISTS"
-			}
-
-			if len(parts) > objNameIdx {
-				objName := parts[objNameIdx]
-
-				// Only qualify if object name doesn't already have database prefix.
-				if !strings.Contains(objName, ".") && !strings.HasPrefix(objName, "`"+dbName) {
-					// Replace the unqualified object name with qualified version.
-					qualifiedName := fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(objName, "`"))
-
-					// Build the new line with qualified object name.
-					newLine := strings.Replace(line, objName, qualifiedName, 1)
-
-					// Also check if there's an AS clause on the same line that needs qualification
-					// Pattern: CREATE TABLE name ... AS other_table.
-					if strings.Contains(strings.ToUpper(newLine), " AS ") {
-						asIndex := strings.Index(strings.ToUpper(newLine), " AS ")
-						if asIndex != -1 {
-							beforeAS := newLine[:asIndex+4] // Include " AS " or " as "
-							afterAS := strings.TrimSpace(newLine[asIndex+4:])
-
-							// Extract table name (first word after AS)
-							asParts := strings.Fields(afterAS)
-							if len(asParts) > 0 {
-								asTableName := asParts[0]
-								// Only qualify if not already qualified
-								if !strings.Contains(asTableName, ".") && !strings.HasPrefix(asTableName, "`"+dbName) {
-									asQualifiedName := fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(asTableName, "`"))
-									// Replace AS table name
-									afterAS = strings.Replace(afterAS, asTableName, asQualifiedName, 1)
-									newLine = beforeAS + afterAS
-								}
-							}
-						}
-					}
-
-					result = append(result, newLine)
-
-					continue
-				}
-			}
+			continue
 		}
 
-		// Qualify AS clause on its own line: AS table_name → AS dbName.table_name.
-		// This handles multi-line CREATE TABLE ... AS statements.
-		// Skip if AS is followed by SELECT (it's a query, not a table reference).
-		if strings.HasPrefix(upperLine, "AS ") && !strings.Contains(line, ",") &&
-			!strings.Contains(upperLine, "FIXEDSTRING") && !strings.Contains(upperLine, "CODEC") &&
-			!strings.HasPrefix(upperLine, "AS SELECT") {
-			parts := strings.Fields(trimmed)
-			if len(parts) >= 2 {
-				tableName := parts[1]
-				// Only qualify if not already qualified
-				if !strings.Contains(tableName, ".") && !strings.HasPrefix(tableName, "`"+dbName) {
-					var (
-						qualifiedName = fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(tableName, "`"))
-						newLine       = strings.Replace(line, tableName, qualifiedName, 1)
-					)
+		// Try standalone clause qualification (AS, TO, FROM)
+		if qualifiedLine, handled := qualifyClauseLine(line, upperLine, parts, dbName); handled {
+			result = append(result, qualifiedLine)
 
-					result = append(result, newLine)
-
-					continue
-				}
-			}
-		}
-
-		// Qualify TO clause in materialized views: TO table_name → TO dbName.table_name
-		// Only if it looks like a TO clause (not a column definition ending with comma/type)
-		if strings.HasPrefix(upperLine, "TO ") && !strings.Contains(line, ",") &&
-			!strings.Contains(upperLine, "FIXEDSTRING") && !strings.Contains(upperLine, "CODEC") {
-			parts := strings.Fields(trimmed)
-			if len(parts) >= 2 {
-				tableName := parts[1]
-				// Only qualify if not already qualified
-				if !strings.Contains(tableName, ".") && !strings.HasPrefix(tableName, "`"+dbName) {
-					qualifiedName := fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(tableName, "`"))
-					newLine := strings.Replace(line, tableName, qualifiedName, 1)
-					result = append(result, newLine)
-					continue
-				}
-			}
-		}
-
-		// Qualify FROM clause: FROM table_name → FROM dbName.table_name
-		// Only if it looks like a FROM clause in a SELECT/query context (not a column name)
-		// Skip if line contains comma (likely column definition) or data types
-		if strings.HasPrefix(upperLine, "FROM ") && !strings.Contains(line, ",") &&
-			!strings.Contains(upperLine, "FIXEDSTRING") && !strings.Contains(upperLine, "CODEC") {
-			parts := strings.Fields(trimmed)
-			if len(parts) >= 2 {
-				tableName := parts[1]
-				// Only qualify if not already qualified and not a function/subquery
-				if !strings.Contains(tableName, ".") && !strings.HasPrefix(tableName, "`"+dbName) &&
-					!strings.HasPrefix(tableName, "(") {
-					qualifiedName := fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(tableName, "`"))
-					newLine := strings.Replace(line, tableName, qualifiedName, 1)
-					result = append(result, newLine)
-					continue
-				}
-			}
-		}
-
-		// Qualify AS clause in CREATE TABLE statements: AS table_name → AS dbName.table_name
-		// Pattern: CREATE TABLE ... AS table_name (not SELECT ... AS alias)
-		// Only match if line contains CREATE TABLE and AS, or ends with table name after AS
-		if strings.Contains(upperLine, " AS ") && //nolint:nestif // CREATE TABLE AS parsing - refactoring risky
-			(strings.Contains(upperLine, "CREATE TABLE") || strings.Contains(upperLine, "ENGINE")) {
-			// Find " AS " and qualify the table name after it
-			asIndex := strings.Index(upperLine, " AS ")
-			if asIndex != -1 {
-				var (
-					beforeAS = line[:strings.Index(line, " AS ")+4] // Include " AS "
-					afterAS  = strings.TrimSpace(line[strings.Index(line, " AS ")+4:])
-					parts    = strings.Fields(afterAS)
-				)
-
-				if len(parts) > 0 {
-					tableName := parts[0]
-
-					// Only qualify if not already qualified
-					if !strings.Contains(tableName, ".") && !strings.HasPrefix(tableName, "`"+dbName) {
-						qualifiedName := fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(tableName, "`"))
-						// Replace tableName with qualifiedName in afterAS
-						afterAS = strings.Replace(afterAS, tableName, qualifiedName, 1)
-						newLine := beforeAS + afterAS
-						result = append(result, newLine)
-
-						continue
-					}
-				}
-			}
+			continue
 		}
 
 		// Keep line as-is if not matched above
@@ -470,4 +417,14 @@ func (r *migrationRunner) qualifyCreateStatements(sqlContent, dbName string) str
 	}
 
 	return strings.Join(result, "\n")
+}
+
+// isQualified checks if a table name is already qualified with a database prefix.
+func isQualified(name, dbName string) bool {
+	return strings.Contains(name, ".") || strings.HasPrefix(name, "`"+dbName)
+}
+
+// qualifyName builds a fully qualified table name with backticks.
+func qualifyName(name, dbName string) string {
+	return fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(name, "`"))
 }

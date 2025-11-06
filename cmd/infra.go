@@ -280,7 +280,7 @@ func runInfraStatus(_ *cobra.Command, _ []string) error {
 func runInfraReset(_ *cobra.Command, _ []string) error {
 	log := newLogger(false)
 
-	fmt.Println("Resetting platform infrastructure (removing all volumes)...")
+	log.Info("Resetting platform infrastructure")
 
 	dockerManager, _ := createInfraManagers(log)
 

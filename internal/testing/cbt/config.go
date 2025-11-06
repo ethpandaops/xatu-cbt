@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -101,63 +102,65 @@ func (g *configGenerator) GenerateForModels(network, dbName string, models []str
 		return fmt.Errorf("building model paths: %w", err)
 	}
 
-	config := &Config{}
+	cfg := &Config{}
 
 	clickhouseHTTPURL := strings.Replace(g.clickhouseURL, "clickhouse://", "http://", 1)
 
 	// Replace localhost with container hostname and adjust ports for Docker network access.
 	// Host ports (9000 native, 8123 HTTP) are mapped differently than container internal ports.
-	clickhouseHTTPURL = strings.Replace(clickhouseHTTPURL, "localhost:9000", "xatu-cbt-clickhouse-01:8123", 1)
-	clickhouseHTTPURL = strings.Replace(clickhouseHTTPURL, "localhost:8123", "xatu-cbt-clickhouse-01:8123", 1)
-	config.ClickHouse.URL = clickhouseHTTPURL
+	containerEndpoint := fmt.Sprintf("%s:%s", config.ClickHouseContainer, config.ClickHouseContainerHTTPPort)
+	clickhouseHTTPURL = strings.Replace(clickhouseHTTPURL, "localhost:9000", containerEndpoint, 1)
+	clickhouseHTTPURL = strings.Replace(clickhouseHTTPURL, "localhost:8123", containerEndpoint, 1)
+	cfg.ClickHouse.URL = clickhouseHTTPURL
 
 	// Configure cluster settings for transformation models in CBT cluster
-	// Test databases are created ON CLUSTER 'cluster_2S_1R' (CBT cluster macros)
+	// Test databases are created ON CLUSTER using CBT cluster macros
 	// This enables DELETE to work on ReplicatedReplacingMergeTree tables using _local suffix
-	// External models override this with their own defaultCluster: "xatu_cluster"
-	config.ClickHouse.Cluster = "cluster_2S_1R"
-	config.ClickHouse.LocalSuffix = "_local"
+	// External models override this with their own defaultCluster
+	cfg.ClickHouse.Cluster = config.CBTClusterName
+	cfg.ClickHouse.LocalSuffix = config.ClickHouseLocalSuffix
 
 	// Configure admin tables - these are created by migrations in the test database
-	config.ClickHouse.Admin.Incremental.Database = dbName
-	config.ClickHouse.Admin.Incremental.Table = "admin_cbt_incremental"
-	config.ClickHouse.Admin.Scheduled.Database = dbName
-	config.ClickHouse.Admin.Scheduled.Table = "admin_cbt_scheduled"
+	cfg.ClickHouse.Admin.Incremental.Database = dbName
+	cfg.ClickHouse.Admin.Incremental.Table = "admin_cbt_incremental"
+	cfg.ClickHouse.Admin.Scheduled.Database = dbName
+	cfg.ClickHouse.Admin.Scheduled.Table = "admin_cbt_scheduled"
 
 	// Configure Redis with namespace per test database
 	// ANTI-FLAKE #5: This prevents state leakage between concurrent tests
 	// Replace localhost with container hostname and adjust port for Docker network access
 	// Host port 6380 maps to container internal port 6379
-	redisURL := strings.Replace(g.redisURL, "localhost:6380", "xatu-cbt-redis:6379", 1)
-	redisURL = strings.Replace(redisURL, "localhost:6379", "xatu-cbt-redis:6379", 1)
-	config.Redis.URL = redisURL
-	config.Redis.Prefix = fmt.Sprintf("test:%s:", dbName)
+	redisContainerEndpoint := fmt.Sprintf("%s:%s", config.RedisContainerName, config.RedisContainerPort)
+	redisURL := strings.Replace(g.redisURL, "localhost:6380", redisContainerEndpoint, 1)
+	redisURL = strings.Replace(redisURL, "localhost:6379", redisContainerEndpoint, 1)
+	cfg.Redis.URL = redisURL
+	cfg.Redis.Prefix = fmt.Sprintf("test:%s:", dbName)
 
 	// Set model paths and default databases
-	config.Models.External.Paths = externalPaths
-	config.Models.External.DefaultCluster = "xatu_cluster" // External data is on remote xatu cluster
-	config.Models.External.DefaultDatabase = "default"     // External data is in default database
-	config.Models.Transformations.Paths = transformationPaths
-	config.Models.Transformations.DefaultDatabase = dbName // Transformations use test database
+	cfg.Models.External.Paths = externalPaths
+	cfg.Models.External.DefaultCluster = config.XatuClusterName        // External data is on remote xatu cluster
+	cfg.Models.External.DefaultDatabase = config.DefaultDatabase       // External data is in default database
+	cfg.Models.Transformations.Paths = transformationPaths
+	cfg.Models.Transformations.DefaultDatabase = dbName // Transformations use test database
 
 	// Set global environment variables for template rendering
 	// NETWORK is used in external model queries: WHERE meta_network_name = '{{ .env.NETWORK }}'
-	config.Models.Env = map[string]string{
+	cfg.Models.Env = map[string]string{
 		"NETWORK": network,
 	}
 
 	// Configure for fast test execution
-	config.Scheduler.Concurrency = 10
-	config.Worker.Concurrency = 10
+	cfg.Scheduler.Concurrency = 10
+	cfg.Worker.Concurrency = 10
 
 	// Add test-optimized overrides for all models
-	config.Models.Overrides = g.buildTestOverrides(models)
+	cfg.Models.Overrides = g.buildTestOverrides(models)
 
 	// Template config with database name
-	g.templateConfig(config, dbName)
+	g.templateConfig(cfg, dbName)
 
 	// Write config to file
-	data, err := yaml.Marshal(config)
+	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)
 	}
@@ -220,12 +223,12 @@ func (g *configGenerator) buildModelPaths(models []string) (externalPaths, trans
 }
 
 // templateConfig applies database-specific templating to config
-func (g *configGenerator) templateConfig(config *Config, dbName string) {
+func (g *configGenerator) templateConfig(cfg *Config, dbName string) {
 	// Replace ${NETWORK_NAME} placeholder in ClickHouse URL if present
-	config.ClickHouse.URL = strings.ReplaceAll(config.ClickHouse.URL, "${NETWORK_NAME}", dbName)
+	cfg.ClickHouse.URL = strings.ReplaceAll(cfg.ClickHouse.URL, "${NETWORK_NAME}", dbName)
 
 	// Ensure Redis prefix is properly namespaced
-	if !strings.Contains(config.Redis.Prefix, dbName) {
+	if !strings.Contains(cfg.Redis.Prefix, dbName) {
 		g.log.WithField("database", dbName).Warn("Redis prefix does not contain database name")
 	}
 }
