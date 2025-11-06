@@ -50,6 +50,7 @@ func (m *dockerManager) Start(ctx context.Context) error {
 		"-f", m.composeFile,
 		"-p", m.projectName,
 		"up", "-d",
+		"--wait",
 	}
 
 	if err := m.execCompose(ctx, args...); err != nil {
