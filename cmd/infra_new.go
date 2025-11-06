@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/ethpandaops/xatu-cbt/pkg/config"
 	"github.com/ethpandaops/xatu-cbt/pkg/infra"
-	"github.com/ethpandaops/xatu-cbt/pkg/testing/xatu"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -103,8 +103,8 @@ func init() {
 	infraCmd.AddCommand(infraResetCmd)
 
 	// Connection flags
-	infraCmd.PersistentFlags().StringVar(&infraClickhouseURL, "clickhouse-url", "clickhouse://localhost:9000", "CBT ClickHouse cluster URL")
-	infraCmd.PersistentFlags().StringVar(&infraRedisURL, "redis-url", "redis://localhost:6380", "Redis connection URL")
+	infraCmd.PersistentFlags().StringVar(&infraClickhouseURL, "clickhouse-url", config.DefaultCBTClickHouseURL, "CBT ClickHouse cluster URL")
+	infraCmd.PersistentFlags().StringVar(&infraRedisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
 
 	// Stop command flags
 	infraStopCmd.Flags().BoolVar(&infraCleanupTestDBs, "cleanup-test-dbs", true, "Cleanup ephemeral test databases")
@@ -113,13 +113,29 @@ func init() {
 	infraStatusCmd.Flags().BoolVar(&infraVerbose, "verbose", false, "Show detailed container and database information")
 }
 
+// createInfraManagers creates and returns Docker and ClickHouse managers with the shared configuration.
+func createInfraManagers(log logrus.FieldLogger) (infra.DockerManager, infra.ClickHouseManager) {
+	dockerManager := infra.NewDockerManager(
+		config.PlatformComposeFile,
+		config.ProjectName,
+		log,
+	)
+
+	chManager := infra.NewClickHouseManager(
+		dockerManager,
+		infraClickhouseURL,
+		log,
+	)
+
+	return dockerManager, chManager
+}
+
 func runInfraStart(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	// Setup logger
-	log := logrus.New()
-	log.SetLevel(logrus.InfoLevel)
+	log := newLogger(false)
 
 	fmt.Println("Starting platform infrastructure...")
 
@@ -131,24 +147,12 @@ func runInfraStart(cmd *cobra.Command, args []string) error {
 
 	// Ensure xatu repository exists (needed for xatu-clickhouse configs)
 	fmt.Println("Ensuring xatu repository...")
-	xatuRepoManager := xatu.NewRepoManager(wd, xatuRepoURL, xatuRef, log)
-	if _, err := xatuRepoManager.EnsureRepo(); err != nil {
-		return fmt.Errorf("ensuring xatu repository: %w", err)
+	if _, err := ensureXatuRepo(wd, xatuRepoURL, xatuRef, log); err != nil {
+		return err
 	}
 
-	// Create docker manager
-	dockerManager := infra.NewDockerManager(
-		"docker-compose.platform.yml",
-		"xatu-cbt-platform",
-		log,
-	)
-
-	// Create ClickHouse manager
-	chManager := infra.NewClickHouseManager(
-		dockerManager,
-		infraClickhouseURL,
-		log,
-	)
+	// Create infrastructure managers
+	_, chManager := createInfraManagers(log)
 
 	// Start infrastructure
 	if err := chManager.Start(ctx); err != nil {
@@ -168,24 +172,12 @@ func runInfraStop(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	// Setup logger
-	log := logrus.New()
-	log.SetLevel(logrus.InfoLevel)
+	log := newLogger(false)
 
 	fmt.Println("Stopping platform infrastructure...")
 
-	// Create docker manager
-	dockerManager := infra.NewDockerManager(
-		"docker-compose.platform.yml",
-		"xatu-cbt-platform",
-		log,
-	)
-
-	// Create ClickHouse manager
-	chManager := infra.NewClickHouseManager(
-		dockerManager,
-		infraClickhouseURL,
-		log,
-	)
+	// Create infrastructure managers
+	_, chManager := createInfraManagers(log)
 
 	// Cleanup test databases if requested
 	if infraCleanupTestDBs {
@@ -210,19 +202,10 @@ func runInfraStatus(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	// Setup logger
-	log := logrus.New()
-	if infraVerbose {
-		log.SetLevel(logrus.DebugLevel)
-	} else {
-		log.SetLevel(logrus.InfoLevel)
-	}
+	log := newLogger(infraVerbose)
 
-	// Create docker manager
-	dockerManager := infra.NewDockerManager(
-		"docker-compose.platform.yml",
-		"xatu-cbt-platform",
-		log,
-	)
+	// Create infrastructure managers
+	dockerManager, chManager := createInfraManagers(log)
 
 	// Check if running
 	running, err := dockerManager.IsRunning(ctx)
@@ -237,13 +220,6 @@ func runInfraStatus(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("Platform Status: RUNNING")
 
-	// Create ClickHouse manager
-	chManager := infra.NewClickHouseManager(
-		dockerManager,
-		infraClickhouseURL,
-		log,
-	)
-
 	// Health check
 	if err := chManager.HealthCheck(ctx); err != nil {
 		fmt.Printf("ClickHouse Health: UNHEALTHY (%v)\n", err)
@@ -255,7 +231,7 @@ func runInfraStatus(cmd *cobra.Command, args []string) error {
 	// Get container status if verbose
 	if infraVerbose {
 		fmt.Println("\nContainer Status:")
-		status, err := dockerManager.GetContainerStatus(ctx, "xatu-cbt-clickhouse-01")
+		status, err := dockerManager.GetContainerStatus(ctx, config.ClickHouseContainer)
 		if err == nil {
 			fmt.Printf("  ClickHouse: %s\n", status)
 		}
@@ -266,17 +242,12 @@ func runInfraStatus(cmd *cobra.Command, args []string) error {
 
 func runInfraReset(cmd *cobra.Command, args []string) error {
 	// Setup logger
-	log := logrus.New()
-	log.SetLevel(logrus.InfoLevel)
+	log := newLogger(false)
 
 	fmt.Println("Resetting platform infrastructure (removing all volumes)...")
 
-	// Create docker manager
-	dockerManager := infra.NewDockerManager(
-		"docker-compose.platform.yml",
-		"xatu-cbt-platform",
-		log,
-	)
+	// Create infrastructure managers
+	dockerManager, _ := createInfraManagers(log)
 
 	// Reset infrastructure
 	if err := dockerManager.Reset(); err != nil {

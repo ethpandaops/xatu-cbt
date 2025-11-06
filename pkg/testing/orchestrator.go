@@ -7,10 +7,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethpandaops/xatu-cbt/pkg/config"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/assertion"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/cache"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/cbt"
-	"github.com/ethpandaops/xatu-cbt/pkg/testing/config"
+	testconfig "github.com/ethpandaops/xatu-cbt/pkg/testing/config"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/database"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/dependency"
 	"github.com/sirupsen/logrus"
@@ -40,7 +41,7 @@ type TestResult struct {
 }
 
 type orchestrator struct {
-	configLoader    config.Loader
+	configLoader    testconfig.Loader
 	resolver        dependency.Resolver
 	cache           cache.ParquetCache
 	dbManager       database.Manager
@@ -55,7 +56,7 @@ type orchestrator struct {
 
 // NewOrchestrator creates a new test orchestrator
 func NewOrchestrator(
-	configLoader config.Loader,
+	configLoader testconfig.Loader,
 	resolver dependency.Resolver,
 	cache cache.ParquetCache,
 	dbManager database.Manager,
@@ -117,7 +118,7 @@ func (o *orchestrator) Stop() error {
 
 	// Flush Redis to clean up any stale state
 	o.log.Debug("flushing Redis cache on shutdown")
-	flushCmd := exec.Command("docker", "exec", "xatu-cbt-redis", "redis-cli", "FLUSHALL")
+	flushCmd := exec.Command("docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHALL")
 	if err := flushCmd.Run(); err != nil {
 		o.log.WithError(err).Warn("failed to flush redis on shutdown")
 		errs = append(errs, fmt.Errorf("flushing redis: %w", err))
@@ -188,7 +189,7 @@ func (o *orchestrator) TestModels(ctx context.Context, network, spec string, mod
 	}
 
 	// Load test configs for all models
-	testConfigs := make([]*config.TestConfig, 0, len(modelNames))
+	testConfigs := make([]*testconfig.TestConfig, 0, len(modelNames))
 	for _, modelName := range modelNames {
 		testConfig, err := o.configLoader.LoadForModel(spec, network, modelName)
 		if err != nil {
@@ -232,7 +233,7 @@ func (o *orchestrator) TestSpec(ctx context.Context, network, spec string, concu
 	}
 
 	// Convert configs map to slice for consistent ordering
-	testConfigs := make([]*config.TestConfig, 0, len(configs))
+	testConfigs := make([]*testconfig.TestConfig, 0, len(configs))
 	for _, cfg := range configs {
 		testConfigs = append(testConfigs, cfg)
 	}
@@ -243,7 +244,7 @@ func (o *orchestrator) TestSpec(ctx context.Context, network, spec string, concu
 
 // executeTestGroup performs grouped test execution for a (network, spec)
 // All tests share one database and one CBT container for optimal performance
-func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec string, testConfigs []*config.TestConfig, concurrency int) ([]*TestResult, error) {
+func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec string, testConfigs []*testconfig.TestConfig, concurrency int) ([]*TestResult, error) {
 	o.log.WithFields(logrus.Fields{
 		"network": network,
 		"spec":    spec,
@@ -362,7 +363,7 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 	// Use worker pool to run assertions with controlled concurrency
 	type assertionJob struct {
 		index      int
-		testConfig *config.TestConfig
+		testConfig *testconfig.TestConfig
 	}
 
 	jobs := make(chan assertionJob, len(testConfigs))
@@ -433,7 +434,7 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 }
 
 // executeTest performs the core test execution logic
-func (o *orchestrator) executeTest(ctx context.Context, testConfig *config.TestConfig) (*TestResult, error) {
+func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.TestConfig) (*TestResult, error) {
 	o.log.WithField("model", testConfig.Model).Debug("executing test")
 	start := time.Now()
 
@@ -682,7 +683,7 @@ func (o *orchestrator) ensureNetworkPrepared(ctx context.Context, network, spec 
 func (o *orchestrator) flushRedisCache(ctx context.Context) error {
 	// Use docker exec to flush Redis database
 	// This is simpler than managing a Redis client connection
-	cmd := exec.CommandContext(ctx, "docker", "exec", "xatu-cbt-redis", "redis-cli", "FLUSHDB")
+	cmd := exec.CommandContext(ctx, "docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHDB")
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("flushing redis: %w (output: %s)", err, string(output))
 	}

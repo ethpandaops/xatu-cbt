@@ -10,15 +10,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ethpandaops/xatu-cbt/pkg/config"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/assertion"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/cache"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/cbt"
-	"github.com/ethpandaops/xatu-cbt/pkg/testing/config"
+	testconfig "github.com/ethpandaops/xatu-cbt/pkg/testing/config"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/database"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/dependency"
 	"github.com/ethpandaops/xatu-cbt/pkg/testing/output"
-	"github.com/ethpandaops/xatu-cbt/pkg/testing/xatu"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -91,6 +91,66 @@ Example:
 	RunE: runTestSpec,
 }
 
+// setupCleanupHandler sets up signal handling for graceful cleanup on Ctrl+C.
+func setupCleanupHandler(orchestrator testing.Orchestrator) {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		logrus.Warn("\nReceived interrupt signal, cleaning up...")
+		orchestrator.Stop()
+		os.Exit(130) // Exit code 130 = 128 + SIGINT(2)
+	}()
+}
+
+// runTestsWithConfig sets up the orchestrator, runs tests, and prints results.
+// The testRunner function is called to execute the actual tests.
+func runTestsWithConfig(
+	ctx context.Context,
+	cmd *cobra.Command,
+	modelCount int,
+	testRunner func(testing.Orchestrator) ([]*testing.TestResult, error),
+) error {
+	// Setup orchestrator
+	orchestrator, formatter, err := setupOrchestrator(cmd)
+	if err != nil {
+		return fmt.Errorf("setting up orchestrator: %w", err)
+	}
+
+	// Setup signal handling for cleanup on Ctrl+C
+	setupCleanupHandler(orchestrator)
+	defer orchestrator.Stop()
+
+	// Start orchestrator
+	if err := orchestrator.Start(ctx); err != nil {
+		return fmt.Errorf("starting orchestrator: %w", err)
+	}
+
+	// Print header
+	formatter.PrintHeader(testNetwork, testSpec, modelCount)
+
+	// Run tests
+	results, err := testRunner(orchestrator)
+	if err != nil {
+		return fmt.Errorf("running tests: %w", err)
+	}
+
+	// Print results
+	for _, result := range results {
+		printResult(result, formatter)
+	}
+
+	// Print summary
+	printSummary(results, formatter)
+
+	// Return exit code
+	if hasFailures(results) {
+		return fmt.Errorf("some tests failed")
+	}
+
+	return nil
+}
+
 func init() {
 	// Add test subcommands
 	testCmd.AddCommand(testModelsCmd)
@@ -107,13 +167,13 @@ func init() {
 	testCmd.PersistentFlags().BoolVar(&testForceRebuild, "force-rebuild", false, "Force rebuild of xatu cluster (clear tables and re-run migrations)")
 
 	// Connection flags
-	testCmd.PersistentFlags().StringVar(&xatuClickhouseURL, "xatu-clickhouse-url", "clickhouse://default:supersecret@localhost:9002", "Xatu ClickHouse cluster URL (external data)")
-	testCmd.PersistentFlags().StringVar(&cbtClickhouseURL, "cbt-clickhouse-url", "clickhouse://localhost:9000", "CBT ClickHouse cluster URL (transformations)")
-	testCmd.PersistentFlags().StringVar(&redisURL, "redis-url", "redis://localhost:6380", "Redis connection URL")
+	testCmd.PersistentFlags().StringVar(&xatuClickhouseURL, "xatu-clickhouse-url", config.DefaultXatuClickHouseURL, "Xatu ClickHouse cluster URL (external data)")
+	testCmd.PersistentFlags().StringVar(&cbtClickhouseURL, "cbt-clickhouse-url", config.DefaultCBTClickHouseURL, "CBT ClickHouse cluster URL (transformations)")
+	testCmd.PersistentFlags().StringVar(&redisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
 
 	// Xatu repository flags
-	testCmd.PersistentFlags().StringVar(&xatuRepoURL, "xatu-repo", "https://github.com/ethpandaops/xatu", "Xatu repository URL")
-	testCmd.PersistentFlags().StringVar(&xatuRef, "xatu-ref", "master", "Xatu repository ref (branch/tag/commit)")
+	testCmd.PersistentFlags().StringVar(&xatuRepoURL, "xatu-repo", config.XatuRepoURL, "Xatu repository URL")
+	testCmd.PersistentFlags().StringVar(&xatuRef, "xatu-ref", config.XatuDefaultRef, "Xatu repository ref (branch/tag/commit)")
 }
 
 func runTestModels(cmd *cobra.Command, args []string) error {
@@ -126,114 +186,23 @@ func runTestModels(cmd *cobra.Command, args []string) error {
 		modelNames[i] = strings.TrimSpace(name)
 	}
 
-	// Setup orchestrator
-	orchestrator, formatter, err := setupOrchestrator(cmd)
-	if err != nil {
-		return fmt.Errorf("setting up orchestrator: %w", err)
-	}
-
-	// Setup signal handling for cleanup on Ctrl+C
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigChan
-		logrus.Warn("\nReceived interrupt signal, cleaning up...")
-		orchestrator.Stop()
-		os.Exit(130) // Exit code 130 = 128 + SIGINT(2)
-	}()
-
-	defer orchestrator.Stop()
-
-	// Start orchestrator
-	if err := orchestrator.Start(ctx); err != nil {
-		return fmt.Errorf("starting orchestrator: %w", err)
-	}
-
-	// Print header
-	formatter.PrintHeader(testNetwork, testSpec, len(modelNames))
-
-	// Run tests
-	results, err := orchestrator.TestModels(ctx, testNetwork, testSpec, modelNames, testConcurrency)
-	if err != nil {
-		return fmt.Errorf("running tests: %w", err)
-	}
-
-	// Print results
-	for _, result := range results {
-		printResult(result, formatter)
-	}
-
-	// Print summary
-	printSummary(results, formatter)
-
-	// Return exit code
-	if hasFailures(results) {
-		return fmt.Errorf("some tests failed")
-	}
-
-	return nil
+	return runTestsWithConfig(ctx, cmd, len(modelNames), func(orchestrator testing.Orchestrator) ([]*testing.TestResult, error) {
+		return orchestrator.TestModels(ctx, testNetwork, testSpec, modelNames, testConcurrency)
+	})
 }
 
 func runTestSpec(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	// Setup orchestrator
-	orchestrator, formatter, err := setupOrchestrator(cmd)
-	if err != nil {
-		return fmt.Errorf("setting up orchestrator: %w", err)
-	}
-
-	// Setup signal handling for cleanup on Ctrl+C
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-sigChan
-		logrus.Warn("\nReceived interrupt signal, cleaning up...")
-		orchestrator.Stop()
-		os.Exit(130) // Exit code 130 = 128 + SIGINT(2)
-	}()
-
-	defer orchestrator.Stop()
-
-	// Start orchestrator
-	if err := orchestrator.Start(ctx); err != nil {
-		return fmt.Errorf("starting orchestrator: %w", err)
-	}
-
-	// Print header
-	formatter.PrintHeader(testNetwork, testSpec, 0)
-
-	// Run all tests for spec
-	results, err := orchestrator.TestSpec(ctx, testNetwork, testSpec, testConcurrency)
-	if err != nil {
-		return fmt.Errorf("running tests: %w", err)
-	}
-
-	// Print results
-	for _, result := range results {
-		printResult(result, formatter)
-	}
-
-	// Print summary
-	printSummary(results, formatter)
-
-	// Return exit code
-	if hasFailures(results) {
-		return fmt.Errorf("some tests failed")
-	}
-
-	return nil
+	return runTestsWithConfig(ctx, cmd, 0, func(orchestrator testing.Orchestrator) ([]*testing.TestResult, error) {
+		return orchestrator.TestSpec(ctx, testNetwork, testSpec, testConcurrency)
+	})
 }
 
 func setupOrchestrator(cmd *cobra.Command) (testing.Orchestrator, output.Formatter, error) {
 	// Setup logger
-	log := logrus.New()
-	if testVerbose {
-		log.SetLevel(logrus.DebugLevel)
-	} else {
-		log.SetLevel(logrus.InfoLevel)
-	}
+	log := newLogger(testVerbose)
 
 	// Get working directory
 	wd, err := os.Getwd()
@@ -242,33 +211,32 @@ func setupOrchestrator(cmd *cobra.Command) (testing.Orchestrator, output.Formatt
 	}
 
 	// Initialize xatu repository
-	xatuRepoManager := xatu.NewRepoManager(wd, xatuRepoURL, xatuRef, log)
-	xatuRepoPath, err := xatuRepoManager.EnsureRepo()
+	xatuRepoPath, err := ensureXatuRepo(wd, xatuRepoURL, xatuRef, log)
 	if err != nil {
-		return nil, nil, fmt.Errorf("ensuring xatu repository: %w", err)
+		return nil, nil, err
 	}
-	xatuMigrationDir := xatuRepoManager.GetMigrationDir(xatuRepoPath)
+	xatuMigrationDir := filepath.Join(xatuRepoPath, config.XatuMigrationsPath)
 
 	// Initialize components
-	configLoader := config.NewLoader(filepath.Join(wd, "tests"), log)
+	configLoader := testconfig.NewLoader(filepath.Join(wd, config.TestsDir), log)
 	parser := dependency.NewParser(log)
 	resolver := dependency.NewResolver(
-		filepath.Join(wd, "models/external"),
-		filepath.Join(wd, "models/transformations"),
+		filepath.Join(wd, config.ModelsExternalDir),
+		filepath.Join(wd, config.ModelsTransformationsDir),
 		parser,
 		log,
 	)
 	parquetCache := cache.NewParquetCache(testCacheDir, testCacheSize, log)
-	migrationRunner := database.NewMigrationRunner(filepath.Join(wd, "migrations"), "", log) // Empty prefix for xatu-cbt migrations
+	migrationRunner := database.NewMigrationRunner(filepath.Join(wd, config.MigrationsDir), "", log) // Empty prefix for xatu-cbt migrations
 	dbManager := database.NewManager(xatuClickhouseURL, cbtClickhouseURL, migrationRunner, xatuMigrationDir, testForceRebuild, log)
 	configGen := cbt.NewConfigGenerator(
-		filepath.Join(wd, "models/external"),
-		filepath.Join(wd, "models/transformations"),
+		filepath.Join(wd, config.ModelsExternalDir),
+		filepath.Join(wd, config.ModelsTransformationsDir),
 		cbtClickhouseURL,
 		redisURL,
 		log,
 	)
-	cbtEngine := cbt.NewEngine(configGen, cbtClickhouseURL, redisURL, filepath.Join(wd, "models"), log)
+	cbtEngine := cbt.NewEngine(configGen, cbtClickhouseURL, redisURL, filepath.Join(wd, config.ModelsDir), log)
 	assertionRunner := assertion.NewRunner(cbtClickhouseURL, 5, 30*time.Second, log)
 
 	// Create orchestrator

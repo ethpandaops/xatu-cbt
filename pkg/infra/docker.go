@@ -172,22 +172,6 @@ func (m *dockerManager) GetContainerStatus(ctx context.Context, service string) 
 	return "unknown", nil
 }
 
-// execCompose executes a docker-compose command
-func (m *dockerManager) execCompose(ctx context.Context, args ...string) error {
-	execCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-	defer cancel()
-
-	cmd := exec.CommandContext(execCtx, "docker", args...)
-	m.log.WithField("command", cmd.String()).Debug("executing docker command")
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("command failed: %w\nOutput: %s", err, string(output))
-	}
-
-	return nil
-}
-
 // execComposeOutput executes a docker-compose command and returns output
 func (m *dockerManager) execComposeOutput(ctx context.Context, args ...string) ([]byte, error) {
 	execCtx, cancel := context.WithTimeout(ctx, commandTimeout)
@@ -202,4 +186,10 @@ func (m *dockerManager) execComposeOutput(ctx context.Context, args ...string) (
 	}
 
 	return output, nil
+}
+
+// execCompose executes a docker-compose command and discards output
+func (m *dockerManager) execCompose(ctx context.Context, args ...string) error {
+	_, err := m.execComposeOutput(ctx, args...)
+	return err
 }

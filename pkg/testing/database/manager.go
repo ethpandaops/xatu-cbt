@@ -11,6 +11,7 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ethpandaops/xatu-cbt/pkg/config"
 	"github.com/sirupsen/logrus"
 )
 
@@ -126,7 +127,7 @@ func (m *manager) PrepareNetworkDatabase(ctx context.Context, network string) er
 	// Create/ensure all required databases exist in xatu cluster
 	// Note: Use xatu_cluster (1 shard, 2 replicas) not cluster_2S_1R (which is for cbt cluster)
 	for _, db := range databases {
-		createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER xatu_cluster", db)
+		createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s", db, config.XatuClusterName)
 
 		queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
 		if _, err := m.xatuConn.ExecContext(queryCtx, createSQL); err != nil {
@@ -185,12 +186,13 @@ func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 	defer cancel()
 
 	var count int
-	err := m.xatuConn.QueryRowContext(queryCtx, `
+	checkSQL := fmt.Sprintf(`
 		SELECT COUNT(*)
 		FROM system.tables
 		WHERE database = 'default'
-		AND name = 'schema_migrations_default'
-	`).Scan(&count)
+		AND name = '%s%s'
+	`, config.SchemaMigrationsPrefix, config.DefaultDatabase)
+	err := m.xatuConn.QueryRowContext(queryCtx, checkSQL).Scan(&count)
 
 	if err != nil || count == 0 {
 		return false
@@ -201,10 +203,11 @@ func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 	defer cancel2()
 
 	var migrationCount int
-	err = m.xatuConn.QueryRowContext(queryCtx2, `
+	countSQL := fmt.Sprintf(`
 		SELECT COUNT(*)
-		FROM default.schema_migrations_default
-	`).Scan(&migrationCount)
+		FROM %s.%s%s
+	`, config.DefaultDatabase, config.SchemaMigrationsPrefix, config.DefaultDatabase)
+	err = m.xatuConn.QueryRowContext(queryCtx2, countSQL).Scan(&migrationCount)
 
 	return err == nil && migrationCount > 0
 }
@@ -244,16 +247,16 @@ func (m *manager) clearNetworkTables(ctx context.Context, network string, clearM
 	for _, obj := range objects {
 		// Skip schema_migrations tables unless force rebuilding
 		// golang-migrate creates tables with format schema_migrations_{database_name}
-		isSchemaMigrations := obj.name == "schema_migrations" || obj.name == "schema_migrations_default"
+		isSchemaMigrations := obj.name == config.SchemaMigrationsPrefix[:len(config.SchemaMigrationsPrefix)-1] || obj.name == config.SchemaMigrationsPrefix+config.DefaultDatabase
 		if isSchemaMigrations && !clearMigrations {
 			continue
 		}
 
 		var dropSQL string
 		if obj.engine == "MaterializedView" {
-			dropSQL = fmt.Sprintf("DROP VIEW IF EXISTS `%s`.`%s` ON CLUSTER xatu_cluster SYNC", network, obj.name)
+			dropSQL = fmt.Sprintf("DROP VIEW IF EXISTS `%s`.`%s` ON CLUSTER %s SYNC", network, obj.name, config.XatuClusterName)
 		} else {
-			dropSQL = fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s` ON CLUSTER xatu_cluster SYNC", network, obj.name)
+			dropSQL = fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s` ON CLUSTER %s SYNC", network, obj.name, config.XatuClusterName)
 		}
 
 		queryCtx2, cancel2 := context.WithTimeout(ctx, queryTimeout)
@@ -279,7 +282,7 @@ func (m *manager) CreateTestDatabase(ctx context.Context, network, spec string) 
 	start := time.Now()
 
 	// Create database in CBT cluster (transformations only)
-	createSQL := fmt.Sprintf("CREATE DATABASE `%s` ON CLUSTER cluster_2S_1R", dbName)
+	createSQL := fmt.Sprintf("CREATE DATABASE `%s` ON CLUSTER %s", dbName, config.CBTClusterName)
 
 	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
 	defer cancel()
@@ -313,7 +316,7 @@ func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 	m.log.WithField("database", dbName).Debug("dropping test database from cbt cluster")
 
 	// Drop the database from CBT cluster
-	dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER cluster_2S_1R", dbName)
+	dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER %s", dbName, config.CBTClusterName)
 
 	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
 	defer cancel()
@@ -323,7 +326,7 @@ func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 	}
 
 	// Clean up migrations table (golang-migrate creates these in default database)
-	migrationTable := fmt.Sprintf("schema_migrations_%s", dbName)
+	migrationTable := fmt.Sprintf("%s%s", config.SchemaMigrationsPrefix, dbName)
 	dropMigrationsSQL := fmt.Sprintf("DROP TABLE IF EXISTS `default`.`%s`", migrationTable)
 
 	queryCtx2, cancel2 := context.WithTimeout(ctx, queryTimeout)
@@ -440,7 +443,7 @@ func (m *manager) loadParquetFile(ctx context.Context, tableName, filePath strin
 func (m *manager) truncateExternalTable(ctx context.Context, tableName string) error {
 	// Truncate the _local table - ReplicatedMergeTree will sync truncation to all replicas
 	localTableName := tableName + "_local"
-	truncateSQL := fmt.Sprintf("TRUNCATE TABLE `default`.`%s` ON CLUSTER xatu_cluster SYNC", localTableName)
+	truncateSQL := fmt.Sprintf("TRUNCATE TABLE `default`.`%s` ON CLUSTER %s SYNC", localTableName, config.XatuClusterName)
 
 	m.log.WithField("table", localTableName).Debug("truncating external model table")
 
