@@ -102,8 +102,8 @@ func init() {
 	infraCmd.AddCommand(infraStatusCmd)
 	infraCmd.AddCommand(infraResetCmd)
 
-	// Connection flags
-	infraCmd.PersistentFlags().StringVar(&infraClickhouseURL, "clickhouse-url", config.DefaultCBTClickHouseURL, "CBT ClickHouse cluster URL")
+	// Connection flags (dynamically built from environment variables)
+	infraCmd.PersistentFlags().StringVar(&infraClickhouseURL, "clickhouse-url", config.GetCBTClickHouseURL(), "CBT ClickHouse cluster URL")
 	infraCmd.PersistentFlags().StringVar(&infraRedisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
 
 	// Stop command flags
