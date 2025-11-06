@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/ClickHouse/clickhouse-go/v2" //nolint:blank-imports // ClickHouse driver registration
+	_ "github.com/ClickHouse/clickhouse-go/v2" // ClickHouse driver registration
 	"github.com/sirupsen/logrus"
 )
 

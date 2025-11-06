@@ -274,7 +274,7 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 }
 
 // queryToMap executes SQL and returns first row as a map
-func (r *runner) queryToMap(ctx context.Context, dbName, sql string) (map[string]interface{}, error) {
+func (r *runner) queryToMap(ctx context.Context, dbName, sqlQuery string) (map[string]interface{}, error) {
 	// ANTI-FLAKE: Get a dedicated connection from pool to ensure USE and query execute on same connection
 	// sql.DB is a connection pool - using Conn() ensures session state (USE database) persists
 	conn, err := r.conn.Conn(ctx)
@@ -289,7 +289,7 @@ func (r *runner) queryToMap(ctx context.Context, dbName, sql string) (map[string
 	}
 
 	// Execute query on same connection that has USE database set
-	rows, err := conn.QueryContext(ctx, sql)
+	rows, err := conn.QueryContext(ctx, sqlQuery)
 	if err != nil {
 		return nil, fmt.Errorf("executing query: %w", err)
 	}

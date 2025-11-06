@@ -14,7 +14,7 @@ type Collector interface {
 	Start(ctx context.Context) error
 	Stop() error
 	RecordParquetLoad(metric ParquetLoadMetric)
-	RecordTestResult(metric TestResultMetric)
+	RecordTestResult(metric *TestResultMetric)
 	GetParquetMetrics() []ParquetLoadMetric
 	GetTestMetrics() []TestResultMetric
 	GetSummary() SummaryMetric
@@ -61,10 +61,10 @@ func (c *collector) RecordParquetLoad(metric ParquetLoadMetric) {
 	c.parquetMetrics = append(c.parquetMetrics, metric)
 }
 
-func (c *collector) RecordTestResult(metric TestResultMetric) {
+func (c *collector) RecordTestResult(metric *TestResultMetric) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.testMetrics = append(c.testMetrics, metric)
+	c.testMetrics = append(c.testMetrics, *metric)
 }
 
 func (c *collector) GetParquetMetrics() []ParquetLoadMetric {

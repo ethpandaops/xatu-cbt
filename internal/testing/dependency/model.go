@@ -16,7 +16,9 @@ import (
 type ModelType string
 
 const (
+	// ModelTypeExternal represents external data source models
 	ModelTypeExternal       ModelType = "external"
+	// ModelTypeTransformation represents transformation models
 	ModelTypeTransformation ModelType = "transformation"
 )
 

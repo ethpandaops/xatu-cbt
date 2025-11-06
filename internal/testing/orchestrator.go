@@ -73,7 +73,7 @@ func NewOrchestrator(
 	metricsCollector metrics.Collector,
 	configLoader testconfig.Loader,
 	resolver dependency.Resolver,
-	cache cache.ParquetCache,
+	parquetCache cache.ParquetCache,
 	dbManager database.Manager,
 	cbtEngine cbt.Engine,
 	assertionRunner assertion.Runner,
@@ -102,7 +102,7 @@ func NewOrchestrator(
 	return &orchestrator{
 		configLoader:     configLoader,
 		resolver:         resolver,
-		cache:            cache,
+		cache:            parquetCache,
 		dbManager:        dbManager,
 		cbtEngine:        cbtEngine,
 		assertionRunner:  assertionRunner,
@@ -370,7 +370,9 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 	if len(transformationsList) > 0 {
 		// Combine all external models and transformations for CBT config
 		// This tells CBT about all dependencies so it can run them
-		allModels := append(externalTablesList, transformationsList...)
+		allModels := make([]string, 0, len(externalTablesList)+len(transformationsList))
+		allModels = append(allModels, externalTablesList...)
+		allModels = append(allModels, transformationsList...)
 
 		// IMPORTANT: Clear Redis cache BEFORE starting CBT
 		o.log.Info("clearing redis cache")
@@ -472,7 +474,7 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 						}
 					}
 				}
-				o.metrics.RecordTestResult(metrics.TestResultMetric{
+				o.metrics.RecordTestResult(&metrics.TestResultMetric{
 					Model:            testConfig.Model,
 					Passed:           result.Success,
 					Duration:         result.Duration,
@@ -647,7 +649,9 @@ func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.T
 		}).Debug("including external models for CBT config")
 
 		// Combine all external models and transformations for CBT config
-		allModels := append(externalModels, result.Transformations...)
+		allModels := make([]string, 0, len(externalModels)+len(result.Transformations))
+		allModels = append(allModels, externalModels...)
+		allModels = append(allModels, result.Transformations...)
 
 		// IMPORTANT: Clear Redis cache BEFORE starting CBT
 		// CBT performs initial scans immediately on startup and caches results
@@ -705,7 +709,7 @@ func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.T
 		}
 	}
 
-	o.metrics.RecordTestResult(metrics.TestResultMetric{
+	o.metrics.RecordTestResult(&metrics.TestResultMetric{
 		Model:            testConfig.Model,
 		Passed:           result.Success,
 		Duration:         result.Duration,
@@ -810,8 +814,8 @@ func (o *orchestrator) flushRedisCache(ctx context.Context) error {
 	// Use docker exec to flush Redis database
 	// This is simpler than managing a Redis client connection
 	cmd := exec.CommandContext(ctx, "docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHDB")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("flushing redis: %w (output: %s)", err, string(output))
+	if cmdOutput, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("flushing redis: %w (output: %s)", err, string(cmdOutput))
 	}
 
 	o.log.Debug("Redis cache flushed successfully")

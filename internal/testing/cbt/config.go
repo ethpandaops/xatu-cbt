@@ -185,7 +185,7 @@ func (g *configGenerator) GenerateForModels(network, dbName string, models []str
 }
 
 // buildModelPaths converts model names to file paths for CBT, separated by type
-func (g *configGenerator) buildModelPaths(models []string) (externalPaths []string, transformationPaths []string, err error) {
+func (g *configGenerator) buildModelPaths(models []string) (externalPaths, transformationPaths []string, err error) {
 	externalPaths = make([]string, 0)
 	transformationPaths = make([]string, 0)
 

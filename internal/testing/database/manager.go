@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/ClickHouse/clickhouse-go/v2"
+	_ "github.com/ClickHouse/clickhouse-go/v2" // ClickHouse driver registration
 	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/sirupsen/logrus"
 )
@@ -119,7 +119,7 @@ func (m *manager) Stop() error {
 // PrepareNetworkDatabase ensures required databases exist in xatu cluster and runs migrations
 // This is called once per test suite (not per test) to prepare the external data cluster
 // Network parameter is used for tracking only - all data goes into 'default' database in xatu cluster
-func (m *manager) PrepareNetworkDatabase(ctx context.Context, network string) error {
+func (m *manager) PrepareNetworkDatabase(ctx context.Context, _ string) error {
 	logCtx := m.log.WithField("cluster", "xatu")
 	logCtx.Info("preparing database")
 
@@ -355,7 +355,7 @@ func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 
 // LoadParquetData loads parquet files into default database in xatu cluster
 // network parameter is used for logging only - all data goes into 'default' database
-func (m *manager) LoadParquetData(ctx context.Context, network string, dataFiles map[string]string) error {
+func (m *manager) LoadParquetData(ctx context.Context, _ string, dataFiles map[string]string) error {
 	logCtx := m.log.WithField("cluster", "xatu")
 
 	start := time.Now()

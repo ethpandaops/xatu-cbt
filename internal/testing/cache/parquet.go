@@ -244,7 +244,7 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 		// Another goroutine is downloading, wait for it
 		c.log.WithField("url", url).Debug("waiting for concurrent download")
 		select {
-		case _, ok := <-actual.(chan struct{}):
+		case _, ok := <-actual.(chan struct{}): //nolint:errcheck // We're checking ok to determine channel closure
 			if !ok {
 				// Channel closed, download complete, retry Get
 				return c.Get(ctx, url, tableName)
@@ -264,7 +264,7 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 	c.log.WithField("url", url).Info("downloading parquet file")
 	start := time.Now()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return "", fmt.Errorf("creating request: %w", err)
 	}

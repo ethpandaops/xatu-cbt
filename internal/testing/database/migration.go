@@ -30,7 +30,7 @@ type migrationRunner struct {
 }
 
 // NewMigrationRunner creates a new migration runner with optional table name prefix
-func NewMigrationRunner(log logrus.FieldLogger, migrationDir string, tablePrefix string) MigrationRunner {
+func NewMigrationRunner(log logrus.FieldLogger, migrationDir, tablePrefix string) MigrationRunner {
 	return &migrationRunner{
 		migrationDir: migrationDir,
 		tablePrefix:  tablePrefix,
@@ -143,7 +143,7 @@ func (r *migrationRunner) createTemplatedFS(dbName string) (fs.FS, error) {
 		templatedSQL := r.templateSQL(string(content), dbName)
 
 		// If migration is empty after templating, add a no-op statement to avoid "Empty query" error
-		if len(templatedSQL) == 0 {
+		if templatedSQL == "" {
 			r.log.WithField("file", filename).Debug("empty migration file, adding no-op statement")
 			templatedSQL = "SELECT 1; -- No-op migration"
 		}
@@ -158,15 +158,15 @@ func (r *migrationRunner) createTemplatedFS(dbName string) (fs.FS, error) {
 }
 
 // templateSQL replaces ${NETWORK_NAME} placeholder and hardcoded 'default' database references with actual database name
-func (r *migrationRunner) templateSQL(sql, dbName string) string {
+func (r *migrationRunner) templateSQL(sqlTemplate, dbName string) string {
 	// Special case: if dbName is "default", don't template anything
 	// This is for xatu migrations running in their native default database
 	if dbName == "default" {
-		return sql
+		return sqlTemplate
 	}
 
 	// Replace placeholder
-	templated := strings.ReplaceAll(sql, "${NETWORK_NAME}", dbName)
+	templated := strings.ReplaceAll(sqlTemplate, "${NETWORK_NAME}", dbName)
 
 	// CRITICAL FIX #1: Replace hardcoded database names in Distributed engine definitions
 	// Pattern: ENGINE = Distributed('{cluster}', default, table_name, rand())
@@ -255,7 +255,7 @@ func (r *migrationRunner) qualifyCreateStatements(sql, dbName string) string {
 
 			// Check for "IF EXISTS" clause (only for DROP)
 			if strings.HasPrefix(upperLine, "DROP TABLE") && len(parts) >= 5 &&
-			   strings.ToUpper(parts[2]) == "IF" && strings.ToUpper(parts[3]) == "EXISTS" {
+			   strings.EqualFold(parts[2], "IF") && strings.EqualFold(parts[3], "EXISTS") {
 				objNameIdx = 4 // Skip to table name after "IF EXISTS"
 			}
 
@@ -550,9 +550,9 @@ func (i *memFileInfo) Name() string      { return i.name }
 func (i *memFileInfo) Size() int64       { return i.size }
 func (i *memFileInfo) Mode() fs.FileMode {
 	if i.isDir {
-		return fs.ModeDir | 0755
+		return fs.ModeDir | 0o755
 	}
-	return 0644
+	return 0o644
 }
 func (i *memFileInfo) ModTime() time.Time { return time.Time{} }
 func (i *memFileInfo) IsDir() bool        { return i.isDir }

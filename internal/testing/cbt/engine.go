@@ -12,8 +12,12 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/ClickHouse/clickhouse-go/v2"
+	_ "github.com/ClickHouse/clickhouse-go/v2" // ClickHouse driver registration
 	"github.com/sirupsen/logrus"
+)
+
+const (
+	modelTypeScheduled = "scheduled"
 )
 
 // Engine manages CBT engine lifecycle
@@ -58,7 +62,7 @@ func NewEngine(log logrus.FieldLogger, configGen ConfigGenerator, clickhouseURL,
 }
 
 // Start initializes the engine (no-op for this implementation)
-func (e *engine) Start(ctx context.Context) error {
+func (e *engine) Start(_ context.Context) error {
 	e.log.Debug("starting CBT engine")
 	return nil
 }
@@ -224,7 +228,7 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 		transformPath := filepath.Join(e.modelsDir, "transformations", model+".sql")
 		if _, err := os.Stat(transformPath); err == nil {
 			allModels[model] = true
-			if e.getModelType(transformPath) == "scheduled" {
+			if e.getModelType(transformPath) == modelTypeScheduled {
 				scheduledModels[model] = true
 			}
 			continue
@@ -234,7 +238,7 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 		transformYmlPath := filepath.Join(e.modelsDir, "transformations", model+".yml")
 		if _, err := os.Stat(transformYmlPath); err == nil {
 			allModels[model] = true
-			if e.getModelType(transformYmlPath) == "scheduled" {
+			if e.getModelType(transformYmlPath) == modelTypeScheduled {
 				scheduledModels[model] = true
 			}
 		}
@@ -485,7 +489,7 @@ func (e *engine) getModelType(filePath string) string {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		e.log.WithError(err).Warn("failed to read model file, assuming scheduled")
-		return "scheduled"
+		return modelTypeScheduled
 	}
 
 	content := string(data)
@@ -494,10 +498,10 @@ func (e *engine) getModelType(filePath string) string {
 	if strings.Contains(content, "type: incremental") {
 		return "incremental"
 	} else if strings.Contains(content, "type: scheduled") {
-		return "scheduled"
+		return modelTypeScheduled
 	}
 
 	// Default to scheduled if type not found
 	e.log.WithField("file", filePath).Debug("model type not found, defaulting to scheduled")
-	return "scheduled"
+	return modelTypeScheduled
 }
