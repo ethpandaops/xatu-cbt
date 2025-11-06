@@ -9,7 +9,7 @@ import (
 
 	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/ethpandaops/xatu-cbt/internal/infra"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/xatu"
+	"github.com/ethpandaops/xatu-cbt/internal/testing"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -127,7 +127,7 @@ func createInfraManagers(log logrus.FieldLogger) (infra.DockerManager, infra.Cli
 
 // ensureXatuRepo ensures the xatu repository exists and returns its path.
 func ensureXatuRepo(log logrus.FieldLogger, wd, repoURL, ref string) (string, error) {
-	xatuRepoManager := xatu.NewRepoManager(log, wd, repoURL, ref)
+	xatuRepoManager := testing.NewRepoManager(log, wd, repoURL, ref)
 	repoPath, err := xatuRepoManager.EnsureRepo()
 	if err != nil {
 		return "", fmt.Errorf("ensuring xatu repository: %w", err)

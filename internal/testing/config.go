@@ -1,7 +1,7 @@
-// Package testcfg provides test execution configuration.
+// Package testing provides test execution configuration.
 // This package defines operational parameters for how tests execute
 // (timeouts, worker counts, polling intervals) rather than what tests to run.
-package testcfg
+package testing
 
 import "time"
 

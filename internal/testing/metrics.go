@@ -1,5 +1,5 @@
-// Package metrics provides test execution metrics collection and aggregation.
-package metrics
+// Package testing provides test execution metrics collection and aggregation.
+package testing
 
 import (
 	"context"

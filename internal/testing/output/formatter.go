@@ -6,113 +6,90 @@ import (
 	"io"
 	"time"
 
-	"github.com/ethpandaops/xatu-cbt/internal/testing/format"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/table"
-	"github.com/fatih/color"
+	"github.com/sirupsen/logrus"
 )
 
-// Formatter provides clean, human-friendly output.
-type Formatter interface {
-	PrintPhase(phase string)
-	PrintProgress(message string, duration time.Duration)
-	PrintSuccess(message string)
-	PrintError(message string, err error)
-	PrintParquetSummary()
-	PrintTestResults()
-	PrintSummary()
+// MetricsProvider defines the interface for accessing test metrics.
+// This allows the output package to remain independent of the testing package.
+type MetricsProvider interface {
+	GetParquetMetrics() []ParquetLoadMetric
+	GetTestMetrics() []TestResultMetric
+	GetSummary() SummaryMetric
 }
 
-type formatter struct {
-	writer  io.Writer
-	verbose bool
-
-	// Table formatting components
-	metrics          metrics.Collector
-	tableRenderer    *table.Renderer
-	parquetFormatter *table.ParquetFormatter
-	resultsFormatter *table.ResultsFormatter
-	summaryFormatter *table.SummaryFormatter
-
-	// Colors
-	green  *color.Color
-	red    *color.Color
-	yellow *color.Color
-	blue   *color.Color
-	gray   *color.Color
+// Formatter provides clean, human-friendly output for test results.
+// This is the concrete implementation without an interface abstraction.
+type Formatter struct {
+	writer        io.Writer
+	verbose       bool
+	metrics       MetricsProvider
+	tableRenderer *TableRenderer
 }
 
 // NewFormatter creates a new output formatter.
 func NewFormatter(
+	log logrus.FieldLogger,
 	writer io.Writer,
 	verbose bool,
-	metricsCollector metrics.Collector,
-	tableRenderer *table.Renderer,
-	parquetFormatter *table.ParquetFormatter,
-	resultsFormatter *table.ResultsFormatter,
-	summaryFormatter *table.SummaryFormatter,
-) Formatter {
-	return &formatter{
-		writer:           writer,
-		verbose:          verbose,
-		metrics:          metricsCollector,
-		tableRenderer:    tableRenderer,
-		parquetFormatter: parquetFormatter,
-		resultsFormatter: resultsFormatter,
-		summaryFormatter: summaryFormatter,
-		green:            color.New(color.FgGreen),
-		red:              color.New(color.FgRed),
-		yellow:           color.New(color.FgYellow),
-		blue:             color.New(color.FgBlue),
-		gray:             color.New(color.FgHiBlack),
+	metricsCollector MetricsProvider,
+) *Formatter {
+	return &Formatter{
+		writer:        writer,
+		verbose:       verbose,
+		metrics:       metricsCollector,
+		tableRenderer: NewTableRenderer(log),
 	}
-}
-
-// PrintPhase prints phase separator.
-func (f *formatter) PrintPhase(phase string) {
-	_, _ = f.blue.Fprintf(f.writer, "\n▸ %s\n", phase) // Ignore write errors to stdout
-}
-
-// PrintProgress prints progress with checkmark and timing.
-func (f *formatter) PrintProgress(message string, duration time.Duration) {
-	if duration > 0 {
-		_, _ = f.gray.Fprintf(f.writer, "%s (%s)\n", message, format.Duration(duration)) // Ignore write errors to stdout
-	} else {
-		_, _ = fmt.Fprintf(f.writer, "%s\n", message) // Ignore write errors to stdout
-	}
-}
-
-// PrintSuccess prints green checkmark + message.
-func (f *formatter) PrintSuccess(message string) {
-	_, _ = f.green.Fprintf(f.writer, "%s\n", message) // Ignore write errors to stdout
-}
-
-// PrintError prints red X + message + error details.
-func (f *formatter) PrintError(message string, err error) {
-	_, _ = f.red.Fprintf(f.writer, "%s", message) // Ignore write errors to stdout
-	if err != nil {
-		_, _ = f.red.Fprintf(f.writer, ": %v", err) // Ignore write errors to stdout
-	}
-	_, _ = fmt.Fprintf(f.writer, "\n") // Ignore write errors to stdout
 }
 
 // PrintParquetSummary prints a table summary of parquet files loaded.
-func (f *formatter) PrintParquetSummary() {
+func (f *Formatter) PrintParquetSummary() {
 	parquetMetrics := f.metrics.GetParquetMetrics()
-	output := f.parquetFormatter.Format(parquetMetrics)
+	output := FormatParquetMetrics(f.tableRenderer, parquetMetrics)
 	_, _ = fmt.Fprintln(f.writer, output) // Ignore write errors to stdout
 }
 
 // PrintTestResults prints a table of test results.
-func (f *formatter) PrintTestResults() {
+func (f *Formatter) PrintTestResults() {
 	testMetrics := f.metrics.GetTestMetrics()
-	output := f.resultsFormatter.Format(testMetrics)
+	output := FormatTestResults(f.tableRenderer, testMetrics)
 	_, _ = fmt.Fprintln(f.writer, output) // Ignore write errors to stdout
 }
 
 // PrintSummary prints a summary table with aggregate statistics.
-func (f *formatter) PrintSummary() {
+func (f *Formatter) PrintSummary() {
 	summary := f.metrics.GetSummary()
-	output := f.summaryFormatter.Format(summary)
+	output := FormatSummary(f.tableRenderer, summary)
 	_, _ = fmt.Fprintln(f.writer, output) // Ignore write errors to stdout
+}
+
+// formatDuration formats a duration for human-readable output.
+// Handles microseconds, milliseconds, seconds, and minutes.
+func formatDuration(d time.Duration) string {
+	if d < time.Millisecond {
+		return fmt.Sprintf("%.0fµs", float64(d.Microseconds()))
+	}
+	if d < time.Second {
+		return fmt.Sprintf("%.0fms", float64(d.Milliseconds()))
+	}
+	if d < time.Minute {
+		return fmt.Sprintf("%.1fs", d.Seconds())
+	}
+
+	return fmt.Sprintf("%.1fm", d.Minutes())
+}
+
+// formatBytes converts bytes to human-readable format (KiB, MiB, GiB, etc.)
+func formatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
 }

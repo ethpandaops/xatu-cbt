@@ -13,12 +13,6 @@ import (
 	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/ethpandaops/xatu-cbt/internal/testing"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/assertion"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/cache"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/cbt"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/database"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/dependency"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/testcfg"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/testdef"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -99,9 +93,9 @@ func runTestsWithConfig(
 	ctx context.Context,
 	cmd *cobra.Command,
 	_ int,
-	testRunner func(testing.Orchestrator) ([]*testing.TestResult, error),
+	testRunner func(*testing.Orchestrator) ([]*testing.TestResult, error),
 ) error {
-	orchestrator, err := setupOrchestrator(cmd)
+	orchestrator, err := setupOrchestrator(ctx, cmd)
 	if err != nil {
 		return fmt.Errorf("setting up orchestrator: %w", err)
 	}
@@ -157,7 +151,7 @@ func runTestModels(cmd *cobra.Command, args []string) error {
 		modelNames[i] = strings.TrimSpace(name)
 	}
 
-	return runTestsWithConfig(ctx, cmd, len(modelNames), func(orchestrator testing.Orchestrator) ([]*testing.TestResult, error) {
+	return runTestsWithConfig(ctx, cmd, len(modelNames), func(orchestrator *testing.Orchestrator) ([]*testing.TestResult, error) {
 		return orchestrator.TestModels(ctx, testNetwork, testSpec, modelNames, testConcurrency)
 	})
 }
@@ -166,12 +160,12 @@ func runTestSpec(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
-	return runTestsWithConfig(ctx, cmd, 0, func(orchestrator testing.Orchestrator) ([]*testing.TestResult, error) {
+	return runTestsWithConfig(ctx, cmd, 0, func(orchestrator *testing.Orchestrator) ([]*testing.TestResult, error) {
 		return orchestrator.TestSpec(ctx, testNetwork, testSpec, testConcurrency)
 	})
 }
 
-func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
+func setupOrchestrator(ctx context.Context, _ *cobra.Command) (*testing.Orchestrator, error) {
 	log := newLogger(testVerbose)
 
 	wd, err := os.Getwd()
@@ -185,48 +179,60 @@ func setupOrchestrator(_ *cobra.Command) (testing.Orchestrator, error) {
 	}
 
 	xatuMigrationDir := filepath.Join(xatuRepoPath, config.XatuMigrationsPath)
-	metricsCollector := metrics.NewCollector(log)
-	testConfig := testcfg.DefaultTestConfig()
+	metricsCollector := testing.NewCollector(log)
+	testConfig := testing.DefaultTestConfig()
 	configLoader := testdef.NewLoader(log, filepath.Join(wd, config.TestsDir))
-	parser := dependency.NewParser(log)
-	resolver := dependency.NewResolver(
-		log,
+
+	// Create and initialize model cache
+	modelCache := testing.NewModelCache(log)
+	if err := modelCache.LoadAll(
+		ctx,
 		filepath.Join(wd, config.ModelsExternalDir),
 		filepath.Join(wd, config.ModelsTransformationsDir),
-		parser,
+	); err != nil {
+		return nil, fmt.Errorf("loading models: %w", err)
+	}
+
+	parquetCache := testing.NewParquetCache(log, testConfig, testCacheDir, testCacheSize, metricsCollector)
+	dbManager := testing.NewDatabaseManager(
+		log,
+		testConfig,
+		xatuClickhouseURL,
+		cbtClickhouseURL,
+		xatuMigrationDir,
+		testForceRebuild,
 	)
-	parquetCache := cache.NewParquetCache(log, testConfig, testCacheDir, testCacheSize, metricsCollector)
-	migrationRunner := database.NewMigrationRunner(log, filepath.Join(wd, config.MigrationsDir), "")
-	dbManager := database.NewManager(log, testConfig, xatuClickhouseURL, cbtClickhouseURL, migrationRunner, xatuMigrationDir, testForceRebuild)
-	configGen := cbt.NewConfigGenerator(
+	cbtEngine := testing.NewCBTEngine(
 		log,
-		filepath.Join(wd, config.ModelsExternalDir),
-		filepath.Join(wd, config.ModelsTransformationsDir),
+		testConfig,
+		modelCache,
 		cbtClickhouseURL,
 		redisURL,
+		filepath.Join(wd, config.ModelsDir),
 	)
-	cbtEngine := cbt.NewEngine(log, testConfig, configGen, cbtClickhouseURL, redisURL, filepath.Join(wd, config.ModelsDir))
 	assertionRunner := assertion.NewRunner(log, cbtClickhouseURL, 5, 30*time.Second)
 
-	orchestrator := testing.NewOrchestrator(
-		log,
-		testVerbose,
-		testCleanupTestDB,
-		os.Stdout,
-		metricsCollector,
-		configLoader,
-		resolver,
-		parquetCache,
-		dbManager,
-		cbtEngine,
-		assertionRunner,
-	)
+	// Use simplified config struct for orchestrator initialization
+	orchestrator := testing.NewOrchestrator(&testing.OrchestratorConfig{
+		Logger:           log,
+		Verbose:          testVerbose,
+		CleanupTestDB:    testCleanupTestDB,
+		Writer:           os.Stdout,
+		MetricsCollector: metricsCollector,
+		ConfigLoader:     configLoader,
+		ModelCache:       modelCache,
+		ParquetCache:     parquetCache,
+		DBManager:        dbManager,
+		CBTEngine:        cbtEngine,
+		AssertionRunner:  assertionRunner,
+		MigrationDir:     filepath.Join(wd, config.MigrationsDir),
+	})
 
 	return orchestrator, nil
 }
 
 // setupCleanupHandler sets up signal handling for graceful cleanup on Ctrl+C.
-func setupCleanupHandler(orchestrator testing.Orchestrator) {
+func setupCleanupHandler(orchestrator *testing.Orchestrator) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	go func() {

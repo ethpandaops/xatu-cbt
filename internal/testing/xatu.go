@@ -1,5 +1,5 @@
-// Package xatu provides Xatu repository management and migration handling.
-package xatu
+// Package testing provides Xatu repository management and migration handling.
+package testing
 
 import (
 	"bytes"
@@ -41,11 +41,6 @@ func NewRepoManager(log logrus.FieldLogger, workDir, repoURL, ref string) *RepoM
 		ref:     ref,
 		log:     log.WithField("component", "xatu_repo"),
 	}
-}
-
-// GetMigrationDir returns the path to xatu's migration directory.
-func (r *RepoManager) GetMigrationDir(repoPath string) string {
-	return filepath.Join(repoPath, "deploy", "migrations", "clickhouse")
 }
 
 // EnsureRepo ensures the xatu repository is cloned and at the correct ref.

@@ -1,4 +1,5 @@
-package cache
+// Package testing provides end-to-end test orchestration and execution.
+package testing
 
 import (
 	"context"
@@ -13,22 +14,28 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/testcfg"
 	"github.com/sirupsen/logrus"
 )
 
 // ParquetCache manages local caching of parquet files.
-type ParquetCache interface {
-	Start(ctx context.Context) error
-	Stop() error
-	Get(ctx context.Context, url, tableName string) (string, error)
-	Prefetch(ctx context.Context, urls map[string]string) error
-	Cleanup() error
+// This is the concrete implementation without an interface abstraction.
+type ParquetCache struct {
+	cacheDir     string
+	maxSizeBytes int64
+	httpClient   *http.Client
+	log          logrus.FieldLogger
+	metrics      Collector
+	config       *TestConfig
+
+	mu       sync.RWMutex
+	manifest *cacheManifest
+
+	// Concurrent download protection
+	downloading sync.Map // URL → chan struct{}
 }
 
-// Entry represents metadata for a cached file.
-type Entry struct {
+// cacheEntry represents metadata for a cached file.
+type cacheEntry struct {
 	URL        string    `json:"url"`
 	SHA256     string    `json:"sha256"`
 	Size       int64     `json:"size"`
@@ -37,24 +44,9 @@ type Entry struct {
 	Table      string    `json:"table"`
 }
 
-// Manifest tracks all cached files.
-type Manifest struct {
-	Entries map[string]*Entry `json:"entries"` // Key: SHA256
-}
-
-type parquetCache struct {
-	cacheDir     string
-	maxSizeBytes int64
-	httpClient   *http.Client
-	log          logrus.FieldLogger
-	metrics      metrics.Collector
-	config       *testcfg.TestConfig
-
-	mu       sync.RWMutex
-	manifest *Manifest
-
-	// Concurrent download protection
-	downloading sync.Map // URL → chan struct{}
+// cacheManifest tracks all cached files.
+type cacheManifest struct {
+	Entries map[string]*cacheEntry `json:"entries"` // Key: SHA256
 }
 
 const (
@@ -62,12 +54,18 @@ const (
 )
 
 // NewParquetCache creates a new parquet cache manager.
-func NewParquetCache(log logrus.FieldLogger, cfg *testcfg.TestConfig, cacheDir string, maxSizeBytes int64, metricsCollector metrics.Collector) ParquetCache {
+func NewParquetCache(
+	log logrus.FieldLogger,
+	cfg *TestConfig,
+	cacheDir string,
+	maxSizeBytes int64,
+	metricsCollector Collector,
+) *ParquetCache {
 	if cfg == nil {
-		cfg = testcfg.DefaultTestConfig()
+		cfg = DefaultTestConfig()
 	}
 
-	return &parquetCache{
+	return &ParquetCache{
 		cacheDir:     cacheDir,
 		maxSizeBytes: maxSizeBytes,
 		httpClient: &http.Client{
@@ -76,18 +74,19 @@ func NewParquetCache(log logrus.FieldLogger, cfg *testcfg.TestConfig, cacheDir s
 		log:      log.WithField("component", "parquet_cache"),
 		metrics:  metricsCollector,
 		config:   cfg,
-		manifest: &Manifest{Entries: make(map[string]*Entry)},
+		manifest: &cacheManifest{Entries: make(map[string]*cacheEntry)},
 	}
 }
 
-func (c *parquetCache) Start(_ context.Context) error {
+// Start initializes the parquet cache.
+func (c *ParquetCache) Start(_ context.Context) error {
 	if err := os.MkdirAll(c.cacheDir, 0o755); err != nil { //nolint:gosec // G301: Cache directory with standard permissions
 		return fmt.Errorf("creating cache directory: %w", err)
 	}
 
 	if err := c.loadManifest(); err != nil {
 		c.log.WithError(err).Warn("failed to load manifest, starting with empty cache")
-		c.manifest = &Manifest{Entries: make(map[string]*Entry)}
+		c.manifest = &cacheManifest{Entries: make(map[string]*cacheEntry)}
 	}
 
 	c.log.WithFields(logrus.Fields{
@@ -98,7 +97,8 @@ func (c *parquetCache) Start(_ context.Context) error {
 	return nil
 }
 
-func (c *parquetCache) Stop() error {
+// Stop saves the manifest and cleans up resources.
+func (c *ParquetCache) Stop() error {
 	c.log.Debug("stopping parquet cache")
 
 	c.mu.RLock()
@@ -111,7 +111,8 @@ func (c *parquetCache) Stop() error {
 	return nil
 }
 
-func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, error) {
+// Get retrieves a cached file or downloads it if not present.
+func (c *ParquetCache) Get(ctx context.Context, url, tableName string) (string, error) {
 	startTime := time.Now()
 
 	urlHash := c.hashURL(url)
@@ -133,9 +134,9 @@ func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, 
 				"cache_hit": "true",
 			}).Debug("fetching parquet file")
 
-			c.metrics.RecordParquetLoad(metrics.ParquetLoadMetric{
+			c.metrics.RecordParquetLoad(ParquetLoadMetric{
 				Table:     tableName,
-				Source:    metrics.SourceCache,
+				Source:    SourceCache,
 				SizeBytes: fileInfo.Size(),
 				Duration:  time.Since(startTime),
 				Timestamp: time.Now(),
@@ -159,83 +160,15 @@ func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, 
 	return c.download(ctx, url, urlHash, tableName)
 }
 
-// Prefetch downloads multiple files concurrently.
-func (c *parquetCache) Prefetch(ctx context.Context, urls map[string]string) error {
-	type job struct {
-		url       string
-		tableName string
-	}
-
-	jobs := make(chan job, len(urls))
-	errors := make(chan error, len(urls))
-	var wg sync.WaitGroup
-
-	for i := 0; i < c.config.MaxConcurrentDownloads; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for j := range jobs {
-				if _, err := c.Get(ctx, j.url, j.tableName); err != nil {
-					errors <- fmt.Errorf("downloading %s: %w", j.tableName, err)
-					return
-				}
-			}
-		}()
-	}
-
-	for tableName, url := range urls {
-		jobs <- job{url: url, tableName: tableName}
-	}
-	close(jobs)
-
-	wg.Wait()
-	close(errors)
-
-	for err := range errors {
-		return err
-	}
-
-	return nil
-}
-
-// Cleanup evicts old entries if cache size exceeds max.
-func (c *parquetCache) Cleanup() error {
-	c.log.Debug("running cache cleanup")
-
-	manager := NewManager(c.cacheDir, c.log)
-	currentSize := manager.GetCurrentSize(c.manifest)
-
-	if currentSize > c.maxSizeBytes {
-		c.log.WithFields(logrus.Fields{
-			"current_size": currentSize,
-			"max_size":     c.maxSizeBytes,
-		}).Info("cache size exceeded, evicting old entries")
-
-		deleted, err := manager.Evict(c.manifest, c.maxSizeBytes)
-		if err != nil {
-			return fmt.Errorf("evicting cache entries: %w", err)
-		}
-
-		c.log.WithField("deleted", len(deleted)).Info("evicted cache entries")
-	}
-
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	return c.saveManifest()
-}
-
 // download downloads a file and adds it to the cache
-func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName string) (string, error) {
+func (c *ParquetCache) download(ctx context.Context, url, urlHash, tableName string) (string, error) {
 	// Concurrent download protection
 	downloadCh := make(chan struct{})
 	actual, loaded := c.downloading.LoadOrStore(url, downloadCh)
 	if loaded {
-		// Another goroutine is downloading, wait for it
 		select {
 		case _, ok := <-actual.(chan struct{}): //nolint:errcheck // We're checking ok to determine channel closure
 			if !ok {
-				// Channel closed, download complete, retry Get
 				return c.Get(ctx, url, tableName)
 			}
 			return c.Get(ctx, url, tableName)
@@ -277,12 +210,12 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 
 	written, err := io.Copy(writer, resp.Body)
 	if err != nil {
-		_ = os.Remove(tmpPath) // Ignore cleanup error, already returning an error
+		_ = os.Remove(tmpPath)
 		return "", fmt.Errorf("writing file: %w", err)
 	}
 
 	if err := tmpFile.Close(); err != nil {
-		_ = os.Remove(tmpPath) // Ignore cleanup error, already returning an error
+		_ = os.Remove(tmpPath)
 		return "", fmt.Errorf("closing temp file: %w", err)
 	}
 
@@ -290,12 +223,12 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 
 	finalPath := filepath.Join(c.cacheDir, urlHash)
 	if err := os.Rename(tmpPath, finalPath); err != nil {
-		_ = os.Remove(tmpPath) // Ignore cleanup error, already returning an error
+		_ = os.Remove(tmpPath)
 		return "", fmt.Errorf("moving file to cache: %w", err)
 	}
 
 	c.mu.Lock()
-	c.manifest.Entries[urlHash] = &Entry{
+	c.manifest.Entries[urlHash] = &cacheEntry{
 		URL:        url,
 		SHA256:     sha256Hash,
 		Size:       written,
@@ -318,10 +251,9 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 		"path":     finalPath,
 	}).Debug("downloaded parquet file")
 
-	// Record S3 download metric
-	c.metrics.RecordParquetLoad(metrics.ParquetLoadMetric{
+	c.metrics.RecordParquetLoad(ParquetLoadMetric{
 		Table:     tableName,
-		Source:    metrics.SourceS3,
+		Source:    SourceS3,
 		SizeBytes: written,
 		Duration:  duration,
 		Timestamp: time.Now(),
@@ -331,7 +263,7 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 }
 
 // updateLastUsed updates the last used timestamp for a cache entry
-func (c *parquetCache) updateLastUsed(urlHash string) error {
+func (c *ParquetCache) updateLastUsed(urlHash string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -343,18 +275,18 @@ func (c *parquetCache) updateLastUsed(urlHash string) error {
 }
 
 // loadManifest loads the cache manifest from disk
-func (c *parquetCache) loadManifest() error {
+func (c *ParquetCache) loadManifest() error {
 	manifestPath := filepath.Join(c.cacheDir, manifestFilename)
 
 	data, err := os.ReadFile(manifestPath) //nolint:gosec // G304: Reading cache manifest from safe path
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil // No manifest yet
+			return nil
 		}
 		return fmt.Errorf("reading manifest: %w", err)
 	}
 
-	var manifest Manifest
+	var manifest cacheManifest
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return fmt.Errorf("parsing manifest: %w", err)
 	}
@@ -365,7 +297,7 @@ func (c *parquetCache) loadManifest() error {
 
 // saveManifest saves the cache manifest to disk
 // Caller must hold at least a read lock (c.mu.RLock() or c.mu.Lock())
-func (c *parquetCache) saveManifest() error {
+func (c *ParquetCache) saveManifest() error {
 	manifestPath := filepath.Join(c.cacheDir, manifestFilename)
 
 	data, err := json.MarshalIndent(c.manifest, "", "  ")
@@ -380,8 +312,8 @@ func (c *parquetCache) saveManifest() error {
 	return nil
 }
 
-// hashURL generates a SHA256 hash of the URL for cache key
-func (c *parquetCache) hashURL(url string) string {
+// hashURL generates a SHA256 hash of the URL for cache key.
+func (c *ParquetCache) hashURL(url string) string {
 	hash := sha256.Sum256([]byte(url))
 	return hex.EncodeToString(hash[:])
 }
