@@ -317,6 +317,36 @@ func BuildListFctBlockDataColumnSidecarFirstSeenByNodeQuery(req *ListFctBlockDat
 		}
 	}
 
+	// Add filter for column: row_count
+	if req.RowCount != nil {
+		switch filter := req.RowCount.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("row_count", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("row_count", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("row_count", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("row_count", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("row_count", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("row_count", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("row_count", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("row_count", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("row_count", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: username
 	if req.Username != nil {
 		switch filter := req.Username.Filter.(type) {
@@ -774,7 +804,7 @@ func BuildListFctBlockDataColumnSidecarFirstSeenByNodeQuery(req *ListFctBlockDat
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "source", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "seen_slot_start_diff", "block_root", "column_index", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
+		validFields := []string{"updated_date_time", "source", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "seen_slot_start_diff", "block_root", "column_index", "row_count", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -786,7 +816,7 @@ func BuildListFctBlockDataColumnSidecarFirstSeenByNodeQuery(req *ListFctBlockDat
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "column_index", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "column_index", "row_count", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
 
 	return BuildParameterizedQuery("fct_block_data_column_sidecar_first_seen_by_node", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -806,7 +836,7 @@ func BuildGetFctBlockDataColumnSidecarFirstSeenByNodeQuery(req *GetFctBlockDataC
 	orderByClause := " ORDER BY slot_start_date_time, block_root, column_index, meta_client_name"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "column_index", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "column_index", "row_count", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_data_column_sidecar_first_seen_by_node", columns, qb, orderByClause, 1, 0, options...)

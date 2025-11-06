@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,6 +46,7 @@ type parquetCache struct {
 	maxSizeBytes int64
 	httpClient   *http.Client
 	log          logrus.FieldLogger
+	metrics      metrics.Collector
 
 	mu       sync.RWMutex
 	manifest *CacheManifest
@@ -54,13 +56,13 @@ type parquetCache struct {
 }
 
 const (
-	manifestFilename      = "manifest.json"
-	defaultHTTPTimeout    = 10 * time.Minute
+	manifestFilename       = "manifest.json"
+	defaultHTTPTimeout     = 10 * time.Minute
 	maxConcurrentDownloads = 10
 )
 
 // NewParquetCache creates a new parquet cache manager
-func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64) ParquetCache {
+func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64, metricsCollector metrics.Collector) ParquetCache {
 	return &parquetCache{
 		cacheDir:     cacheDir,
 		maxSizeBytes: maxSizeBytes,
@@ -68,6 +70,7 @@ func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64
 			Timeout: defaultHTTPTimeout,
 		},
 		log:      log.WithField("component", "parquet_cache"),
+		metrics:  metricsCollector,
 		manifest: &CacheManifest{Entries: make(map[string]*CacheEntry)},
 	}
 }
@@ -108,34 +111,42 @@ func (c *parquetCache) Stop() error {
 
 // Get returns the local path to a parquet file, downloading if needed
 func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, error) {
+	startTime := time.Now()
+
 	c.log.WithFields(logrus.Fields{
 		"url":   url,
 		"table": tableName,
-	}).Info("getting parquet file")
+	}).Debug("getting parquet file")
 
 	// Calculate URL hash for cache key
 	urlHash := c.hashURL(url)
-	c.log.WithField("hash", urlHash).Debug("calculated URL hash")
 
 	// Check if file exists in cache
 	c.mu.RLock()
 	_, exists := c.manifest.Entries[urlHash]
 	c.mu.RUnlock()
 
-	c.log.WithField("exists", exists).Debug("checked cache")
-
 	if exists {
 		// Verify file still exists on disk
 		filePath := filepath.Join(c.cacheDir, urlHash)
-		c.log.WithField("path", filePath).Debug("checking if file exists on disk")
-		if _, err := os.Stat(filePath); err == nil {
+		if fileInfo, err := os.Stat(filePath); err == nil {
 			// Update last used time
 			c.log.Debug("updating last used time")
 			if err := c.updateLastUsed(urlHash); err != nil {
 				c.log.WithError(err).Warn("failed to update last used time")
 			}
 
-			c.log.WithField("path", filePath).Info("cache hit")
+			c.log.WithField("path", filePath).Debug("cache hit")
+
+			// Record cache hit metric
+			c.metrics.RecordParquetLoad(metrics.ParquetLoadMetric{
+				Table:     tableName,
+				Source:    metrics.SourceCache,
+				SizeBytes: fileInfo.Size(),
+				Duration:  time.Since(startTime),
+				Timestamp: time.Now(),
+			})
+
 			return filePath, nil
 		}
 
@@ -147,6 +158,7 @@ func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, 
 
 	// Cache miss - download file
 	c.log.WithField("url", url).Debug("cache miss, downloading")
+
 	return c.download(ctx, url, urlHash, tableName)
 }
 
@@ -312,12 +324,23 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 	}
 	c.mu.Unlock()
 
+	duration := time.Since(start)
+
 	c.log.WithFields(logrus.Fields{
 		"url":      url,
 		"size":     written,
-		"duration": time.Since(start),
+		"duration": duration,
 		"path":     finalPath,
 	}).Info("downloaded parquet file")
+
+	// Record S3 download metric
+	c.metrics.RecordParquetLoad(metrics.ParquetLoadMetric{
+		Table:     tableName,
+		Source:    metrics.SourceS3,
+		SizeBytes: written,
+		Duration:  duration,
+		Timestamp: time.Now(),
+	})
 
 	return finalPath, nil
 }

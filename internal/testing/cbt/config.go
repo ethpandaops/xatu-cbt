@@ -142,8 +142,8 @@ func (g *configGenerator) GenerateForModels(network, dbName string, models []str
 
 	// Set model paths and default databases
 	config.Models.External.Paths = externalPaths
-	config.Models.External.DefaultCluster = "xatu_cluster"  // External data is on remote xatu cluster
-	config.Models.External.DefaultDatabase = "default"      // External data is in default database
+	config.Models.External.DefaultCluster = "xatu_cluster" // External data is on remote xatu cluster
+	config.Models.External.DefaultDatabase = "default"     // External data is in default database
 	config.Models.Transformations.Paths = transformationPaths
 	config.Models.Transformations.DefaultDatabase = dbName // Transformations use test database
 
@@ -264,16 +264,16 @@ func (g *configGenerator) buildTestOverrides(models []string) map[string]*ModelO
 		return g.buildDefaultTestOverrides(models)
 	}
 
+	g.log.WithFields(logrus.Fields{
+		"from_file": len(overridesConfig.Models.Overrides),
+	}).Info("applying overrides.tests.yaml")
+
 	// Use ALL overrides from overrides.tests.yaml
 	// Don't filter by test model list - CBT discovers dependencies automatically
 	// and those dependencies need their overrides applied too (e.g., lag=0 for external models)
 	allOverrides := make(map[string]*ModelOverrides)
 	for modelName, override := range overridesConfig.Models.Overrides {
 		allOverrides[modelName] = override
-		g.log.WithFields(logrus.Fields{
-			"model":    modelName,
-			"override": override,
-		}).Debug("adding model override from overrides.tests.yaml")
 	}
 
 	// Add default fast schedules for transformation models not in overrides file
@@ -291,17 +291,8 @@ func (g *configGenerator) buildTestOverrides(models []string) map[string]*ModelO
 				"forwardfill": "@every 5s",
 				"backfill":    "@every 5s",
 			}
-			g.log.WithFields(logrus.Fields{
-				"model":     modelName,
-				"schedules": "5s",
-			}).Info("adding default fast schedule override for transformation model")
 		}
 	}
-
-	g.log.WithFields(logrus.Fields{
-		"from_file": len(overridesConfig.Models.Overrides),
-		"total":     len(allOverrides),
-	}).Info("loaded test overrides from overrides.tests.yaml")
 
 	return allOverrides
 }

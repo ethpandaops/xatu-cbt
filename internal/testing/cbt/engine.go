@@ -92,13 +92,12 @@ func (e *engine) Stop() error {
 }
 
 // RunTransformations executes CBT transformations for specified models
-func (e *engine) RunTransformations(ctx context.Context, network, dbName string, configModels, waitModels []string) error {
-	e.log.WithFields(logrus.Fields{
-		"network":       network,
-		"database":      dbName,
-		"config_models": len(configModels),
-		"wait_models":   len(waitModels),
-	}).Info("running CBT transformations")
+func (e *engine) RunTransformations(ctx context.Context, network, dbName string, allModels, transformationModels []string) error {
+	logCtx := e.log.WithFields(logrus.Fields{
+		"database": dbName,
+		"models":   len(transformationModels),
+	})
+	logCtx.Info("running transformations")
 
 	start := time.Now()
 
@@ -110,29 +109,18 @@ func (e *engine) RunTransformations(ctx context.Context, network, dbName string,
 	defer os.RemoveAll(tmpDir)
 
 	e.configPath = filepath.Join(tmpDir, "config.yml")
-	if err := e.configGen.GenerateForModels(network, dbName, configModels, e.configPath); err != nil {
+	if err := e.configGen.GenerateForModels(network, dbName, allModels, e.configPath); err != nil {
 		return fmt.Errorf("generating CBT config: %w", err)
 	}
 
-	// Debug: print generated config
-	configContent, _ := os.ReadFile(e.configPath)
-	e.log.WithFields(logrus.Fields{
-		"config_path": e.configPath,
-		"config":      string(configContent),
-	}).Debug("generated CBT config")
-
-	e.log.WithField("config", e.configPath).Debug("generated CBT config")
-
 	// Execute CBT via docker, but only wait for test models
-	if err := e.runDockerCBT(ctx, network, dbName, waitModels, e.configPath); err != nil {
+	if err := e.runDockerCBT(ctx, network, dbName, transformationModels, e.configPath); err != nil {
 		return fmt.Errorf("running CBT docker: %w", err)
 	}
 
-	e.log.WithFields(logrus.Fields{
-		"database": dbName,
-		"models":   len(waitModels),
+	logCtx.WithFields(logrus.Fields{
 		"duration": time.Since(start),
-	}).Info("CBT transformations completed")
+	}).Info("transformations completed")
 
 	return nil
 }
@@ -212,15 +200,13 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 		e.runningContainersMu.Unlock()
 	}()
 
-	e.log.WithField("container", containerName).Info("CBT container started, waiting for transformations to complete...")
-
 	// Wait for transformations to complete by monitoring admin table
 	if err := e.waitForTransformations(ctx, dbName, models); err != nil {
 		e.log.WithError(err).Warn("error waiting for transformations, continuing anyway")
 	}
 
 	// Kill the container
-	e.log.Debug("killing CBT container")
+	e.log.Debug("killing cbt container")
 
 	return nil
 }
@@ -387,7 +373,6 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 			}).Debug("checking transformation progress")
 
 			if len(pending) == 0 {
-				e.log.Info("all transformations completed")
 				return nil
 			}
 		}

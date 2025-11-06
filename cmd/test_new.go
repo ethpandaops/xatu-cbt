@@ -18,7 +18,7 @@ import (
 	testconfig "github.com/ethpandaops/xatu-cbt/internal/testing/config"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/database"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/dependency"
-	"github.com/ethpandaops/xatu-cbt/internal/testing/output"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -53,6 +53,7 @@ var testCmd = &cobra.Command{
 This command runs tests against a persistent ClickHouse cluster using ephemeral
 test databases for complete isolation. Tests automatically resolve dependencies
 and only load required parquet files.`,
+	SilenceUsage: true,
 }
 
 // testModelsCmd tests specific models
@@ -72,8 +73,9 @@ Models are specified as a comma-separated list. Each model test:
 Example:
   xatu-cbt test models fct_block --spec pectra --network mainnet
   xatu-cbt test models fct_block,fct_attestation --spec pectra`,
-	Args: cobra.ExactArgs(1),
-	RunE: runTestModels,
+	Args:         cobra.ExactArgs(1),
+	RunE:         runTestModels,
+	SilenceUsage: true,
 }
 
 // testSpecCmd tests all models in a spec
@@ -88,7 +90,8 @@ them sequentially. Results are aggregated at the end.
 Example:
   xatu-cbt test spec --spec pectra --network mainnet
   xatu-cbt test spec --spec fusaka --network sepolia`,
-	RunE: runTestSpec,
+	RunE:         runTestSpec,
+	SilenceUsage: true,
 }
 
 // setupCleanupHandler sets up signal handling for graceful cleanup on Ctrl+C.
@@ -103,8 +106,9 @@ func setupCleanupHandler(orchestrator testing.Orchestrator) {
 	}()
 }
 
-// runTestsWithConfig sets up the orchestrator, runs tests, and prints results.
+// runTestsWithConfig sets up the orchestrator, runs tests, and returns results.
 // The testRunner function is called to execute the actual tests.
+// Output is handled by the orchestrator's internal formatter.
 func runTestsWithConfig(
 	ctx context.Context,
 	cmd *cobra.Command,
@@ -112,7 +116,7 @@ func runTestsWithConfig(
 	testRunner func(testing.Orchestrator) ([]*testing.TestResult, error),
 ) error {
 	// Setup orchestrator
-	orchestrator, formatter, err := setupOrchestrator(cmd)
+	orchestrator, err := setupOrchestrator(cmd)
 	if err != nil {
 		return fmt.Errorf("setting up orchestrator: %w", err)
 	}
@@ -126,22 +130,11 @@ func runTestsWithConfig(
 		return fmt.Errorf("starting orchestrator: %w", err)
 	}
 
-	// Print header
-	formatter.PrintHeader(testNetwork, testSpec, modelCount)
-
-	// Run tests
+	// Run tests (orchestrator handles all output internally)
 	results, err := testRunner(orchestrator)
 	if err != nil {
 		return fmt.Errorf("running tests: %w", err)
 	}
-
-	// Print results
-	for _, result := range results {
-		printResult(result, formatter)
-	}
-
-	// Print summary
-	printSummary(results, formatter)
 
 	// Return exit code
 	if hasFailures(results) {
@@ -200,22 +193,25 @@ func runTestSpec(cmd *cobra.Command, args []string) error {
 	})
 }
 
-func setupOrchestrator(cmd *cobra.Command) (testing.Orchestrator, output.Formatter, error) {
+func setupOrchestrator(cmd *cobra.Command) (testing.Orchestrator, error) {
 	// Setup logger
 	log := newLogger(testVerbose)
 
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
-		return nil, nil, fmt.Errorf("getting working directory: %w", err)
+		return nil, fmt.Errorf("getting working directory: %w", err)
 	}
 
 	// Initialize xatu repository
 	xatuRepoPath, err := ensureXatuRepo(log, wd, xatuRepoURL, xatuRef)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	xatuMigrationDir := filepath.Join(xatuRepoPath, config.XatuMigrationsPath)
+
+	// Create metrics collector
+	metricsCollector := metrics.NewCollector(log)
 
 	// Initialize components
 	configLoader := testconfig.NewLoader(log, filepath.Join(wd, config.TestsDir))
@@ -226,8 +222,8 @@ func setupOrchestrator(cmd *cobra.Command) (testing.Orchestrator, output.Formatt
 		filepath.Join(wd, config.ModelsTransformationsDir),
 		parser,
 	)
-	parquetCache := cache.NewParquetCache(log, testCacheDir, testCacheSize)
-	migrationRunner := database.NewMigrationRunner(log, filepath.Join(wd, config.MigrationsDir), "") // Empty prefix for xatu-cbt migrations
+	parquetCache := cache.NewParquetCache(log, testCacheDir, testCacheSize, metricsCollector)
+	migrationRunner := database.NewMigrationRunner(log, filepath.Join(wd, config.MigrationsDir), "")
 	dbManager := database.NewManager(log, xatuClickhouseURL, cbtClickhouseURL, migrationRunner, xatuMigrationDir, testForceRebuild)
 	configGen := cbt.NewConfigGenerator(
 		log,
@@ -239,9 +235,12 @@ func setupOrchestrator(cmd *cobra.Command) (testing.Orchestrator, output.Formatt
 	cbtEngine := cbt.NewEngine(log, configGen, cbtClickhouseURL, redisURL, filepath.Join(wd, config.ModelsDir))
 	assertionRunner := assertion.NewRunner(log, cbtClickhouseURL, 5, 30*time.Second)
 
-	// Create orchestrator
+	// Create orchestrator with verbose flag, writer, and metrics collector
 	orchestrator := testing.NewOrchestrator(
 		log,
+		testVerbose,
+		os.Stdout,
+		metricsCollector,
 		configLoader,
 		resolver,
 		parquetCache,
@@ -250,55 +249,7 @@ func setupOrchestrator(cmd *cobra.Command) (testing.Orchestrator, output.Formatt
 		assertionRunner,
 	)
 
-	// Create formatter
-	formatter := output.NewFormatter(os.Stdout, testVerbose)
-
-	return orchestrator, formatter, nil
-}
-
-func printResult(result *testing.TestResult, formatter output.Formatter) {
-	if result.Success {
-		formatter.PrintSuccess(fmt.Sprintf("✓ %s", result.Model))
-	} else {
-		msg := fmt.Sprintf("✗ %s", result.Model)
-		if result.Error != nil {
-			formatter.PrintError(msg, result.Error)
-		} else if result.AssertionResults != nil && result.AssertionResults.Failed > 0 {
-			formatter.PrintError(msg, fmt.Errorf("%d/%d assertions failed",
-				result.AssertionResults.Failed,
-				result.AssertionResults.Total))
-		}
-	}
-
-	// Print assertion details if verbose
-	if testVerbose && result.AssertionResults != nil {
-		for _, ar := range result.AssertionResults.Results {
-			if ar.Passed {
-				formatter.PrintProgress(fmt.Sprintf("  ✓ %s", ar.Name), ar.Duration)
-			} else {
-				formatter.PrintError(fmt.Sprintf("  ✗ %s", ar.Name), ar.Error)
-			}
-		}
-	}
-}
-
-func printSummary(results []*testing.TestResult, formatter output.Formatter) {
-	total := len(results)
-	passed := 0
-	failed := 0
-
-	for _, result := range results {
-		if result.Success {
-			passed++
-		} else {
-			failed++
-		}
-	}
-
-	formatter.PrintPhase("Summary")
-	fmt.Printf("\nModels tested: %d\n", total)
-	fmt.Printf("Passed: %d\n", passed)
-	fmt.Printf("Failed: %d\n", failed)
+	return orchestrator, nil
 }
 
 func hasFailures(results []*testing.TestResult) bool {

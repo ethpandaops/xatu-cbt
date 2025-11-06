@@ -50,9 +50,9 @@ type runner struct {
 }
 
 const (
-	defaultWorkers       = 5
-	defaultTimeout       = 30 * time.Second
-	defaultSyncMaxWait   = 30 * time.Second // ANTI-FLAKE #10
+	defaultWorkers          = 5
+	defaultTimeout          = 30 * time.Second
+	defaultSyncMaxWait      = 30 * time.Second       // ANTI-FLAKE #10
 	defaultSyncPollInterval = 500 * time.Millisecond // ANTI-FLAKE #10
 )
 
@@ -165,7 +165,6 @@ func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []
 	}
 
 	r.log.WithFields(logrus.Fields{
-		"database": dbName,
 		"total":    result.Total,
 		"passed":   result.Passed,
 		"failed":   result.Failed,

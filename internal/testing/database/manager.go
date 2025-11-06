@@ -28,12 +28,12 @@ type Manager interface {
 }
 
 type manager struct {
-	xatuConnStr        string // Connection to xatu-clickhouse cluster (external data)
-	cbtConnStr         string // Connection to xatu-cbt-clickhouse cluster (transformations)
-	migrationRunner    MigrationRunner
-	xatuMigrationDir   string // Path to xatu migrations directory
-	forceRebuild       bool   // Force rebuild of xatu cluster even if already prepared
-	log                logrus.FieldLogger
+	xatuConnStr      string // Connection to xatu-clickhouse cluster (external data)
+	cbtConnStr       string // Connection to xatu-cbt-clickhouse cluster (transformations)
+	migrationRunner  MigrationRunner
+	xatuMigrationDir string // Path to xatu migrations directory
+	forceRebuild     bool   // Force rebuild of xatu cluster even if already prepared
+	log              logrus.FieldLogger
 
 	xatuConn *sql.DB // Connection to xatu cluster
 	cbtConn  *sql.DB // Connection to cbt cluster
@@ -84,7 +84,8 @@ func (m *manager) Start(ctx context.Context) error {
 
 	m.xatuConn = xatuConn
 	m.cbtConn = cbtConn
-	m.log.Info("database manager started (dual-cluster mode)")
+
+	m.log.Info("database manager started")
 
 	return nil
 }
@@ -118,7 +119,9 @@ func (m *manager) Stop() error {
 // This is called once per test suite (not per test) to prepare the external data cluster
 // Network parameter is used for tracking only - all data goes into 'default' database in xatu cluster
 func (m *manager) PrepareNetworkDatabase(ctx context.Context, network string) error {
-	m.log.WithField("network", network).Info("preparing xatu cluster databases")
+	logCtx := m.log.WithField("cluster", "xatu")
+	logCtx.Info("preparing database")
+
 	start := time.Now()
 
 	// Xatu migrations use multiple databases: default, tmp, admin, dbt
@@ -141,7 +144,7 @@ func (m *manager) PrepareNetworkDatabase(ctx context.Context, network string) er
 	alreadyPrepared := !m.forceRebuild && m.isXatuClusterPrepared(ctx)
 
 	if alreadyPrepared {
-		m.log.Info("xatu cluster already prepared, skipping clear and migrations (use --force-rebuild to override)")
+		logCtx.Info("cluster already prepared")
 	} else {
 		// Clear all tables in default, admin, and dbt databases (for fresh test suite run)
 		// When force rebuilding, also clear schema_migrations tables to force re-run of migrations
@@ -155,7 +158,7 @@ func (m *manager) PrepareNetworkDatabase(ctx context.Context, network string) er
 		// Run xatu migrations in xatu cluster default database
 		if m.xatuMigrationDir != "" {
 			xatuMigrationStart := time.Now()
-			m.log.Info("running xatu migrations in xatu cluster")
+			logCtx.Info("running migrations")
 
 			// No prefix needed - these are the primary tables in xatu cluster
 			xatuMigrationRunner := NewMigrationRunner(m.log, m.xatuMigrationDir, "")
@@ -163,17 +166,16 @@ func (m *manager) PrepareNetworkDatabase(ctx context.Context, network string) er
 				return fmt.Errorf("running xatu migrations: %w", err)
 			}
 
-			m.log.WithFields(logrus.Fields{
+			logCtx.WithFields(logrus.Fields{
 				"duration": time.Since(xatuMigrationStart),
-			}).Info("xatu migrations applied to xatu cluster")
+			}).Info("migrations applied")
 		}
 	}
 
-	m.log.WithFields(logrus.Fields{
-		"network":        network,
+	logCtx.WithFields(logrus.Fields{
 		"total_duration": time.Since(start),
 		"skipped":        alreadyPrepared,
-	}).Info("xatu cluster databases ready")
+	}).Info("xatu database ready")
 
 	return nil
 }
@@ -278,7 +280,12 @@ func (m *manager) clearNetworkTables(ctx context.Context, network string, clearM
 func (m *manager) CreateTestDatabase(ctx context.Context, network, spec string) (string, error) {
 	dbName := m.generateDatabaseName(network, spec)
 
-	m.log.WithField("database", dbName).Info("creating test database in cbt cluster")
+	logCtx := m.log.WithFields(logrus.Fields{
+		"cluster":  "xatu-cbt",
+		"database": dbName,
+	})
+	logCtx.Info("preparing database")
+
 	start := time.Now()
 
 	// Create database in CBT cluster (transformations only)
@@ -291,6 +298,8 @@ func (m *manager) CreateTestDatabase(ctx context.Context, network, spec string) 
 		return "", fmt.Errorf("creating database: %w", err)
 	}
 
+	logCtx.Info("running migrations")
+
 	// Run xatu-cbt migrations in CBT cluster
 	migrationStart := time.Now()
 	if err := m.migrationRunner.RunMigrations(ctx, m.cbtConn, dbName); err != nil {
@@ -298,22 +307,24 @@ func (m *manager) CreateTestDatabase(ctx context.Context, network, spec string) 
 		return "", fmt.Errorf("running xatu-cbt migrations: %w", err)
 	}
 
-	m.log.WithFields(logrus.Fields{
-		"database": dbName,
+	logCtx.WithFields(logrus.Fields{
 		"duration": time.Since(migrationStart),
-	}).Info("xatu-cbt migrations applied to cbt cluster")
+	}).Info("migrations applied")
 
-	m.log.WithFields(logrus.Fields{
-		"database":       dbName,
+	logCtx.WithFields(logrus.Fields{
 		"total_duration": time.Since(start),
-	}).Info("test database ready in cbt cluster")
+	}).Info("xatu-cbt database ready")
 
 	return dbName, nil
 }
 
 // DropDatabase drops a test database from CBT cluster and cleans up migrations table
 func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
-	m.log.WithField("database", dbName).Debug("dropping test database from cbt cluster")
+	logCtx := m.log.WithFields(logrus.Fields{
+		"cluster":  "xatu-cbt",
+		"database": dbName,
+	})
+	logCtx.Debug("dropping test database from cbt cluster")
 
 	// Drop the database from CBT cluster
 	dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER %s", dbName, config.CBTClusterName)
@@ -333,10 +344,10 @@ func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 	defer cancel2()
 
 	if _, err := m.cbtConn.ExecContext(queryCtx2, dropMigrationsSQL); err != nil {
-		m.log.WithError(err).WithField("table", migrationTable).Warn("failed to drop migrations table (non-fatal)")
+		logCtx.WithError(err).WithField("table", migrationTable).Warn("failed to drop migrations table (non-fatal)")
 	}
 
-	m.log.WithField("database", dbName).Info("test database dropped from cbt cluster")
+	logCtx.Info("test database dropped")
 
 	return nil
 }
@@ -344,19 +355,16 @@ func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 // LoadParquetData loads parquet files into default database in xatu cluster
 // network parameter is used for logging only - all data goes into 'default' database
 func (m *manager) LoadParquetData(ctx context.Context, network string, dataFiles map[string]string) error {
-	m.log.WithFields(logrus.Fields{
-		"network": network,
-		"files":   len(dataFiles),
-	}).Info("loading parquet data into xatu cluster default database")
+	logCtx := m.log.WithField("cluster", "xatu")
 
 	start := time.Now()
 
 	// Truncate external model tables before loading to avoid duplicates
 	// This is needed because when smart skip is enabled, we don't clear tables
 	// but we still want fresh data on each test run
-	m.log.Info("truncating external model tables to ensure fresh data")
+	logCtx.Info("truncating tables")
 	for tableName := range dataFiles {
-		if err := m.truncateExternalTable(ctx, tableName); err != nil {
+		if err := m.truncateExternalTable(ctx, logCtx, tableName); err != nil {
 			m.log.WithError(err).WithField("table", tableName).Warn("failed to truncate table (non-fatal)")
 		}
 	}
@@ -377,7 +385,7 @@ func (m *manager) LoadParquetData(ctx context.Context, network string, dataFiles
 		go func() {
 			defer wg.Done()
 			for j := range jobs {
-				if err := m.loadParquetFile(ctx, j.tableName, j.filePath); err != nil {
+				if err := m.loadParquetFile(ctx, logCtx, j.tableName, j.filePath); err != nil {
 					errors <- fmt.Errorf("loading %s: %w", j.tableName, err)
 					return
 				}
@@ -400,20 +408,20 @@ func (m *manager) LoadParquetData(ctx context.Context, network string, dataFiles
 		return err
 	}
 
-	m.log.WithFields(logrus.Fields{
+	logCtx.WithFields(logrus.Fields{
 		"files":    len(dataFiles),
 		"duration": time.Since(start),
-	}).Info("parquet data loaded into xatu cluster default database")
+	}).Info("parquet data loaded")
 
 	return nil
 }
 
 // loadParquetFile loads a single parquet file into a table in xatu cluster default database
-func (m *manager) loadParquetFile(ctx context.Context, tableName, filePath string) error {
-	m.log.WithFields(logrus.Fields{
+func (m *manager) loadParquetFile(ctx context.Context, log *logrus.Entry, tableName, filePath string) error {
+	log.WithFields(logrus.Fields{
 		"table": tableName,
 		"file":  filePath,
-	}).Debug("loading parquet file into xatu cluster default database")
+	}).Debug("loading parquet file")
 
 	start := time.Now()
 
@@ -431,21 +439,21 @@ func (m *manager) loadParquetFile(ctx context.Context, tableName, filePath strin
 		return fmt.Errorf("inserting from parquet: %w", err)
 	}
 
-	m.log.WithFields(logrus.Fields{
+	log.WithFields(logrus.Fields{
 		"table":    localTableName,
 		"duration": time.Since(start),
-	}).Debug("parquet file loaded into xatu cluster default database")
+	}).Debug("parquet file loaded")
 
 	return nil
 }
 
 // truncateExternalTable truncates an external model table to ensure fresh data on each load
-func (m *manager) truncateExternalTable(ctx context.Context, tableName string) error {
+func (m *manager) truncateExternalTable(ctx context.Context, log *logrus.Entry, tableName string) error {
 	// Truncate the _local table - ReplicatedMergeTree will sync truncation to all replicas
 	localTableName := tableName + "_local"
 	truncateSQL := fmt.Sprintf("TRUNCATE TABLE `default`.`%s` ON CLUSTER %s SYNC", localTableName, config.XatuClusterName)
 
-	m.log.WithField("table", localTableName).Debug("truncating external model table")
+	log.WithField("table", localTableName).Debug("truncating external model table")
 
 	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
 	defer cancel()

@@ -3,24 +3,34 @@ package output
 import (
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
+	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
+	"github.com/ethpandaops/xatu-cbt/internal/testing/table"
 	"github.com/fatih/color"
 )
 
 // Formatter provides clean, human-friendly output
 type Formatter interface {
-	PrintHeader(network, spec string, modelCount int)
 	PrintPhase(phase string)
 	PrintProgress(message string, duration time.Duration)
 	PrintSuccess(message string)
 	PrintError(message string, err error)
+	PrintParquetSummary()
+	PrintTestResults()
+	PrintSummary()
 }
 
 type formatter struct {
 	writer  io.Writer
 	verbose bool
+
+	// Table formatting components
+	metrics          metrics.Collector
+	tableRenderer    table.Renderer
+	parquetFormatter table.ParquetFormatter
+	resultsFormatter table.ResultsFormatter
+	summaryFormatter table.SummaryFormatter
 
 	// Colors
 	green  *color.Color
@@ -31,33 +41,29 @@ type formatter struct {
 }
 
 // NewFormatter creates a new output formatter
-func NewFormatter(writer io.Writer, verbose bool) Formatter {
+func NewFormatter(
+	writer io.Writer,
+	verbose bool,
+	metricsCollector metrics.Collector,
+	tableRenderer table.Renderer,
+	parquetFormatter table.ParquetFormatter,
+	resultsFormatter table.ResultsFormatter,
+	summaryFormatter table.SummaryFormatter,
+) Formatter {
 	return &formatter{
-		writer:  writer,
-		verbose: verbose,
-		green:   color.New(color.FgGreen),
-		red:     color.New(color.FgRed),
-		yellow:  color.New(color.FgYellow),
-		blue:    color.New(color.FgBlue),
-		gray:    color.New(color.FgHiBlack),
+		writer:           writer,
+		verbose:          verbose,
+		metrics:          metricsCollector,
+		tableRenderer:    tableRenderer,
+		parquetFormatter: parquetFormatter,
+		resultsFormatter: resultsFormatter,
+		summaryFormatter: summaryFormatter,
+		green:            color.New(color.FgGreen),
+		red:              color.New(color.FgRed),
+		yellow:           color.New(color.FgYellow),
+		blue:             color.New(color.FgBlue),
+		gray:             color.New(color.FgHiBlack),
 	}
-}
-
-// PrintHeader prints test header with network/spec info
-func (f *formatter) PrintHeader(network, spec string, modelCount int) {
-	width := 60
-	fmt.Fprintf(f.writer, "\n%s\n", strings.Repeat("─", width))
-	f.blue.Fprintf(f.writer, "│ xatu-cbt test runner%s│\n", strings.Repeat(" ", width-23))
-	fmt.Fprintf(f.writer, "%s\n", strings.Repeat("─", width))
-	fmt.Fprintf(f.writer, "│ Spec: %-10s  Network: %-10s%s│\n",
-		spec, network, strings.Repeat(" ", width-38))
-
-	if modelCount > 0 {
-		fmt.Fprintf(f.writer, "│ Models: %-5d%s│\n",
-			modelCount, strings.Repeat(" ", width-17))
-	}
-
-	fmt.Fprintf(f.writer, "%s\n\n", strings.Repeat("─", width))
 }
 
 // PrintPhase prints phase separator
@@ -97,4 +103,25 @@ func formatDuration(d time.Duration) string {
 		return fmt.Sprintf("%.1fs", d.Seconds())
 	}
 	return fmt.Sprintf("%.1fm", d.Minutes())
+}
+
+// PrintParquetSummary prints a table summary of parquet files loaded
+func (f *formatter) PrintParquetSummary() {
+	parquetMetrics := f.metrics.GetParquetMetrics()
+	output := f.parquetFormatter.Format(parquetMetrics)
+	fmt.Fprintln(f.writer, output)
+}
+
+// PrintTestResults prints a table of test results
+func (f *formatter) PrintTestResults() {
+	testMetrics := f.metrics.GetTestMetrics()
+	output := f.resultsFormatter.Format(testMetrics)
+	fmt.Fprintln(f.writer, output)
+}
+
+// PrintSummary prints a summary table with aggregate statistics
+func (f *formatter) PrintSummary() {
+	summary := f.metrics.GetSummary()
+	output := f.summaryFormatter.Format(summary)
+	fmt.Fprintln(f.writer, output)
 }
