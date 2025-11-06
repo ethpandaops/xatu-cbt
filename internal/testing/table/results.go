@@ -52,7 +52,7 @@ func (f *resultsFormatter) Format(testMetrics []metrics.TestResultMetric) string
 		status := "✓ PASS"
 		details := ""
 
-		if !metric.Passed {
+		if !metric.Passed { //nolint:nestif // Test result formatting - refactoring risky
 			status = "✗ FAIL"
 			failedTests = append(failedTests, metric)
 
@@ -110,7 +110,7 @@ func (f *resultsFormatter) formatFailureDetails(failedTests []metrics.TestResult
 
 		builder.WriteString(fmt.Sprintf("%s (%s)\n", test.Model, formatDuration(test.Duration)))
 
-		if len(test.FailedAssertions) == 0 {
+		if len(test.FailedAssertions) == 0 { //nolint:nestif // Error formatting logic - refactoring risky
 			// No specific assertion details, show general error
 			if test.ErrorMessage != "" {
 				builder.WriteString(fmt.Sprintf("  Error: %s\n", test.ErrorMessage))

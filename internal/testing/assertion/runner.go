@@ -32,11 +32,11 @@ type RunResult struct {
 	Passed   int
 	Failed   int
 	Duration time.Duration
-	Results  []*AssertionResult
+	Results  []*Result
 }
 
-// AssertionResult represents a single assertion result
-type AssertionResult struct {
+// Result represents a single assertion result
+type Result struct {
 	Name     string
 	Passed   bool
 	Error    error
@@ -133,7 +133,7 @@ func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []
 	r.log.Debug("cluster replication sync complete")
 
 	// Execute assertions in parallel with worker pool
-	results := make([]*AssertionResult, len(assertions))
+	results := make([]*Result, len(assertions))
 	g, gCtx := errgroup.WithContext(ctx)
 
 	sem := make(chan struct{}, r.workers)
@@ -182,11 +182,11 @@ func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []
 }
 
 // executeAssertion runs a single assertion with retry logic
-func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion *config.Assertion) *AssertionResult {
+func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion *config.Assertion) *Result {
 	r.log.WithField("assertion", assertion.Name).Debug("executing assertion")
 
 	start := time.Now()
-	result := &AssertionResult{
+	result := &Result{
 		Name:     assertion.Name,
 		Expected: assertion.Expected,
 	}

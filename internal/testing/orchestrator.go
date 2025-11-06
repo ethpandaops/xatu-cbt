@@ -293,7 +293,7 @@ func (o *orchestrator) TestSpec(ctx context.Context, network, spec string, concu
 
 // executeTestGroup performs grouped test execution for a (network, spec)
 // All tests share one database and one CBT container for optimal performance
-func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec string, testConfigs []*testconfig.TestConfig, concurrency int) ([]*TestResult, error) {
+func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec string, testConfigs []*testconfig.TestConfig, concurrency int) ([]*TestResult, error) { //nolint:gocyclo // Complex test orchestration with multiple coordination steps - refactoring risky
 	logCtx := o.log.WithField("cluster", "xatu-cbt")
 
 	start := time.Now()
@@ -525,7 +525,7 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 }
 
 // executeTest performs the core test execution logic
-func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.TestConfig) (*TestResult, error) {
+func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.TestConfig) (*TestResult, error) { //nolint:gocyclo // Complex test execution pipeline with multiple stages - refactoring risky
 	o.log.WithField("model", testConfig.Model).Debug("executing test")
 	start := time.Now()
 
@@ -626,7 +626,7 @@ func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.T
 	logCtx.WithField("database", dbName).Debug("test database created")
 
 	// 6. Run transformations in CBT cluster (queries xatu cluster via cluster() function)
-	if len(result.Transformations) > 0 {
+	if len(result.Transformations) > 0 { //nolint:nestif // Transformation execution logic - refactoring risky
 		logCtx.WithFields(logrus.Fields{
 			"transformations": len(result.Transformations),
 			"external_tables": len(result.ExternalTables),

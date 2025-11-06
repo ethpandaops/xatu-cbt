@@ -34,8 +34,8 @@ type ModelOverrides struct {
 	} `yaml:"config"`
 }
 
-// CBTConfig represents the structure of config.yml
-type CBTConfig struct {
+// Config represents the structure of config.yml
+type Config struct {
 	ClickHouse struct {
 		URL         string `yaml:"url"`
 		Cluster     string `yaml:"cluster,omitempty"`     // Cluster name for ON CLUSTER queries
@@ -109,7 +109,7 @@ func (g *configGenerator) GenerateForModels(network, dbName string, models []str
 	}
 
 	// Create config structure
-	config := &CBTConfig{}
+	config := &Config{}
 
 	// Configure ClickHouse connection
 	// CBT uses HTTP interface, convert clickhouse:// URL to http://
@@ -171,7 +171,7 @@ func (g *configGenerator) GenerateForModels(network, dbName string, models []str
 		return fmt.Errorf("marshaling config: %w", err)
 	}
 
-	if err := os.WriteFile(outputPath, data, 0644); err != nil { //nolint:gosec // G306: Config file with standard permissions
+	if err := os.WriteFile(outputPath, data, 0o644); err != nil { //nolint:gosec // G306: Config file with standard permissions
 		return fmt.Errorf("writing config file: %w", err)
 	}
 
@@ -230,7 +230,7 @@ func (g *configGenerator) buildModelPaths(models []string) (externalPaths, trans
 }
 
 // templateConfig applies database-specific templating to config
-func (g *configGenerator) templateConfig(config *CBTConfig, dbName string) {
+func (g *configGenerator) templateConfig(config *Config, dbName string) {
 	// Replace ${NETWORK_NAME} placeholder in ClickHouse URL if present
 	config.ClickHouse.URL = strings.ReplaceAll(config.ClickHouse.URL, "${NETWORK_NAME}", dbName)
 

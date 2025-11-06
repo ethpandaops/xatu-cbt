@@ -26,8 +26,8 @@ type ParquetCache interface {
 	Cleanup() error
 }
 
-// CacheEntry represents metadata for a cached file
-type CacheEntry struct {
+// Entry represents metadata for a cached file
+type Entry struct {
 	URL        string    `json:"url"`
 	SHA256     string    `json:"sha256"`
 	Size       int64     `json:"size"`
@@ -36,9 +36,9 @@ type CacheEntry struct {
 	Table      string    `json:"table"`
 }
 
-// CacheManifest tracks all cached files
-type CacheManifest struct {
-	Entries map[string]*CacheEntry `json:"entries"` // Key: SHA256
+// Manifest tracks all cached files
+type Manifest struct {
+	Entries map[string]*Entry `json:"entries"` // Key: SHA256
 }
 
 type parquetCache struct {
@@ -49,7 +49,7 @@ type parquetCache struct {
 	metrics      metrics.Collector
 
 	mu       sync.RWMutex
-	manifest *CacheManifest
+	manifest *Manifest
 
 	// Concurrent download protection
 	downloading sync.Map // URL → chan struct{}
@@ -71,7 +71,7 @@ func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64
 		},
 		log:      log.WithField("component", "parquet_cache"),
 		metrics:  metricsCollector,
-		manifest: &CacheManifest{Entries: make(map[string]*CacheEntry)},
+		manifest: &Manifest{Entries: make(map[string]*Entry)},
 	}
 }
 
@@ -80,14 +80,14 @@ func (c *parquetCache) Start(_ context.Context) error {
 	c.log.WithField("cache_dir", c.cacheDir).Debug("starting parquet cache")
 
 	// Create cache directory if it doesn't exist
-	if err := os.MkdirAll(c.cacheDir, 0755); err != nil { //nolint:gosec // G301: Cache directory with standard permissions
+	if err := os.MkdirAll(c.cacheDir, 0o755); err != nil { //nolint:gosec // G301: Cache directory with standard permissions
 		return fmt.Errorf("creating cache directory: %w", err)
 	}
 
 	// Load manifest
 	if err := c.loadManifest(); err != nil {
 		c.log.WithError(err).Warn("failed to load manifest, starting with empty cache")
-		c.manifest = &CacheManifest{Entries: make(map[string]*CacheEntry)}
+		c.manifest = &Manifest{Entries: make(map[string]*Entry)}
 	}
 
 	c.log.WithField("entries", len(c.manifest.Entries)).Info("parquet cache started")
@@ -314,7 +314,7 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 
 	// Update manifest
 	c.mu.Lock()
-	c.manifest.Entries[urlHash] = &CacheEntry{
+	c.manifest.Entries[urlHash] = &Entry{
 		URL:        url,
 		SHA256:     sha256Hash,
 		Size:       written,
@@ -376,7 +376,7 @@ func (c *parquetCache) loadManifest() error {
 		return fmt.Errorf("reading manifest: %w", err)
 	}
 
-	var manifest CacheManifest
+	var manifest Manifest
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return fmt.Errorf("parsing manifest: %w", err)
 	}
@@ -395,7 +395,7 @@ func (c *parquetCache) saveManifest() error {
 		return fmt.Errorf("marshaling manifest: %w", err)
 	}
 
-	if err := os.WriteFile(manifestPath, data, 0644); err != nil { //nolint:gosec // G306: Cache manifest with standard permissions
+	if err := os.WriteFile(manifestPath, data, 0o644); err != nil { //nolint:gosec // G306: Cache manifest with standard permissions
 		return fmt.Errorf("writing manifest: %w", err)
 	}
 

@@ -144,7 +144,7 @@ func (m *manager) PrepareNetworkDatabase(ctx context.Context, _ string) error {
 	// Check if xatu cluster is already prepared (skip expensive migration if so)
 	alreadyPrepared := !m.forceRebuild && m.isXatuClusterPrepared(ctx)
 
-	if alreadyPrepared {
+	if alreadyPrepared { //nolint:nestif // Database preparation logic - refactoring risky
 		logCtx.Info("cluster already prepared")
 	} else {
 		// Clear all tables in default, admin, and dbt databases (for fresh test suite run)
@@ -189,12 +189,12 @@ func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 	defer cancel()
 
 	var count int
-	checkSQL := fmt.Sprintf(`
-		SELECT COUNT(*)
+	checkSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+		`SELECT COUNT(*)
 		FROM system.tables
 		WHERE database = 'default'
-		AND name = '%s%s'
-	`, config.SchemaMigrationsPrefix, config.DefaultDatabase) //nolint:gosec // G201: Safe SQL with controlled identifiers
+		AND name = '%s%s'`,
+		config.SchemaMigrationsPrefix, config.DefaultDatabase)
 	err := m.xatuConn.QueryRowContext(queryCtx, checkSQL).Scan(&count)
 
 	if err != nil || count == 0 {
@@ -206,10 +206,10 @@ func (m *manager) isXatuClusterPrepared(ctx context.Context) bool {
 	defer cancel2()
 
 	var migrationCount int
-	countSQL := fmt.Sprintf(`
-		SELECT COUNT(*)
-		FROM %s.%s%s
-	`, config.DefaultDatabase, config.SchemaMigrationsPrefix, config.DefaultDatabase) //nolint:gosec // G201: Safe SQL with controlled identifiers
+	countSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+		`SELECT COUNT(*)
+		FROM %s.%s%s`,
+		config.DefaultDatabase, config.SchemaMigrationsPrefix, config.DefaultDatabase)
 	err = m.xatuConn.QueryRowContext(queryCtx2, countSQL).Scan(&migrationCount)
 
 	return err == nil && migrationCount > 0

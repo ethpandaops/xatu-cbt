@@ -238,8 +238,8 @@ func (r *migrationRunner) templateSQL(sqlTemplate, dbName string) string {
 //   ALTER TABLE table_name ON CLUSTER ... → ALTER TABLE dbName.table_name ON CLUSTER ...
 //   TO table_name → TO dbName.table_name
 //   FROM table_name → FROM dbName.table_name (if not already qualified)
-func (r *migrationRunner) qualifyCreateStatements(sql, dbName string) string {
-	lines := strings.Split(sql, "\n")
+func (r *migrationRunner) qualifyCreateStatements(sqlContent, dbName string) string { //nolint:gocyclo // Complex SQL parsing for multiple ClickHouse statement types - refactoring risky
+	lines := strings.Split(sqlContent, "\n")
 	result := make([]string, 0, len(lines))
 
 	for _, line := range lines {
@@ -249,7 +249,7 @@ func (r *migrationRunner) qualifyCreateStatements(sql, dbName string) string {
 		// Check if this line starts with DROP TABLE or TRUNCATE TABLE
 		// Pattern: DROP TABLE [IF EXISTS] table_name [on cluster '{cluster}'] [SYNC];
 		// Pattern: TRUNCATE TABLE table_name [on cluster '{cluster}'];
-		if strings.HasPrefix(upperLine, "DROP TABLE") || strings.HasPrefix(upperLine, "TRUNCATE TABLE") {
+		if strings.HasPrefix(upperLine, "DROP TABLE") || strings.HasPrefix(upperLine, "TRUNCATE TABLE") { //nolint:nestif // SQL parsing logic - refactoring risky
 			parts := strings.Fields(trimmed)
 			objNameIdx := 2 // Default: 0=DROP/TRUNCATE, 1=TABLE, 2=table_name
 
@@ -278,7 +278,7 @@ func (r *migrationRunner) qualifyCreateStatements(sql, dbName string) string {
 		isCreateMaterializedView := strings.HasPrefix(upperLine, "CREATE MATERIALIZED VIEW")
 		isAlterTable := strings.HasPrefix(upperLine, "ALTER TABLE")
 
-		if isCreateTable || isCreateMaterializedView || isAlterTable {
+		if isCreateTable || isCreateMaterializedView || isAlterTable { //nolint:nestif // Complex SQL statement parsing - refactoring risky
 			// Extract object name and qualify it
 			// Pattern: CREATE [MATERIALIZED VIEW|TABLE] [IF NOT EXISTS] name [on cluster|to|engine|(...)]
 			// Pattern: ALTER TABLE name [on cluster] ...
@@ -394,7 +394,7 @@ func (r *migrationRunner) qualifyCreateStatements(sql, dbName string) string {
 		// Qualify AS clause in CREATE TABLE statements: AS table_name → AS dbName.table_name
 		// Pattern: CREATE TABLE ... AS table_name (not SELECT ... AS alias)
 		// Only match if line contains CREATE TABLE and AS, or ends with table name after AS
-		if strings.Contains(upperLine, " AS ") &&
+		if strings.Contains(upperLine, " AS ") && //nolint:nestif // CREATE TABLE AS parsing - refactoring risky
 		   (strings.Contains(upperLine, "CREATE TABLE") || strings.Contains(upperLine, "ENGINE")) {
 			// Find " AS " and qualify the table name after it
 			asIndex := strings.Index(upperLine, " AS ")

@@ -218,7 +218,7 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 // waitForTransformations polls the admin tables and verifies models have data
 // For scheduled models, it retries if the model runs but produces empty results
 // Has a hard 10-minute timeout to prevent running forever
-func (e *engine) waitForTransformations(ctx context.Context, dbName string, models []string) error {
+func (e *engine) waitForTransformations(ctx context.Context, dbName string, models []string) error { //nolint:gocyclo // Complex transformation waiting logic with multiple state checks - refactoring risky
 	// Categorize transformation models (skip external models)
 	scheduledModels := make(map[string]bool)
 	allModels := make(map[string]bool)
@@ -316,7 +316,7 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 			now := time.Now()
 
 			for model := range allModels {
-				if !allCompleted[model] {
+				if !allCompleted[model] { //nolint:nestif // Complex transformation tracking logic - refactoring risky
 					// Track when this model first became pending
 					if _, exists := modelPendingSince[model]; !exists {
 						modelPendingSince[model] = now
@@ -469,11 +469,11 @@ func (e *engine) getCompletedModels(ctx context.Context, conn *sql.DB, dbName, a
 
 // tableExists checks if a table exists in the database
 func (e *engine) tableExists(ctx context.Context, conn *sql.DB, dbName, tableName string) (bool, error) {
-	query := fmt.Sprintf(`
-		SELECT count()
+	query := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+		`SELECT count()
 		FROM system.tables
-		WHERE database = '%s' AND name = '%s'
-	`, dbName, tableName) //nolint:gosec // G201: Safe SQL with controlled identifiers
+		WHERE database = '%s' AND name = '%s'`,
+		dbName, tableName)
 
 	var count uint64
 	err := conn.QueryRowContext(ctx, query).Scan(&count)
