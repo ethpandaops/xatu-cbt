@@ -36,6 +36,6 @@ const (
 // Default connection strings
 const (
 	DefaultXatuClickHouseURL = "clickhouse://default:supersecret@localhost:9002"
-	DefaultCBTClickHouseURL  = "clickhouse://localhost:9000"
+	DefaultCBTClickHouseURL  = "clickhouse://default:supersecret@localhost:9000"
 	DefaultRedisURL          = "redis://localhost:6380"
 )
