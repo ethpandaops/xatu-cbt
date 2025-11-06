@@ -15,8 +15,7 @@ import (
 )
 
 var (
-	errNoRowsReturned     = errors.New("no rows returned")
-	errClusterSyncTimeout = errors.New("timeout waiting for cluster sync")
+	errNoRowsReturned = errors.New("no rows returned")
 )
 
 // Runner executes SQL assertions
@@ -118,19 +117,7 @@ func (r *runner) Stop() error {
 
 // RunAssertions executes all assertions for a test
 func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []*config.Assertion) (*RunResult, error) {
-	r.log.WithFields(logrus.Fields{
-		"database":   dbName,
-		"assertions": len(assertions),
-	}).Debug("running assertions")
-
 	start := time.Now()
-
-	// ANTI-FLAKE #10: Wait for cluster replication sync before running assertions
-	r.log.Debug("waiting for cluster replication sync")
-	if err := r.waitForClusterSync(ctx, dbName); err != nil {
-		return nil, fmt.Errorf("waiting for cluster sync: %w", err)
-	}
-	r.log.Debug("cluster replication sync complete")
 
 	// Execute assertions in parallel with worker pool
 	results := make([]*Result, len(assertions))
@@ -183,8 +170,6 @@ func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []
 
 // executeAssertion runs a single assertion with retry logic
 func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion *config.Assertion) *Result {
-	r.log.WithField("assertion", assertion.Name).Debug("executing assertion")
-
 	start := time.Now()
 	result := &Result{
 		Name:     assertion.Name,
@@ -439,44 +424,4 @@ func (r *runner) normalizeTimestamp(val interface{}) interface{} {
 
 	// Not a timestamp, return original
 	return val
-}
-
-// waitForClusterSync ensures all data is replicated across cluster nodes
-// ANTI-FLAKE #10: This prevents timing issues where assertions run before data is fully synced
-func (r *runner) waitForClusterSync(ctx context.Context, dbName string) error {
-	deadline := time.Now().Add(r.syncMaxWait)
-	ticker := time.NewTicker(r.syncPollInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			// Check if replication queue is empty for our database
-			query := `
-				SELECT count() as pending
-				FROM system.replication_queue
-				WHERE database = ?
-			`
-
-			var pending int64
-			err := r.conn.QueryRowContext(ctx, query, dbName).Scan(&pending)
-			if err != nil {
-				return fmt.Errorf("querying replication queue: %w", err)
-			}
-
-			// If no pending operations, cluster is synced
-			if pending == 0 {
-				return nil
-			}
-
-			// Check timeout
-			if time.Now().After(deadline) {
-				return fmt.Errorf("%w: %d operations still pending", errClusterSyncTimeout, pending)
-			}
-
-			r.log.WithField("pending", pending).Debug("waiting for cluster sync")
-		}
-	}
 }

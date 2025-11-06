@@ -95,13 +95,6 @@ func NewConfigGenerator(
 
 // GenerateForModels generates a CBT config for specific models
 func (g *configGenerator) GenerateForModels(network, dbName string, models []string, outputPath string) error {
-	g.log.WithFields(logrus.Fields{
-		"network":  network,
-		"database": dbName,
-		"models":   models,
-		"output":   outputPath,
-	}).Debug("generating CBT config")
-
 	// Build model paths separated by type
 	externalPaths, transformationPaths, err := g.buildModelPaths(models)
 	if err != nil {
@@ -176,11 +169,10 @@ func (g *configGenerator) GenerateForModels(network, dbName string, models []str
 	}
 
 	g.log.WithFields(logrus.Fields{
-		"database":        dbName,
 		"external":        len(externalPaths),
 		"transformations": len(transformationPaths),
 		"output":          outputPath,
-	}).Debug("CBT config generated")
+	}).Debug("generated cbt config")
 
 	return nil
 }

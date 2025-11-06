@@ -13,14 +13,14 @@ import (
 )
 
 var (
-	errModelNameRequired      = errors.New("model name is required")
-	errNetworkRequired        = errors.New("network is required")
-	errSpecRequired           = errors.New("spec is required")
-	errExternalTableMissingURL = errors.New("external table missing URL")
+	errModelNameRequired                 = errors.New("model name is required")
+	errNetworkRequired                   = errors.New("network is required")
+	errSpecRequired                      = errors.New("spec is required")
+	errExternalTableMissingURL           = errors.New("external table missing URL")
 	errExternalTableMissingNetworkColumn = errors.New("external table missing network_column")
-	errAssertionMissingName   = errors.New("assertion missing name")
-	errAssertionMissingSQL    = errors.New("assertion missing SQL")
-	errAssertionMissingExpected = errors.New("assertion missing expected values")
+	errAssertionMissingName              = errors.New("assertion missing name")
+	errAssertionMissingSQL               = errors.New("assertion missing SQL")
+	errAssertionMissingExpected          = errors.New("assertion missing expected values")
 )
 
 // TestConfig represents a complete per-model test configuration
@@ -92,12 +92,6 @@ func (l *loader) LoadForModel(spec, network, modelName string) (*TestConfig, err
 func (l *loader) LoadForSpec(spec, network string) (map[string]*TestConfig, error) {
 	dir := filepath.Join(l.baseDir, network, spec, "models")
 
-	l.log.WithFields(logrus.Fields{
-		"spec":    spec,
-		"network": network,
-		"dir":     dir,
-	}).Debug("loading all test configs for spec")
-
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("reading directory %s: %w", dir, err)
@@ -126,8 +120,6 @@ func (l *loader) LoadForSpec(spec, network string) (map[string]*TestConfig, erro
 
 		configs[modelName] = config
 	}
-
-	l.log.WithField("count", len(configs)).Debug("loaded test configs")
 
 	return configs, nil
 }

@@ -77,8 +77,6 @@ func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64
 
 // Start initializes the cache by loading the manifest
 func (c *parquetCache) Start(_ context.Context) error {
-	c.log.WithField("cache_dir", c.cacheDir).Debug("starting parquet cache")
-
 	// Create cache directory if it doesn't exist
 	if err := os.MkdirAll(c.cacheDir, 0o755); err != nil { //nolint:gosec // G301: Cache directory with standard permissions
 		return fmt.Errorf("creating cache directory: %w", err)
@@ -90,7 +88,10 @@ func (c *parquetCache) Start(_ context.Context) error {
 		c.manifest = &Manifest{Entries: make(map[string]*Entry)}
 	}
 
-	c.log.WithField("entries", len(c.manifest.Entries)).Info("parquet cache started")
+	c.log.WithFields(logrus.Fields{
+		"entries":   len(c.manifest.Entries),
+		"cache_dir": c.cacheDir,
+	}).Info("parquet cache started")
 
 	return nil
 }
@@ -113,11 +114,6 @@ func (c *parquetCache) Stop() error {
 func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, error) {
 	startTime := time.Now()
 
-	c.log.WithFields(logrus.Fields{
-		"url":   url,
-		"table": tableName,
-	}).Debug("getting parquet file")
-
 	// Calculate URL hash for cache key
 	urlHash := c.hashURL(url)
 
@@ -131,12 +127,15 @@ func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, 
 		filePath := filepath.Join(c.cacheDir, urlHash)
 		if fileInfo, err := os.Stat(filePath); err == nil {
 			// Update last used time
-			c.log.Debug("updating last used time")
 			if err := c.updateLastUsed(urlHash); err != nil {
 				c.log.WithError(err).Warn("failed to update last used time")
 			}
 
-			c.log.WithField("path", filePath).Debug("cache hit")
+			c.log.WithFields(logrus.Fields{
+				"url":       url,
+				"table":     tableName,
+				"cache_hit": "true",
+			}).Debug("fetching parquet file")
 
 			// Record cache hit metric
 			c.metrics.RecordParquetLoad(metrics.ParquetLoadMetric{
@@ -156,16 +155,17 @@ func (c *parquetCache) Get(ctx context.Context, url, tableName string) (string, 
 		c.mu.Unlock()
 	}
 
-	// Cache miss - download file
-	c.log.WithField("url", url).Debug("cache miss, downloading")
+	c.log.WithFields(logrus.Fields{
+		"url":       url,
+		"table":     tableName,
+		"cache_hit": exists,
+	}).Debug("fetched parquet file")
 
 	return c.download(ctx, url, urlHash, tableName)
 }
 
 // Prefetch downloads multiple files concurrently
 func (c *parquetCache) Prefetch(ctx context.Context, urls map[string]string) error {
-	c.log.WithField("count", len(urls)).Debug("prefetching parquet files")
-
 	// Create worker pool
 	type job struct {
 		url       string
@@ -242,7 +242,6 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 	actual, loaded := c.downloading.LoadOrStore(url, downloadCh)
 	if loaded {
 		// Another goroutine is downloading, wait for it
-		c.log.WithField("url", url).Debug("waiting for concurrent download")
 		select {
 		case _, ok := <-actual.(chan struct{}): //nolint:errcheck // We're checking ok to determine channel closure
 			if !ok {
@@ -261,7 +260,6 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 	}()
 
 	// Download file
-	c.log.WithField("url", url).Info("downloading parquet file")
 	start := time.Now()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
@@ -335,7 +333,7 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 		"size":     written,
 		"duration": duration,
 		"path":     finalPath,
-	}).Info("downloaded parquet file")
+	}).Debug("downloaded parquet file")
 
 	// Record S3 download metric
 	c.metrics.RecordParquetLoad(metrics.ParquetLoadMetric{
@@ -351,16 +349,13 @@ func (c *parquetCache) download(ctx context.Context, url, urlHash, tableName str
 
 // updateLastUsed updates the last used timestamp for a cache entry
 func (c *parquetCache) updateLastUsed(urlHash string) error {
-	c.log.WithField("hash", urlHash).Debug("acquiring lock for updateLastUsed")
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.log.Debug("lock acquired, updating entry")
 	if entry, ok := c.manifest.Entries[urlHash]; ok {
 		entry.LastUsed = time.Now()
 	}
 
-	c.log.Debug("saving manifest")
 	return c.saveManifest()
 }
 

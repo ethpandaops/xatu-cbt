@@ -38,15 +38,15 @@ type FailedAssertionDetail struct {
 
 // TestResultMetric captures metrics about a test execution
 type TestResultMetric struct {
-	Model             string
-	Passed            bool
-	Duration          time.Duration
-	AssertionsTotal   int
-	AssertionsPassed  int
-	AssertionsFailed  int
-	ErrorMessage      string // empty if passed
-	FailedAssertions  []FailedAssertionDetail
-	Timestamp         time.Time
+	Model            string
+	Passed           bool
+	Duration         time.Duration
+	AssertionsTotal  int
+	AssertionsPassed int
+	AssertionsFailed int
+	ErrorMessage     string // empty if passed
+	FailedAssertions []FailedAssertionDetail
+	Timestamp        time.Time
 }
 
 // SummaryMetric provides aggregate statistics across all operations
@@ -96,14 +96,14 @@ func (c *collector) Start(_ context.Context) error {
 	defer c.mu.Unlock()
 	c.startTime = time.Now()
 
-	c.log.Info("metrics collector started")
+	c.log.Debug("metrics collector started")
 
 	return nil
 }
 
 func (c *collector) Stop() error {
-	c.log.Info("metrics collector stopped")
-	
+	c.log.Debug("metrics collector stopped")
+
 	return nil
 }
 

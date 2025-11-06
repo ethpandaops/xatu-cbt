@@ -325,7 +325,6 @@ func (m *manager) DropDatabase(ctx context.Context, dbName string) error {
 		"cluster":  "xatu-cbt",
 		"database": dbName,
 	})
-	logCtx.Debug("dropping test database from cbt cluster")
 
 	// Drop the database from CBT cluster
 	dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER %s", dbName, config.CBTClusterName)
@@ -424,8 +423,6 @@ func (m *manager) loadParquetFile(ctx context.Context, log *logrus.Entry, tableN
 		"file":  filePath,
 	}).Debug("loading parquet file")
 
-	start := time.Now()
-
 	// Load into _local table directly - ReplicatedMergeTree will automatically sync to all replicas
 	localTableName := tableName + "_local"
 	insertSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers and file path
@@ -440,11 +437,6 @@ func (m *manager) loadParquetFile(ctx context.Context, log *logrus.Entry, tableN
 		return fmt.Errorf("inserting from parquet: %w", err)
 	}
 
-	log.WithFields(logrus.Fields{
-		"table":    localTableName,
-		"duration": time.Since(start),
-	}).Debug("parquet file loaded")
-
 	return nil
 }
 
@@ -454,7 +446,7 @@ func (m *manager) truncateExternalTable(ctx context.Context, log *logrus.Entry, 
 	localTableName := tableName + "_local"
 	truncateSQL := fmt.Sprintf("TRUNCATE TABLE `default`.`%s` ON CLUSTER %s SYNC", localTableName, config.XatuClusterName)
 
-	log.WithField("table", localTableName).Debug("truncating external model table")
+	log.WithField("table", localTableName).Debug("truncating table")
 
 	queryCtx, cancel := context.WithTimeout(ctx, queryTimeout)
 	defer cancel()

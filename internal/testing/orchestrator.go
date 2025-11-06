@@ -159,10 +159,9 @@ func (o *orchestrator) Stop() error {
 	var errs []error
 
 	// Flush Redis to clean up any stale state
-	o.log.Debug("flushing Redis cache on shutdown")
+	o.log.Debug("flushing redis cache")
 	flushCmd := exec.Command("docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHALL") //nolint:gosec // G204: Docker command with trusted container name
 	if err := flushCmd.Run(); err != nil {
-		o.log.WithError(err).Warn("failed to flush redis on shutdown")
 		errs = append(errs, fmt.Errorf("flushing redis: %w", err))
 	}
 
@@ -188,7 +187,6 @@ func (o *orchestrator) Stop() error {
 
 	// Stop metrics collector
 	if err := o.metrics.Stop(); err != nil {
-		o.log.WithError(err).Error("error stopping metrics collector")
 		errs = append(errs, fmt.Errorf("stopping metrics collector: %w", err))
 	}
 
@@ -382,16 +380,11 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 	// Start workers
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
-		go func(workerID int) {
+		go func() {
 			defer wg.Done()
 			for job := range jobs {
 				testConfig := job.testConfig
 				resolution := resolutions[testConfig.Model]
-
-				o.log.WithFields(logrus.Fields{
-					"worker": workerID,
-					"model":  testConfig.Model,
-				}).Debug("worker running assertions")
 
 				result := &TestResult{
 					Model:           testConfig.Model,
@@ -464,7 +457,7 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 					o.log.WithField("model", testConfig.Model).Error("assertion(s) failed")
 				}
 			}
-		}(i)
+		}()
 	}
 
 	// Queue assertion jobs
@@ -526,7 +519,6 @@ func (o *orchestrator) ensureNetworkDatabaseReady(ctx context.Context, network s
 
 	localPaths := make(map[string]string, len(allParquetURLs))
 	for tableName, url := range allParquetURLs {
-		xatuLogCtx.WithField("table", tableName).Debug("fetching parquet file")
 		path, err := o.cache.Get(ctx, url, tableName)
 		if err != nil {
 			return fmt.Errorf("fetching parquet file for %s: %w", tableName, err)
@@ -558,6 +550,7 @@ func (o *orchestrator) flushRedisCache(ctx context.Context) error {
 		return fmt.Errorf("flushing redis: %w (output: %s)", err, string(cmdOutput))
 	}
 
-	o.log.Debug("Redis cache flushed successfully")
+	o.log.Debug("flushed redis cache")
+
 	return nil
 }

@@ -89,8 +89,6 @@ func (r *resolver) Stop() error {
 
 // ResolveAndValidate performs smart dependency resolution and validation
 func (r *resolver) ResolveAndValidate(testConfig *config.TestConfig) (*ResolutionResult, error) {
-	r.log.WithField("model", testConfig.Model).Debug("resolving dependencies")
-
 	// Find the target model
 	targetModel, isTransformation := r.transformationModels[testConfig.Model]
 	if !isTransformation {
@@ -136,12 +134,6 @@ func (r *resolver) ResolveAndValidate(testConfig *config.TestConfig) (*Resolutio
 
 	// Extract leaf external tables
 	externalTables := r.extractLeafExternalTables(transformations)
-
-	// For OR dependencies, only validate that at least one option is provided
-	// Don't validate here - CBT config will include all options, SQL handles missing tables
-	// if err := r.validateExternalData(externalTables, testConfig.ExternalData); err != nil {
-	// 	return nil, err
-	// }
 
 	// Build parquet URL map from test config
 	parquetURLs := make(map[string]string)

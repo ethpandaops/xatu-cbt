@@ -17,7 +17,7 @@ type ModelType string
 
 const (
 	// ModelTypeExternal represents external data source models
-	ModelTypeExternal       ModelType = "external"
+	ModelTypeExternal ModelType = "external"
 	// ModelTypeTransformation represents transformation models
 	ModelTypeTransformation ModelType = "transformation"
 )
@@ -61,11 +61,6 @@ func NewParser(log logrus.FieldLogger) Parser {
 
 // ParseModel parses a single model file and extracts metadata
 func (p *parser) ParseModel(path string, modelType ModelType) (*Model, error) {
-	p.log.WithFields(logrus.Fields{
-		"path": path,
-		"type": modelType,
-	}).Debug("parsing model file")
-
 	// Read file content
 	content, err := os.ReadFile(path) //nolint:gosec // G304: Reading model files from trusted paths
 	if err != nil {
@@ -116,12 +111,6 @@ func (p *parser) ParseModel(path string, modelType ModelType) (*Model, error) {
 		SQL:          sql,
 		Table:        tableName,
 	}
-
-	p.log.WithFields(logrus.Fields{
-		"name":         model.Name,
-		"type":         model.Type,
-		"dependencies": model.Dependencies,
-	}).Debug("parsed model")
 
 	return model, nil
 }
@@ -189,7 +178,8 @@ func (p *parser) extractFrontmatter(content string) (*Frontmatter, string, error
 
 // normalizeDependency converts dependency references to table names
 // Handles: {{external}}.table_name → table_name
-//          {{transformation}}.table_name → table_name
+//
+//	{{transformation}}.table_name → table_name
 func (p *parser) normalizeDependency(dep string) string {
 	// Extract table name from {{external}}.table_name or {{transformation}}.table_name
 	re := regexp.MustCompile(`\{\{(?:external|transformation)\}\}\.(.+)`)

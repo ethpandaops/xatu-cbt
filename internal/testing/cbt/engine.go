@@ -63,13 +63,13 @@ func NewEngine(log logrus.FieldLogger, configGen ConfigGenerator, clickhouseURL,
 
 // Start initializes the engine (no-op for this implementation)
 func (e *engine) Start(_ context.Context) error {
-	e.log.Debug("starting CBT engine")
+	e.log.Debug("starting cbt engine")
 	return nil
 }
 
 // Stop cleans up the engine
 func (e *engine) Stop() error {
-	e.log.Debug("stopping CBT engine")
+	e.log.Debug("stopping cbt engine")
 
 	// Kill all running containers
 	e.runningContainersMu.Lock()
@@ -135,7 +135,7 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 		"network":  network,
 		"database": dbName,
 		"config":   configPath,
-	}).Debug("running CBT in docker")
+	}).Debug("starting cbt")
 
 	// Get absolute path to config
 	absConfigPath, err := filepath.Abs(configPath)
@@ -163,11 +163,6 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 		"--config", "/config/config.yml",
 	}
 
-	e.log.WithFields(logrus.Fields{
-		"command":   fmt.Sprintf("docker %s", strings.Join(args, " ")),
-		"container": containerName,
-	}).Debug("executing docker command")
-
 	// Start CBT container in background
 	execCtx, cancel := context.WithTimeout(ctx, executionTimeout)
 	defer cancel()
@@ -191,7 +186,7 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 	// Ensure container is killed on exit
 	defer func() {
 		killCmd := exec.Command("docker", "kill", containerName) //nolint:gosec // G204: Docker cleanup with trusted container name
-		_ = killCmd.Run() // Ignore errors - container may already be stopped
+		_ = killCmd.Run()                                        // Ignore errors - container may already be stopped
 
 		// Remove from tracking
 		e.runningContainersMu.Lock()
@@ -208,9 +203,6 @@ func (e *engine) runDockerCBT(ctx context.Context, network, dbName string, model
 	if err := e.waitForTransformations(ctx, dbName, models); err != nil {
 		e.log.WithError(err).Warn("error waiting for transformations, continuing anyway")
 	}
-
-	// Kill the container
-	e.log.Debug("killing cbt container")
 
 	return nil
 }
@@ -271,11 +263,9 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 
 	// ANTI-FLAKE: Wait for admin tables to be created by CBT before polling them
 	// This prevents race condition where assertions query admin tables before they exist
-	e.log.Debug("waiting for CBT admin tables to be created")
 	if err := e.waitForAdminTables(ctx, conn, dbName, timeout); err != nil {
 		return fmt.Errorf("waiting for admin tables: %w", err)
 	}
-	e.log.Debug("CBT admin tables ready")
 
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
@@ -312,7 +302,6 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 			// Check if all models are in admin tables AND have tables created
 			// OPTION 1: Track pending time and accept 0-row models after timeout
 			pending := []string{}
-			missingTables := []string{}
 			now := time.Now()
 
 			for model := range allModels {
@@ -354,14 +343,12 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 				if err != nil {
 					e.log.WithError(err).WithField("model", model).Debug("error checking table existence")
 					pending = append(pending, model) // Keep waiting on errors
-					missingTables = append(missingTables, model)
 					continue
 				}
 
 				if !tableExists {
 					e.log.WithField("model", model).Debug("table not created yet, waiting")
 					pending = append(pending, model)
-					missingTables = append(missingTables, model)
 					continue
 				}
 
@@ -370,11 +357,9 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 			}
 
 			e.log.WithFields(logrus.Fields{
-				"completed":      len(allCompleted),
-				"total":          len(allModels),
-				"pending":        pending,
-				"missing_tables": missingTables,
-			}).Debug("checking transformation progress")
+				"completed": fmt.Sprintf("[%v/%v]", len(allCompleted), len(allModels)),
+				"pending":   pending,
+			}).Debug("transformation progress")
 
 			if len(pending) == 0 {
 				return nil
@@ -416,8 +401,6 @@ func (e *engine) waitForAdminTables(ctx context.Context, conn *sql.DB, dbName st
 			if allExist {
 				// ANTI-FLAKE: Tables exist in system.tables, but verify they're actually queryable
 				// In clustered setups, there can be a delay between metadata and data availability
-				e.log.Debug("admin tables exist in system.tables, verifying they are queryable")
-
 				for _, tableName := range adminTables {
 					// Try to actually query the table to ensure it's not just metadata
 					query := fmt.Sprintf(`SELECT count() FROM %s.%s LIMIT 1`, dbName, tableName) //nolint:gosec // G201: Safe SQL with controlled identifiers
@@ -430,14 +413,11 @@ func (e *engine) waitForAdminTables(ctx context.Context, conn *sql.DB, dbName st
 				}
 
 				if allExist {
-					e.log.Debug("admin tables are queryable, waiting for cluster propagation")
-
 					// ANTI-FLAKE: Give cluster time to fully replicate table metadata across all nodes
 					// Assertions create new connections that might hit different nodes than our check
 					// In distributed ClickHouse, metadata replication can take 1-2 seconds
 					time.Sleep(2 * time.Second)
 
-					e.log.Debug("cluster propagation complete")
 					return nil
 				}
 			}
