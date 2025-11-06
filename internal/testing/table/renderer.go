@@ -29,13 +29,15 @@ func NewRenderer(log logrus.FieldLogger) Renderer {
 	}
 }
 
-func (r *renderer) Start(ctx context.Context) error {
+func (r *renderer) Start(_ context.Context) error {
 	r.log.Info("table renderer started")
+
 	return nil
 }
 
 func (r *renderer) Stop() error {
 	r.log.Info("table renderer stopped")
+
 	return nil
 }
 

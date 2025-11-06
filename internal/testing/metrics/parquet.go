@@ -6,8 +6,10 @@ import "time"
 type ParquetLoadSource string
 
 const (
+	// SourceCache defines if parquet was loaded via cache.
 	SourceCache ParquetLoadSource = "cache"
-	SourceS3    ParquetLoadSource = "s3"
+	// SourceS3 defines if parquet was loaded via s3.
+	SourceS3 ParquetLoadSource = "s3"
 )
 
 // ParquetLoadMetric captures metrics about loading a parquet file

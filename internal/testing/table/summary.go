@@ -28,8 +28,9 @@ func NewSummaryFormatter(log logrus.FieldLogger, renderer Renderer) SummaryForma
 	}
 }
 
-func (f *summaryFormatter) Start(ctx context.Context) error {
+func (f *summaryFormatter) Start(_ context.Context) error {
 	f.log.Info("summary formatter started")
+
 	return nil
 }
 

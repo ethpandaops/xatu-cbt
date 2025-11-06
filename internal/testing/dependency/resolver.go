@@ -19,10 +19,10 @@ type Resolver interface {
 
 // ResolutionResult contains dependency resolution output
 type ResolutionResult struct {
-	TargetModel          *Model             // The model being tested
-	TransformationModels []*Model           // Transformations in execution order (topologically sorted)
-	ExternalTables       []string           // Leaf external table names required
-	ParquetURLs          map[string]string  // External table name → parquet URL (from testConfig)
+	TargetModel          *Model            // The model being tested
+	TransformationModels []*Model          // Transformations in execution order (topologically sorted)
+	ExternalTables       []string          // Leaf external table names required
+	ParquetURLs          map[string]string // External table name → parquet URL (from testConfig)
 }
 
 type resolver struct {
@@ -49,7 +49,7 @@ func NewResolver(log logrus.FieldLogger, externalDir, transformationDir string, 
 }
 
 // Start initializes the resolver by parsing all models
-func (r *resolver) Start(ctx context.Context) error {
+func (r *resolver) Start(_ context.Context) error {
 	r.log.Debug("starting dependency resolver")
 
 	// Parse external models
@@ -165,9 +165,9 @@ func (r *resolver) ResolveAndValidate(testConfig *config.TestConfig) (*Resolutio
 	}
 
 	r.log.WithFields(logrus.Fields{
-		"model":               testConfig.Model,
-		"transformations":     len(result.TransformationModels),
-		"external_tables":     len(result.ExternalTables),
+		"model":           testConfig.Model,
+		"transformations": len(result.TransformationModels),
+		"external_tables": len(result.ExternalTables),
 	}).Debug("resolved dependencies")
 
 	return result, nil

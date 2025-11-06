@@ -15,7 +15,7 @@ const (
 	xatuDirName        = "xatu"
 )
 
-// RepoManager manages the xatu repository for migrations
+// RepoManager manages the xatu repository for migrations.
 type RepoManager struct {
 	workDir string
 	repoURL string
@@ -23,7 +23,7 @@ type RepoManager struct {
 	log     logrus.FieldLogger
 }
 
-// NewRepoManager creates a new xatu repository manager
+// NewRepoManager creates a new xatu repository manager.
 func NewRepoManager(log logrus.FieldLogger, workDir, repoURL, ref string) *RepoManager {
 	if repoURL == "" {
 		repoURL = defaultXatuRepoURL
@@ -40,7 +40,7 @@ func NewRepoManager(log logrus.FieldLogger, workDir, repoURL, ref string) *RepoM
 	}
 }
 
-// EnsureRepo ensures the xatu repository is cloned and at the correct ref
+// EnsureRepo ensures the xatu repository is cloned and at the correct ref.
 func (r *RepoManager) EnsureRepo() (string, error) {
 	repoPath := filepath.Join(r.workDir, xatuDirName)
 
@@ -82,12 +82,12 @@ func (r *RepoManager) EnsureRepo() (string, error) {
 	return repoPath, nil
 }
 
-// GetMigrationDir returns the path to xatu's migration directory
+// GetMigrationDir returns the path to xatu's migration directory.
 func (r *RepoManager) GetMigrationDir(repoPath string) string {
 	return filepath.Join(repoPath, "deploy", "migrations", "clickhouse")
 }
 
-// gitClone clones the repository
+// gitClone clones the repository.
 func (r *RepoManager) gitClone(dest string) error {
 	cmd := exec.Command("git", "clone", "--depth", "1", "--branch", r.ref, r.repoURL, dest)
 	cmd.Stdout = os.Stdout
@@ -100,7 +100,7 @@ func (r *RepoManager) gitClone(dest string) error {
 	return nil
 }
 
-// gitFetch fetches latest changes (shallow fetch of specific ref)
+// gitFetch fetches latest changes (shallow fetch of specific ref).
 func (r *RepoManager) gitFetch(repoPath string) error {
 	cmd := exec.Command("git", "fetch", "origin", "--depth", "1", r.ref)
 	cmd.Dir = repoPath
@@ -114,7 +114,7 @@ func (r *RepoManager) gitFetch(repoPath string) error {
 	return nil
 }
 
-// gitCheckout checks out the desired ref
+// gitCheckout checks out the desired ref.
 func (r *RepoManager) gitCheckout(repoPath string) error {
 	cmd := exec.Command("git", "checkout", r.ref)
 	cmd.Dir = repoPath

@@ -29,7 +29,7 @@ func NewResultsFormatter(log logrus.FieldLogger, renderer Renderer) ResultsForma
 	}
 }
 
-func (f *resultsFormatter) Start(ctx context.Context) error {
+func (f *resultsFormatter) Start(_ context.Context) error {
 	f.log.Info("results formatter started")
 	return nil
 }

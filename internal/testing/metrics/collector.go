@@ -38,16 +38,19 @@ func NewCollector(log logrus.FieldLogger) Collector {
 	}
 }
 
-func (c *collector) Start(ctx context.Context) error {
+func (c *collector) Start(_ context.Context) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.startTime = time.Now()
+
 	c.log.Info("metrics collector started")
+
 	return nil
 }
 
 func (c *collector) Stop() error {
 	c.log.Info("metrics collector stopped")
+	
 	return nil
 }
 

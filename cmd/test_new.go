@@ -24,6 +24,9 @@ import (
 )
 
 var (
+	// Errors
+	errTestsFailed = fmt.Errorf("some tests failed")
+
 	// Test command flags
 	testNetwork      string
 	testSpec         string
@@ -138,7 +141,7 @@ func runTestsWithConfig(
 
 	// Return exit code
 	if hasFailures(results) {
-		return fmt.Errorf("some tests failed")
+		return errTestsFailed
 	}
 
 	return nil

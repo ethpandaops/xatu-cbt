@@ -3,11 +3,16 @@ package infra
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
-	_ "github.com/ClickHouse/clickhouse-go/v2"
+	_ "github.com/ClickHouse/clickhouse-go/v2" //nolint:blank-imports // ClickHouse driver registration
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	errClickHouseHealthTimeout = errors.New("timeout waiting for ClickHouse health")
 )
 
 // ClickHouseManager manages ClickHouse cluster lifecycle
@@ -98,7 +103,7 @@ func (m *clickhouseManager) HealthCheck(ctx context.Context) error {
 	}
 
 	if result != 1 {
-		return fmt.Errorf("unexpected health check result: %d", result)
+		return fmt.Errorf("unexpected health check result: %d", result) //nolint:err113 // Include actual result value for debugging
 	}
 
 	return nil
@@ -183,7 +188,7 @@ func (m *clickhouseManager) waitForHealth(ctx context.Context, timeout time.Dura
 			}
 
 			if time.Now().After(deadline) {
-				return fmt.Errorf("timeout waiting for ClickHouse health")
+				return errClickHouseHealthTimeout
 			}
 
 			m.log.Debug("ClickHouse not ready yet, retrying...")

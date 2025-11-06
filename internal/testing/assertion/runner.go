@@ -3,6 +3,7 @@ package assertion
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -10,6 +11,11 @@ import (
 	"github.com/ethpandaops/xatu-cbt/internal/testing/config"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
+)
+
+var (
+	errNoRowsReturned     = errors.New("no rows returned")
+	errClusterSyncTimeout = errors.New("timeout waiting for cluster sync")
 )
 
 // Runner executes SQL assertions
@@ -252,7 +258,7 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 		// Last attempt failed - normalize timestamps for clearer error messages
 		normalizedExpected := r.normalizeTimestampsInMap(assertion.Expected)
 		normalizedActual := r.normalizeTimestampsInMap(actual)
-		result.Error = fmt.Errorf("assertion failed: expected %v, got %v", normalizedExpected, normalizedActual)
+		result.Error = fmt.Errorf("assertion failed: expected %v, got %v", normalizedExpected, normalizedActual) //nolint:err113 // Dynamic error with context needed for debugging
 		break
 	}
 
@@ -294,7 +300,7 @@ func (r *runner) queryToMap(ctx context.Context, dbName, sql string) (map[string
 	}
 
 	if !rows.Next() {
-		return nil, fmt.Errorf("no rows returned")
+		return nil, errNoRowsReturned
 	}
 
 	// Create slice of interface{} to hold values
@@ -466,7 +472,7 @@ func (r *runner) waitForClusterSync(ctx context.Context, dbName string) error {
 
 			// Check timeout
 			if time.Now().After(deadline) {
-				return fmt.Errorf("timeout waiting for cluster sync: %d operations still pending", pending)
+				return fmt.Errorf("%w: %d operations still pending", errClusterSyncTimeout, pending)
 			}
 
 			r.log.WithField("pending", pending).Debug("waiting for cluster sync")

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,6 +9,17 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
+)
+
+var (
+	errModelNameRequired      = errors.New("model name is required")
+	errNetworkRequired        = errors.New("network is required")
+	errSpecRequired           = errors.New("spec is required")
+	errExternalTableMissingURL = errors.New("external table missing URL")
+	errExternalTableMissingNetworkColumn = errors.New("external table missing network_column")
+	errAssertionMissingName   = errors.New("assertion missing name")
+	errAssertionMissingSQL    = errors.New("assertion missing SQL")
+	errAssertionMissingExpected = errors.New("assertion missing expected values")
 )
 
 // TestConfig represents a complete per-model test configuration
@@ -159,26 +171,26 @@ func (l *loader) loadFile(path string) (*TestConfig, error) {
 // validateConfig ensures the test config is valid
 func (l *loader) validateConfig(config *TestConfig) error {
 	if config.Model == "" {
-		return fmt.Errorf("model name is required")
+		return errModelNameRequired
 	}
 
 	if config.Network == "" {
-		return fmt.Errorf("network is required")
+		return errNetworkRequired
 	}
 
 	if config.Spec == "" {
-		return fmt.Errorf("spec is required")
+		return errSpecRequired
 	}
 
 	// Validate external data if present
 	if config.ExternalData != nil {
 		for tableName, extData := range config.ExternalData {
 			if extData.URL == "" {
-				return fmt.Errorf("external table %s missing URL", tableName)
+				return fmt.Errorf("%w: %s", errExternalTableMissingURL, tableName)
 			}
 
 			if extData.NetworkColumn == "" {
-				return fmt.Errorf("external table %s missing network_column", tableName)
+				return fmt.Errorf("%w: %s", errExternalTableMissingNetworkColumn, tableName)
 			}
 		}
 	}
@@ -190,15 +202,15 @@ func (l *loader) validateConfig(config *TestConfig) error {
 
 	for i, assertion := range config.Assertions {
 		if assertion.Name == "" {
-			return fmt.Errorf("assertion %d missing name", i)
+			return fmt.Errorf("%w at index %d", errAssertionMissingName, i)
 		}
 
 		if assertion.SQL == "" {
-			return fmt.Errorf("assertion %s missing SQL", assertion.Name)
+			return fmt.Errorf("%w: %s", errAssertionMissingSQL, assertion.Name)
 		}
 
 		if len(assertion.Expected) == 0 {
-			return fmt.Errorf("assertion %s missing expected values", assertion.Name)
+			return fmt.Errorf("%w: %s", errAssertionMissingExpected, assertion.Name)
 		}
 	}
 

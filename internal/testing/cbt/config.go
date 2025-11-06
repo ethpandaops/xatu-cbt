@@ -161,9 +161,7 @@ func (g *configGenerator) GenerateForModels(network, dbName string, models []str
 	config.Models.Overrides = g.buildTestOverrides(models)
 
 	// Template config with database name
-	if err := g.templateConfig(config, dbName); err != nil {
-		return fmt.Errorf("templating config: %w", err)
-	}
+	g.templateConfig(config, dbName)
 
 	// Write config to file
 	data, err := yaml.Marshal(config)
@@ -230,7 +228,7 @@ func (g *configGenerator) buildModelPaths(models []string) (externalPaths []stri
 }
 
 // templateConfig applies database-specific templating to config
-func (g *configGenerator) templateConfig(config *CBTConfig, dbName string) error {
+func (g *configGenerator) templateConfig(config *CBTConfig, dbName string) {
 	// Replace ${NETWORK_NAME} placeholder in ClickHouse URL if present
 	config.ClickHouse.URL = strings.ReplaceAll(config.ClickHouse.URL, "${NETWORK_NAME}", dbName)
 
@@ -238,8 +236,6 @@ func (g *configGenerator) templateConfig(config *CBTConfig, dbName string) error
 	if !strings.Contains(config.Redis.Prefix, dbName) {
 		g.log.WithField("database", dbName).Warn("Redis prefix does not contain database name")
 	}
-
-	return nil
 }
 
 // buildTestOverrides creates test-optimized overrides by loading overrides.tests.yaml

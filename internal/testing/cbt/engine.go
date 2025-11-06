@@ -463,19 +463,6 @@ func (e *engine) getCompletedModels(ctx context.Context, conn *sql.DB, dbName, a
 	return completed, nil
 }
 
-// getModelRowCount returns the number of rows in a model table
-func (e *engine) getModelRowCount(ctx context.Context, conn *sql.DB, dbName, tableName string) (uint64, error) {
-	query := fmt.Sprintf(`SELECT count() FROM %s.%s`, dbName, tableName)
-
-	var count uint64
-	err := conn.QueryRowContext(ctx, query).Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
-}
-
 // tableExists checks if a table exists in the database
 func (e *engine) tableExists(ctx context.Context, conn *sql.DB, dbName, tableName string) (bool, error) {
 	query := fmt.Sprintf(`

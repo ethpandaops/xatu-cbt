@@ -29,13 +29,15 @@ func NewParquetFormatter(log logrus.FieldLogger, renderer Renderer) ParquetForma
 	}
 }
 
-func (f *parquetFormatter) Start(ctx context.Context) error {
+func (f *parquetFormatter) Start(_ context.Context) error {
 	f.log.Info("parquet formatter started")
+
 	return nil
 }
 
 func (f *parquetFormatter) Stop() error {
 	f.log.Info("parquet formatter stopped")
+
 	return nil
 }
 
