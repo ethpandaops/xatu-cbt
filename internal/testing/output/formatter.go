@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/ethpandaops/xatu-cbt/internal/testing/format"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/table"
 	"github.com/fatih/color"
@@ -28,10 +29,10 @@ type formatter struct {
 
 	// Table formatting components
 	metrics          metrics.Collector
-	tableRenderer    table.Renderer
-	parquetFormatter table.ParquetFormatter
-	resultsFormatter table.ResultsFormatter
-	summaryFormatter table.SummaryFormatter
+	tableRenderer    *table.Renderer
+	parquetFormatter *table.ParquetFormatter
+	resultsFormatter *table.ResultsFormatter
+	summaryFormatter *table.SummaryFormatter
 
 	// Colors
 	green  *color.Color
@@ -46,10 +47,10 @@ func NewFormatter(
 	writer io.Writer,
 	verbose bool,
 	metricsCollector metrics.Collector,
-	tableRenderer table.Renderer,
-	parquetFormatter table.ParquetFormatter,
-	resultsFormatter table.ResultsFormatter,
-	summaryFormatter table.SummaryFormatter,
+	tableRenderer *table.Renderer,
+	parquetFormatter *table.ParquetFormatter,
+	resultsFormatter *table.ResultsFormatter,
+	summaryFormatter *table.SummaryFormatter,
 ) Formatter {
 	return &formatter{
 		writer:           writer,
@@ -75,7 +76,7 @@ func (f *formatter) PrintPhase(phase string) {
 // PrintProgress prints progress with checkmark and timing
 func (f *formatter) PrintProgress(message string, duration time.Duration) {
 	if duration > 0 {
-		_, _ = f.gray.Fprintf(f.writer, "%s (%s)\n", message, formatDuration(duration)) // Ignore write errors to stdout
+		_, _ = f.gray.Fprintf(f.writer, "%s (%s)\n", message, format.Duration(duration)) // Ignore write errors to stdout
 	} else {
 		_, _ = fmt.Fprintf(f.writer, "%s\n", message) // Ignore write errors to stdout
 	}
@@ -93,17 +94,6 @@ func (f *formatter) PrintError(message string, err error) {
 		_, _ = f.red.Fprintf(f.writer, ": %v", err) // Ignore write errors to stdout
 	}
 	_, _ = fmt.Fprintf(f.writer, "\n") // Ignore write errors to stdout
-}
-
-// formatDuration formats duration in human-readable format
-func formatDuration(d time.Duration) string {
-	if d < time.Second {
-		return fmt.Sprintf("%dms", d.Milliseconds())
-	}
-	if d < time.Minute {
-		return fmt.Sprintf("%.1fs", d.Seconds())
-	}
-	return fmt.Sprintf("%.1fm", d.Minutes())
 }
 
 // PrintParquetSummary prints a table summary of parquet files loaded

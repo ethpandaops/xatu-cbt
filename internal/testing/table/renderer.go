@@ -2,7 +2,6 @@ package table
 
 import (
 	"bytes"
-	"context"
 	"io"
 
 	"github.com/olekukonko/tablewriter"
@@ -10,35 +9,15 @@ import (
 )
 
 // Renderer provides table rendering utilities
-type Renderer interface {
-	Start(ctx context.Context) error
-	Stop() error
-	RenderToString(headers []string, rows [][]string, opts ...RenderOption) string
-	RenderToWriter(w io.Writer, headers []string, rows [][]string, opts ...RenderOption)
-}
-
-// renderer implements Renderer interface
-type renderer struct {
+type Renderer struct {
 	log logrus.FieldLogger
 }
 
 // NewRenderer creates a new table renderer
-func NewRenderer(log logrus.FieldLogger) Renderer {
-	return &renderer{
+func NewRenderer(log logrus.FieldLogger) *Renderer {
+	return &Renderer{
 		log: log.WithField("component", "table.renderer"),
 	}
-}
-
-func (r *renderer) Start(_ context.Context) error {
-	r.log.Info("table renderer started")
-
-	return nil
-}
-
-func (r *renderer) Stop() error {
-	r.log.Info("table renderer stopped")
-
-	return nil
 }
 
 // RenderOption configures table rendering
@@ -75,13 +54,15 @@ func WithRowSeparator(show bool) RenderOption {
 	}
 }
 
-func (r *renderer) RenderToString(headers []string, rows [][]string, opts ...RenderOption) string {
+// RenderToString renders a table to a string with the given headers and rows
+func (r *Renderer) RenderToString(headers []string, rows [][]string, opts ...RenderOption) string {
 	buf := &bytes.Buffer{}
 	r.RenderToWriter(buf, headers, rows, opts...)
 	return buf.String()
 }
 
-func (r *renderer) RenderToWriter(w io.Writer, headers []string, rows [][]string, opts ...RenderOption) {
+// RenderToWriter renders a table to the given writer with headers and rows
+func (r *Renderer) RenderToWriter(w io.Writer, headers []string, rows [][]string, opts ...RenderOption) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader(headers)
 
@@ -109,6 +90,3 @@ func (r *renderer) RenderToWriter(w io.Writer, headers []string, rows [][]string
 	// Render
 	table.Render()
 }
-
-// Compile-time interface compliance check
-var _ Renderer = (*renderer)(nil)

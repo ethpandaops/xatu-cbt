@@ -1,45 +1,30 @@
 package table
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
+	"github.com/ethpandaops/xatu-cbt/internal/testing/format"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/metrics"
 	"github.com/sirupsen/logrus"
 )
 
 // ResultsFormatter formats test results as a table
-type ResultsFormatter interface {
-	Start(ctx context.Context) error
-	Stop() error
-	Format(metrics []metrics.TestResultMetric) string
-}
-
-type resultsFormatter struct {
+type ResultsFormatter struct {
 	log      logrus.FieldLogger
-	renderer Renderer
+	renderer *Renderer
 }
 
 // NewResultsFormatter creates a new results table formatter
-func NewResultsFormatter(log logrus.FieldLogger, renderer Renderer) ResultsFormatter {
-	return &resultsFormatter{
+func NewResultsFormatter(log logrus.FieldLogger, renderer *Renderer) *ResultsFormatter {
+	return &ResultsFormatter{
 		log:      log.WithField("component", "table.results_formatter"),
 		renderer: renderer,
 	}
 }
 
-func (f *resultsFormatter) Start(_ context.Context) error {
-	f.log.Info("results formatter started")
-	return nil
-}
-
-func (f *resultsFormatter) Stop() error {
-	f.log.Info("results formatter stopped")
-	return nil
-}
-
-func (f *resultsFormatter) Format(testMetrics []metrics.TestResultMetric) string {
+// Format converts test result metrics into a formatted table string with failure details
+func (f *ResultsFormatter) Format(testMetrics []metrics.TestResultMetric) string {
 	if len(testMetrics) == 0 {
 		return "No tests executed"
 	}
@@ -82,7 +67,7 @@ func (f *resultsFormatter) Format(testMetrics []metrics.TestResultMetric) string
 			metric.Model,
 			status,
 			assertionInfo,
-			formatDuration(metric.Duration),
+			format.Duration(metric.Duration),
 			details,
 		})
 	}
@@ -98,7 +83,7 @@ func (f *resultsFormatter) Format(testMetrics []metrics.TestResultMetric) string
 }
 
 // formatFailureDetails creates a detailed section showing all failed assertions
-func (f *resultsFormatter) formatFailureDetails(failedTests []metrics.TestResultMetric) string {
+func (f *ResultsFormatter) formatFailureDetails(failedTests []metrics.TestResultMetric) string {
 	var builder strings.Builder
 
 	builder.WriteString("\n\n▸ Failed Test Details\n\n")
@@ -108,7 +93,7 @@ func (f *resultsFormatter) formatFailureDetails(failedTests []metrics.TestResult
 			builder.WriteString("\n")
 		}
 
-		builder.WriteString(fmt.Sprintf("%s (%s)\n", test.Model, formatDuration(test.Duration)))
+		builder.WriteString(fmt.Sprintf("%s (%s)\n", test.Model, format.Duration(test.Duration)))
 
 		if len(test.FailedAssertions) == 0 { //nolint:nestif // Error formatting logic - refactoring risky
 			// No specific assertion details, show general error
@@ -149,6 +134,3 @@ func formatMap(m map[string]interface{}) string {
 	// Use a simple format for small maps
 	return fmt.Sprintf("%v", m)
 }
-
-// Compile-time interface compliance check
-var _ ResultsFormatter = (*resultsFormatter)(nil)

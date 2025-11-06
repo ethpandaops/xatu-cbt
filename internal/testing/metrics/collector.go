@@ -9,6 +9,58 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ParquetLoadSource indicates where parquet data was loaded from
+type ParquetLoadSource string
+
+const (
+	// SourceCache defines if parquet was loaded via cache.
+	SourceCache ParquetLoadSource = "cache"
+	// SourceS3 defines if parquet was loaded via s3.
+	SourceS3 ParquetLoadSource = "s3"
+)
+
+// ParquetLoadMetric captures metrics about loading a parquet file
+type ParquetLoadMetric struct {
+	Table     string
+	Source    ParquetLoadSource // cache or s3
+	SizeBytes int64
+	Duration  time.Duration
+	Timestamp time.Time
+}
+
+// FailedAssertionDetail captures details about a single failed assertion
+type FailedAssertionDetail struct {
+	Name     string
+	Expected map[string]interface{}
+	Actual   map[string]interface{}
+	Error    string
+}
+
+// TestResultMetric captures metrics about a test execution
+type TestResultMetric struct {
+	Model             string
+	Passed            bool
+	Duration          time.Duration
+	AssertionsTotal   int
+	AssertionsPassed  int
+	AssertionsFailed  int
+	ErrorMessage      string // empty if passed
+	FailedAssertions  []FailedAssertionDetail
+	Timestamp         time.Time
+}
+
+// SummaryMetric provides aggregate statistics across all operations
+type SummaryMetric struct {
+	TotalDuration time.Duration
+	TotalTests    int
+	PassedTests   int
+	FailedTests   int
+	CacheHits     int
+	CacheMisses   int
+	CacheHitRate  float64 // percentage
+	TotalDataSize int64   // bytes
+}
+
 // Collector interface for metrics collection
 type Collector interface {
 	Start(ctx context.Context) error
