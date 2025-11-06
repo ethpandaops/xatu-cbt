@@ -116,15 +116,15 @@ func init() {
 // createInfraManagers creates and returns Docker and ClickHouse managers with the shared configuration.
 func createInfraManagers(log logrus.FieldLogger) (infra.DockerManager, infra.ClickHouseManager) {
 	dockerManager := infra.NewDockerManager(
+		log,
 		config.PlatformComposeFile,
 		config.ProjectName,
-		log,
 	)
 
 	chManager := infra.NewClickHouseManager(
+		log,
 		dockerManager,
 		infraClickhouseURL,
-		log,
 	)
 
 	return dockerManager, chManager
@@ -147,7 +147,7 @@ func runInfraStart(cmd *cobra.Command, args []string) error {
 
 	// Ensure xatu repository exists (needed for xatu-clickhouse configs)
 	fmt.Println("Ensuring xatu repository...")
-	if _, err := ensureXatuRepo(wd, xatuRepoURL, xatuRef, log); err != nil {
+	if _, err := ensureXatuRepo(log, wd, xatuRepoURL, xatuRef); err != nil {
 		return err
 	}
 

@@ -37,7 +37,7 @@ type resolver struct {
 }
 
 // NewResolver creates a new dependency resolver
-func NewResolver(externalDir, transformationDir string, parser Parser, log logrus.FieldLogger) Resolver {
+func NewResolver(log logrus.FieldLogger, externalDir, transformationDir string, parser Parser) Resolver {
 	return &resolver{
 		externalDir:          externalDir,
 		transformationDir:    transformationDir,

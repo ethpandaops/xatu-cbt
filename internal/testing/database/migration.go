@@ -29,7 +29,7 @@ type migrationRunner struct {
 }
 
 // NewMigrationRunner creates a new migration runner with optional table name prefix
-func NewMigrationRunner(migrationDir string, tablePrefix string, log logrus.FieldLogger) MigrationRunner {
+func NewMigrationRunner(log logrus.FieldLogger, migrationDir string, tablePrefix string) MigrationRunner {
 	return &migrationRunner{
 		migrationDir: migrationDir,
 		tablePrefix:  tablePrefix,

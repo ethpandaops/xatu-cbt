@@ -56,13 +56,13 @@ type orchestrator struct {
 
 // NewOrchestrator creates a new test orchestrator
 func NewOrchestrator(
+	log logrus.FieldLogger,
 	configLoader testconfig.Loader,
 	resolver dependency.Resolver,
 	cache cache.ParquetCache,
 	dbManager database.Manager,
 	cbtEngine cbt.Engine,
 	assertionRunner assertion.Runner,
-	log logrus.FieldLogger,
 ) Orchestrator {
 	return &orchestrator{
 		configLoader:     configLoader,

@@ -45,7 +45,7 @@ type loader struct {
 }
 
 // NewLoader creates a new test config loader
-func NewLoader(baseDir string, log logrus.FieldLogger) Loader {
+func NewLoader(log logrus.FieldLogger, baseDir string) Loader {
 	return &loader{
 		baseDir: baseDir,
 		log:     log.WithField("component", "config_loader"),

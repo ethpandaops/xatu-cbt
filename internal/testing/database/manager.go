@@ -45,7 +45,7 @@ const (
 )
 
 // NewManager creates a new dual-cluster database manager
-func NewManager(xatuConnStr, cbtConnStr string, migrationRunner MigrationRunner, xatuMigrationDir string, forceRebuild bool, log logrus.FieldLogger) Manager {
+func NewManager(log logrus.FieldLogger, xatuConnStr, cbtConnStr string, migrationRunner MigrationRunner, xatuMigrationDir string, forceRebuild bool) Manager {
 	return &manager{
 		xatuConnStr:      xatuConnStr,
 		cbtConnStr:       cbtConnStr,
@@ -158,7 +158,7 @@ func (m *manager) PrepareNetworkDatabase(ctx context.Context, network string) er
 			m.log.Info("running xatu migrations in xatu cluster")
 
 			// No prefix needed - these are the primary tables in xatu cluster
-			xatuMigrationRunner := NewMigrationRunner(m.xatuMigrationDir, "", m.log)
+			xatuMigrationRunner := NewMigrationRunner(m.log, m.xatuMigrationDir, "")
 			if err := xatuMigrationRunner.RunMigrations(ctx, m.xatuConn, "default"); err != nil {
 				return fmt.Errorf("running xatu migrations: %w", err)
 			}

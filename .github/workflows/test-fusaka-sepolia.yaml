@@ -1,4 +1,4 @@
-name: test
+name: test-fusaka-sepolia
 on:
   pull_request:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 jobs:
   run-tests:
-    name: Run tests
+    name: Test fusaka/sepolia
     runs-on:
       - ubuntu-latest
     steps:
@@ -32,11 +32,10 @@ jobs:
       - name: Build xatu-cbt
         run: make build
       - name: Start infrastructure
+        id: start-infra
         run: ./bin/xatu-cbt infra start
-      - name: Run pectra mainnet tests
-        run: ./bin/xatu-cbt test spec --spec pectra --network mainnet
       - name: Run fusaka sepolia tests
         run: ./bin/xatu-cbt test spec --spec fusaka --network sepolia
       - name: Stop infrastructure
-        if: always()
+        if: always() && steps.start-infra.outcome != 'skipped'
         run: ./bin/xatu-cbt infra stop

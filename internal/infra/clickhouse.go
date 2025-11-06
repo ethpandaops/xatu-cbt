@@ -33,7 +33,7 @@ const (
 )
 
 // NewClickHouseManager creates a new ClickHouse cluster manager
-func NewClickHouseManager(dockerManager DockerManager, connStr string, log logrus.FieldLogger) ClickHouseManager {
+func NewClickHouseManager(log logrus.FieldLogger, dockerManager DockerManager, connStr string) ClickHouseManager {
 	return &clickhouseManager{
 		dockerManager: dockerManager,
 		connStr:       connStr,

@@ -211,43 +211,43 @@ func setupOrchestrator(cmd *cobra.Command) (testing.Orchestrator, output.Formatt
 	}
 
 	// Initialize xatu repository
-	xatuRepoPath, err := ensureXatuRepo(wd, xatuRepoURL, xatuRef, log)
+	xatuRepoPath, err := ensureXatuRepo(log, wd, xatuRepoURL, xatuRef)
 	if err != nil {
 		return nil, nil, err
 	}
 	xatuMigrationDir := filepath.Join(xatuRepoPath, config.XatuMigrationsPath)
 
 	// Initialize components
-	configLoader := testconfig.NewLoader(filepath.Join(wd, config.TestsDir), log)
+	configLoader := testconfig.NewLoader(log, filepath.Join(wd, config.TestsDir))
 	parser := dependency.NewParser(log)
 	resolver := dependency.NewResolver(
+		log,
 		filepath.Join(wd, config.ModelsExternalDir),
 		filepath.Join(wd, config.ModelsTransformationsDir),
 		parser,
-		log,
 	)
-	parquetCache := cache.NewParquetCache(testCacheDir, testCacheSize, log)
-	migrationRunner := database.NewMigrationRunner(filepath.Join(wd, config.MigrationsDir), "", log) // Empty prefix for xatu-cbt migrations
-	dbManager := database.NewManager(xatuClickhouseURL, cbtClickhouseURL, migrationRunner, xatuMigrationDir, testForceRebuild, log)
+	parquetCache := cache.NewParquetCache(log, testCacheDir, testCacheSize)
+	migrationRunner := database.NewMigrationRunner(log, filepath.Join(wd, config.MigrationsDir), "") // Empty prefix for xatu-cbt migrations
+	dbManager := database.NewManager(log, xatuClickhouseURL, cbtClickhouseURL, migrationRunner, xatuMigrationDir, testForceRebuild)
 	configGen := cbt.NewConfigGenerator(
+		log,
 		filepath.Join(wd, config.ModelsExternalDir),
 		filepath.Join(wd, config.ModelsTransformationsDir),
 		cbtClickhouseURL,
 		redisURL,
-		log,
 	)
-	cbtEngine := cbt.NewEngine(configGen, cbtClickhouseURL, redisURL, filepath.Join(wd, config.ModelsDir), log)
-	assertionRunner := assertion.NewRunner(cbtClickhouseURL, 5, 30*time.Second, log)
+	cbtEngine := cbt.NewEngine(log, configGen, cbtClickhouseURL, redisURL, filepath.Join(wd, config.ModelsDir))
+	assertionRunner := assertion.NewRunner(log, cbtClickhouseURL, 5, 30*time.Second)
 
 	// Create orchestrator
 	orchestrator := testing.NewOrchestrator(
+		log,
 		configLoader,
 		resolver,
 		parquetCache,
 		dbManager,
 		cbtEngine,
 		assertionRunner,
-		log,
 	)
 
 	// Create formatter

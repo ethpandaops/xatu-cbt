@@ -47,7 +47,7 @@ const (
 )
 
 // NewEngine creates a new CBT engine manager
-func NewEngine(configGen ConfigGenerator, clickhouseURL, redisURL, modelsDir string, log logrus.FieldLogger) Engine {
+func NewEngine(log logrus.FieldLogger, configGen ConfigGenerator, clickhouseURL, redisURL, modelsDir string) Engine {
 	return &engine{
 		configGen:     configGen,
 		clickhouseURL: clickhouseURL,

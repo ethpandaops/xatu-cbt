@@ -60,7 +60,7 @@ const (
 )
 
 // NewParquetCache creates a new parquet cache manager
-func NewParquetCache(cacheDir string, maxSizeBytes int64, log logrus.FieldLogger) ParquetCache {
+func NewParquetCache(log logrus.FieldLogger, cacheDir string, maxSizeBytes int64) ParquetCache {
 	return &parquetCache{
 		cacheDir:     cacheDir,
 		maxSizeBytes: maxSizeBytes,

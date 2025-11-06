@@ -76,11 +76,11 @@ type CBTConfig struct {
 
 // NewConfigGenerator creates a new CBT config generator
 func NewConfigGenerator(
+	log logrus.FieldLogger,
 	externalDir,
 	transformationDir,
 	clickhouseURL,
 	redisURL string,
-	log logrus.FieldLogger,
 ) ConfigGenerator {
 	return &configGenerator{
 		externalDir:       externalDir,

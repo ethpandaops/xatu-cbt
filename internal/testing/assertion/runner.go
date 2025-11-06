@@ -57,7 +57,7 @@ const (
 )
 
 // NewRunner creates a new assertion runner
-func NewRunner(connStr string, workers int, timeout time.Duration, log logrus.FieldLogger) Runner {
+func NewRunner(log logrus.FieldLogger, connStr string, workers int, timeout time.Duration) Runner {
 	if workers <= 0 {
 		workers = defaultWorkers
 	}

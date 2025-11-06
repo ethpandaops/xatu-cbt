@@ -30,7 +30,7 @@ const (
 )
 
 // NewDockerManager creates a new docker-compose manager
-func NewDockerManager(composeFile, projectName string, log logrus.FieldLogger) DockerManager {
+func NewDockerManager(log logrus.FieldLogger, composeFile, projectName string) DockerManager {
 	return &dockerManager{
 		composeFile: composeFile,
 		projectName: projectName,
