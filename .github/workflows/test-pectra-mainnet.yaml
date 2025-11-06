@@ -37,7 +37,7 @@ jobs:
         id: start-infra
         run: ./bin/xatu-cbt infra start
       - name: Run pectra mainnet tests
-        run: ./bin/xatu-cbt test spec --spec pectra --network mainnet
+        run: ./bin/xatu-cbt test spec --spec pectra --network mainnet --verbose
       - name: Stop infrastructure
         if: always() && steps.start-infra.outcome != 'skipped'
         run: ./bin/xatu-cbt infra stop

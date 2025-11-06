@@ -37,7 +37,7 @@ jobs:
         id: start-infra
         run: ./bin/xatu-cbt infra start
       - name: Run fusaka sepolia tests
-        run: ./bin/xatu-cbt test spec --spec fusaka --network sepolia
+        run: ./bin/xatu-cbt test spec --spec fusaka --network sepolia --verbose
       - name: Stop infrastructure
         if: always() && steps.start-infra.outcome != 'skipped'
         run: ./bin/xatu-cbt infra stop
