@@ -75,7 +75,8 @@ FROM (
     quantile(0.99)(seen_slot_start_diff) AS p99_seen_slot_start_diff_ms,
     max(seen_slot_start_diff) AS max_seen_slot_start_diff_ms
 FROM {{ index .dep "{{transformation}}" "fct_block_first_seen_by_node" "helpers" "from" }} FINAL
-WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+WHERE slot_start_date_time >= toStartOfMonth(fromUnixTimestamp({{ .bounds.start }}))
+  AND slot_start_date_time < toStartOfMonth(fromUnixTimestamp({{ .bounds.end }})) + INTERVAL 1 MONTH
 GROUP BY
     toYYYYMM(toDate(slot_start_date_time)),
     toDateTime(toStartOfMonth(toDate(slot_start_date_time))),
