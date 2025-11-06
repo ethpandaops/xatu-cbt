@@ -13,7 +13,7 @@ bin/**
 .gocache/
 
 # Output directory for test data
-output/
+/output/
 
 # Parquet cache
 .parquet_cache/
@@ -28,7 +28,7 @@ coverage.txt
 !example.env
 
 # Xatu
-xatu/
+/xatu/
 
 # Python
 __pycache__
