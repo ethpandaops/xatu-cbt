@@ -334,8 +334,9 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 
 					pendingDuration := now.Sub(modelPendingSince[model])
 
-					// OPTION 1: If pending >30s, check if table exists (handles 0-row case)
-					if pendingDuration > 30*time.Second {
+					// OPTION 1: If pending >3min, check if table exists (handles 0-row case)
+					// Increased timeout for CI environments where transformations take longer
+					if pendingDuration > 3*time.Minute {
 						tableExists, err := e.tableExists(ctx, conn, dbName, model)
 						if err != nil {
 							e.log.WithError(err).WithField("model", model).Debug("error checking table existence")
@@ -344,11 +345,11 @@ func (e *engine) waitForTransformations(ctx context.Context, dbName string, mode
 						}
 
 						if tableExists {
-							// Table exists but no admin entry = 0 rows produced (legitimate)
+							// Table exists but no admin entry after 3min = 0 rows produced (legitimate)
 							e.log.WithFields(logrus.Fields{
 								"model":   model,
 								"pending": pendingDuration,
-							}).Info("model table exists but not in admin tables, assuming 0 rows (legitimate)")
+							}).Info("model table exists but not in admin tables after 3min, assuming 0 rows (legitimate)")
 							// Don't add to pending - mark as complete
 							continue
 						}
