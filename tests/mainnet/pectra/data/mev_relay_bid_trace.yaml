@@ -1,3 +1,0 @@
-network_column: meta_network_name
-urls:
-  - https://data.ethpandaops.io/xatu-cbt/pectra/mev_relay_bid_trace.parquet

@@ -1,0 +1,28 @@
+model: fct_block_blob_count_head
+network: sepolia
+spec: fusaka
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot_start_date_time) AS min,
+          MAX(slot_start_date_time) AS max
+        FROM
+          fct_block_blob_count_head FINAL
+      expected:
+        count: 40
+        max: "2025-10-27T00:30:24Z"
+        min: "2025-10-27T00:26:36Z"
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max,
+          fromUnixTimestamp(MIN(position)) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_block_blob_count_head'
+      expected:
+        max: "2025-10-27T00:30:24Z"
+        min: "2025-10-25T06:50:24Z"

@@ -1,8 +1,0 @@
-- name: "total count"
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      cluster('{remote_cluster}', default.canonical_execution_transaction) FINAL
-  expected:
-    count: 4139

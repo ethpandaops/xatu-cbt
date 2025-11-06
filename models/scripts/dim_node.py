@@ -178,10 +178,21 @@ def main():
     # Cluster configuration (optional)
     cluster = os.environ.get('CLICKHOUSE_CLUSTER', '')
     local_suffix = os.environ.get('CLICKHOUSE_LOCAL_SUFFIX', '')
-    
+
+    # Extract network name from database name
+    # For test databases: test_{network}_{spec}_{timestamp}_{hash} -> extract 'network'
+    # For production databases: {network} -> use as-is
+    network_name = target_db
+    if target_db.startswith('test_'):
+        parts = target_db.split('_')
+        if len(parts) >= 2:
+            network_name = parts[1]  # Extract network (e.g., 'mainnet' from 'test_mainnet_pectra_...')
+            print(f"Detected test database, extracted network: {network_name}")
+
     print(f"=== Node Data Collection ===")
     print(f"Target: {target_db}.{target_table}")
     print(f"Database: {target_db}")
+    print(f"Network: {network_name}")
     print(f"ClickHouse URL: {ch_url}")
     
     try:
@@ -197,20 +208,20 @@ def main():
             print("Please check the CLICKHOUSE_URL environment variable", file=sys.stderr)
             return 1
         # Step 1: Construct URL for validator ranges data
-        # Use the database name as the network name for the JSON file
-        validator_ranges_url = f"https://ethpandaops-platform-production-cartographoor.ams3.cdn.digitaloceanspaces.com/validator-ranges/{target_db}.json"
+        # Use the network name for the JSON file
+        validator_ranges_url = f"https://ethpandaops-platform-production-cartographoor.ams3.cdn.digitaloceanspaces.com/validator-ranges/{network_name}.json"
         print(f"Fetching validator ranges data from {validator_ranges_url}")
-        
+
         # Step 2: Fetch the data
         cartographoor_validators = {}
         try:
             json_content = fetch_url(validator_ranges_url)
             # Step 3: Parse the cartographoor data
-            cartographoor_validators = parse_validator_ranges_data(json_content, target_db)
+            cartographoor_validators = parse_validator_ranges_data(json_content, network_name)
             print(f"Found {len(cartographoor_validators)} validator entries from cartographoor")
         except urllib.error.HTTPError as e:
             if e.code == 404:
-                print(f"WARNING: Validator ranges data not found for network '{target_db}'", file=sys.stderr)
+                print(f"WARNING: Validator ranges data not found for network '{network_name}'", file=sys.stderr)
                 print(f"The URL {validator_ranges_url} returned 404", file=sys.stderr)
                 print("Continuing with ethseer data only...", file=sys.stderr)
             else:
@@ -219,10 +230,10 @@ def main():
         except Exception as e:
             print(f"WARNING: Failed to fetch/parse cartographoor data: {e}", file=sys.stderr)
             print("Continuing with ethseer data only...", file=sys.stderr)
-        
+
         # Step 4: Fetch ethseer validators
         print(f"\nFetching validators from ethseer_validator_entity table...")
-        ethseer_validators = fetch_ethseer_validators(ch_url, target_db)
+        ethseer_validators = fetch_ethseer_validators(ch_url, network_name)
         print(f"Found {len(ethseer_validators)} validator entries from ethseer")
         
         # Step 5: Merge data from both sources

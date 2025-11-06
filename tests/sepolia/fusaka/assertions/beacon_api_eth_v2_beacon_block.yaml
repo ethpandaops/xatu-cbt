@@ -1,8 +1,0 @@
-- name: total count
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      cluster('{remote_cluster}', default.beacon_api_eth_v2_beacon_block)
-  expected:
-    count: 21

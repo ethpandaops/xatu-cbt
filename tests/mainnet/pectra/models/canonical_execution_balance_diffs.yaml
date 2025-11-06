@@ -1,0 +1,16 @@
+model: canonical_execution_balance_diffs
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_balance_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_balance_diffs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.canonical_execution_balance_diffs) FINAL
+      expected:
+        count: 10626

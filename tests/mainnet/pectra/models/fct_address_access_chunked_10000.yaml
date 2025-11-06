@@ -1,0 +1,26 @@
+model: fct_address_access_chunked_10000
+network: mainnet
+spec: pectra
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          chunk_start_block_number,
+          first_accessed_accounts,
+          last_accessed_accounts
+        FROM
+          fct_address_access_chunked_10000 FINAL
+      expected:
+        chunk_start_block_number: 22920000
+        first_accessed_accounts: 5824
+        last_accessed_accounts: 5824
+    - name: Has been scheduled at least once
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          admin_cbt_scheduled FINAL
+        WHERE
+          table = 'fct_address_access_chunked_10000'
+      expected:
+        count: 1

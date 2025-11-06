@@ -1,19 +1,13 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
-	"strings"
-	"time"
 
-	"github.com/ethpandaops/xatu-cbt/cmd"
 	"github.com/ethpandaops/xatu-cbt/internal/actions"
 	"github.com/ethpandaops/xatu-cbt/internal/interactive"
-	"github.com/ethpandaops/xatu-cbt/internal/test"
+	// "github.com/ethpandaops/xatu-cbt/internal/test" // Old test infrastructure - use CLI commands instead
 )
 
 func runInteractive() {
@@ -23,11 +17,13 @@ func runInteractive() {
 
 	for {
 		options := []interactive.MenuOption{
-			{
-				Name:        "🧪 Test Management",
-				Description: "Run tests and manage test environments",
-				Action:      showTestMenu,
-			},
+			// NOTE: Test management now uses CLI commands
+			// Use: ./xatu-cbt test models <model> --spec <spec> --network <network>
+			// {
+			// 	Name:        "🧪 Test Management",
+			// 	Description: "Run tests and manage test environments",
+			// 	Action:      showTestMenu,
+			// },
 			{
 				Name:        "🗄️  Network Management",
 				Description: "Setup, teardown, and configure network databases",
@@ -132,6 +128,9 @@ func showNetworkMenu() error {
 	}
 }
 
+// NOTE: Old test menu - replaced by CLI commands
+// Use: ./xatu-cbt test models <model> --spec <spec> --network <network>
+/*
 func showTestMenu() error { //nolint:gocyclo // Menu handling requires multiple options
 	for {
 		options := []interactive.MenuOption{
@@ -270,3 +269,5 @@ func showTestMenu() error { //nolint:gocyclo // Menu handling requires multiple 
 		}
 	}
 }
+*/
+// End of old test menu

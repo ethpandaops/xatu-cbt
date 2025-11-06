@@ -1,0 +1,60 @@
+model: fct_attestation_correctness_by_validator_head
+network: mainnet
+spec: pectra
+external_data:
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Bounds
+      sql: |
+        SELECT
+          MAX(slot_distance) AS slot_distance,
+          MAX(propagation_distance) AS propagation_distance
+        FROM
+          fct_attestation_correctness_by_validator_head FINAL
+      expected:
+        propagation_distance: "15"
+        slot_distance: "9"
+    - name: Expected size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot) AS min,
+          MAX(slot) AS max
+        FROM
+          fct_attestation_correctness_by_validator_head FINAL
+      expected:
+        count: 685007
+        max: "12145389"
+        min: "12145370"
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max,
+          fromUnixTimestamp(MIN(position)) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_attestation_correctness_by_validator_head'
+      expected:
+        max: "2025-07-15T08:38:11Z"
+        min: "2025-07-15T08:34:23Z"

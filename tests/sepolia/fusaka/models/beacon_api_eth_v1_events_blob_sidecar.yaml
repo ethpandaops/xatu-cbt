@@ -1,0 +1,16 @@
+model: beacon_api_eth_v1_events_blob_sidecar
+network: sepolia
+spec: fusaka
+external_data:
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.beacon_api_eth_v1_events_blob_sidecar)
+      expected:
+        count: 0

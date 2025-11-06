@@ -1,0 +1,26 @@
+model: fct_block_blob_count_head
+network: mainnet
+spec: pectra
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot_start_date_time) AS min,
+          MAX(slot_start_date_time) AS max
+        FROM
+          fct_block_blob_count_head FINAL
+      expected:
+        count: 10
+        max: "2025-07-15T08:37:59Z"
+        min: "2025-07-15T08:34:35Z"
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_block_blob_count_head'
+      expected:
+        max: "2025-07-15T08:38:11Z"

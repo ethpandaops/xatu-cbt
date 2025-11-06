@@ -1,3 +1,6 @@
+internal/test.backup
+tests.backup
+
 # Go binaries and build artifacts
 *.exe
 *.dll
@@ -11,6 +14,9 @@ bin/**
 
 # Output directory for test data
 output/
+
+# Parquet cache
+.parquet_cache/
 
 # Go coverage
 *.coverprofile

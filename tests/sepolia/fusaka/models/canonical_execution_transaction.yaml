@@ -1,0 +1,16 @@
+model: canonical_execution_transaction
+network: sepolia
+spec: fusaka
+external_data:
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.canonical_execution_transaction)
+      expected:
+        count: 2396

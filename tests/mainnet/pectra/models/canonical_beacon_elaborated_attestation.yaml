@@ -1,0 +1,16 @@
+model: canonical_beacon_elaborated_attestation
+network: mainnet
+spec: pectra
+external_data:
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.canonical_beacon_elaborated_attestation) FINAL
+      expected:
+        count: 3072

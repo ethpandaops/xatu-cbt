@@ -83,4 +83,8 @@ func init() {
 
 	// Initialize logger with defaults (will be reinitialized after env file is loaded)
 	InitLogger()
+
+	// Add new test infrastructure commands
+	rootCmd.AddCommand(testCmd)
+	rootCmd.AddCommand(infraCmd)
 }

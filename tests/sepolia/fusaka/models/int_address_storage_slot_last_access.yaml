@@ -1,0 +1,35 @@
+model: int_address_storage_slot_last_access
+network: sepolia
+spec: fusaka
+external_data:
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(block_number) AS min,
+          MAX(block_number) AS max
+        FROM
+          int_address_storage_slot_last_access FINAL
+      expected:
+        count: 15172
+        max: 9497923
+        min: 9497903
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          MAX(position + interval) AS max,
+          MIN(position) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'int_address_storage_slot_last_access'
+      expected:
+        max: 9497923
+        min: 9497903

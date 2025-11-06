@@ -1,3 +1,0 @@
-network_column: meta_network_name
-urls:
-  - https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_data_column_sidecar.parquet

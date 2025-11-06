@@ -1,0 +1,47 @@
+model: libp2p_rpc_data_column_custody_probe
+network: sepolia
+spec: fusaka
+external_data:
+    libp2p_rpc_data_column_custody_probe:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.libp2p_rpc_data_column_custody_probe)
+      expected: {}
+    - name: Slot bounds should match test data range (8771000-8773000)
+      sql: |
+        SELECT
+          MIN(slot) AS min_slot,
+          MAX(slot) AS max_slot
+        FROM
+          cluster('{remote_cluster}', default.libp2p_rpc_data_column_custody_probe)
+      expected: {}
+    - name: Column index should be in valid range (0-127)
+      sql: |
+        SELECT
+          MIN(column_index) AS min_col,
+          MAX(column_index) AS max_col
+        FROM
+          cluster('{remote_cluster}', default.libp2p_rpc_data_column_custody_probe)
+      expected: {}
+    - name: Result field should contain valid values
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.libp2p_rpc_data_column_custody_probe)
+        WHERE
+          result NOT IN ('success', 'failed', 'error')
+      expected: {}
+    - name: Network should be sepolia
+      sql: |
+        SELECT
+          COUNT(DISTINCT meta_network_name) AS unique_networks
+        FROM
+          cluster('{remote_cluster}', default.libp2p_rpc_data_column_custody_probe)
+      expected: {}

@@ -1,0 +1,16 @@
+model: canonical_beacon_committee
+network: sepolia
+spec: fusaka
+external_data:
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_beacon_committee.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.canonical_beacon_committee)
+      expected:
+        count: 21
