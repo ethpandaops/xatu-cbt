@@ -27,7 +27,6 @@ import (
 type Orchestrator interface {
 	Start(ctx context.Context) error
 	Stop() error
-	TestModel(ctx context.Context, network, spec, modelName string) (*TestResult, error)
 	TestModels(ctx context.Context, network, spec string, modelNames []string, concurrency int) ([]*TestResult, error)
 	TestSpec(ctx context.Context, network, spec string, concurrency int) ([]*TestResult, error)
 }
@@ -200,24 +199,6 @@ func (o *orchestrator) Stop() error {
 	return nil
 }
 
-// TestModel tests a single model
-func (o *orchestrator) TestModel(ctx context.Context, network, spec, modelName string) (*TestResult, error) {
-	o.log.WithFields(logrus.Fields{
-		"network": network,
-		"spec":    spec,
-		"model":   modelName,
-	}).Info("testing model")
-
-	// Load test config
-	testConfig, err := o.configLoader.LoadForModel(spec, network, modelName)
-	if err != nil {
-		return nil, fmt.Errorf("loading test config: %w", err)
-	}
-
-	// Execute test
-	return o.executeTest(ctx, testConfig)
-}
-
 // TestModels tests multiple models using grouped execution
 // All tests for the same (network, spec) share one database and one CBT container
 func (o *orchestrator) TestModels(ctx context.Context, network, spec string, modelNames []string, concurrency int) ([]*TestResult, error) {
@@ -230,11 +211,6 @@ func (o *orchestrator) TestModels(ctx context.Context, network, spec string, mod
 
 	if concurrency <= 0 {
 		concurrency = 1
-	}
-
-	// Prepare network database once before execution
-	if err := o.ensureNetworkPrepared(ctx, network, spec, modelNames); err != nil {
-		return nil, fmt.Errorf("preparing network database: %w", err)
 	}
 
 	// Load test configs for all models
@@ -268,17 +244,6 @@ func (o *orchestrator) TestSpec(ctx context.Context, network, spec string, concu
 
 	if concurrency <= 0 {
 		concurrency = 1
-	}
-
-	// Extract model names for network preparation
-	modelNames := make([]string, 0, len(configs))
-	for modelName := range configs {
-		modelNames = append(modelNames, modelName)
-	}
-
-	// Prepare network database once before execution
-	if err := o.ensureNetworkPrepared(ctx, network, spec, modelNames); err != nil {
-		return nil, fmt.Errorf("preparing network database: %w", err)
 	}
 
 	// Convert configs map to slice for consistent ordering
@@ -353,7 +318,12 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 		"test_models":     len(testModelsList),
 	}).Info("resolved dependencies for models")
 
-	// 2. Create ONE test database in CBT cluster
+	// 2. Prepare network database in xatu cluster (if not already prepared)
+	if err := o.ensureNetworkDatabaseReady(ctx, network, allParquetURLs); err != nil {
+		return nil, fmt.Errorf("preparing network database: %w", err)
+	}
+
+	// 3. Create ONE test database in CBT cluster
 	dbName, err := o.dbManager.CreateTestDatabase(ctx, network, spec)
 	if err != nil {
 		return nil, fmt.Errorf("creating test database: %w", err)
@@ -366,7 +336,7 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 		}
 	}()
 
-	// 3. Run transformations in CBT cluster (if any)
+	// 4. Run transformations in CBT cluster (if any)
 	if len(transformationsList) > 0 {
 		// Combine all external models and transformations for CBT config
 		// This tells CBT about all dependencies so it can run them
@@ -394,7 +364,7 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 		o.formatter.PrintParquetSummary()
 	}
 
-	// 4. Run ALL assertions in parallel using shared database
+	// 5. Run ALL assertions in parallel using shared database
 	o.log.WithField("tests", len(testConfigs)).Info("running assertions")
 
 	results := make([]*TestResult, len(testConfigs))
@@ -524,215 +494,6 @@ func (o *orchestrator) executeTestGroup(ctx context.Context, network, spec strin
 	return results, nil
 }
 
-// executeTest performs the core test execution logic
-func (o *orchestrator) executeTest(ctx context.Context, testConfig *testconfig.TestConfig) (*TestResult, error) { //nolint:gocyclo // Complex test execution pipeline with multiple stages - refactoring risky
-	o.log.WithField("model", testConfig.Model).Debug("executing test")
-	start := time.Now()
-
-	result := &TestResult{
-		Model:   testConfig.Model,
-		Network: testConfig.Network,
-		Spec:    testConfig.Spec,
-	}
-
-	// 1. Resolve dependencies and validate completeness
-	o.log.Info("resolving dependencies")
-	resolution, err := o.resolver.ResolveAndValidate(testConfig)
-	if err != nil {
-		result.Error = fmt.Errorf("resolving dependencies: %w", err)
-		result.Duration = time.Since(start)
-		return result, result.Error
-	}
-
-	result.ExternalTables = resolution.ExternalTables
-	result.ParquetURLs = resolution.ParquetURLs
-	result.Transformations = extractModelNames(resolution.TransformationModels)
-
-	o.log.WithFields(logrus.Fields{
-		"external_tables": len(result.ExternalTables),
-		"transformations": len(result.Transformations),
-	}).Debug("dependencies resolved")
-
-	// 2. Check if network database preparation is needed (single model test path)
-	// For parallel tests, this is done once in ensureNetworkPrepared()
-	o.preparedNetworksMu.Lock()
-	needsPreparation := !o.preparedNetworks[testConfig.Network]
-	if needsPreparation {
-		o.preparedNetworks[testConfig.Network] = true
-	}
-	o.preparedNetworksMu.Unlock()
-
-	logCtx := o.log.WithField("cluster", "xatu")
-
-	if needsPreparation {
-		// 3. Fetch/cache parquet files (only if we need to load data)
-		o.log.WithField("count", len(resolution.ParquetURLs)).Info("fetching parquet files")
-		localPaths := make(map[string]string, len(resolution.ParquetURLs))
-		for tableName, url := range resolution.ParquetURLs {
-			o.log.WithField("table", tableName).Info("fetching parquet file")
-			path, cacheErr := o.cache.Get(ctx, url, tableName)
-			if cacheErr != nil {
-				result.Error = fmt.Errorf("fetching parquet file for %s: %w", tableName, cacheErr)
-				result.Duration = time.Since(start)
-				return result, result.Error
-			}
-			o.log.WithFields(logrus.Fields{
-				"table": tableName,
-				"path":  path,
-			}).Info("parquet file ready")
-			localPaths[tableName] = path
-		}
-
-		o.log.WithField("files", len(localPaths)).Debug("parquet files ready")
-
-		// 4. Prepare network database in xatu cluster
-
-		logCtx.Info("preparing network database")
-
-		if prepErr := o.dbManager.PrepareNetworkDatabase(ctx, testConfig.Network); prepErr != nil {
-			result.Error = fmt.Errorf("preparing network database: %w", prepErr)
-			result.Duration = time.Since(start)
-			return result, result.Error
-		}
-
-		// 5. Load parquet data into xatu cluster network database
-		logCtx.Info("loading parquet data")
-
-		if loadErr := o.dbManager.LoadParquetData(ctx, testConfig.Network, localPaths); loadErr != nil {
-			result.Error = fmt.Errorf("loading parquet data: %w", loadErr)
-			result.Duration = time.Since(start)
-			return result, result.Error
-		}
-	}
-
-	// 5. Create ephemeral test database in CBT cluster (transformations only)
-	logCtx.Info("creating test database")
-
-	dbName, err := o.dbManager.CreateTestDatabase(ctx, testConfig.Network, testConfig.Spec)
-	if err != nil {
-		result.Error = fmt.Errorf("creating test database: %w", err)
-		result.Duration = time.Since(start)
-
-		return result, result.Error
-	}
-
-	// Ensure cleanup on failure
-	defer func() {
-		if dropErr := o.dbManager.DropDatabase(context.Background(), dbName); dropErr != nil {
-			o.log.WithError(dropErr).WithField("database", dbName).Error("failed to drop test database")
-		}
-	}()
-
-	logCtx.WithField("database", dbName).Debug("test database created")
-
-	// 6. Run transformations in CBT cluster (queries xatu cluster via cluster() function)
-	if len(result.Transformations) > 0 { //nolint:nestif // Transformation execution logic - refactoring risky
-		logCtx.WithFields(logrus.Fields{
-			"transformations": len(result.Transformations),
-			"external_tables": len(result.ExternalTables),
-		}).Info("running transformations")
-
-		// Include external models in CBT config (filtering out tables created by migrations)
-		// Only include external tables that actually have CBT model files
-		externalModels := make([]string, 0, len(result.ExternalTables))
-		for _, ext := range result.ExternalTables {
-			if o.resolver.IsExternalModel(ext) {
-				externalModels = append(externalModels, ext)
-			} else {
-				o.log.WithField("table", ext).Debug("skipping non-model table (created by migrations)")
-			}
-		}
-
-		o.log.WithFields(logrus.Fields{
-			"total_externals": len(result.ExternalTables),
-			"model_externals": len(externalModels),
-		}).Debug("including external models for CBT config")
-
-		// Combine all external models and transformations for CBT config
-		allModels := make([]string, 0, len(externalModels)+len(result.Transformations))
-		allModels = append(allModels, externalModels...)
-		allModels = append(allModels, result.Transformations...)
-
-		// IMPORTANT: Clear Redis cache BEFORE starting CBT
-		// CBT performs initial scans immediately on startup and caches results
-		// If we don't clear cache first, it will read stale values from previous runs
-		o.log.Info("clearing Redis cache before starting CBT")
-		if flushErr := o.flushRedisCache(ctx); flushErr != nil {
-			o.log.WithError(flushErr).Warn("failed to clear Redis cache (non-fatal)")
-		}
-
-		// Pass allModels for config (so CBT knows about all dependencies)
-		// Wait for result.Transformations (all transformation models including dependencies)
-		// This ensures we wait for dependencies to complete, not just the target model
-		if runErr := o.cbtEngine.RunTransformations(ctx, testConfig.Network, dbName, allModels, result.Transformations); runErr != nil {
-			result.Error = fmt.Errorf("running transformations: %w", runErr)
-			result.Duration = time.Since(start)
-			return result, result.Error
-		}
-
-		o.log.Debug("transformations completed")
-	}
-
-	// 7. Run assertions
-	o.log.Info("running assertions")
-	assertionResults, err := o.assertionRunner.RunAssertions(ctx, dbName, testConfig.Assertions)
-	if err != nil {
-		result.Error = fmt.Errorf("running assertions: %w", err)
-		result.Duration = time.Since(start)
-		return result, result.Error
-	}
-
-	result.AssertionResults = assertionResults
-	result.Success = assertionResults.Failed == 0
-	result.Duration = time.Since(start)
-
-	// Record test result metrics
-	errorMessage := ""
-	if result.Error != nil {
-		errorMessage = result.Error.Error()
-	}
-
-	// Extract failed assertion details
-	failedAssertions := make([]metrics.FailedAssertionDetail, 0)
-	for _, assertionResult := range assertionResults.Results {
-		if !assertionResult.Passed {
-			errMsg := ""
-			if assertionResult.Error != nil {
-				errMsg = assertionResult.Error.Error()
-			}
-			failedAssertions = append(failedAssertions, metrics.FailedAssertionDetail{
-				Name:     assertionResult.Name,
-				Expected: assertionResult.Expected,
-				Actual:   assertionResult.Actual,
-				Error:    errMsg,
-			})
-		}
-	}
-
-	o.metrics.RecordTestResult(&metrics.TestResultMetric{
-		Model:            testConfig.Model,
-		Passed:           result.Success,
-		Duration:         result.Duration,
-		AssertionsTotal:  assertionResults.Total,
-		AssertionsPassed: assertionResults.Passed,
-		AssertionsFailed: assertionResults.Failed,
-		ErrorMessage:     errorMessage,
-		FailedAssertions: failedAssertions,
-		Timestamp:        time.Now(),
-	})
-
-	o.log.WithFields(logrus.Fields{
-		"model":      testConfig.Model,
-		"success":    result.Success,
-		"assertions": assertionResults.Total,
-		"passed":     assertionResults.Passed,
-		"failed":     assertionResults.Failed,
-		"duration":   result.Duration,
-	}).Info("test completed")
-
-	return result, nil
-}
-
 // extractModelNames extracts model names from Model structs
 func extractModelNames(models []*dependency.Model) []string {
 	names := make([]string, 0, len(models))
@@ -742,9 +503,9 @@ func extractModelNames(models []*dependency.Model) []string {
 	return names
 }
 
-// ensureNetworkPrepared ensures the network database is prepared with all required parquet data
-// This is called once before parallel test execution to avoid redundant setup
-func (o *orchestrator) ensureNetworkPrepared(ctx context.Context, network, spec string, modelNames []string) error {
+// ensureNetworkDatabaseReady prepares the network database with parquet data if needed
+func (o *orchestrator) ensureNetworkDatabaseReady(ctx context.Context, network string, allParquetURLs map[string]string) error {
+	// Check if network is already prepared
 	o.preparedNetworksMu.Lock()
 	alreadyPrepared := o.preparedNetworks[network]
 	if alreadyPrepared {
@@ -755,40 +516,17 @@ func (o *orchestrator) ensureNetworkPrepared(ctx context.Context, network, spec 
 	o.preparedNetworks[network] = true
 	o.preparedNetworksMu.Unlock()
 
-	// Collect all external tables and parquet URLs across all models
-	allExternalTables := make(map[string]bool)
-	allParquetURLs := make(map[string]string)
-
-	for _, modelName := range modelNames {
-		testConfig, err := o.configLoader.LoadForModel(spec, network, modelName)
-		if err != nil {
-			return fmt.Errorf("loading test config for %s: %w", modelName, err)
-		}
-
-		resolution, err := o.resolver.ResolveAndValidate(testConfig)
-		if err != nil {
-			return fmt.Errorf("resolving dependencies for %s: %w", modelName, err)
-		}
-
-		for _, table := range resolution.ExternalTables {
-			allExternalTables[table] = true
-		}
-
-		for table, url := range resolution.ParquetURLs {
-			allParquetURLs[table] = url
-		}
-	}
-
-	logCtx := o.log.WithField("cluster", "xatu")
+	// Network needs preparation - fetch parquet files and load data
+	xatuLogCtx := o.log.WithField("cluster", "xatu")
 
 	// Fetch all parquet files
-	logCtx.WithFields(logrus.Fields{
+	xatuLogCtx.WithFields(logrus.Fields{
 		"count": len(allParquetURLs),
 	}).Info("fetching parquet files")
 
 	localPaths := make(map[string]string, len(allParquetURLs))
 	for tableName, url := range allParquetURLs {
-		logCtx.WithField("table", tableName).Debug("fetching parquet file")
+		xatuLogCtx.WithField("table", tableName).Debug("fetching parquet file")
 		path, err := o.cache.Get(ctx, url, tableName)
 		if err != nil {
 			return fmt.Errorf("fetching parquet file for %s: %w", tableName, err)
@@ -797,11 +535,13 @@ func (o *orchestrator) ensureNetworkPrepared(ctx context.Context, network, spec 
 	}
 
 	// Prepare network database in xatu cluster
+	xatuLogCtx.Info("preparing network database")
 	if err := o.dbManager.PrepareNetworkDatabase(ctx, network); err != nil {
 		return fmt.Errorf("preparing network database: %w", err)
 	}
 
 	// Load parquet data into xatu cluster network database
+	xatuLogCtx.Info("loading parquet data")
 	if err := o.dbManager.LoadParquetData(ctx, network, localPaths); err != nil {
 		return fmt.Errorf("loading parquet data: %w", err)
 	}
