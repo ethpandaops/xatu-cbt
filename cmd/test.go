@@ -210,7 +210,14 @@ func setupOrchestrator(ctx context.Context, _ *cobra.Command) (*testing.Orchestr
 		redisURL,
 		filepath.Join(wd, config.ModelsDir),
 	)
-	assertionRunner := assertion.NewRunner(log, cbtClickhouseURL, 5, 30*time.Second)
+	assertionRunner := assertion.NewRunner(
+		log,
+		cbtClickhouseURL,
+		testConfig.AssertionWorkers,
+		testConfig.AssertionTimeout,
+		testConfig.AssertionMaxRetries,
+		testConfig.AssertionRetryDelay,
+	)
 
 	// Use simplified config struct for orchestrator initialization
 	orchestrator := testing.NewOrchestrator(&testing.OrchestratorConfig{

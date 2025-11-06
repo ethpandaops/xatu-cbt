@@ -31,13 +31,9 @@ const (
 // ModelMetadata represents a parsed model with all cached metadata.
 // Parsing happens once during initialization to eliminate redundant file reads.
 type ModelMetadata struct {
-	Name          string
-	Type          ModelType // external or transformation
-	ExecutionType string    // incremental, scheduled, or empty for external models
-	Path          string
-	Dependencies  []string
-	SQL           string
-	Table         string
+	Name          string   // Table name (inferred from filename or frontmatter)
+	ExecutionType string   // incremental, scheduled, or empty for external models
+	Dependencies  []string // List of table dependencies
 }
 
 // Dependencies contains resolved dependency information for test execution.
@@ -272,7 +268,7 @@ func (c *ModelCache) parseDirectory(_ context.Context, dir string, modelType Mod
 
 // parseModel parses a single model file and extracts metadata.
 // Caller must not hold c.mu lock as this method doesn't acquire it.
-func (c *ModelCache) parseModel(path string, modelType ModelType) (*ModelMetadata, error) {
+func (c *ModelCache) parseModel(path string, _ ModelType) (*ModelMetadata, error) {
 	//nolint:gosec // G304: Reading model files from trusted paths
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -280,10 +276,9 @@ func (c *ModelCache) parseModel(path string, modelType ModelType) (*ModelMetadat
 	}
 
 	// Extract frontmatter
-	frontmatter, sql, err := c.extractFrontmatter(string(content))
+	frontmatter, _, err := c.extractFrontmatter(string(content))
 	if err != nil {
 		frontmatter = &Frontmatter{}
-		sql = string(content)
 	}
 
 	// Determine table name
@@ -322,12 +317,8 @@ func (c *ModelCache) parseModel(path string, modelType ModelType) (*ModelMetadat
 
 	return &ModelMetadata{
 		Name:          tableName,
-		Type:          modelType,
 		ExecutionType: executionType,
-		Path:          path,
 		Dependencies:  dependencies,
-		SQL:           sql,
-		Table:         tableName,
 	}, nil
 }
 

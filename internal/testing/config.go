@@ -31,6 +31,12 @@ type TestConfig struct {
 	MaxPollInterval        time.Duration
 	AdminTablePollInterval time.Duration
 	PollBackoffMultiplier  float64
+
+	// Assertion runner configuration
+	AssertionWorkers    int
+	AssertionTimeout    time.Duration
+	AssertionMaxRetries int
+	AssertionRetryDelay time.Duration
 }
 
 // DefaultTestConfig returns a TestConfig with default values for all test execution parameters.
@@ -58,5 +64,11 @@ func DefaultTestConfig() *TestConfig {
 		MaxPollInterval:        10 * time.Second,
 		AdminTablePollInterval: 500 * time.Millisecond,
 		PollBackoffMultiplier:  1.5,
+
+		// Assertion runner
+		AssertionWorkers:    5,
+		AssertionTimeout:    30 * time.Second,
+		AssertionMaxRetries: 3,
+		AssertionRetryDelay: 2 * time.Second,
 	}
 }

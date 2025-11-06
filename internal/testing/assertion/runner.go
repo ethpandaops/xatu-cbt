@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	defaultWorkers          = 5
-	defaultTimeout          = 30 * time.Second
-	defaultSyncMaxWait      = 30 * time.Second       // ANTI-FLAKE #10
-	defaultSyncPollInterval = 500 * time.Millisecond // ANTI-FLAKE #10
+	defaultWorkers    = 5
+	defaultTimeout    = 30 * time.Second
+	defaultMaxRetries = 3
+	defaultRetryDelay = 2 * time.Second
 )
 
 var (
@@ -63,18 +63,18 @@ type Result struct {
 }
 
 type runner struct {
-	connStr          string
-	workers          int
-	timeout          time.Duration
-	syncMaxWait      time.Duration
-	syncPollInterval time.Duration
-	log              logrus.FieldLogger
+	connStr    string
+	workers    int
+	timeout    time.Duration
+	maxRetries int
+	retryDelay time.Duration
+	log        logrus.FieldLogger
 
 	conn *sql.DB
 }
 
 // NewRunner creates a new assertion runner.
-func NewRunner(log logrus.FieldLogger, connStr string, workers int, timeout time.Duration) Runner {
+func NewRunner(log logrus.FieldLogger, connStr string, workers int, timeout time.Duration, maxRetries int, retryDelay time.Duration) Runner {
 	if workers <= 0 {
 		workers = defaultWorkers
 	}
@@ -83,13 +83,21 @@ func NewRunner(log logrus.FieldLogger, connStr string, workers int, timeout time
 		timeout = defaultTimeout
 	}
 
+	if maxRetries <= 0 {
+		maxRetries = defaultMaxRetries
+	}
+
+	if retryDelay <= 0 {
+		retryDelay = defaultRetryDelay
+	}
+
 	return &runner{
-		connStr:          connStr,
-		workers:          workers,
-		timeout:          timeout,
-		syncMaxWait:      defaultSyncMaxWait,
-		syncPollInterval: defaultSyncPollInterval,
-		log:              log.WithField("component", "assertion_runner"),
+		connStr:    connStr,
+		workers:    workers,
+		timeout:    timeout,
+		maxRetries: maxRetries,
+		retryDelay: retryDelay,
+		log:        log.WithField("component", "assertion_runner"),
 	}
 }
 
@@ -183,18 +191,17 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 			Name:     assertion.Name,
 			Expected: assertion.Expected,
 		}
-		// Retry logic for data not ready scenarios
-		// Handles race condition where table exists but INSERT hasn't completed
-		maxRetries = 3
-		retryDelay = 2 * time.Second
 	)
 
-	for attempt := 0; attempt <= maxRetries; attempt++ {
+	// Retry logic for data not ready scenarios
+	// Handles race condition where table exists but INSERT hasn't completed
+	currentRetryDelay := r.retryDelay
+	for attempt := 0; attempt <= r.maxRetries; attempt++ {
 		if attempt > 0 {
 			r.log.WithFields(logrus.Fields{
 				"assertion": assertion.Name,
 				"attempt":   attempt,
-				"max":       maxRetries,
+				"max":       r.maxRetries,
 			}).Debug("retrying assertion")
 
 			select {
@@ -202,9 +209,9 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 				result.Error = ctx.Err()
 				result.Duration = time.Since(start)
 				return result
-			case <-time.After(retryDelay):
+			case <-time.After(currentRetryDelay):
 				// Exponential backoff.
-				retryDelay *= 2
+				currentRetryDelay *= 2
 			}
 		}
 
@@ -215,7 +222,7 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 
 		if err != nil {
 			// Only retry on "no rows" errors (data not ready yet).
-			if err.Error() == "no rows returned" && attempt < maxRetries {
+			if err.Error() == "no rows returned" && attempt < r.maxRetries {
 				r.log.WithField("assertion", assertion.Name).Debug("no rows returned, retrying")
 
 				continue
@@ -257,7 +264,7 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 		}
 
 		// If failed but not the last attempt, retry.
-		if attempt < maxRetries {
+		if attempt < r.maxRetries {
 			r.log.WithFields(logrus.Fields{
 				"assertion": assertion.Name,
 				"expected":  assertion.Expected,

@@ -85,12 +85,11 @@ type collector struct {
 }
 
 // NewCollector creates a new metrics collector.
-// Returns Collector interface, not *collector struct (per ethPandaOps standards)
 func NewCollector(log logrus.FieldLogger) Collector {
 	return &collector{
 		log:            log.WithField("component", "metrics_collector"),
-		parquetMetrics: make([]ParquetLoadMetric, 0, 100), // capacity hint
-		testMetrics:    make([]TestResultMetric, 0, 50),   // capacity hint
+		parquetMetrics: make([]ParquetLoadMetric, 0, 100),
+		testMetrics:    make([]TestResultMetric, 0, 50),
 	}
 }
 
