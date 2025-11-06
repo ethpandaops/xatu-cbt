@@ -11,8 +11,9 @@ import (
 
 // ResultsFormatter formats test results as a table
 type ResultsFormatter struct {
-	log      logrus.FieldLogger
+	log    logrus.FieldLogger
 	renderer *Renderer
+	colors   *ColorHelper
 }
 
 // NewResultsFormatter creates a new results table formatter
@@ -20,6 +21,7 @@ func NewResultsFormatter(log logrus.FieldLogger, renderer *Renderer) *ResultsFor
 	return &ResultsFormatter{
 		log:      log.WithField("component", "table.results_formatter"),
 		renderer: renderer,
+		colors:   NewColorHelper(),
 	}
 }
 
@@ -34,17 +36,16 @@ func (f *ResultsFormatter) Format(testMetrics []metrics.TestResultMetric) string
 	failedTests := make([]metrics.TestResultMetric, 0)
 
 	for _, metric := range testMetrics {
-		status := "✓ PASS"
+		status := f.colors.FormatStatus(metric.Passed)
 		details := ""
 
 		if !metric.Passed { //nolint:nestif // Test result formatting - refactoring risky
-			status = "✗ FAIL"
 			failedTests = append(failedTests, metric)
 
 			if metric.AssertionsFailed > 0 {
-				details = fmt.Sprintf("%d/%d failed",
+				details = f.colors.Failure(fmt.Sprintf("%d/%d failed",
 					metric.AssertionsFailed,
-					metric.AssertionsTotal)
+					metric.AssertionsTotal))
 			}
 			if metric.ErrorMessage != "" {
 				// Truncate long error messages
@@ -55,11 +56,11 @@ func (f *ResultsFormatter) Format(testMetrics []metrics.TestResultMetric) string
 				if details != "" {
 					details += " - "
 				}
-				details += errMsg
+				details += f.colors.Muted(errMsg)
 			}
 		}
 
-		assertionInfo := fmt.Sprintf("%d/%d",
+		assertionInfo := f.colors.FormatAssertions(
 			metric.AssertionsPassed,
 			metric.AssertionsTotal)
 
@@ -72,7 +73,7 @@ func (f *ResultsFormatter) Format(testMetrics []metrics.TestResultMetric) string
 		})
 	}
 
-	output := "\n▸ Test Results\n\n" + f.renderer.RenderToString(headers, rows)
+	output := "\n" + f.colors.Header("▸ Test Results") + "\n\n" + f.renderer.RenderToString(headers, rows)
 
 	// Add detailed failure section if there are any failures
 	if len(failedTests) > 0 {
@@ -86,7 +87,7 @@ func (f *ResultsFormatter) Format(testMetrics []metrics.TestResultMetric) string
 func (f *ResultsFormatter) formatFailureDetails(failedTests []metrics.TestResultMetric) string {
 	var builder strings.Builder
 
-	builder.WriteString("\n\n▸ Failed Test Details\n\n")
+	builder.WriteString("\n\n" + f.colors.Header("▸ Failed Test Details") + "\n\n")
 
 	for i, test := range failedTests {
 		if i > 0 {
@@ -98,25 +99,37 @@ func (f *ResultsFormatter) formatFailureDetails(failedTests []metrics.TestResult
 		if len(test.FailedAssertions) == 0 { //nolint:nestif // Error formatting logic - refactoring risky
 			// No specific assertion details, show general error
 			if test.ErrorMessage != "" {
-				builder.WriteString(fmt.Sprintf("  Error: %s\n", test.ErrorMessage))
+				builder.WriteString(fmt.Sprintf("  %s: %s\n",
+					f.colors.Failure("Error"),
+					test.ErrorMessage))
 			} else {
-				builder.WriteString("  Error: Test failed (no details available)\n")
+				builder.WriteString(fmt.Sprintf("  %s: Test failed (no details available)\n",
+					f.colors.Failure("Error")))
 			}
 		} else {
 			// Show detailed assertion failures
 			for _, assertion := range test.FailedAssertions {
-				builder.WriteString(fmt.Sprintf("  ✗ Assertion: %s\n", assertion.Name))
+				builder.WriteString(fmt.Sprintf("  %s %s: %s\n",
+					f.colors.Failure("✗"),
+					f.colors.Bold("Assertion"),
+					assertion.Name))
 
 				if len(assertion.Expected) > 0 {
-					builder.WriteString(fmt.Sprintf("    Expected: %v\n", formatMap(assertion.Expected)))
+					builder.WriteString(fmt.Sprintf("    %s: %v\n",
+						f.colors.Info("Expected"),
+						formatMap(assertion.Expected)))
 				}
 
 				if len(assertion.Actual) > 0 {
-					builder.WriteString(fmt.Sprintf("    Actual:   %v\n", formatMap(assertion.Actual)))
+					builder.WriteString(fmt.Sprintf("    %s: %v\n",
+						f.colors.Warning("Actual"),
+						formatMap(assertion.Actual)))
 				}
 
 				if assertion.Error != "" {
-					builder.WriteString(fmt.Sprintf("    Error:    %s\n", assertion.Error))
+					builder.WriteString(fmt.Sprintf("    %s: %s\n",
+						f.colors.Failure("Error"),
+						assertion.Error))
 				}
 			}
 		}
