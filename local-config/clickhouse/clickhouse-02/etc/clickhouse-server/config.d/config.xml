@@ -22,12 +22,11 @@
         <cluster_2S_1R>
             <secret>supersecret</secret>
             <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
                     <host>xatu-cbt-clickhouse-01</host>
                     <port>9000</port>
                 </replica>
-            </shard>
-            <shard>
                 <replica>
                     <host>xatu-cbt-clickhouse-02</host>
                     <port>9000</port>
@@ -35,12 +34,16 @@
             </shard>
         </cluster_2S_1R>
         <xatu_cluster>
+            <secret>supersecret</secret>
             <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
                     <host>xatu-clickhouse-01</host>
                     <port>9000</port>
-                    <user>default</user>
-                    <password>supersecret</password>
+                </replica>
+                <replica>
+                    <host>xatu-clickhouse-02</host>
+                    <port>9000</port>
                 </replica>
             </shard>
         </xatu_cluster>
@@ -62,8 +65,8 @@
     <macros>
         <installation>xatu</installation>
         <cluster>cluster_2S_1R</cluster>
-        <shard>02</shard>
-        <replica>01</replica>
+        <shard>01</shard>
+        <replica>02</replica>
         <remote_cluster>xatu_cluster</remote_cluster>
     </macros>
     <access_control_improvements>

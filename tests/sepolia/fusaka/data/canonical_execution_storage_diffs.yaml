@@ -1,3 +1,0 @@
-network_column: meta_network_name
-urls:
-  - https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_execution_storage_diffs.parquet

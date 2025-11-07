@@ -1,0 +1,50 @@
+model: fct_attestation_correctness_head
+network: sepolia
+spec: fusaka
+external_data:
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot) AS min,
+          MAX(slot) AS max
+        FROM
+          fct_attestation_correctness_head FINAL
+      expected:
+        count: 20
+        max: 8815952
+        min: 8815933
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max,
+          fromUnixTimestamp(MIN(position)) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_attestation_correctness_head'
+      expected:
+        max: "2025-10-27T00:30:24Z"
+        min: "2025-10-27T00:26:36Z"

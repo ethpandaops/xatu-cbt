@@ -1,8 +1,0 @@
-- name: "total count"
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      cluster('{remote_cluster}', default.ethseer_validator_entity) FINAL
-  expected:
-    count: 1

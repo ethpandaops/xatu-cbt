@@ -1,0 +1,16 @@
+model: ethseer_validator_entity
+network: mainnet
+spec: pectra
+external_data:
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/ethseer_validator_entity.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.ethseer_validator_entity) FINAL
+      expected:
+        count: 1

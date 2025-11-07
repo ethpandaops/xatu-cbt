@@ -1,0 +1,16 @@
+model: mev_relay_bid_trace
+network: mainnet
+spec: pectra
+external_data:
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.mev_relay_bid_trace) FINAL
+      expected:
+        count: 329038

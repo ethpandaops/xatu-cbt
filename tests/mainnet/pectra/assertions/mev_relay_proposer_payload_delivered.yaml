@@ -1,8 +1,0 @@
-- name: "total count"
-  sql: |
-    SELECT
-      COUNT(*) AS count
-    FROM
-      cluster('{remote_cluster}', default.mev_relay_proposer_payload_delivered) FINAL
-  expected:
-    count: 86

@@ -1,0 +1,41 @@
+model: fct_block_mev
+network: sepolia
+spec: fusaka
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot) AS min,
+          MAX(slot) AS max
+        FROM
+          fct_block_mev FINAL
+      expected:
+        count: 0
+        max: 0
+        min: 0
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max,
+          fromUnixTimestamp(MIN(position)) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_block_mev'
+      expected:
+        max: "1970-01-01T00:00:00Z"
+        min: "1970-01-01T00:00:00Z"

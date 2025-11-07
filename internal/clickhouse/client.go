@@ -1,4 +1,4 @@
-// Package clickhouse provides ClickHouse database connection and management utilities
+// Package clickhouse provides ClickHouse database connection and management utilities.
 package clickhouse
 
 import (
@@ -11,17 +11,12 @@ import (
 	"github.com/ethpandaops/xatu-cbt/internal/config"
 )
 
-// Connect establishes a connection to ClickHouse using native protocol
-func Connect(cfg *config.Config) (driver.Conn, error) {
+// Connect establishes a connection to ClickHouse using native protocol.
+func Connect(cfg *config.AppConfig) (driver.Conn, error) {
 	return connect(cfg, cfg.ClickhouseNativePort)
 }
 
-// ConnectForDataIngest establishes a connection to ClickHouse using the data ingest port
-func ConnectForDataIngest(cfg *config.Config) (driver.Conn, error) {
-	return connect(cfg, cfg.ClickhouseDataIngestPort)
-}
-
-func connect(cfg *config.Config, port int) (driver.Conn, error) {
+func connect(cfg *config.AppConfig, port int) (driver.Conn, error) {
 	// Use "default" database for initial connection
 	// We'll create the network database after connecting
 	options := &clickhouse.Options{
@@ -48,7 +43,6 @@ func connect(cfg *config.Config, port int) (driver.Conn, error) {
 		return nil, fmt.Errorf("failed to open connection: %w", err)
 	}
 
-	// Test the connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -59,11 +53,10 @@ func connect(cfg *config.Config, port int) (driver.Conn, error) {
 	return conn, nil
 }
 
-// CreateDatabase creates a database if it doesn't exist
+// CreateDatabase creates a database if it doesn't exist.
 func CreateDatabase(conn driver.Conn, dbName, cluster string) error {
 	ctx := context.Background()
 
-	// Build the query
 	var query string
 	if cluster != "" {
 		query = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER '%s'", dbName, cluster)
@@ -71,7 +64,6 @@ func CreateDatabase(conn driver.Conn, dbName, cluster string) error {
 		query = fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", dbName)
 	}
 
-	// Execute the query
 	if err := conn.Exec(ctx, query); err != nil {
 		return fmt.Errorf("failed to create database: %w", err)
 	}
@@ -79,11 +71,10 @@ func CreateDatabase(conn driver.Conn, dbName, cluster string) error {
 	return nil
 }
 
-// CreateMigrationTables creates the schema migration tables
+// CreateMigrationTables creates the schema migration tables.
 func CreateMigrationTables(conn driver.Conn, dbName, cluster string) error {
 	ctx := context.Background()
 
-	// Create local migration table
 	localTableQuery := fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s.schema_migrations_local %s
 		(
@@ -101,7 +92,6 @@ func CreateMigrationTables(conn driver.Conn, dbName, cluster string) error {
 		return fmt.Errorf("failed to create schema_migrations_local table: %w", err)
 	}
 
-	// Create distributed migration table
 	distributedTableQuery := fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s.schema_migrations %s AS %s.schema_migrations_local
 		ENGINE = Distributed('%s', '%s', schema_migrations_local, cityHash64(version))`,
@@ -119,7 +109,7 @@ func CreateMigrationTables(conn driver.Conn, dbName, cluster string) error {
 	return nil
 }
 
-// Helper functions for building cluster-aware queries
+// Helper functions for building cluster-aware queries.
 func getClusterClause(cluster string) string {
 	if cluster != "" {
 		return fmt.Sprintf("ON CLUSTER '%s'", cluster)
@@ -143,8 +133,8 @@ func getClusterName(cluster string) string {
 	return "default"
 }
 
-// TestConnection tests if we can connect to ClickHouse
-func TestConnection(cfg *config.Config) error {
+// TestConnection tests if we can connect to ClickHouse.
+func TestConnection(cfg *config.AppConfig) error {
 	conn, err := Connect(cfg)
 	if err != nil {
 		return err
@@ -153,6 +143,5 @@ func TestConnection(cfg *config.Config) error {
 		_ = conn.Close()
 	}()
 
-	// Connection successful if we get here
 	return nil
 }

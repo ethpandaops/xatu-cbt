@@ -1,0 +1,298 @@
+# docker-compose.platform.yml
+# Platform Infrastructure for xatu-cbt
+#
+# This file provides the foundational data platform used by both testing and development:
+# - ClickHouse cluster (2-node cluster with Zookeeper coordination)
+# - Redis (state management for CBT engine, port 6380 to avoid conflicts)
+#
+# USAGE:
+#
+# Option A - CLI (Stable Interface):
+#   ./xatu-cbt infra start    # Manages this compose file internally
+#   ./xatu-cbt infra stop
+#
+# Option B - Direct Compose:
+#   docker-compose -f docker-compose.platform.yml up -d
+#   docker-compose -f docker-compose.platform.yml down
+#
+# Option C - External Composition (from ethpandaops/lab or other repos):
+#   services:
+#     my-app:
+#       build: .
+#       depends_on:
+#         - clickhouse
+#     clickhouse:
+#       extends:
+#         file: ../xatu-cbt/docker-compose.platform.yml
+#         service: xatu-cbt-clickhouse-01
+#
+# DATABASE USAGE:
+# - Tests: Create ephemeral databases (test_mainnet_pectra_1704448923)
+# - Development: Use persistent databases (mainnet, sepolia)
+# - Both can coexist without conflicts (database-level isolation)
+#
+# EXTERNAL CONSUMPTION:
+# This compose file is part of xatu-cbt's public interface and follows semantic versioning.
+# Service names, ports, and environment variables are stable across minor versions.
+
+networks:
+  xatu-net:
+    name: xatu_xatu-net
+    driver: bridge
+
+volumes:
+  clickhouse-01-data:
+    name: xatu-cbt-clickhouse-01-data
+  clickhouse-02-data:
+    name: xatu-cbt-clickhouse-02-data
+  xatu-clickhouse-01-data:
+    name: xatu-clickhouse-01-data
+  xatu-clickhouse-02-data:
+    name: xatu-clickhouse-02-data
+  clickhouse-zookeeper-01-data:
+    name: xatu-cbt-clickhouse-zookeeper-01-data
+  clickhouse-zookeeper-02-data:
+    name: xatu-cbt-clickhouse-zookeeper-02-data
+  clickhouse-zookeeper-03-data:
+    name: xatu-cbt-clickhouse-zookeeper-03-data
+  clickhouse-zookeeper-01-datalog:
+    name: xatu-cbt-clickhouse-zookeeper-01-datalog
+  clickhouse-zookeeper-02-datalog:
+    name: xatu-cbt-clickhouse-zookeeper-02-datalog
+  clickhouse-zookeeper-03-datalog:
+    name: xatu-cbt-clickhouse-zookeeper-03-datalog
+  redis-data:
+    name: xatu-cbt-redis-data
+
+services:
+  # Zookeeper ensemble for ClickHouse cluster coordination (3 nodes for HA)
+  xatu-cbt-clickhouse-zookeeper-01:
+    image: zookeeper:${ZOOKEEPER_VERSION:-3.9}
+    container_name: xatu-cbt-clickhouse-zookeeper-01
+    hostname: xatu-cbt-clickhouse-zookeeper-01
+    networks:
+      - xatu-net
+    volumes:
+      - clickhouse-zookeeper-01-data:/data
+      - clickhouse-zookeeper-01-datalog:/datalog
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_4LW_COMMANDS_WHITELIST: "*"
+      ZOO_SERVERS: "server.1=xatu-cbt-clickhouse-zookeeper-01:2888:3888;2181 server.2=xatu-cbt-clickhouse-zookeeper-02:2888:3888;2181 server.3=xatu-cbt-clickhouse-zookeeper-03:2888:3888;2181"
+      ZOO_AUTOPURGE_PURGEINTERVAL: 1
+      ZOO_AUTOPURGE_SNAPRETAINCOUNT: 3
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep -q 'imok'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  xatu-cbt-clickhouse-zookeeper-02:
+    image: zookeeper:${ZOOKEEPER_VERSION:-3.9}
+    container_name: xatu-cbt-clickhouse-zookeeper-02
+    hostname: xatu-cbt-clickhouse-zookeeper-02
+    networks:
+      - xatu-net
+    volumes:
+      - clickhouse-zookeeper-02-data:/data
+      - clickhouse-zookeeper-02-datalog:/datalog
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_4LW_COMMANDS_WHITELIST: "*"
+      ZOO_SERVERS: "server.1=xatu-cbt-clickhouse-zookeeper-01:2888:3888;2181 server.2=xatu-cbt-clickhouse-zookeeper-02:2888:3888;2181 server.3=xatu-cbt-clickhouse-zookeeper-03:2888:3888;2181"
+      ZOO_AUTOPURGE_PURGEINTERVAL: 1
+      ZOO_AUTOPURGE_SNAPRETAINCOUNT: 3
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep -q 'imok'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  xatu-cbt-clickhouse-zookeeper-03:
+    image: zookeeper:${ZOOKEEPER_VERSION:-3.9}
+    container_name: xatu-cbt-clickhouse-zookeeper-03
+    hostname: xatu-cbt-clickhouse-zookeeper-03
+    networks:
+      - xatu-net
+    volumes:
+      - clickhouse-zookeeper-03-data:/data
+      - clickhouse-zookeeper-03-datalog:/datalog
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_4LW_COMMANDS_WHITELIST: "*"
+      ZOO_SERVERS: "server.1=xatu-cbt-clickhouse-zookeeper-01:2888:3888;2181 server.2=xatu-cbt-clickhouse-zookeeper-02:2888:3888;2181 server.3=xatu-cbt-clickhouse-zookeeper-03:2888:3888;2181"
+      ZOO_AUTOPURGE_PURGEINTERVAL: 1
+      ZOO_AUTOPURGE_SNAPRETAINCOUNT: 3
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep -q 'imok'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # ClickHouse Node 1
+  xatu-cbt-clickhouse-01:
+    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-25.5.10}
+    container_name: xatu-cbt-clickhouse-01
+    hostname: xatu-cbt-clickhouse-01
+    user: "101:101"
+    networks:
+      - xatu-net
+    ports:
+      - "${CLICKHOUSE_CBT_01_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_01_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_CBT_01_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_01_NATIVE_PORT:-9000}:9000"
+    volumes:
+      - clickhouse-01-data:/var/lib/clickhouse/
+      - ./local-config/clickhouse/clickhouse-01/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./local-config/clickhouse/clickhouse-01/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./local-config/clickhouse/clickhouse-01/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
+    environment:
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_USER_READONLY_PASSWORD: ${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
+    depends_on:
+      xatu-cbt-clickhouse-zookeeper-01:
+        condition: service_healthy
+      xatu-cbt-clickhouse-zookeeper-02:
+        condition: service_healthy
+      xatu-cbt-clickhouse-zookeeper-03:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ClickHouse Node 2
+  xatu-cbt-clickhouse-02:
+    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-25.5.10}
+    container_name: xatu-cbt-clickhouse-02
+    hostname: xatu-cbt-clickhouse-02
+    user: "101:101"
+    networks:
+      - xatu-net
+    ports:
+      - "${CLICKHOUSE_CBT_02_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_02_HTTP_PORT:-8124}:8123"
+      - "${CLICKHOUSE_CBT_02_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_02_NATIVE_PORT:-9001}:9000"
+    volumes:
+      - clickhouse-02-data:/var/lib/clickhouse/
+      - ./local-config/clickhouse/clickhouse-02/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./local-config/clickhouse/clickhouse-02/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./local-config/clickhouse/clickhouse-02/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
+    environment:
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_USER_READONLY_PASSWORD: ${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
+    depends_on:
+      xatu-cbt-clickhouse-zookeeper-01:
+        condition: service_healthy
+      xatu-cbt-clickhouse-zookeeper-02:
+        condition: service_healthy
+      xatu-cbt-clickhouse-zookeeper-03:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Xatu ClickHouse Node 1 (External Data Cluster)
+  xatu-clickhouse-01:
+    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-25.5.10}
+    container_name: xatu-clickhouse-01
+    hostname: xatu-clickhouse-01
+    user: "101:101"
+    networks:
+      - xatu-net
+    ports:
+      - "${CLICKHOUSE_XATU_01_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_XATU_01_HTTP_PORT:-8125}:8123"
+      - "${CLICKHOUSE_XATU_01_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_XATU_01_NATIVE_PORT:-9002}:9000"
+    volumes:
+      - xatu-clickhouse-01-data:/var/lib/clickhouse/
+      - ./local-config/clickhouse/xatu-clickhouse-01/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./local-config/clickhouse/xatu-clickhouse-01/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./local-config/clickhouse/xatu-clickhouse-01/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
+    environment:
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-supersecret}
+      CLICKHOUSE_USER_READONLY_PASSWORD: ${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
+    depends_on:
+      xatu-cbt-clickhouse-zookeeper-01:
+        condition: service_healthy
+      xatu-cbt-clickhouse-zookeeper-02:
+        condition: service_healthy
+      xatu-cbt-clickhouse-zookeeper-03:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Xatu ClickHouse Node 2 (External Data Cluster)
+  xatu-clickhouse-02:
+    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-25.5.10}
+    container_name: xatu-clickhouse-02
+    hostname: xatu-clickhouse-02
+    user: "101:101"
+    networks:
+      - xatu-net
+    ports:
+      - "${CLICKHOUSE_XATU_02_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_XATU_02_HTTP_PORT:-8126}:8123"
+      - "${CLICKHOUSE_XATU_02_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_XATU_02_NATIVE_PORT:-9003}:9000"
+    volumes:
+      - xatu-clickhouse-02-data:/var/lib/clickhouse/
+      - ./local-config/clickhouse/xatu-clickhouse-02/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./local-config/clickhouse/xatu-clickhouse-02/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./local-config/clickhouse/xatu-clickhouse-02/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
+    environment:
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-supersecret}
+      CLICKHOUSE_USER_READONLY_PASSWORD: ${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
+    depends_on:
+      xatu-cbt-clickhouse-zookeeper-01:
+        condition: service_healthy
+      xatu-cbt-clickhouse-zookeeper-02:
+        condition: service_healthy
+      xatu-cbt-clickhouse-zookeeper-03:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for CBT state management
+  xatu-cbt-redis:
+    image: redis:${REDIS_VERSION:-7-alpine}
+    container_name: xatu-cbt-redis
+    hostname: xatu-cbt-redis
+    networks:
+      - xatu-net
+    ports:
+      - "${REDIS_ADDRESS:-127.0.0.1}:${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

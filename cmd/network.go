@@ -11,10 +11,7 @@ var networkCmd = &cobra.Command{
 }
 
 func init() {
-	// Add subcommands
 	networkCmd.AddCommand(setupCmd)
 	networkCmd.AddCommand(teardownCmd)
-
-	// Add to root
 	rootCmd.AddCommand(networkCmd)
 }

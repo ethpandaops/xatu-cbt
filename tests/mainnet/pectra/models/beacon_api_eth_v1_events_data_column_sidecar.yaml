@@ -1,0 +1,16 @@
+model: beacon_api_eth_v1_events_data_column_sidecar
+network: mainnet
+spec: pectra
+external_data:
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.beacon_api_eth_v1_events_data_column_sidecar) FINAL
+      expected:
+        count: 0

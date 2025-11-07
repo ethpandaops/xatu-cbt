@@ -1,0 +1,41 @@
+model: fct_block_first_seen_by_node
+network: mainnet
+spec: pectra
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot_start_date_time) AS min,
+          MAX(slot_start_date_time) AS max
+        FROM
+          fct_block_first_seen_by_node FINAL
+      expected:
+        count: 2380
+        max: "2025-07-15T08:38:11Z"
+        min: "2025-07-15T08:34:23Z"
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max,
+          fromUnixTimestamp(MIN(position)) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_block_first_seen_by_node'
+      expected:
+        max: "2025-07-15T08:38:11Z"
+        min: "2025-07-15T08:34:23Z"

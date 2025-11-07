@@ -1,0 +1,84 @@
+model: fct_prepared_block
+network: sepolia
+spec: fusaka
+external_data:
+    beacon_api_eth_v3_validator_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v3_validator_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot) AS min,
+          MAX(slot) AS max
+        FROM
+          fct_prepared_block FINAL
+      expected:
+        count: 607
+        max: 8815953
+        min: 8815933
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max,
+          fromUnixTimestamp(MIN(position)) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_prepared_block'
+      expected:
+        max: "2025-10-27T00:30:36Z"
+        min: "2025-10-27T00:26:36Z"
+    - name: Client diversity
+      sql: |
+        SELECT
+          COUNT(DISTINCT meta_client_name) AS unique_client_names,
+          COUNT(DISTINCT meta_client_implementation) AS unique_execution_clients,
+          COUNT(DISTINCT meta_consensus_implementation) AS unique_consensus_clients
+        FROM
+          fct_prepared_block FINAL
+      expected:
+        unique_client_names: 29
+        unique_consensus_clients: 6
+        unique_execution_clients: 1
+    - name: Block values populated
+      sql: |
+        SELECT
+          COUNT(*) AS blocks_with_exec_data
+        FROM
+          fct_prepared_block FINAL
+        WHERE
+          execution_payload_block_number > 0
+      expected:
+        blocks_with_exec_data: 607
+    - name: Block version verification
+      sql: |
+        SELECT
+          COUNT(DISTINCT block_version) AS versions,
+          MIN(block_version) AS version_name
+        FROM
+          fct_prepared_block FINAL
+      expected:
+        version_name: fulu
+        versions: 1
+    - name: Consensus client distribution
+      sql: |
+        SELECT
+          COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
+        FROM
+          fct_prepared_block FINAL
+      expected:
+        total_implementations: 6
+    - name: Date time fields populated
+      sql: |
+        SELECT
+          COUNT(*) AS complete_records
+        FROM
+          fct_prepared_block FINAL
+        WHERE
+          slot_start_date_time IS NOT NULL
+          AND event_date_time IS NOT NULL
+          AND updated_date_time IS NOT NULL
+      expected:
+        complete_records: 607
