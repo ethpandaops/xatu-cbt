@@ -33,15 +33,19 @@ type clickhouseManager struct {
 	dockerManager DockerManager
 	connStr       string
 	log           logrus.FieldLogger
+	validator     Validator
+	validated     bool
 	conn          *sql.DB
 }
 
 // NewClickHouseManager creates a new ClickHouse cluster manager.
-func NewClickHouseManager(log logrus.FieldLogger, dockerManager DockerManager, connStr string) ClickHouseManager {
+func NewClickHouseManager(log logrus.FieldLogger, dockerManager DockerManager, connStr string, safeHostnames []string) ClickHouseManager {
 	return &clickhouseManager{
 		dockerManager: dockerManager,
 		connStr:       connStr,
 		log:           log.WithField("component", "clickhouse_manager"),
+		validator:     NewValidator(safeHostnames, log),
+		validated:     false,
 	}
 }
 
@@ -194,6 +198,19 @@ func (m *clickhouseManager) getConnection() (*sql.DB, error) {
 	conn, err := sql.Open("clickhouse", m.connStr)
 	if err != nil {
 		return nil, fmt.Errorf("opening connection: %w", err)
+	}
+
+	// Validate hostname on first connection
+	if !m.validated {
+		m.log.Debug("validating ClickHouse hostname against whitelist")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := m.validator.Validate(ctx, conn); err != nil {
+			_ = conn.Close()
+			return nil, fmt.Errorf("hostname validation failed: %w", err)
+		}
+		m.validated = true
 	}
 
 	m.conn = conn

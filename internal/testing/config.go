@@ -3,7 +3,11 @@
 // (timeouts, worker counts, polling intervals) rather than what tests to run.
 package testing
 
-import "time"
+import (
+	"os"
+	"strings"
+	"time"
+)
 
 // TestConfig holds test execution operational parameters.
 // This configures how tests execute (timeouts, worker counts, polling intervals)
@@ -37,10 +41,19 @@ type TestConfig struct {
 	AssertionTimeout    time.Duration
 	AssertionMaxRetries int
 	AssertionRetryDelay time.Duration
+
+	// Safety configuration
+	// SafeHostnames is a whitelist of ClickHouse hostnames that are allowed for destructive operations.
+	// If a connection is made to a ClickHouse instance whose hostname is not in this list,
+	// all TRUNCATE, DROP, and DELETE operations will be blocked to prevent accidental data loss.
+	SafeHostnames []string
 }
 
 // DefaultTestConfig returns a TestConfig with default values for all test execution parameters.
 func DefaultTestConfig() *TestConfig {
+	// Read safe hostnames from environment variable, fall back to defaults
+	safeHostnames := getSafeHostnames()
+
 	return &TestConfig{
 		// Docker
 		DockerImage:   "ethpandaops/cbt:debian-latest",
@@ -70,5 +83,38 @@ func DefaultTestConfig() *TestConfig {
 		AssertionTimeout:    30 * time.Second,
 		AssertionMaxRetries: 3,
 		AssertionRetryDelay: 2 * time.Second,
+
+		// Safety - read from env var or use defaults
+		SafeHostnames: safeHostnames,
 	}
+}
+
+// getSafeHostnames reads safe hostnames from XATU_CBT_SAFE_HOSTS env var or returns defaults.
+func getSafeHostnames() []string {
+	envHosts := os.Getenv("XATU_CBT_SAFE_HOSTS")
+	if envHosts != "" {
+		return parseSafeHostnames(envHosts)
+	}
+
+	// Default whitelist for local development and test containers
+	return []string{}
+}
+
+// parseSafeHostnames parses a comma-separated list of hostnames.
+func parseSafeHostnames(s string) []string {
+	if s == "" {
+		return []string{}
+	}
+
+	parts := strings.Split(s, ",")
+	hostnames := make([]string, 0, len(parts))
+
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			hostnames = append(hostnames, trimmed)
+		}
+	}
+
+	return hostnames
 }

@@ -2,11 +2,20 @@ package actions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/ethpandaops/xatu-cbt/internal/clickhouse"
 	"github.com/ethpandaops/xatu-cbt/internal/config"
+	"github.com/ethpandaops/xatu-cbt/internal/infra"
+	"github.com/fatih/color"
+	"github.com/sirupsen/logrus"
+)
+
+var (
+	// ErrHostnameValidationFailed is returned when hostname validation fails for safety reasons.
+	ErrHostnameValidationFailed = errors.New("hostname validation failed - operation blocked for safety")
 )
 
 // Teardown validates config and drops the ClickHouse database for the configured network
@@ -64,6 +73,21 @@ func Teardown(isInteractive, skipConfirm bool) error { //nolint:gocyclo // Compl
 			fmt.Printf("Warning: failed to close connection: %v\n", closeErr)
 		}
 	}()
+
+	// Validate hostname before allowing destructive operations
+	fmt.Println("🔒 Validating hostname safety...")
+	log := logrus.New()
+	log.SetLevel(logrus.WarnLevel) // Only show warnings and errors for teardown
+	validator := infra.NewValidator(cfg.SafeHostnames, log)
+
+	ctx := context.Background()
+	err = validator.ValidateDriver(ctx, conn)
+	if err != nil {
+		fmt.Println() // Blank line before warning
+		displayHostnameValidationError(err, cfg.SafeHostnames)
+		return ErrHostnameValidationFailed
+	}
+	fmt.Println("✅ Hostname validated successfully!")
 
 	// Check if database exists
 	var dbExists uint64
@@ -138,4 +162,44 @@ func Teardown(isInteractive, skipConfirm bool) error { //nolint:gocyclo // Compl
 
 	fmt.Println("\n✅ Teardown completed successfully!")
 	return nil
+}
+
+// displayHostnameValidationError displays a big red warning box when hostname validation fails
+func displayHostnameValidationError(err error, whitelist []string) {
+	red := color.New(color.FgRed, color.Bold).SprintFunc()
+
+	// Extract hostname from error message if possible
+	errMsg := err.Error()
+	hostname := "UNKNOWN"
+	if strings.Contains(errMsg, "host '") {
+		parts := strings.Split(errMsg, "host '")
+		if len(parts) > 1 {
+			hostParts := strings.Split(parts[1], "'")
+			if len(hostParts) > 0 {
+				hostname = hostParts[0]
+			}
+		}
+	}
+
+	// Print header box, then content without borders
+	fmt.Println(red("╔════════════════════════════════════════════════════════════════════╗"))
+	fmt.Println(red("║         🚨  HOSTNAME VALIDATION FAILED  🚨                         ║"))
+	fmt.Println(red("╚════════════════════════════════════════════════════════════════════╝"))
+	fmt.Println(red(""))
+	fmt.Println(red("  ⚠️  Non-whitelisted ClickHouse host detected!"))
+	fmt.Println(red(""))
+	fmt.Println(red("  Blocked Hostname: " + hostname))
+	fmt.Println(red(""))
+	fmt.Println(red("  Check for active port-forwards or SSH tunnels:"))
+	fmt.Println(red("    • kubectl port-forward"))
+	fmt.Println(red("    • ssh -L (local tunnels)"))
+	fmt.Println(red("    • VPN/bastion connections"))
+	fmt.Println(red(""))
+	fmt.Println(red("  Current Whitelist: " + fmt.Sprintf("%v", whitelist)))
+	fmt.Println(red(""))
+	fmt.Println(red("  To allow, set environment variable:"))
+	newWhitelist := append(append([]string{}, whitelist...), hostname)
+	exportCmd := fmt.Sprintf("XATU_CBT_SAFE_HOSTS=%q", strings.Join(newWhitelist, ","))
+	fmt.Println(red("    " + exportCmd))
+	fmt.Println()
 }

@@ -116,10 +116,20 @@ func createInfraManagers(log logrus.FieldLogger) (infra.DockerManager, infra.Cli
 		config.ProjectName,
 	)
 
+	// Use default safe hostnames for local infrastructure management
+	safeHostnames := []string{
+		"localhost",
+		"127.0.0.1",
+		"clickhouse",
+		"xatu-clickhouse-01",
+		"xatu-cbt-clickhouse-01",
+	}
+
 	chManager := infra.NewClickHouseManager(
 		log,
 		dockerManager,
 		infraClickhouseURL,
+		safeHostnames,
 	)
 
 	return dockerManager, chManager
