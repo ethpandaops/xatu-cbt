@@ -116,14 +116,18 @@ func createInfraManagers(log logrus.FieldLogger) (infra.DockerManager, infra.Cli
 		config.ProjectName,
 	)
 
-	// Use safe hostnames for local infrastructure management. Default to none. Must be set.
-	safeHostnames := make([]string, 0)
+	// Load config to get safe hostnames for infrastructure management
+	cfg, err := config.Load()
+	if err != nil {
+		log.WithError(err).Warn("failed to load config, using empty safe hostnames list")
+		cfg = &config.AppConfig{SafeHostnames: []string{}}
+	}
 
 	chManager := infra.NewClickHouseManager(
 		log,
 		dockerManager,
 		infraClickhouseURL,
-		safeHostnames,
+		cfg.SafeHostnames,
 	)
 
 	return dockerManager, chManager
