@@ -157,9 +157,18 @@ func getEnv(key, defaultValue string) string {
 }
 
 // parseSafeHostnames parses a comma-separated list of hostnames.
+// Handles both quoted and unquoted values from environment variables.
 func parseSafeHostnames(s string) []string {
 	if s == "" {
 		return []string{}
+	}
+
+	// Remove surrounding quotes if present (handles both " and ')
+	s = strings.TrimSpace(s)
+	if len(s) >= 2 {
+		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
+			s = s[1 : len(s)-1]
+		}
 	}
 
 	parts := strings.Split(s, ",")
