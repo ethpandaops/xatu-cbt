@@ -18,7 +18,9 @@ import (
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // ClickHouse driver registration
 	"github.com/ethpandaops/xatu-cbt/internal/config"
+	"github.com/ethpandaops/xatu-cbt/internal/infra"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/memfs"
+	"github.com/fatih/color"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/clickhouse"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -35,6 +37,7 @@ type DatabaseManager struct {
 	forceRebuild     bool
 	log              logrus.FieldLogger
 	config           *TestConfig
+	validator        infra.Validator
 
 	xatuConn *sql.DB
 	cbtConn  *sql.DB
@@ -60,6 +63,7 @@ func NewDatabaseManager(
 		forceRebuild:     forceRebuild,
 		log:              log.WithField("component", "database_manager"),
 		config:           cfg,
+		validator:        infra.NewValidator(cfg.SafeHostnames, log),
 	}
 }
 
@@ -85,6 +89,19 @@ func (m *DatabaseManager) Start(ctx context.Context) error {
 	if err := cbtConn.PingContext(ctx); err != nil {
 		_ = xatuConn.Close()
 		return fmt.Errorf("pinging cbt clickhouse: %w", err)
+	}
+
+	// Validate hostnames before allowing any operations
+	m.log.Debug("validating clickhouse hostnames")
+	if err := m.validator.ValidateMultiple(ctx, xatuConn, cbtConn); err != nil {
+		_ = xatuConn.Close()
+		_ = cbtConn.Close()
+
+		// Display big red warning table for hostname validation failures
+		fmt.Println() // Blank line before warning
+		displayHostnameValidationError(err, m.config.SafeHostnames)
+
+		return fmt.Errorf("hostname validation failed - tests blocked for safety: %w", err)
 	}
 
 	m.xatuConn = xatuConn
@@ -746,4 +763,44 @@ func isQualified(name, dbName string) bool {
 // qualifyName builds a fully qualified table name.
 func qualifyName(name, dbName string) string {
 	return fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(name, "`"))
+}
+
+// displayHostnameValidationError displays a big red warning box when hostname validation fails
+func displayHostnameValidationError(err error, whitelist []string) {
+	red := color.New(color.FgRed, color.Bold).SprintFunc()
+
+	// Extract hostname from error message if possible
+	errMsg := err.Error()
+	hostname := "UNKNOWN"
+	if strings.Contains(errMsg, "host '") {
+		parts := strings.Split(errMsg, "host '")
+		if len(parts) > 1 {
+			hostParts := strings.Split(parts[1], "'")
+			if len(hostParts) > 0 {
+				hostname = hostParts[0]
+			}
+		}
+	}
+
+	// Print header box, then content without borders
+	fmt.Println(red("╔════════════════════════════════════════════════════════════════════╗"))
+	fmt.Println(red("║         🚨  HOSTNAME VALIDATION FAILED  🚨                         ║"))
+	fmt.Println(red("╚════════════════════════════════════════════════════════════════════╝"))
+	fmt.Println(red(""))
+	fmt.Println(red("  ⚠️  Non-whitelisted ClickHouse host detected!"))
+	fmt.Println(red(""))
+	fmt.Println(red("  Blocked Hostname: " + hostname))
+	fmt.Println(red(""))
+	fmt.Println(red("  Check for active port-forwards or SSH tunnels:"))
+	fmt.Println(red("    • kubectl port-forward"))
+	fmt.Println(red("    • ssh -L (local tunnels)"))
+	fmt.Println(red("    • VPN/bastion connections"))
+	fmt.Println(red(""))
+	fmt.Println(red("  Current Whitelist: " + fmt.Sprintf("%v", whitelist)))
+	fmt.Println(red(""))
+	fmt.Println(red("  To allow, set environment variable in .env:"))
+	newWhitelist := append(append([]string{}, whitelist...), hostname)
+	exportCmd := fmt.Sprintf("XATU_CBT_SAFE_HOSTS=%q", strings.Join(newWhitelist, ","))
+	fmt.Println(red("    " + exportCmd))
+	fmt.Println()
 }

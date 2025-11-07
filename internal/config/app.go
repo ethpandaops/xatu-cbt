@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -18,6 +19,7 @@ type AppConfig struct {
 	ClickhouseUsername       string
 	ClickhousePassword       string
 	ClickhouseCluster        string
+	SafeHostnames            []string
 }
 
 // Load reads configuration from environment variables and .env file.
@@ -30,12 +32,17 @@ func Load() (*AppConfig, error) {
 		}
 	}
 
+	// Parse safe hostnames from comma-separated env var
+	safeHostnamesStr := getEnv("XATU_CBT_SAFE_HOSTS", "")
+	safeHostnames := parseSafeHostnames(safeHostnamesStr)
+
 	cfg := &AppConfig{
 		Network:            getEnv("NETWORK", "mainnet"),
 		ClickhouseHost:     getEnv("CLICKHOUSE_HOST", "localhost"),
 		ClickhouseUsername: getEnv("CLICKHOUSE_USERNAME", "default"),
 		ClickhousePassword: getEnv("CLICKHOUSE_PASSWORD", ""),
 		ClickhouseCluster:  getEnv("CLICKHOUSE_CLUSTER", ""),
+		SafeHostnames:      safeHostnames,
 	}
 
 	// Parse numeric values
@@ -147,4 +154,32 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// parseSafeHostnames parses a comma-separated list of hostnames.
+// Handles both quoted and unquoted values from environment variables.
+func parseSafeHostnames(s string) []string {
+	if s == "" {
+		return []string{}
+	}
+
+	// Remove surrounding quotes if present (handles both " and ')
+	s = strings.TrimSpace(s)
+	if len(s) >= 2 {
+		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
+			s = s[1 : len(s)-1]
+		}
+	}
+
+	parts := strings.Split(s, ",")
+	hostnames := make([]string, 0, len(parts))
+
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			hostnames = append(hostnames, trimmed)
+		}
+	}
+
+	return hostnames
 }
