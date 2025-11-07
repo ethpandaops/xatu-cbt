@@ -47,7 +47,7 @@ SELECT
 FROM (
     SELECT
     toMonday(toDate(slot_start_date_time)) as week,
-    toStartOfWeek(slot_start_date_time) as week_start_date_time,
+    toDateTime(toMonday(toDate(slot_start_date_time))) as week_start_date_time,
     username,
     node_id,
     classification,
@@ -79,7 +79,7 @@ WHERE slot_start_date_time >= toStartOfWeek(fromUnixTimestamp({{ .bounds.start }
   AND slot_start_date_time < toStartOfWeek(fromUnixTimestamp({{ .bounds.end }})) + INTERVAL 1 WEEK
 GROUP BY
     toMonday(toDate(slot_start_date_time)),
-    toStartOfWeek(slot_start_date_time),
+    toDateTime(toMonday(toDate(slot_start_date_time))),
     username,
     node_id,
     classification,

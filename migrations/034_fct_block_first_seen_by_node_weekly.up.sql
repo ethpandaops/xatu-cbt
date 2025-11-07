@@ -34,7 +34,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_weekly_local on clus
     `updated_date_time`
 ) PARTITION BY toYYYYMM(week)
 ORDER BY
-    (`week`, `meta_client_name`)
+    (`week`, `username`, `node_id`, `classification`, `meta_client_name`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 384,
@@ -45,12 +45,12 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_weekly ON CLUSTER '{
     '{cluster}',
     '${NETWORK_NAME}',
     fct_block_first_seen_by_node_weekly_local,
-    cityHash64(`week`, `meta_client_name`)
+    cityHash64(`week`, `username`, `node_id`, `classification`, `meta_client_name`)
 );
 
 ALTER TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_weekly_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_week_node
 (
     SELECT *
-    ORDER BY (`week`, `meta_client_name`)
+    ORDER BY (`week`, `username`, `node_id`, `classification`, `meta_client_name`)
 );

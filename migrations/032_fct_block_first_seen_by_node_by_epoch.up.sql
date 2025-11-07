@@ -32,7 +32,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_by_epoch_local on cl
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(epoch_start_date_time)
 ORDER BY
-    (`epoch_start_date_time`, `meta_client_name`)
+    (`epoch_start_date_time`, `username`, `node_id`, `classification`, `meta_client_name`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 384,
@@ -43,12 +43,12 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_by_epoch ON CLUSTER 
     '{cluster}',
     '${NETWORK_NAME}',
     fct_block_first_seen_by_node_by_epoch_local,
-    cityHash64(`epoch_start_date_time`, `meta_client_name`)
+    cityHash64(`epoch_start_date_time`, `username`, `node_id`, `classification`, `meta_client_name`)
 );
 
 ALTER TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_by_epoch_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_epoch_node
 (
     SELECT *
-    ORDER BY (`epoch`, `meta_client_name`)
+    ORDER BY (`epoch`, `username`, `node_id`, `classification`, `meta_client_name`)
 );
