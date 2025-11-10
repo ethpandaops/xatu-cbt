@@ -185,11 +185,19 @@ Pattern: dim_<entity>
 
 Examples:
 dim_validator
+dim_block
 dim_client
-dim_node
-dim_peer
-dim_region
 ```
+
+#### When to Use Dimensions Beyond Simple Lookups
+
+Dimensions are typically used for static or slowly changing reference entities (e.g., `dim_validator`, `dim_client`), **but can also be applied to “header” entities that act as hubs referenced by multiple fact tables.**
+
+For example:
+- If several fact models share a common entity key (`block_number`, `validator_index`), consider introducing a corresponding dimension (`dim_block`, `dim_validator`) to centralize entity-level attributes (e.g., timestamps, status, relationships).
+- This approach supports **shared context**, **consistent definitions**, and **reduced duplication** of business logic across facts.
+
+> Use a `dim_` model when the entity key is referenced by more than one fact model or when the entity’s attributes are enriched/standardized for downstream joins.
 
 ## Handling Chain State
 
@@ -205,6 +213,7 @@ For models where finality matters:
 - Use consistent entity names across all layers
 - Include aggregation context in intermediate and fact models
 - Avoid abbreviations (use `transaction` not `txn`)
+- When multiple fact models depend on the same entity key, centralize shared attributes in a corresponding `dim_<entity>` model (e.g., `dim_block`, `dim_validator`)
 
 ## Summary Table
 

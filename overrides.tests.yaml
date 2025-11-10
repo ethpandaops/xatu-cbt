@@ -116,3 +116,7 @@ models:
     mev_relay_proposer_payload_delivered:
       config:
         lag: 12
+    int_address_activity_log:
+      config:
+        fill:
+          buffer: 1
