@@ -92,3 +92,42 @@ CREATE TABLE `${NETWORK_NAME}`.int_accounts_alive ON CLUSTER '{cluster}' AS `${N
     int_accounts_alive_local,
     cityHash64(`address`)
 );
+
+CREATE TABLE `${NETWORK_NAME}`.int_address_slots_stat_per_block_local on cluster '{cluster}' (
+    `address` String COMMENT 'The address of the account' CODEC(ZSTD(1)),
+    `block_number` UInt32 COMMENT 'The block number' CODEC(ZSTD(1)),
+    `slots_cleared` UInt16 COMMENT 'The number of slots cleared' CODEC(ZSTD(1)),
+    `slots_set` UInt16 COMMENT 'The number of slots set' CODEC(ZSTD(1)),
+    `net_slots` Int32 DEFAULT slots_set - slots_cleared COMMENT 'The net number of slots' CODEC(ZSTD(1)),
+    `net_slots_bytes` Int32 DEFAULT (slots_set - slots_cleared) * 64 COMMENT 'The net number of raw slot bytes (slot key + value)' CODEC(ZSTD(1)),
+) ENGINE = ReplicatedMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}'
+) PARTITION BY cityHash64(`address`) % 16
+ORDER BY (address, block_number) COMMENT 'Table that states the stats of the slots for an account per block';
+
+CREATE TABLE `${NETWORK_NAME}`.int_address_slots_stat_per_block ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_address_slots_stat_per_block_local ENGINE = Distributed(
+    '{cluster}',
+    `${NETWORK_NAME}`,
+    int_address_slots_stat_per_block_local,
+    cityHash64(`address`)
+);
+
+CREATE TABLE `${NETWORK_NAME}`.int_block_slots_stat_local on cluster '{cluster}' (
+    `block_number` UInt32 COMMENT 'The block number' CODEC(ZSTD(1)),
+    `slots_cleared` UInt16 COMMENT 'The number of slots cleared' CODEC(ZSTD(1)),
+    `slots_set` UInt16 COMMENT 'The number of slots set' CODEC(ZSTD(1)),
+    `net_slots` Int32 DEFAULT slots_set - slots_cleared COMMENT 'The net number of slots' CODEC(ZSTD(1)),
+    `net_slots_bytes` Int32 DEFAULT (slots_set - slots_cleared) * 64 COMMENT 'The net number of raw slot bytes (slot key + value)' CODEC(ZSTD(1)),
+) ENGINE = ReplicatedMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}'
+) PARTITION BY intDiv(block_number, 5000000)
+ORDER BY (block_number) COMMENT 'Table that states the stats of the slots per block';
+
+CREATE TABLE `${NETWORK_NAME}`.int_block_slots_stat ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_slots_stat_local ENGINE = Distributed(
+    '{cluster}',
+    `${NETWORK_NAME}`,
+    int_block_slots_stat_local,
+    rand()
+);
