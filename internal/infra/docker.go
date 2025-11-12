@@ -24,7 +24,7 @@ type ServiceInfo struct {
 
 // DockerManager manages docker-compose lifecycle.
 type DockerManager interface {
-	Start(ctx context.Context) error
+	Start(ctx context.Context, profiles ...string) error
 	Stop() error
 	Reset() error
 	IsRunning(ctx context.Context) (bool, error)
@@ -48,19 +48,25 @@ func NewDockerManager(log logrus.FieldLogger, composeFile, projectName string) D
 }
 
 // Start starts docker-compose services.
-func (m *dockerManager) Start(ctx context.Context) error {
+func (m *dockerManager) Start(ctx context.Context, profiles ...string) error {
 	m.log.WithFields(logrus.Fields{
 		"compose_file": m.composeFile,
 		"project":      m.projectName,
+		"profiles":     profiles,
 	}).Debug("starting docker-compose")
 
 	args := []string{
 		"compose",
 		"-f", m.composeFile,
 		"-p", m.projectName,
-		"up", "-d",
-		"--wait",
 	}
+
+	// Add profile flags if specified
+	for _, profile := range profiles {
+		args = append(args, "--profile", profile)
+	}
+
+	args = append(args, "up", "-d", "--wait")
 
 	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose up: %w", err)

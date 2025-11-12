@@ -23,7 +23,7 @@ var (
 
 // ClickHouseManager manages ClickHouse cluster lifecycle
 type ClickHouseManager interface {
-	Start(ctx context.Context) error
+	Start(ctx context.Context, profiles ...string) error
 	Stop() error
 	HealthCheck(ctx context.Context) error
 	CleanupEphemeralDatabases(ctx context.Context, maxAge time.Duration) error
@@ -50,10 +50,10 @@ func NewClickHouseManager(log logrus.FieldLogger, dockerManager DockerManager, c
 }
 
 // Start starts the ClickHouse cluster and waits for health.
-func (m *clickhouseManager) Start(ctx context.Context) error {
+func (m *clickhouseManager) Start(ctx context.Context, profiles ...string) error {
 	m.log.Info("starting clickhouse cluster")
 
-	if err := m.dockerManager.Start(ctx); err != nil {
+	if err := m.dockerManager.Start(ctx, profiles...); err != nil {
 		return fmt.Errorf("starting docker compose: %w", err)
 	}
 
