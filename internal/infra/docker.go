@@ -25,8 +25,8 @@ type ServiceInfo struct {
 // DockerManager manages docker-compose lifecycle.
 type DockerManager interface {
 	Start(ctx context.Context, profiles ...string) error
-	Stop() error
-	Reset() error
+	Stop(profiles ...string) error
+	Reset(profiles ...string) error
 	IsRunning(ctx context.Context) (bool, error)
 	GetContainerStatus(ctx context.Context, service string) (string, error)
 	GetAllServices(ctx context.Context) ([]ServiceInfo, error)
@@ -78,10 +78,12 @@ func (m *dockerManager) Start(ctx context.Context, profiles ...string) error {
 }
 
 // Stop stops docker-compose services (volumes are preserved).
-func (m *dockerManager) Stop() error {
+// Profiles should be passed to ensure all containers are stopped, including those in profiles.
+func (m *dockerManager) Stop(profiles ...string) error {
 	m.log.WithFields(logrus.Fields{
 		"compose_file": m.composeFile,
 		"project":      m.projectName,
+		"profiles":     profiles,
 	}).Debug("stopping docker-compose")
 
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
@@ -93,10 +95,8 @@ func (m *dockerManager) Stop() error {
 		"-p", m.projectName,
 	}
 
-	// Always include all possible profiles to ensure complete shutdown
-	// This handles the case where docker manager is stateless between CLI invocations
-	allProfiles := []string{"xatu-local"}
-	for _, profile := range allProfiles {
+	// Add specified profiles to ensure all containers are stopped
+	for _, profile := range profiles {
 		args = append(args, "--profile", profile)
 	}
 
@@ -112,10 +112,12 @@ func (m *dockerManager) Stop() error {
 }
 
 // Reset stops services and removes all volumes.
-func (m *dockerManager) Reset() error {
+// Profiles should be passed to ensure all containers are removed, including those in profiles.
+func (m *dockerManager) Reset(profiles ...string) error {
 	m.log.WithFields(logrus.Fields{
 		"compose_file": m.composeFile,
 		"project":      m.projectName,
+		"profiles":     profiles,
 	}).Debug("resetting docker-compose")
 
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
@@ -127,10 +129,8 @@ func (m *dockerManager) Reset() error {
 		"-p", m.projectName,
 	}
 
-	// Always include all possible profiles to ensure complete cleanup
-	// This handles the case where docker manager is stateless between CLI invocations
-	allProfiles := []string{"xatu-local"}
-	for _, profile := range allProfiles {
+	// Add specified profiles to ensure all containers are removed
+	for _, profile := range profiles {
 		args = append(args, "--profile", profile)
 	}
 

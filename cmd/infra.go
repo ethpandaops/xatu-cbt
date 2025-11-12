@@ -287,7 +287,9 @@ func runInfraStop(_ *cobra.Command, _ []string) error {
 		log.Debug("infrastructure not running, skipping database cleanup")
 	}
 
-	if err := chManager.Stop(); err != nil {
+	// Pass all known profiles to ensure complete shutdown
+	// This ensures profiled containers (like xatu-clickhouse) are also stopped
+	if err := chManager.Stop("xatu-local"); err != nil {
 		return fmt.Errorf("stopping infrastructure: %w", err)
 	}
 
@@ -343,7 +345,9 @@ func runInfraReset(_ *cobra.Command, _ []string) error {
 
 	dockerManager, _ := createInfraManagers(log)
 
-	if err := dockerManager.Reset(); err != nil {
+	// Pass all known profiles to ensure complete cleanup
+	// This ensures profiled containers (like xatu-clickhouse) are also removed
+	if err := dockerManager.Reset("xatu-local"); err != nil {
 		return fmt.Errorf("resetting infrastructure: %w", err)
 	}
 
