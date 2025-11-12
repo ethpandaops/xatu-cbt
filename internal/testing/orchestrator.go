@@ -565,7 +565,7 @@ func (o *Orchestrator) runSingleAssertion(
 	}
 
 	// Run assertions for this test
-	assertionResults, err := o.assertionRunner.RunAssertions(ctx, dbName, testConfig.Assertions)
+	assertionResults, err := o.assertionRunner.RunAssertions(ctx, testConfig.Model, dbName, testConfig.Assertions)
 	if err != nil {
 		result.Error = fmt.Errorf("running assertions: %w", err)
 		result.Success = false
