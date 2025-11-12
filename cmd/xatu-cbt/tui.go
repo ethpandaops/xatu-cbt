@@ -19,6 +19,44 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// discoverNetworks returns a sorted list of available networks from the tests directory
+func discoverNetworks() ([]string, error) {
+	testsDir := "tests"
+	entries, err := os.ReadDir(testsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read tests directory: %w", err)
+	}
+
+	networks := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			networks = append(networks, entry.Name())
+		}
+	}
+
+	sort.Strings(networks)
+	return networks, nil
+}
+
+// discoverSpecs returns a sorted list of available specs for a given network
+func discoverSpecs(network string) ([]string, error) {
+	specsDir := filepath.Join("tests", network)
+	entries, err := os.ReadDir(specsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read specs directory for network %s: %w", network, err)
+	}
+
+	specs := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			specs = append(specs, entry.Name())
+		}
+	}
+
+	sort.Strings(specs)
+	return specs, nil
+}
+
 func runInteractive() {
 	fmt.Println("Xatu CBT - Interactive Mode")
 	fmt.Println("===========================")
@@ -210,24 +248,59 @@ func showInfraMenu() error {
 }
 
 func runTestSpecInteractive() error {
-	networks := []string{"mainnet", "sepolia"}
-	specs := []string{"pectra", "fusaka"}
-
-	network, err := interactive.SelectFromList("Select network:", networks)
+	networks, err := discoverNetworks()
 	if err != nil {
-		fmt.Println("Selection canceled.")
+		fmt.Printf("❌ Failed to discover networks: %v\n", err)
 		interactive.PauseForEnter()
 		return nil
 	}
 
-	spec, err := interactive.SelectFromList("Select spec:", specs)
-	if err != nil {
-		fmt.Println("Selection canceled.")
+	if len(networks) == 0 {
+		fmt.Println("❌ No networks found in tests/ directory")
 		interactive.PauseForEnter()
 		return nil
 	}
 
-	verbose := interactive.Confirm("Enable verbose output?")
+	var network string
+	if len(networks) == 1 {
+		network = networks[0]
+		fmt.Printf("Auto-selected network: %s\n", network)
+	} else {
+		network, err = interactive.SelectFromList("Select network:", networks)
+		if err != nil {
+			fmt.Println("Selection canceled.")
+			interactive.PauseForEnter()
+			return nil
+		}
+	}
+
+	specs, err := discoverSpecs(network)
+	if err != nil {
+		fmt.Printf("❌ Failed to discover specs for network %s: %v\n", network, err)
+		interactive.PauseForEnter()
+		return nil
+	}
+
+	if len(specs) == 0 {
+		fmt.Printf("❌ No specs found for network %s\n", network)
+		interactive.PauseForEnter()
+		return nil
+	}
+
+	var spec string
+	if len(specs) == 1 {
+		spec = specs[0]
+		fmt.Printf("Auto-selected spec: %s\n", spec)
+	} else {
+		spec, err = interactive.SelectFromList("Select spec:", specs)
+		if err != nil {
+			fmt.Println("Selection canceled.")
+			interactive.PauseForEnter()
+			return nil
+		}
+	}
+
+	verbose := interactive.ConfirmWithDefault("Enable verbose output?", true)
 
 	args := []string{"test", "spec", "--spec", spec, "--network", network}
 	if verbose {
@@ -238,9 +311,6 @@ func runTestSpecInteractive() error {
 }
 
 func runTestModelsInteractive() error {
-	networks := []string{"mainnet", "sepolia"}
-	specs := []string{"pectra", "fusaka"}
-
 	// Initialize model cache to load available models
 	wd, wdErr := os.Getwd()
 	if wdErr != nil {
@@ -281,18 +351,56 @@ func runTestModelsInteractive() error {
 
 	// Loop to allow repeated testing with the same or different parameters
 	for {
-		network, err := interactive.SelectFromList("Select network:", networks)
+		networks, err := discoverNetworks()
 		if err != nil {
-			fmt.Println("Selection canceled.")
+			fmt.Printf("❌ Failed to discover networks: %v\n", err)
 			interactive.PauseForEnter()
 			return nil
 		}
 
-		spec, err := interactive.SelectFromList("Select spec:", specs)
-		if err != nil {
-			fmt.Println("Selection canceled.")
+		if len(networks) == 0 {
+			fmt.Println("❌ No networks found in tests/ directory")
 			interactive.PauseForEnter()
 			return nil
+		}
+
+		var network string
+		if len(networks) == 1 {
+			network = networks[0]
+			fmt.Printf("Auto-selected network: %s\n", network)
+		} else {
+			network, err = interactive.SelectFromList("Select network:", networks)
+			if err != nil {
+				fmt.Println("Selection canceled.")
+				interactive.PauseForEnter()
+				return nil
+			}
+		}
+
+		specs, err := discoverSpecs(network)
+		if err != nil {
+			fmt.Printf("❌ Failed to discover specs for network %s: %v\n", network, err)
+			interactive.PauseForEnter()
+			return nil
+		}
+
+		if len(specs) == 0 {
+			fmt.Printf("❌ No specs found for network %s\n", network)
+			interactive.PauseForEnter()
+			return nil
+		}
+
+		var spec string
+		if len(specs) == 1 {
+			spec = specs[0]
+			fmt.Printf("Auto-selected spec: %s\n", spec)
+		} else {
+			spec, err = interactive.SelectFromList("Select spec:", specs)
+			if err != nil {
+				fmt.Println("Selection canceled.")
+				interactive.PauseForEnter()
+				return nil
+			}
 		}
 
 		// Use multi-select for models
@@ -312,7 +420,7 @@ func runTestModelsInteractive() error {
 			continue
 		}
 
-		verbose := interactive.Confirm("Enable verbose output?")
+		verbose := interactive.ConfirmWithDefault("Enable verbose output?", true)
 
 		// Join selected models with commas
 		modelsArg := strings.Join(selectedModels, ",")
