@@ -38,9 +38,9 @@ type ModelMetadata struct {
 
 // Dependencies contains resolved dependency information for test execution.
 type Dependencies struct {
-	TargetModel          *ModelMetadata   // The model being tested
-	TransformationModels []*ModelMetadata // Transformations in execution order (topologically sorted)
-	ExternalTables       []string         // Leaf external table names required
+	TargetModel          *ModelMetadata    // The model being tested
+	TransformationModels []*ModelMetadata  // Transformations in execution order (topologically sorted)
+	ExternalTables       []string          // Leaf external table names required
 	ParquetURLs          map[string]string // External table name → parquet URL (from testConfig)
 }
 
@@ -221,6 +221,24 @@ func (c *ModelCache) IsTransformationModel(name string) bool {
 	_, exists := c.transformationModels[name]
 
 	return exists
+}
+
+// ListAllModels returns a sorted list of all model names (both external and transformation).
+func (c *ModelCache) ListAllModels() []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	models := make([]string, 0, len(c.externalModels)+len(c.transformationModels))
+
+	for name := range c.externalModels {
+		models = append(models, name)
+	}
+
+	for name := range c.transformationModels {
+		models = append(models, name)
+	}
+
+	return models
 }
 
 // parseDirectory parses all model files in a directory.
