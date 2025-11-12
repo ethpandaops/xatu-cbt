@@ -1,5 +1,5 @@
 ---
-table: dim_block
+table: dim_block_canonical
 type: scheduled
 schedule: "@every 5s"
 tags:
@@ -68,16 +68,16 @@ post_merge_beacon_blocks AS (
 )
 
 SELECT
-  ex.block_number,
-  ex.block_hash,
-  ex.block_date_time,
+  ex.block_number AS execution_block_number,
+  ex.block_hash AS execution_block_hash,
+  ex.block_date_time AS execution_block_date_time,
   if(cs.block_number IS NOT NULL, cs.slot, NULL) AS slot,
   if(cs.block_number IS NOT NULL, cs.slot_start_date_time, NULL) AS slot_start_date_time,
   if(cs.block_number IS NOT NULL, cs.epoch, NULL) AS epoch,
   if(cs.block_number IS NOT NULL, cs.epoch_start_date_time, NULL) AS epoch_start_date_time,
-  if(cs.block_number IS NOT NULL, cs.block_version, NULL) AS block_version,
-  if(cs.block_number IS NOT NULL, cs.block_root, NULL) AS block_root,
-  if(cs.block_number IS NOT NULL, cs.parent_root, NULL) AS parent_root,
-  if(cs.block_number IS NOT NULL, cs.state_root, NULL) AS state_root
+  if(cs.block_number IS NOT NULL, cs.block_version, NULL) AS beacon_block_version,
+  if(cs.block_number IS NOT NULL, cs.block_root, NULL) AS beacon_block_root,
+  if(cs.block_number IS NOT NULL, cs.parent_root, NULL) AS beacon_parent_root,
+  if(cs.block_number IS NOT NULL, cs.state_root, NULL) AS beacon_state_root
 FROM execution_blocks ex
 LEFT JOIN post_merge_beacon_blocks cs ON ex.block_number = cs.block_number;

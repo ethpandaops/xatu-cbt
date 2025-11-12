@@ -1,4 +1,4 @@
-model: dim_block
+model: dim_block_canonical
 network: mainnet
 spec: pectra
 assertions:
@@ -7,7 +7,7 @@ assertions:
         SELECT
           COUNT(*) AS count
         FROM
-          dim_block FINAL
+          dim_block_canonical FINAL
       expected:
         count: 20
     - name: Has been scheduled at least once
@@ -17,6 +17,6 @@ assertions:
         FROM
           admin_cbt_scheduled FINAL
         WHERE
-          table = 'dim_block'
+          table = 'dim_block_canonical'
       expected:
         count: 1

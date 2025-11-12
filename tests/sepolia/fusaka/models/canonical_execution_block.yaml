@@ -17,10 +17,10 @@ assertions:
     - name: Block number bounds should match test data range (123456-123476)
       sql: |
         SELECT
-          MIN(block_number) AS min_block_number,
-          MAX(block_number) AS max_block_number
+          min(block_number) AS min_block_number,
+          max(block_number) AS max_block_number
         FROM
-          cluster('{remote_cluster}', default.libp2p_rpc_data_column_custody_probe)
+          cluster('{remote_cluster}', default.canonical_execution_block)
       expected:
         min_block_number: 123456
         max_block_number: 123476
