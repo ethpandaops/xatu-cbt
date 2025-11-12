@@ -141,6 +141,8 @@ services:
     container_name: xatu-cbt-clickhouse-01
     hostname: xatu-cbt-clickhouse-01
     user: "101:101"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - xatu-net
     ports:
@@ -148,9 +150,9 @@ services:
       - "${CLICKHOUSE_CBT_01_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_01_NATIVE_PORT:-9000}:9000"
     volumes:
       - clickhouse-01-data:/var/lib/clickhouse/
-      - ./local-config/clickhouse/clickhouse-01/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/clickhouse/clickhouse-01/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/clickhouse/clickhouse-01/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-01/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-01/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-01/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
       - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
     environment:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
@@ -177,6 +179,8 @@ services:
     container_name: xatu-cbt-clickhouse-02
     hostname: xatu-cbt-clickhouse-02
     user: "101:101"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - xatu-net
     ports:
@@ -184,9 +188,9 @@ services:
       - "${CLICKHOUSE_CBT_02_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_02_NATIVE_PORT:-9001}:9000"
     volumes:
       - clickhouse-02-data:/var/lib/clickhouse/
-      - ./local-config/clickhouse/clickhouse-02/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/clickhouse/clickhouse-02/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/clickhouse/clickhouse-02/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-02/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-02/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-02/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
       - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
     environment:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
@@ -209,6 +213,8 @@ services:
 
   # Xatu ClickHouse Node 1 (External Data Cluster)
   xatu-clickhouse-01:
+    profiles:
+      - xatu-local
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-25.5.10}
     container_name: xatu-clickhouse-01
     hostname: xatu-clickhouse-01
@@ -245,6 +251,8 @@ services:
 
   # Xatu ClickHouse Node 2 (External Data Cluster)
   xatu-clickhouse-02:
+    profiles:
+      - xatu-local
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-25.5.10}
     container_name: xatu-clickhouse-02
     hostname: xatu-clickhouse-02

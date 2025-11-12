@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -15,11 +17,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	xatuModeLocal    = "local"
+	xatuModeExternal = "external"
+)
+
 var (
 	infraCleanupTestDBs bool
 	infraVerbose        bool
 	infraClickhouseURL  string
 	infraRedisURL       string
+
+	errInvalidXatuMode         = errors.New("invalid xatu-mode")
+	errXatuRepositoryNotFound  = errors.New("xatu repository not found")
 )
 
 // infraCmd represents the infrastructure command
@@ -106,6 +116,7 @@ func init() {
 	infraCmd.PersistentFlags().StringVar(&infraRedisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
 	infraStopCmd.Flags().BoolVar(&infraCleanupTestDBs, "cleanup-test-dbs", true, "Cleanup ephemeral test databases")
 	infraStatusCmd.Flags().BoolVar(&infraVerbose, "verbose", false, "Show detailed container and database information")
+	infraStartCmd.Flags().String("xatu-mode", xatuModeLocal, "Xatu ClickHouse mode: local or external")
 }
 
 // createInfraManagers creates and returns Docker and ClickHouse managers with the shared configuration.
@@ -143,29 +154,69 @@ func ensureXatuRepo(log logrus.FieldLogger, wd, repoURL, ref string) (string, er
 	return repoPath, nil
 }
 
-func runInfraStart(_ *cobra.Command, _ []string) error {
+func runInfraStart(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	log := newLogger(false)
 	log.Info("starting platform infrastructure")
 
-	wd, err := os.Getwd()
+	// Get xatu-mode flag
+	xatuMode, err := cmd.Flags().GetString("xatu-mode")
 	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
+		return fmt.Errorf("reading xatu-mode flag: %w", err)
 	}
 
-	log.Info("ensuring xatu repository")
-	if _, repoErr := ensureXatuRepo(log, wd, config.XatuRepoURL, config.XatuDefaultRef); repoErr != nil {
-		return repoErr
+	// Validate mode
+	if xatuMode != xatuModeLocal && xatuMode != xatuModeExternal {
+		return fmt.Errorf("%w: %s (must be 'local' or 'external')", errInvalidXatuMode, xatuMode)
+	}
+
+	log.WithField("xatu_mode", xatuMode).Info("configured Xatu mode")
+
+	// Set ClickHouse config directory based on mode
+	if xatuMode == xatuModeExternal {
+		if setenvErr := os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse-external"); setenvErr != nil {
+			return fmt.Errorf("setting CLICKHOUSE_CONFIG_DIR: %w", setenvErr)
+		}
+		log.Debug("using external ClickHouse configuration")
+	} else {
+		if setenvErr := os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse"); setenvErr != nil {
+			return fmt.Errorf("setting CLICKHOUSE_CONFIG_DIR: %w", setenvErr)
+		}
+		log.Debug("using local ClickHouse configuration")
+	}
+
+	// Check xatu repository if needed for local mode
+	if xatuMode == xatuModeLocal {
+		xatuRepo := filepath.Join(".", "xatu")
+		log.WithField("path", xatuRepo).Debug("verifying xatu repository exists")
+
+		if _, statErr := os.Stat(xatuRepo); os.IsNotExist(statErr) {
+			return fmt.Errorf("%w at %s (required for local Xatu mode)", errXatuRepositoryNotFound, xatuRepo)
+		}
 	}
 
 	dockerManager, chManager := createInfraManagers(log)
-	if startErr := chManager.Start(ctx); startErr != nil {
+
+	// Determine profiles to activate
+	var profiles []string
+	if xatuMode == xatuModeLocal {
+		profiles = []string{"xatu-local"}
+		log.Debug("activating xatu-local profile")
+	} else {
+		log.Info("skipping local Xatu cluster (external mode)")
+	}
+
+	// Start infrastructure with profiles
+	if startErr := chManager.Start(ctx, profiles...); startErr != nil {
 		return fmt.Errorf("starting infrastructure: %w", startErr)
 	}
 
 	fmt.Println("\n✓ Platform infrastructure started successfully")
+	if xatuMode == xatuModeExternal {
+		fmt.Println("  Note: Local Xatu cluster NOT started (external mode)")
+	}
 
 	services, err := dockerManager.GetAllServices(ctx)
 	if err != nil {
@@ -236,7 +287,9 @@ func runInfraStop(_ *cobra.Command, _ []string) error {
 		log.Debug("infrastructure not running, skipping database cleanup")
 	}
 
-	if err := chManager.Stop(); err != nil {
+	// Pass all known profiles to ensure complete shutdown
+	// This ensures profiled containers (like xatu-clickhouse) are also stopped
+	if err := chManager.Stop("xatu-local"); err != nil {
 		return fmt.Errorf("stopping infrastructure: %w", err)
 	}
 
@@ -292,7 +345,9 @@ func runInfraReset(_ *cobra.Command, _ []string) error {
 
 	dockerManager, _ := createInfraManagers(log)
 
-	if err := dockerManager.Reset(); err != nil {
+	// Pass all known profiles to ensure complete cleanup
+	// This ensures profiled containers (like xatu-clickhouse) are also removed
+	if err := dockerManager.Reset("xatu-local"); err != nil {
 		return fmt.Errorf("resetting infrastructure: %w", err)
 	}
 

@@ -23,8 +23,8 @@ var (
 
 // ClickHouseManager manages ClickHouse cluster lifecycle
 type ClickHouseManager interface {
-	Start(ctx context.Context) error
-	Stop() error
+	Start(ctx context.Context, profiles ...string) error
+	Stop(profiles ...string) error
 	HealthCheck(ctx context.Context) error
 	CleanupEphemeralDatabases(ctx context.Context, maxAge time.Duration) error
 }
@@ -50,10 +50,10 @@ func NewClickHouseManager(log logrus.FieldLogger, dockerManager DockerManager, c
 }
 
 // Start starts the ClickHouse cluster and waits for health.
-func (m *clickhouseManager) Start(ctx context.Context) error {
+func (m *clickhouseManager) Start(ctx context.Context, profiles ...string) error {
 	m.log.Info("starting clickhouse cluster")
 
-	if err := m.dockerManager.Start(ctx); err != nil {
+	if err := m.dockerManager.Start(ctx, profiles...); err != nil {
 		return fmt.Errorf("starting docker compose: %w", err)
 	}
 
@@ -67,8 +67,9 @@ func (m *clickhouseManager) Start(ctx context.Context) error {
 }
 
 // Stop stops the ClickHouse cluster.
-func (m *clickhouseManager) Stop() error {
-	m.log.Info("stopping clickhouse cluster")
+// Profiles should be passed to ensure all containers are stopped, including those in profiles.
+func (m *clickhouseManager) Stop(profiles ...string) error {
+	m.log.WithField("profiles", profiles).Info("stopping clickhouse cluster")
 
 	if m.conn != nil {
 		if err := m.conn.Close(); err != nil {
@@ -77,7 +78,7 @@ func (m *clickhouseManager) Stop() error {
 		m.conn = nil
 	}
 
-	if err := m.dockerManager.Stop(); err != nil {
+	if err := m.dockerManager.Stop(profiles...); err != nil {
 		return fmt.Errorf("stopping docker compose: %w", err)
 	}
 
