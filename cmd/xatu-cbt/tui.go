@@ -1,15 +1,22 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strings"
+	"time"
 
 	"github.com/ethpandaops/xatu-cbt/internal/actions"
+	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/ethpandaops/xatu-cbt/internal/interactive"
+	"github.com/ethpandaops/xatu-cbt/internal/testing"
+	"github.com/sirupsen/logrus"
 )
 
 func runInteractive() {
@@ -234,36 +241,113 @@ func runTestModelsInteractive() error {
 	networks := []string{"mainnet", "sepolia"}
 	specs := []string{"pectra", "fusaka"}
 
-	network, err := interactive.SelectFromList("Select network:", networks)
-	if err != nil {
-		fmt.Println("Selection canceled.")
+	// Initialize model cache to load available models
+	wd, wdErr := os.Getwd()
+	if wdErr != nil {
+		fmt.Printf("❌ Failed to get working directory: %v\n", wdErr)
 		interactive.PauseForEnter()
 		return nil
 	}
 
-	spec, err := interactive.SelectFromList("Select spec:", specs)
-	if err != nil {
-		fmt.Println("Selection canceled.")
+	// Create a simple logger for model cache (only show errors)
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	logger.SetOutput(os.Stderr)
+
+	modelCache := testing.NewModelCache(logger)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	fmt.Println("Loading available models...")
+	if loadErr := modelCache.LoadAll(
+		ctx,
+		filepath.Join(wd, config.ModelsExternalDir),
+		filepath.Join(wd, config.ModelsTransformationsDir),
+	); loadErr != nil {
+		fmt.Printf("❌ Failed to load models: %v\n", loadErr)
 		interactive.PauseForEnter()
 		return nil
 	}
 
-	fmt.Print("\nEnter comma-separated model names (e.g., fct_block,canonical_beacon_block): ")
-	var models string
-	if _, err := fmt.Scanln(&models); err != nil {
-		fmt.Println("\n❌ Invalid input")
+	// Get all models and sort them alphabetically
+	allModels := modelCache.ListAllModels()
+	sort.Strings(allModels)
+
+	if len(allModels) == 0 {
+		fmt.Println("❌ No models found")
 		interactive.PauseForEnter()
 		return nil
 	}
 
-	verbose := interactive.Confirm("Enable verbose output?")
+	// Loop to allow repeated testing with the same or different parameters
+	for {
+		network, err := interactive.SelectFromList("Select network:", networks)
+		if err != nil {
+			fmt.Println("Selection canceled.")
+			interactive.PauseForEnter()
+			return nil
+		}
 
-	args := []string{"test", "models", models, "--spec", spec, "--network", network}
-	if verbose {
-		args = append(args, "--verbose")
+		spec, err := interactive.SelectFromList("Select spec:", specs)
+		if err != nil {
+			fmt.Println("Selection canceled.")
+			interactive.PauseForEnter()
+			return nil
+		}
+
+		// Use multi-select for models
+		selectedModels, selectErr := interactive.MultiSelectFromList(
+			"Select models to test (space to select, / to search, enter to confirm):",
+			allModels,
+		)
+		if selectErr != nil {
+			fmt.Println("Selection canceled.")
+			interactive.PauseForEnter()
+			return nil
+		}
+
+		if len(selectedModels) == 0 {
+			fmt.Println("\n❌ No models selected")
+			interactive.PauseForEnter()
+			continue
+		}
+
+		verbose := interactive.Confirm("Enable verbose output?")
+
+		// Join selected models with commas
+		modelsArg := strings.Join(selectedModels, ",")
+		args := []string{"test", "models", modelsArg, "--spec", spec, "--network", network}
+		if verbose {
+			args = append(args, "--verbose")
+		}
+
+		// Inner loop for re-running the same test
+		for {
+			// Run the test (errors are displayed by runCLICommand)
+			_ = runCLICommand(args...)
+
+			// Ask user what to do next
+			choices := []string{
+				"Test again (same settings)",
+				"Test with different settings",
+				"Return to menu",
+			}
+
+			nextAction, actionErr := interactive.SelectFromList("\nWhat would you like to do?", choices)
+			if actionErr != nil || nextAction == "Return to menu" {
+				return nil
+			}
+
+			if nextAction == "Test again (same settings)" {
+				fmt.Println() // Add blank line for readability
+				continue      // Re-run with same args
+			}
+
+			// "Test with different settings" - break inner loop to prompt for new settings
+			fmt.Println() // Add blank line for readability
+			break
+		}
 	}
-
-	return runCLICommand(args...)
 }
 
 func runCLICommand(args ...string) error {
