@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Block details for the finalized chain, this includes before and after the merge.
+
+message DimBlock {
+  // The execution block number
+  uint32 block_number = 11;
+  // The hash of the execution block
+  string block_hash = 12;
+  // The execution block date and time
+  uint32 block_date_time = 13;
+  // The slot number of the beacon block
+  google.protobuf.UInt32Value slot = 14;
+  // The wall clock time when the slot started
+  google.protobuf.UInt32Value slot_start_date_time = 15;
+  // The epoch number of the beacon block
+  google.protobuf.UInt32Value epoch = 16;
+  // The wall clock time when the epoch started
+  google.protobuf.UInt32Value epoch_start_date_time = 17;
+  // The version of the beacon block
+  google.protobuf.StringValue block_version = 18;
+  // The root hash of the beacon block
+  google.protobuf.StringValue block_root = 19;
+  // The root hash of the parent beacon block
+  google.protobuf.StringValue parent_root = 20;
+  // The root hash of the beacon state at this block
+  google.protobuf.StringValue state_root = 21;
+}
+
+// Request for listing dim_block records
+message ListDimBlockRequest {
+  // Filter by block_number - The execution block number (PRIMARY KEY - required)
+  UInt32Filter block_number = 1;
+
+  // Filter by block_hash - The hash of the execution block (optional)
+  StringFilter block_hash = 2;
+  // Filter by block_date_time - The execution block date and time (optional)
+  UInt32Filter block_date_time = 3;
+  // Filter by slot - The slot number of the beacon block (optional)
+  NullableUInt32Filter slot = 4;
+  // Filter by slot_start_date_time - The wall clock time when the slot started (optional)
+  NullableUInt32Filter slot_start_date_time = 5;
+  // Filter by epoch - The epoch number of the beacon block (optional)
+  NullableUInt32Filter epoch = 6;
+  // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
+  NullableUInt32Filter epoch_start_date_time = 7;
+  // Filter by block_version - The version of the beacon block (optional)
+  NullableStringFilter block_version = 8;
+  // Filter by block_root - The root hash of the beacon block (optional)
+  NullableStringFilter block_root = 9;
+  // Filter by parent_root - The root hash of the parent beacon block (optional)
+  NullableStringFilter parent_root = 10;
+  // Filter by state_root - The root hash of the beacon state at this block (optional)
+  NullableStringFilter state_root = 11;
+
+  // The maximum number of dim_block to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 12;
+  // A page token, received from a previous `ListDimBlock` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 13;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 14;
+}
+
+// Response for listing dim_block records
+message ListDimBlockResponse {
+  // The list of dim_block.
+  repeated DimBlock dim_block = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single dim_block record by primary key
+message GetDimBlockRequest {
+  // The execution block number
+  uint32 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single dim_block record
+message GetDimBlockResponse {
+  DimBlock item = 1;
+}
+
+// Query dim_block data
+service DimBlockService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListDimBlockRequest) returns (ListDimBlockResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetDimBlockRequest) returns (GetDimBlockResponse);
+}
