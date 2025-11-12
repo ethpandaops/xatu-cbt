@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.dim_block ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.dim_block_local ON CLUSTER '{cluster}' SYNC;
