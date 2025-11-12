@@ -9,7 +9,7 @@ assertions:
         FROM
           dim_block FINAL
       expected:
-        count: 20
+        count: 21
     - name: Has been scheduled at least once
       sql: |
         SELECT
