@@ -40,7 +40,7 @@ var (
 type Runner interface {
 	Start(ctx context.Context) error
 	Stop() error
-	RunAssertions(ctx context.Context, dbName string, assertions []*testdef.Assertion) (*RunResult, error)
+	RunAssertions(ctx context.Context, model, dbName string, assertions []*testdef.Assertion) (*RunResult, error)
 }
 
 // RunResult contains assertion execution results.
@@ -132,8 +132,11 @@ func (r *runner) Stop() error {
 }
 
 // RunAssertions executes all assertions for a test.
-func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []*testdef.Assertion) (*RunResult, error) {
+func (r *runner) RunAssertions(ctx context.Context, model, dbName string, assertions []*testdef.Assertion) (*RunResult, error) {
 	start := time.Now()
+
+	// Create a scoped logger with the model name
+	log := r.log.WithField("model", model)
 
 	// Execute assertions in parallel with worker pool.
 	results := make([]*Result, len(assertions))
@@ -150,7 +153,7 @@ func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []
 				return gCtx.Err()
 			}
 
-			results[i] = r.executeAssertion(gCtx, dbName, assertion)
+			results[i] = r.executeAssertion(gCtx, log, dbName, assertion)
 			return nil
 		})
 	}
@@ -173,7 +176,7 @@ func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []
 		}
 	}
 
-	r.log.WithFields(logrus.Fields{
+	log.WithFields(logrus.Fields{
 		"total":    result.Total,
 		"passed":   result.Passed,
 		"failed":   result.Failed,
@@ -184,7 +187,7 @@ func (r *runner) RunAssertions(ctx context.Context, dbName string, assertions []
 }
 
 // executeAssertion runs a single assertion with retry logic.
-func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion *testdef.Assertion) *Result {
+func (r *runner) executeAssertion(ctx context.Context, log logrus.FieldLogger, dbName string, assertion *testdef.Assertion) *Result {
 	var (
 		start  = time.Now()
 		result = &Result{
@@ -198,7 +201,7 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 	currentRetryDelay := r.retryDelay
 	for attempt := 0; attempt <= r.maxRetries; attempt++ {
 		if attempt > 0 {
-			r.log.WithFields(logrus.Fields{
+			log.WithFields(logrus.Fields{
 				"assertion": assertion.Name,
 				"attempt":   attempt,
 				"max":       r.maxRetries,
@@ -223,7 +226,7 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 		if err != nil {
 			// Only retry on "no rows" errors (data not ready yet).
 			if err.Error() == "no rows returned" && attempt < r.maxRetries {
-				r.log.WithField("assertion", assertion.Name).Debug("no rows returned, retrying")
+				log.WithField("assertion", assertion.Name).Debug("no rows returned, retrying")
 
 				continue
 			}
@@ -253,7 +256,7 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 		if result.Passed {
 			result.Duration = time.Since(start)
 
-			r.log.WithFields(logrus.Fields{
+			log.WithFields(logrus.Fields{
 				"assertion": assertion.Name,
 				"passed":    true,
 				"attempts":  attempt + 1,
@@ -265,7 +268,7 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 
 		// If failed but not the last attempt, retry.
 		if attempt < r.maxRetries {
-			r.log.WithFields(logrus.Fields{
+			log.WithFields(logrus.Fields{
 				"assertion": assertion.Name,
 				"expected":  assertion.Expected,
 				"actual":    actual,
@@ -287,7 +290,7 @@ func (r *runner) executeAssertion(ctx context.Context, dbName string, assertion 
 
 	result.Duration = time.Since(start)
 
-	r.log.WithFields(logrus.Fields{
+	log.WithFields(logrus.Fields{
 		"assertion": assertion.Name,
 		"passed":    result.Passed,
 		"duration":  result.Duration,
