@@ -329,9 +329,7 @@ func (o *Orchestrator) executeTestGroup(
 		return nil, err
 	}
 
-	if !o.verbose {
-		o.formatter.PrintParquetSummary()
-	}
+	o.formatter.PrintParquetSummary()
 
 	// Step 5: Run assertions in parallel
 	results := o.runAssertions(ctx, network, spec, dbName, testConfigs, resolutions, concurrency, start)
@@ -343,9 +341,7 @@ func (o *Orchestrator) executeTestGroup(
 		"duration": time.Since(start),
 	}).Info("all assertions completed")
 
-	if !o.verbose {
-		o.formatter.PrintTestResults()
-	}
+	o.formatter.PrintTestResults()
 
 	o.formatter.PrintSummary()
 
