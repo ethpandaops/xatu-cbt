@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,11 +17,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	xatuModeLocal    = "local"
+	xatuModeExternal = "external"
+)
+
 var (
 	infraCleanupTestDBs bool
 	infraVerbose        bool
 	infraClickhouseURL  string
 	infraRedisURL       string
+
+	errInvalidXatuMode         = errors.New("invalid xatu-mode")
+	errXatuRepositoryNotFound  = errors.New("xatu repository not found")
 )
 
 // infraCmd represents the infrastructure command
@@ -107,7 +116,7 @@ func init() {
 	infraCmd.PersistentFlags().StringVar(&infraRedisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
 	infraStopCmd.Flags().BoolVar(&infraCleanupTestDBs, "cleanup-test-dbs", true, "Cleanup ephemeral test databases")
 	infraStatusCmd.Flags().BoolVar(&infraVerbose, "verbose", false, "Show detailed container and database information")
-	infraStartCmd.Flags().String("xatu-mode", "local", "Xatu ClickHouse mode: local or external")
+	infraStartCmd.Flags().String("xatu-mode", xatuModeLocal, "Xatu ClickHouse mode: local or external")
 }
 
 // createInfraManagers creates and returns Docker and ClickHouse managers with the shared configuration.
@@ -159,28 +168,32 @@ func runInfraStart(cmd *cobra.Command, _ []string) error {
 	}
 
 	// Validate mode
-	if xatuMode != "local" && xatuMode != "external" {
-		return fmt.Errorf("invalid xatu-mode: %s (must be 'local' or 'external')", xatuMode)
+	if xatuMode != xatuModeLocal && xatuMode != xatuModeExternal {
+		return fmt.Errorf("%w: %s (must be 'local' or 'external')", errInvalidXatuMode, xatuMode)
 	}
 
 	log.WithField("xatu_mode", xatuMode).Info("configured Xatu mode")
 
 	// Set ClickHouse config directory based on mode
-	if xatuMode == "external" {
-		os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse-external")
+	if xatuMode == xatuModeExternal {
+		if setenvErr := os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse-external"); setenvErr != nil {
+			return fmt.Errorf("setting CLICKHOUSE_CONFIG_DIR: %w", setenvErr)
+		}
 		log.Debug("using external ClickHouse configuration")
 	} else {
-		os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse")
+		if setenvErr := os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse"); setenvErr != nil {
+			return fmt.Errorf("setting CLICKHOUSE_CONFIG_DIR: %w", setenvErr)
+		}
 		log.Debug("using local ClickHouse configuration")
 	}
 
 	// Check xatu repository if needed for local mode
-	if xatuMode == "local" {
-		xatuRepo := filepath.Join("..", "xatu")
+	if xatuMode == xatuModeLocal {
+		xatuRepo := filepath.Join(".", "xatu")
 		log.WithField("path", xatuRepo).Debug("verifying xatu repository exists")
 
-		if _, err := os.Stat(xatuRepo); os.IsNotExist(err) {
-			return fmt.Errorf("xatu repository not found at %s (required for local Xatu mode)", xatuRepo)
+		if _, statErr := os.Stat(xatuRepo); os.IsNotExist(statErr) {
+			return fmt.Errorf("%w at %s (required for local Xatu mode)", errXatuRepositoryNotFound, xatuRepo)
 		}
 	}
 
@@ -188,7 +201,7 @@ func runInfraStart(cmd *cobra.Command, _ []string) error {
 
 	// Determine profiles to activate
 	var profiles []string
-	if xatuMode == "local" {
+	if xatuMode == xatuModeLocal {
 		profiles = []string{"xatu-local"}
 		log.Debug("activating xatu-local profile")
 	} else {
@@ -201,7 +214,7 @@ func runInfraStart(cmd *cobra.Command, _ []string) error {
 	}
 
 	fmt.Println("\n✓ Platform infrastructure started successfully")
-	if xatuMode == "external" {
+	if xatuMode == xatuModeExternal {
 		fmt.Println("  Note: Local Xatu cluster NOT started (external mode)")
 	}
 
