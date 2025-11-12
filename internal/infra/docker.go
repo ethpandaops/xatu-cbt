@@ -91,8 +91,16 @@ func (m *dockerManager) Stop() error {
 		"compose",
 		"-f", m.composeFile,
 		"-p", m.projectName,
-		"down",
 	}
+
+	// Always include all possible profiles to ensure complete shutdown
+	// This handles the case where docker manager is stateless between CLI invocations
+	allProfiles := []string{"xatu-local"}
+	for _, profile := range allProfiles {
+		args = append(args, "--profile", profile)
+	}
+
+	args = append(args, "down")
 
 	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose down: %w", err)
@@ -117,9 +125,16 @@ func (m *dockerManager) Reset() error {
 		"compose",
 		"-f", m.composeFile,
 		"-p", m.projectName,
-		"down",
-		"-v",
 	}
+
+	// Always include all possible profiles to ensure complete cleanup
+	// This handles the case where docker manager is stateless between CLI invocations
+	allProfiles := []string{"xatu-local"}
+	for _, profile := range allProfiles {
+		args = append(args, "--profile", profile)
+	}
+
+	args = append(args, "down", "-v")
 
 	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose down: %w", err)
