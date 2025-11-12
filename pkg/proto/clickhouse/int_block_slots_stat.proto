@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Table that states the stats of the slots per block
+
+message IntBlockSlotsStat {
+  // The block number
+  uint32 block_number = 11;
+  // The number of slots cleared
+  uint32 slots_cleared = 12;
+  // The number of slots set
+  uint32 slots_set = 13;
+  // The net number of slots
+  int32 net_slots = 14;
+  // The net number of raw slot bytes (slot key + value)
+  int32 net_slots_bytes = 15;
+}
+
+// Request for listing int_block_slots_stat records
+message ListIntBlockSlotsStatRequest {
+  // Filter by block_number - The block number (PRIMARY KEY - required)
+  UInt32Filter block_number = 1;
+
+  // Filter by slots_cleared - The number of slots cleared (optional)
+  UInt32Filter slots_cleared = 2;
+  // Filter by slots_set - The number of slots set (optional)
+  UInt32Filter slots_set = 3;
+  // Filter by net_slots - The net number of slots (optional)
+  Int32Filter net_slots = 4;
+  // Filter by net_slots_bytes - The net number of raw slot bytes (slot key + value) (optional)
+  Int32Filter net_slots_bytes = 5;
+
+  // The maximum number of int_block_slots_stat to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 6;
+  // A page token, received from a previous `ListIntBlockSlotsStat` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 7;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 8;
+}
+
+// Response for listing int_block_slots_stat records
+message ListIntBlockSlotsStatResponse {
+  // The list of int_block_slots_stat.
+  repeated IntBlockSlotsStat int_block_slots_stat = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_block_slots_stat record by primary key
+message GetIntBlockSlotsStatRequest {
+  // The block number
+  uint32 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single int_block_slots_stat record
+message GetIntBlockSlotsStatResponse {
+  IntBlockSlotsStat item = 1;
+}
+
+// Query int_block_slots_stat data
+service IntBlockSlotsStatService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntBlockSlotsStatRequest) returns (ListIntBlockSlotsStatResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntBlockSlotsStatRequest) returns (GetIntBlockSlotsStatResponse);
+}
