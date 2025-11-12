@@ -25,8 +25,8 @@ type ServiceInfo struct {
 // DockerManager manages docker-compose lifecycle.
 type DockerManager interface {
 	Start(ctx context.Context, profiles ...string) error
-	Stop() error
-	Reset() error
+	Stop(profiles ...string) error
+	Reset(profiles ...string) error
 	IsRunning(ctx context.Context) (bool, error)
 	GetContainerStatus(ctx context.Context, service string) (string, error)
 	GetAllServices(ctx context.Context) ([]ServiceInfo, error)
@@ -78,10 +78,12 @@ func (m *dockerManager) Start(ctx context.Context, profiles ...string) error {
 }
 
 // Stop stops docker-compose services (volumes are preserved).
-func (m *dockerManager) Stop() error {
+// Profiles should be passed to ensure all containers are stopped, including those in profiles.
+func (m *dockerManager) Stop(profiles ...string) error {
 	m.log.WithFields(logrus.Fields{
 		"compose_file": m.composeFile,
 		"project":      m.projectName,
+		"profiles":     profiles,
 	}).Debug("stopping docker-compose")
 
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
@@ -91,8 +93,14 @@ func (m *dockerManager) Stop() error {
 		"compose",
 		"-f", m.composeFile,
 		"-p", m.projectName,
-		"down",
 	}
+
+	// Add specified profiles to ensure all containers are stopped
+	for _, profile := range profiles {
+		args = append(args, "--profile", profile)
+	}
+
+	args = append(args, "down")
 
 	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose down: %w", err)
@@ -104,10 +112,12 @@ func (m *dockerManager) Stop() error {
 }
 
 // Reset stops services and removes all volumes.
-func (m *dockerManager) Reset() error {
+// Profiles should be passed to ensure all containers are removed, including those in profiles.
+func (m *dockerManager) Reset(profiles ...string) error {
 	m.log.WithFields(logrus.Fields{
 		"compose_file": m.composeFile,
 		"project":      m.projectName,
+		"profiles":     profiles,
 	}).Debug("resetting docker-compose")
 
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
@@ -117,9 +127,14 @@ func (m *dockerManager) Reset() error {
 		"compose",
 		"-f", m.composeFile,
 		"-p", m.projectName,
-		"down",
-		"-v",
 	}
+
+	// Add specified profiles to ensure all containers are removed
+	for _, profile := range profiles {
+		args = append(args, "--profile", profile)
+	}
+
+	args = append(args, "down", "-v")
 
 	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose down: %w", err)
