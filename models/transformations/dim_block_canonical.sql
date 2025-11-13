@@ -5,6 +5,9 @@ schedule: "@every 5s"
 tags:
   - block
   - canonical
+dependencies:
+  - "{{external}}.canonical_execution_block"
+  - "{{external}}.canonical_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -15,7 +18,7 @@ WITH latest_row AS (
 earliest_row AS (
   SELECT
     block_date_time
-  FROM cluster('{remote_cluster}', default.`canonical_execution_block_local`) FINAL
+  FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
   WHERE
     meta_network_name = '{{ .env.NETWORK }}'
     -- ignore genesis
@@ -37,7 +40,7 @@ execution_blocks AS (
     block_number,
     block_hash,
     block_date_time
-  FROM cluster('{remote_cluster}', default.`canonical_execution_block_local`) FINAL
+  FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
   WHERE
     block_date_time
       BETWEEN (SELECT block_date_time FROM reference_row) - INTERVAL 1 HOUR
@@ -57,7 +60,7 @@ post_merge_beacon_blocks AS (
     block_root,
     parent_root,
     state_root
-  FROM cluster('{remote_cluster}', default.`canonical_beacon_block_local`)
+  FROM {{ index .dep "{{external}}" "canonical_beacon_block" "helpers" "from" }} FINAL
   WHERE
     slot_start_date_time
       BETWEEN (SELECT block_date_time FROM reference_row) - INTERVAL 1 HOUR

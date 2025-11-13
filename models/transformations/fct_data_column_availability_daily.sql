@@ -7,6 +7,8 @@ tags:
   - data_column
   - peerdas
   - custody
+dependencies:
+  - "{{transformation}}.fct_data_column_availability_hourly"
 ---
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 SELECT
@@ -44,7 +46,7 @@ FROM (
         round(avg(avg_p99_response_time_ms)) AS avg_p99_response_time_ms,
         round(max(max_response_time_ms)) AS max_response_time_ms,
         max(max_blob_count) AS max_blob_count
-    FROM `{{ .self.database }}`.`fct_data_column_availability_hourly` FINAL
+    FROM {{ index .dep "{{transformation}}" "fct_data_column_availability_hourly" "helpers" "from" }} FINAL
     WHERE toDate(hour_start_date_time) >= now() - INTERVAL 19 DAY
     GROUP BY
         toDate(hour_start_date_time),

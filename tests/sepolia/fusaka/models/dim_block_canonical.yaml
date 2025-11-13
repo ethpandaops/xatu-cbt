@@ -1,6 +1,13 @@
 model: dim_block_canonical
 network: sepolia
 spec: fusaka
+external_data:
+    canonical_execution_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_execution_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_beacon_block.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected size
       sql: |

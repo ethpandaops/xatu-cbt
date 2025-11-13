@@ -1,6 +1,10 @@
 model: fct_address_access_total
 network: mainnet
 spec: pectra
+external_data:
+    canonical_execution_contracts:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_contracts.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected bounds and size
       sql: |
