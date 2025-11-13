@@ -19,6 +19,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	errNoModelsFound   = errors.New("no models found")
+	errNoNetworksFound = errors.New("no networks found in tests/ directory")
+	errNoSpecsFound    = errors.New("no specs found for network")
+)
+
 // discoverNetworks returns a sorted list of available networks from the tests directory
 func discoverNetworks() ([]string, error) {
 	testsDir := "tests"
@@ -310,13 +316,11 @@ func runTestSpecInteractive() error {
 	return runCLICommand(args...)
 }
 
-func runTestModelsInteractive() error {
-	// Initialize model cache to load available models
+// initializeAndLoadModels initializes the model cache and loads all available models.
+func initializeAndLoadModels() ([]string, error) {
 	wd, wdErr := os.Getwd()
 	if wdErr != nil {
-		fmt.Printf("❌ Failed to get working directory: %v\n", wdErr)
-		interactive.PauseForEnter()
-		return nil
+		return nil, fmt.Errorf("failed to get working directory: %w", wdErr)
 	}
 
 	// Create a simple logger for model cache (only show errors)
@@ -334,9 +338,7 @@ func runTestModelsInteractive() error {
 		filepath.Join(wd, config.ModelsExternalDir),
 		filepath.Join(wd, config.ModelsTransformationsDir),
 	); loadErr != nil {
-		fmt.Printf("❌ Failed to load models: %v\n", loadErr)
-		interactive.PauseForEnter()
-		return nil
+		return nil, fmt.Errorf("failed to load models: %w", loadErr)
 	}
 
 	// Get all models and sort them alphabetically
@@ -344,63 +346,86 @@ func runTestModelsInteractive() error {
 	sort.Strings(allModels)
 
 	if len(allModels) == 0 {
-		fmt.Println("❌ No models found")
+		return nil, errNoModelsFound
+	}
+
+	return allModels, nil
+}
+
+// selectNetworkAndSpec prompts the user to select a network and spec.
+func selectNetworkAndSpec() (network, spec string, err error) {
+	networks, err := discoverNetworks()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to discover networks: %w", err)
+	}
+
+	if len(networks) == 0 {
+		return "", "", errNoNetworksFound
+	}
+
+	// Select or auto-select network
+	if len(networks) == 1 {
+		network = networks[0]
+		fmt.Printf("Auto-selected network: %s\n", network)
+	} else {
+		network, err = interactive.SelectFromList("Select network:", networks)
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	// Discover and select spec
+	specs, err := discoverSpecs(network)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to discover specs for network %s: %w", network, err)
+	}
+
+	if len(specs) == 0 {
+		return "", "", fmt.Errorf("%w %s", errNoSpecsFound, network)
+	}
+
+	// Select or auto-select spec
+	if len(specs) == 1 {
+		spec = specs[0]
+		fmt.Printf("Auto-selected spec: %s\n", spec)
+	} else {
+		spec, err = interactive.SelectFromList("Select spec:", specs)
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	return network, spec, nil
+}
+
+// promptForNextAction prompts the user for what to do after a test run.
+func promptForNextAction() (string, error) {
+	choices := []string{
+		"Test again (same settings)",
+		"Test with different settings",
+		"Return to menu",
+	}
+
+	return interactive.SelectFromList("\nWhat would you like to do?", choices)
+}
+
+func runTestModelsInteractive() error {
+	// Initialize and load models
+	allModels, err := initializeAndLoadModels()
+	if err != nil {
+		fmt.Printf("❌ %v\n", err)
 		interactive.PauseForEnter()
 		return nil
 	}
 
 	// Loop to allow repeated testing with the same or different parameters
 	for {
-		networks, err := discoverNetworks()
+		// Select network and spec
+		network, spec, err := selectNetworkAndSpec()
 		if err != nil {
-			fmt.Printf("❌ Failed to discover networks: %v\n", err)
+			fmt.Printf("❌ %v\n", err)
 			interactive.PauseForEnter()
 			return nil
-		}
-
-		if len(networks) == 0 {
-			fmt.Println("❌ No networks found in tests/ directory")
-			interactive.PauseForEnter()
-			return nil
-		}
-
-		var network string
-		if len(networks) == 1 {
-			network = networks[0]
-			fmt.Printf("Auto-selected network: %s\n", network)
-		} else {
-			network, err = interactive.SelectFromList("Select network:", networks)
-			if err != nil {
-				fmt.Println("Selection canceled.")
-				interactive.PauseForEnter()
-				return nil
-			}
-		}
-
-		specs, err := discoverSpecs(network)
-		if err != nil {
-			fmt.Printf("❌ Failed to discover specs for network %s: %v\n", network, err)
-			interactive.PauseForEnter()
-			return nil
-		}
-
-		if len(specs) == 0 {
-			fmt.Printf("❌ No specs found for network %s\n", network)
-			interactive.PauseForEnter()
-			return nil
-		}
-
-		var spec string
-		if len(specs) == 1 {
-			spec = specs[0]
-			fmt.Printf("Auto-selected spec: %s\n", spec)
-		} else {
-			spec, err = interactive.SelectFromList("Select spec:", specs)
-			if err != nil {
-				fmt.Println("Selection canceled.")
-				interactive.PauseForEnter()
-				return nil
-			}
 		}
 
 		// Use multi-select for models
@@ -435,13 +460,7 @@ func runTestModelsInteractive() error {
 			_ = runCLICommand(args...)
 
 			// Ask user what to do next
-			choices := []string{
-				"Test again (same settings)",
-				"Test with different settings",
-				"Return to menu",
-			}
-
-			nextAction, actionErr := interactive.SelectFromList("\nWhat would you like to do?", choices)
+			nextAction, actionErr := promptForNextAction()
 			if actionErr != nil || nextAction == "Return to menu" {
 				return nil
 			}

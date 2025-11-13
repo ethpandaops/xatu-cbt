@@ -28,8 +28,9 @@ var (
 	infraClickhouseURL  string
 	infraRedisURL       string
 
-	errInvalidXatuMode         = errors.New("invalid xatu-mode")
-	errXatuRepositoryNotFound  = errors.New("xatu repository not found")
+	errInvalidXatuMode        = errors.New("invalid xatu-mode")
+	errXatuRepositoryNotFound = errors.New("xatu repository not found")
+	errXatuURLRequired        = errors.New("xatu-url is required when xatu-source is external")
 )
 
 // infraCmd represents the infrastructure command
@@ -155,6 +156,47 @@ func ensureXatuRepo(log logrus.FieldLogger, wd, repoURL, ref string) (string, er
 	return repoPath, nil
 }
 
+// configureXatuSource configures the ClickHouse config directory based on the xatu source mode.
+func configureXatuSource(log logrus.FieldLogger, xatuSource, xatuURL string) ([]string, error) {
+	if xatuSource == xatuModeExternal {
+		if xatuURL == "" {
+			return nil, errXatuURLRequired
+		}
+
+		// Generate ClickHouse config with external cluster settings from URL
+		if genErr := infra.GenerateExternalClickHouseConfigFromURL(log, xatuURL); genErr != nil {
+			return nil, fmt.Errorf("generating external ClickHouse config: %w", genErr)
+		}
+
+		if setenvErr := os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse-external"); setenvErr != nil {
+			return nil, fmt.Errorf("setting CLICKHOUSE_CONFIG_DIR: %w", setenvErr)
+		}
+
+		log.Debug("using external ClickHouse configuration")
+		return nil, nil // No profiles for external mode
+	}
+
+	// Local mode
+	if setenvErr := os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse"); setenvErr != nil {
+		return nil, fmt.Errorf("setting CLICKHOUSE_CONFIG_DIR: %w", setenvErr)
+	}
+
+	log.Debug("using local ClickHouse configuration")
+	return []string{"xatu-local"}, nil
+}
+
+// validateLocalXatuRepo validates that the local xatu repository exists.
+func validateLocalXatuRepo(log logrus.FieldLogger) error {
+	xatuRepo := filepath.Join(".", "xatu")
+	log.WithField("path", xatuRepo).Debug("verifying xatu repository exists")
+
+	if _, statErr := os.Stat(xatuRepo); os.IsNotExist(statErr) {
+		return fmt.Errorf("%w at %s (required for local Xatu source)", errXatuRepositoryNotFound, xatuRepo)
+	}
+
+	return nil
+}
+
 func runInfraStart(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -175,50 +217,26 @@ func runInfraStart(cmd *cobra.Command, _ []string) error {
 
 	log.WithField("xatu_source", xatuSource).Info("configured Xatu source")
 
-	// Set ClickHouse config directory based on source
-	if xatuSource == xatuModeExternal {
-		// Get external Xatu URL
-		xatuURL, _ := cmd.Flags().GetString("xatu-url")
-		if xatuURL == "" {
-			return fmt.Errorf("--xatu-url is required when --xatu-source=external")
-		}
+	// Get external Xatu URL if provided
+	xatuURL, _ := cmd.Flags().GetString("xatu-url")
 
-		// Generate ClickHouse config with external cluster settings from URL
-		if genErr := infra.GenerateExternalClickHouseConfigFromURL(log, xatuURL); genErr != nil {
-			return fmt.Errorf("generating external ClickHouse config: %w", genErr)
-		}
-
-		if setenvErr := os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse-external"); setenvErr != nil {
-			return fmt.Errorf("setting CLICKHOUSE_CONFIG_DIR: %w", setenvErr)
-		}
-		log.Debug("using external ClickHouse configuration")
-	} else {
-		if setenvErr := os.Setenv("CLICKHOUSE_CONFIG_DIR", "clickhouse"); setenvErr != nil {
-			return fmt.Errorf("setting CLICKHOUSE_CONFIG_DIR: %w", setenvErr)
-		}
-		log.Debug("using local ClickHouse configuration")
+	// Configure ClickHouse config directory and determine profiles
+	profiles, err := configureXatuSource(log, xatuSource, xatuURL)
+	if err != nil {
+		return err
 	}
 
-	// Check xatu repository if needed for local mode
+	// Validate xatu repository for local mode
 	if xatuSource == xatuModeLocal {
-		xatuRepo := filepath.Join(".", "xatu")
-		log.WithField("path", xatuRepo).Debug("verifying xatu repository exists")
-
-		if _, statErr := os.Stat(xatuRepo); os.IsNotExist(statErr) {
-			return fmt.Errorf("%w at %s (required for local Xatu source)", errXatuRepositoryNotFound, xatuRepo)
+		if validationErr := validateLocalXatuRepo(log); validationErr != nil {
+			return validationErr
 		}
-	}
-
-	dockerManager, chManager := createInfraManagers(log)
-
-	// Determine profiles to activate
-	var profiles []string
-	if xatuSource == xatuModeLocal {
-		profiles = []string{"xatu-local"}
 		log.Debug("activating xatu-local profile")
 	} else {
 		log.Info("skipping local Xatu cluster (external source)")
 	}
+
+	dockerManager, chManager := createInfraManagers(log)
 
 	// Start infrastructure with profiles
 	if startErr := chManager.Start(ctx, profiles...); startErr != nil {

@@ -2,6 +2,7 @@
 package infra
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -9,6 +10,12 @@ import (
 	"strconv"
 
 	"github.com/sirupsen/logrus"
+)
+
+var (
+	errExternalHostRequired = errors.New("external host is required for external mode")
+	errXatuURLEmpty         = errors.New("xatu URL is empty")
+	errNoHostInXatuURL      = errors.New("no host found in xatu URL")
 )
 
 // clickhouseConfigTemplate is the XML configuration template for ClickHouse external mode.
@@ -90,7 +97,7 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
 // to point to the provided external ClickHouse connection details.
 func GenerateExternalClickHouseConfig(log logrus.FieldLogger, host string, port int, username, password string, secure bool) error {
 	if host == "" {
-		return fmt.Errorf("external host is required for external mode")
+		return errExternalHostRequired
 	}
 
 	log.WithFields(logrus.Fields{
@@ -134,13 +141,15 @@ func GenerateExternalClickHouseConfig(log logrus.FieldLogger, host string, port 
 
 		// Create directory structure
 		nodeDir := filepath.Join(baseDir, fmt.Sprintf("clickhouse-%02d", nodeNum), "etc", "clickhouse-server", "config.d")
-		if err := os.MkdirAll(nodeDir, 0755); err != nil {
+		//nolint:gosec // G301: Directory permissions 0o755 are intentional for ClickHouse config
+		if err := os.MkdirAll(nodeDir, 0o755); err != nil {
 			return fmt.Errorf("failed to create config directory for node %d: %w", nodeNum, err)
 		}
 
 		// Write config.xml
 		configPath := filepath.Join(nodeDir, "config.xml")
-		if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		//nolint:gosec // G306: File permissions 0o644 are intentional for ClickHouse config
+		if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 			return fmt.Errorf("failed to write config for node %d: %w", nodeNum, err)
 		}
 
@@ -167,7 +176,7 @@ func GenerateExternalClickHouseConfig(log logrus.FieldLogger, host string, port 
 // - https://host:port (sets secure=true)
 func GenerateExternalClickHouseConfigFromURL(log logrus.FieldLogger, xatuURL string) error {
 	if xatuURL == "" {
-		return fmt.Errorf("xatu URL is empty")
+		return errXatuURLEmpty
 	}
 
 	// Parse URL
@@ -178,7 +187,7 @@ func GenerateExternalClickHouseConfigFromURL(log logrus.FieldLogger, xatuURL str
 
 	host := parsedURL.Hostname()
 	if host == "" {
-		return fmt.Errorf("no host found in xatu URL")
+		return errNoHostInXatuURL
 	}
 
 	// Determine secure flag based on scheme
@@ -219,18 +228,21 @@ func copyUsersConfig(log logrus.FieldLogger, destBaseDir string) error {
 		destPath := filepath.Join(destDir, "users.xml")
 
 		// Read source file
+		//nolint:gosec // G304: sourcePath is constructed from constants and controlled variables
 		usersContent, err := os.ReadFile(sourcePath)
 		if err != nil {
 			return fmt.Errorf("failed to read users config for node %d: %w", nodeNum, err)
 		}
 
 		// Create destination directory
-		if err := os.MkdirAll(destDir, 0755); err != nil {
+		//nolint:gosec // G301: Directory permissions 0o755 are intentional for ClickHouse config
+		if err := os.MkdirAll(destDir, 0o755); err != nil {
 			return fmt.Errorf("failed to create users config directory for node %d: %w", nodeNum, err)
 		}
 
 		// Write to destination
-		if err := os.WriteFile(destPath, usersContent, 0644); err != nil {
+		//nolint:gosec // G306: File permissions 0o644 are intentional for ClickHouse config
+		if err := os.WriteFile(destPath, usersContent, 0o644); err != nil {
 			return fmt.Errorf("failed to write users config for node %d: %w", nodeNum, err)
 		}
 
