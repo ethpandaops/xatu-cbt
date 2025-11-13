@@ -1,0 +1,16 @@
+model: canonical_execution_nonce_reads
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_nonce_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_nonce_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.canonical_execution_nonce_reads) FINAL
+      expected:
+        count: 18857

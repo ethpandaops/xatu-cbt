@@ -195,9 +195,9 @@ services:
       - xatu_xatu-net
     volumes:
       - clickhouse-01-data:/var/lib/clickhouse/
-      - ./local-config/clickhouse/clickhouse-01/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/clickhouse/clickhouse-01/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/clickhouse/clickhouse-01/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-01/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-01/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-01/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     ports:
       - "${CLICKHOUSE_CBT_01_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_01_HTTP_PORT:-8123}:8123"
       - "${CLICKHOUSE_CBT_01_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_01_NATIVE_PORT:-9000}:9000"
@@ -235,9 +235,9 @@ services:
       - xatu_xatu-net
     volumes:
       - clickhouse-02-data:/var/lib/clickhouse/
-      - ./local-config/clickhouse/clickhouse-02/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/clickhouse/clickhouse-02/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/clickhouse/clickhouse-02/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-02/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-02/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-02/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     ports:
       - "${CLICKHOUSE_CBT_02_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_02_HTTP_PORT:-8124}:8123"
       - "${CLICKHOUSE_CBT_02_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_02_NATIVE_PORT:-9001}:9000"

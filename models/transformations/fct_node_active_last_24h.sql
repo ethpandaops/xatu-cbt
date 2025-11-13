@@ -6,6 +6,8 @@ tags:
   - xatu
   - active
   - nodes
+dependencies:
+  - "{{external}}.beacon_api_eth_v1_events_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -51,7 +53,7 @@ SELECT
     argMax(meta_client_geo_autonomous_system_organization, slot_start_date_time) AS meta_client_geo_autonomous_system_organization,
     argMax(meta_consensus_version, slot_start_date_time) AS meta_consensus_version,
     argMax(meta_consensus_implementation, slot_start_date_time) AS meta_consensus_implementation
-FROM cluster('{remote_cluster}', default.`beacon_api_eth_v1_events_block`) FINAL
+FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }} FINAL
 WHERE slot_start_date_time >= NOW() - INTERVAL '24 HOUR'
     AND meta_network_name = '{{ .env.NETWORK }}'
 GROUP BY meta_client_name

@@ -83,14 +83,16 @@ proto:
 		echo "Error: NETWORK environment variable is not set"; \
 		echo "Please set NETWORK in your .env file"; \
 		exit 1; \
-	fi
-	@echo "Using network: $$NETWORK"
-	@echo "Setting up ClickHouse infrastructure first..."
-	@go run $(MAIN_PATH) infra setup
+	fi; \
+	echo "Using network: $$NETWORK"; \
+	echo "Setting up ClickHouse infrastructure first..."; \
+	go run $(MAIN_PATH) infra start; \
+	echo "Setting up network database..."; \
+	go run $(MAIN_PATH) network setup -f
 	@echo "Pulling clickhouse-proto-gen image..."
-	docker pull ethpandaops/clickhouse-proto-gen:latest
+	@docker pull ethpandaops/clickhouse-proto-gen:latest
 	@echo "Removing existing protobuf files..."
-	rm -rf pkg/proto/clickhouse
+	@rm -rf pkg/proto/clickhouse
 	@echo "Generating protobuf files from ClickHouse tables..."
 	@if [ -f .env ]; then export $$(grep -v '^#' .env | grep -v '^$$' | sed 's/#.*//' | xargs); fi; \
 	if [ -z "$$NETWORK" ]; then \
@@ -98,14 +100,13 @@ proto:
 		exit 1; \
 	fi; \
 	TABLES=$$(ls models/transformations/*.{sql,yml,yaml} 2>/dev/null | xargs -n1 basename | sed -E 's/\.(sql|yml|yaml)$$//' | tr '\n' ',' | sed 's/,$$//'); \
-	HOST=$${CLICKHOUSE_HOST:-xatu-clickhouse-01}; \
 	USER=$${CLICKHOUSE_USERNAME:-default}; \
-	PASS=$${CLICKHOUSE_PASSWORD:-}; \
+	PASS=$${CLICKHOUSE_PASSWORD:-supersecret}; \
 	docker run --rm -v "$$(pwd):/workspace" \
 		--user "$$(id -u):$$(id -g)" \
 		--network xatu_xatu-net \
 		ethpandaops/clickhouse-proto-gen \
-		--dsn "clickhouse://$$USER:$$PASS@$$HOST:9000/$$NETWORK" \
+		--dsn "clickhouse://$$USER:$$PASS@xatu-cbt-clickhouse-01:9000/$$NETWORK" \
 		--tables "admin_incremental,$$TABLES" \
 		--out /workspace/pkg/proto/clickhouse \
 		--package cbt \
@@ -115,11 +116,10 @@ proto:
 		--api-table-prefixes "fct" \
 		--api-base-path "/api/v1" \
 		--uint64-to-string "*.consensus_payload_value,*.execution_payload_value"
-
 	@echo "Updating buf dependencies..."
-	buf dep update
+	@buf dep update
 	@echo "Generating Go protobuf code..."
-	buf generate
+	@buf generate
 
 # Docker compose commands
 # Usage: make docker compose up mainnet

@@ -1,0 +1,32 @@
+model: fct_mev_bid_count_by_relay
+network: sepolia
+spec: fusaka
+external_data:
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot) AS min,
+          MAX(slot) AS max
+        FROM
+          fct_mev_bid_count_by_relay FINAL
+      expected:
+        count: 7
+        max: 8815949
+        min: 8815935
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max,
+          fromUnixTimestamp(MIN(position)) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_mev_bid_count_by_relay'
+      expected:
+        max: "2025-10-27T00:29:48Z"
+        min: "2025-10-27T00:27:00Z"

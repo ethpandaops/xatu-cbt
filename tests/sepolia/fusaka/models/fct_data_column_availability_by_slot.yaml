@@ -1,0 +1,126 @@
+model: fct_data_column_availability_by_slot
+network: sepolia
+spec: fusaka
+external_data:
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_rpc_data_column_custody_probe:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          fct_data_column_availability_by_slot FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot bounds should match test data range (gossipsub has limited range)
+      sql: |
+        SELECT
+          MIN(slot) AS min_slot,
+          MAX(slot) AS max_slot
+        FROM
+          fct_data_column_availability_by_slot FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 8815933
+        - type: less_than_or_equal
+          column: max_slot
+          value: 8815953
+    - name: Column index should be in valid range (0-127)
+      sql: |
+        SELECT
+          MIN(column_index) AS min_col,
+          MAX(column_index) AS max_col
+        FROM
+          fct_data_column_availability_by_slot FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_col
+          value: 0
+        - type: less_than_or_equal
+          column: max_col
+          value: 127
+    - name: Availability percentage should be valid (0-100)
+      sql: |
+        SELECT
+          MIN(availability_pct) AS min_pct,
+          MAX(availability_pct) AS max_pct
+        FROM
+          fct_data_column_availability_by_slot FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_pct
+          value: 0
+        - type: less_than_or_equal
+          column: max_pct
+          value: 100
+    - name: Blob count should be reasonable (1-15)
+      sql: |
+        SELECT
+          MIN(blob_count) AS min_blobs,
+          MAX(blob_count) AS max_blobs
+        FROM
+          fct_data_column_availability_by_slot FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_blobs
+          value: 0
+        - type: less_than_or_equal
+          column: max_blobs
+          value: 15
+    - name: Probe count should be greater than zero
+      sql: |
+        SELECT
+          MIN(probe_count) AS min_probes
+        FROM
+          fct_data_column_availability_by_slot FINAL
+      assertions:
+        - type: greater_than
+          column: min_probes
+          value: 0
+    - name: Both custody probe and gossipsub sources should contribute data
+      sql: |
+        SELECT
+          SUM(custody_probe_count) AS total_custody_probes,
+          SUM(gossipsub_count) AS total_gossipsub
+        FROM
+          fct_data_column_availability_by_slot FINAL
+      assertions:
+        - type: greater_than
+          column: total_custody_probes
+          value: 0
+        - type: greater_than
+          column: total_gossipsub
+          value: 0
+    - name: Source counts should sum correctly to probe count
+      sql: |
+        SELECT
+          COUNT(*) AS rows_with_mismatch
+        FROM
+          fct_data_column_availability_by_slot FINAL
+        WHERE probe_count != (custody_probe_count + gossipsub_count)
+      assertions:
+        - type: equals
+          column: rows_with_mismatch
+          value: 0
+    - name: Source attribution fields should be non-negative
+      sql: |
+        SELECT
+          MIN(custody_probe_count) AS min_custody,
+          MIN(gossipsub_count) AS min_gossipsub
+        FROM
+          fct_data_column_availability_by_slot FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_custody
+          value: 0
+        - type: greater_than_or_equal
+          column: min_gossipsub
+          value: 0

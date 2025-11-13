@@ -15,7 +15,7 @@ import (
 )
 
 // PrepareAndRun prepares migration files by substituting network name and runs migrations
-func PrepareAndRun(cfg *config.Config) error {
+func PrepareAndRun(cfg *config.AppConfig) error {
 	// Create temp directory for processed migrations
 	tempDir, err := os.MkdirTemp("", "xatu-cbt-migrations-*")
 	if err != nil {
@@ -113,7 +113,7 @@ func processMigrationFiles(sourceDir, destDir, network string) error {
 }
 
 // buildConnectionString builds the ClickHouse connection string for golang-migrate
-func buildConnectionString(cfg *config.Config) string {
+func buildConnectionString(cfg *config.AppConfig) string {
 	// Build base connection string
 	connStr := fmt.Sprintf("clickhouse://%s:%d?username=%s&database=%s&x-multi-statement=true",
 		cfg.ClickhouseHost,
@@ -140,7 +140,7 @@ func buildConnectionString(cfg *config.Config) string {
 }
 
 // GetMigrationStatus returns the current migration version and dirty state
-func GetMigrationStatus(cfg *config.Config) (version uint, dirty bool, err error) {
+func GetMigrationStatus(cfg *config.AppConfig) (version uint, dirty bool, err error) {
 	// Create temp directory for processed migrations (needed for source)
 	tempDir, err := os.MkdirTemp("", "xatu-cbt-migrations-status-*")
 	if err != nil {

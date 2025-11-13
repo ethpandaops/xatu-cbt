@@ -1,0 +1,22 @@
+model: fct_address_access_chunked_10000
+network: sepolia
+spec: fusaka
+assertions:
+    - name: Expected size
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          fct_address_access_chunked_10000 FINAL
+      expected:
+        count: 1
+    - name: Has been scheduled at least once
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          admin_cbt_scheduled FINAL
+        WHERE
+          table = 'fct_address_access_chunked_10000'
+      expected:
+        count: 1

@@ -1,0 +1,91 @@
+model: fct_data_column_availability_by_slot_blob
+network: sepolia
+spec: fusaka
+external_data:
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_rpc_data_column_custody_probe:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than slot-level table (due to blob expansion)
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          fct_data_column_availability_by_slot_blob FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot bounds should match test data range (gossipsub has limited range)
+      sql: |
+        SELECT
+          MIN(slot) AS min_slot,
+          MAX(slot) AS max_slot
+        FROM
+          fct_data_column_availability_by_slot_blob FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 8815933
+        - type: less_than_or_equal
+          column: max_slot
+          value: 8815953
+    - name: Blob index should start at 0
+      sql: |
+        SELECT
+          MIN(blob_index) AS min_blob,
+          MAX(blob_index) AS max_blob
+        FROM
+          fct_data_column_availability_by_slot_blob FINAL
+      assertions:
+        - type: equal
+          column: min_blob
+          value: 0
+        - type: less_than_or_equal
+          column: max_blob
+          value: 15
+    - name: Column index should be in valid range (0-127)
+      sql: |
+        SELECT
+          MIN(column_index) AS min_col,
+          MAX(column_index) AS max_col
+        FROM
+          fct_data_column_availability_by_slot_blob FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_col
+          value: 0
+        - type: less_than_or_equal
+          column: max_col
+          value: 127
+    - name: Availability percentage should be valid (0-100)
+      sql: |
+        SELECT
+          MIN(availability_pct) AS min_pct,
+          MAX(availability_pct) AS max_pct
+        FROM
+          fct_data_column_availability_by_slot_blob FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_pct
+          value: 0
+        - type: less_than_or_equal
+          column: max_pct
+          value: 100
+    - name: Blob count should match between tables
+      sql: |
+        SELECT
+          MIN(blob_count) AS min_blobs,
+          MAX(blob_count) AS max_blobs
+        FROM
+          fct_data_column_availability_by_slot_blob FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_blobs
+          value: 1
+        - type: less_than_or_equal
+          column: max_blobs
+          value: 15

@@ -105,7 +105,7 @@ var (
 )
 
 // validateConfig checks if the configuration is valid for setup
-func validateConfig(cfg *config.Config) error {
+func validateConfig(cfg *config.AppConfig) error {
 	// Check network
 	if cfg.Network == "" {
 		return ErrNetworkNotSet

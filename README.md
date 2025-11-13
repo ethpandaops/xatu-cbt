@@ -77,37 +77,103 @@ These commands will setup cbt admin tables, go-migrate schemas tables and run th
 ./bin/xatu-cbt network teardown [--force]
 ```
 
-##### Test Commands
+## Infrastructure Management
+
+The platform provides a persistent ClickHouse cluster infrastructure shared between development and testing.
+
+### Starting Infrastructure
+
+Before running tests or development work, start the platform infrastructure:
 
 ```bash
-# Run a specific test suite
-./bin/xatu-cbt test <test-name> [--skip-setup]
-
-# Teardown test environment (cleanup containers and data)
-./bin/xatu-cbt test teardown
+# Start ClickHouse cluster, Zookeeper, and Redis
+./bin/xatu-cbt infra start
 ```
 
-### Creating and Running Tests
+This starts:
+- 2-node ClickHouse cluster with Zookeeper coordination
+- Redis for state management
+- Shared across both ephemeral test databases and persistent network databases
 
-Tests are organized in the `tests/` directory with the following structure:
+### Managing Infrastructure
+
+```bash
+# Check status
+./bin/xatu-cbt infra status
+
+# Detailed status with container info
+./bin/xatu-cbt infra status --verbose
+
+# Stop infrastructure (cleans up test databases)
+./bin/xatu-cbt infra stop
+
+# Stop without cleaning up test databases
+./bin/xatu-cbt infra stop --cleanup-test-dbs=false
+
+# Reset completely (removes all volumes)
+./bin/xatu-cbt infra reset
+```
+
+The `infra reset` command is useful when:
+- Testing fresh xatu migrations
+- Disk space is low
+- You need a complete clean slate
+
+## Running Tests
+
+### Prerequisites
+
+1. Start infrastructure: `./bin/xatu-cbt infra start`
+2. Ensure `.env` file is configured (see Getting Started)
+
+### Test Execution
+
+```bash
+# Run tests for a specific spec/network combination
+./bin/xatu-cbt test spec --spec pectra --network mainnet
+
+# Run with verbose output
+./bin/xatu-cbt test spec --spec pectra --network mainnet --verbose
+
+# Run fusaka tests on sepolia
+./bin/xatu-cbt test spec --spec fusaka --network sepolia
+```
+
+Tests use ephemeral databases (e.g., `test_mainnet_pectra_*`) that are automatically managed.
+
+### Test Structure
+
+Tests are organized by network and spec:
 
 ```
 tests/
-├── pectra/
-│   ├── data/                      # Parquet data configuration
-│   │   └── canonical_beacon_block.yaml
-│   └── assertions/                # SQL assertions
-│       └── canonical_beacon_block.yaml
+├── mainnet/
+│   └── pectra/
+│       └── models/                # Model definitions with embedded config
+│           ├── canonical_beacon_block.yaml
+│           └── fct_block.yaml
+└── sepolia/
+    └── fusaka/
+        └── models/
+            └── ...
 ```
 
-Example test run:
+Each model file contains:
+- **data**: Parquet file paths and row count expectations
+- **sql**: Transformation query (if transformation model)
+- **assertions**: SQL queries to validate results
+
+### CI/CD Integration
+
+GitHub Actions automatically tests each spec/network combination:
 
 ```bash
-# Run pectra test with full setup
-./bin/xatu-cbt test pectra
-
-# Run pectra test, skip xatu setup if already running
-./bin/xatu-cbt test pectra --skip-setup
+# Workflow steps
+cp example.env .env
+mkdir -p .parquet_cache
+./bin/xatu-cbt infra start
+./bin/xatu-cbt test spec --spec pectra --network mainnet --verbose
+./bin/xatu-cbt infra stop
 ```
 
 ### Protobuf Generation

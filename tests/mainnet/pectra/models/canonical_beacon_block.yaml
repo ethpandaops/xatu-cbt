@@ -1,0 +1,16 @@
+model: canonical_beacon_block
+network: mainnet
+spec: pectra
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.canonical_beacon_block) FINAL
+      expected:
+        count: 20

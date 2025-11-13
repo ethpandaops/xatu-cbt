@@ -7,14 +7,61 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
-	"github.com/ethpandaops/xatu-cbt/cmd"
 	"github.com/ethpandaops/xatu-cbt/internal/actions"
+	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/ethpandaops/xatu-cbt/internal/interactive"
-	"github.com/ethpandaops/xatu-cbt/internal/test"
+	"github.com/ethpandaops/xatu-cbt/internal/testing"
+	"github.com/sirupsen/logrus"
 )
+
+var (
+	errNoModelsFound   = errors.New("no models found")
+	errNoNetworksFound = errors.New("no networks found in tests/ directory")
+	errNoSpecsFound    = errors.New("no specs found for network")
+)
+
+// discoverNetworks returns a sorted list of available networks from the tests directory
+func discoverNetworks() ([]string, error) {
+	testsDir := "tests"
+	entries, err := os.ReadDir(testsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read tests directory: %w", err)
+	}
+
+	networks := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			networks = append(networks, entry.Name())
+		}
+	}
+
+	sort.Strings(networks)
+	return networks, nil
+}
+
+// discoverSpecs returns a sorted list of available specs for a given network
+func discoverSpecs(network string) ([]string, error) {
+	specsDir := filepath.Join("tests", network)
+	entries, err := os.ReadDir(specsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read specs directory for network %s: %w", network, err)
+	}
+
+	specs := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			specs = append(specs, entry.Name())
+		}
+	}
+
+	sort.Strings(specs)
+	return specs, nil
+}
 
 func runInteractive() {
 	fmt.Println("Xatu CBT - Interactive Mode")
@@ -25,7 +72,7 @@ func runInteractive() {
 		options := []interactive.MenuOption{
 			{
 				Name:        "🧪 Test Management",
-				Description: "Run tests and manage test environments",
+				Description: "Run tests and manage test infrastructure",
 				Action:      showTestMenu,
 			},
 			{
@@ -65,21 +112,18 @@ func showNetworkMenu() error {
 				Name:        "Setup",
 				Description: "Validate config and setup ClickHouse database (safe to run multiple times)",
 				Action: func() error {
-					// First show the config and get confirmation
 					if err := actions.Setup(true, false); err != nil {
 						fmt.Printf("\n❌ Error: %v\n", err)
 						interactive.PauseForEnter()
 						return nil
 					}
 
-					// Ask for confirmation
 					if !interactive.Confirm("Do you want to proceed with the setup?") {
 						fmt.Println("Setup canceled.")
 						interactive.PauseForEnter()
 						return nil
 					}
 
-					// Run the actual setup
 					if err := actions.Setup(true, true); err != nil {
 						fmt.Printf("\n❌ Error: %v\n", err)
 						interactive.PauseForEnter()
@@ -94,21 +138,18 @@ func showNetworkMenu() error {
 				Name:        "Teardown",
 				Description: "Drop ClickHouse database for the configured network (destructive)",
 				Action: func() error {
-					// First show the config and get confirmation
 					if err := actions.Teardown(true, false); err != nil {
 						fmt.Printf("\n❌ Error: %v\n", err)
 						interactive.PauseForEnter()
 						return nil
 					}
 
-					// Ask for confirmation
 					if !interactive.Confirm("⚠️  Are you SURE you want to drop the database? This cannot be undone!") {
 						fmt.Println("Teardown canceled.")
 						interactive.PauseForEnter()
 						return nil
 					}
 
-					// Run the actual teardown
 					if err := actions.Teardown(true, true); err != nil {
 						fmt.Printf("\n❌ Error: %v\n", err)
 						interactive.PauseForEnter()
@@ -132,131 +173,23 @@ func showNetworkMenu() error {
 	}
 }
 
-func showTestMenu() error { //nolint:gocyclo // Menu handling requires multiple options
+func showTestMenu() error {
 	for {
 		options := []interactive.MenuOption{
 			{
-				Name:        "Run Test",
-				Description: "Run a test suite with setup, data ingestion, and assertions",
-				Action: func() error {
-					// List available tests
-					testsDir := "tests"
-					entries, err := os.ReadDir(testsDir)
-					if err != nil {
-						fmt.Printf("\n❌ Error reading tests directory: %v\n", err)
-						interactive.PauseForEnter()
-						return nil
-					}
-
-					var tests []string
-					for _, entry := range entries {
-						if entry.IsDir() {
-							tests = append(tests, entry.Name())
-						}
-					}
-
-					if len(tests) == 0 {
-						fmt.Println("\n❌ No tests found in tests directory")
-						interactive.PauseForEnter()
-						return nil
-					}
-
-					// Use interactive selection menu
-					testName, err := interactive.SelectFromList("Select a test to run:", tests)
-					if err != nil {
-						fmt.Println("Test selection canceled.")
-						interactive.PauseForEnter()
-						return nil
-					}
-
-					// Check if xatu environment already exists
-					xatuExists := false
-					if _, err := os.Stat("xatu"); err == nil {
-						// Check if xatu-clickhouse containers are running
-						cmd := exec.Command("docker", "ps", "--filter", "name=xatu-clickhouse", "--format", "{{.Names}}")
-						output, err := cmd.Output()
-						if err == nil && strings.TrimSpace(string(output)) != "" {
-							xatuExists = true
-						}
-					}
-
-					// Ask about skipping setup only if xatu exists
-					skipSetup := false
-					if xatuExists {
-						fmt.Println("✅ Detected existing Xatu environment")
-						// Default to YES when xatu environment is already running
-						skipSetup = interactive.ConfirmWithDefault("Skip xatu setup phase? (use existing xatu environment)", true)
-					} else {
-						fmt.Println("ℹ️  Xatu environment not detected - will run full setup")
-					}
-
-					// Create test service using the shared logger from cmd package
-					cfg := test.Config{
-						TestsDir:      testsDir,
-						XatuRepoURL:   "https://github.com/ethpandaops/xatu",
-						XatuRef:       "", // Will use XATU_REF env var or default to master
-						Timeout:       30 * time.Minute, // Increased from 10min to allow CBT transformations to complete
-						CheckInterval: 10 * time.Second,
-					}
-
-					svc := test.NewService(cmd.Logger, cfg)
-
-					// Start the service
-					ctx := context.Background()
-					if err := svc.Start(ctx); err != nil {
-						fmt.Printf("\n❌ Failed to start test service: %v\n", err)
-						interactive.PauseForEnter()
-						return nil
-					}
-					defer func() {
-						if err := svc.Stop(); err != nil {
-							cmd.Logger.WithError(err).Warn("Failed to stop test service")
-						}
-					}()
-
-					// Run the test
-					fmt.Printf("\n🚀 Running test '%s'...\n", testName)
-					if err := svc.RunTest(ctx, testName, skipSetup); err != nil {
-						fmt.Printf("\n❌ Test failed: %v\n", err)
-						interactive.PauseForEnter()
-						return nil
-					}
-
-					fmt.Printf("\n✅ Test '%s' passed successfully!\n", testName)
-					interactive.PauseForEnter()
-					return nil
-				},
+				Name:        "Infrastructure Management",
+				Description: "Start, stop, and manage test infrastructure",
+				Action:      showInfraMenu,
 			},
 			{
-				Name:        "Test Teardown",
-				Description: "Teardown test environment (stop containers and clean up)",
-				Action: func() error {
-					if !interactive.Confirm("Are you sure you want to teardown the test environment?") {
-						fmt.Println("Teardown canceled.")
-						interactive.PauseForEnter()
-						return nil
-					}
-
-					// Create test service using the shared logger from cmd package
-					cfg := test.Config{
-						TestsDir: "tests",
-					}
-
-					svc := test.NewService(cmd.Logger, cfg)
-
-					// Run teardown
-					ctx := context.Background()
-					fmt.Println("\n🧹 Running test environment teardown...")
-					if err := svc.Teardown(ctx); err != nil {
-						fmt.Printf("\n❌ Teardown failed: %v\n", err)
-						interactive.PauseForEnter()
-						return nil
-					}
-
-					fmt.Println("\n✅ Test environment teardown completed successfully!")
-					interactive.PauseForEnter()
-					return nil
-				},
+				Name:        "Test Spec",
+				Description: "Run all tests for a spec (network + fork)",
+				Action:      runTestSpecInteractive,
+			},
+			{
+				Name:        "Test Models",
+				Description: "Run tests for specific models",
+				Action:      runTestModelsInteractive,
 			},
 		}
 
@@ -269,4 +202,307 @@ func showTestMenu() error { //nolint:gocyclo // Menu handling requires multiple 
 			return err
 		}
 	}
+}
+
+func showInfraMenu() error {
+	for {
+		options := []interactive.MenuOption{
+			{
+				Name:        "Start",
+				Description: "Start platform infrastructure (ClickHouse, Redis, Zookeeper)",
+				Action: func() error {
+					return runCLICommand("infra", "start")
+				},
+			},
+			{
+				Name:        "Stop",
+				Description: "Stop platform infrastructure (preserves volumes)",
+				Action: func() error {
+					return runCLICommand("infra", "stop")
+				},
+			},
+			{
+				Name:        "Status",
+				Description: "Check platform status and health",
+				Action: func() error {
+					return runCLICommand("infra", "status", "--verbose")
+				},
+			},
+			{
+				Name:        "Reset",
+				Description: "Reset platform (removes all volumes for fresh start)",
+				Action: func() error {
+					if !interactive.Confirm("⚠️  Are you SURE you want to reset the platform? This will remove all volumes!") {
+						fmt.Println("Reset canceled.")
+						interactive.PauseForEnter()
+						return nil
+					}
+					return runCLICommand("infra", "reset")
+				},
+			},
+		}
+
+		fmt.Println("\n🏗️  Infrastructure Management")
+		fmt.Println("============================")
+		if err := interactive.ShowMainMenu(options); err != nil {
+			if errors.Is(err, interactive.ErrExit) {
+				return nil // Return to test menu
+			}
+			return err
+		}
+	}
+}
+
+func runTestSpecInteractive() error {
+	networks, err := discoverNetworks()
+	if err != nil {
+		fmt.Printf("❌ Failed to discover networks: %v\n", err)
+		interactive.PauseForEnter()
+		return nil
+	}
+
+	if len(networks) == 0 {
+		fmt.Println("❌ No networks found in tests/ directory")
+		interactive.PauseForEnter()
+		return nil
+	}
+
+	var network string
+	if len(networks) == 1 {
+		network = networks[0]
+		fmt.Printf("Auto-selected network: %s\n", network)
+	} else {
+		network, err = interactive.SelectFromList("Select network:", networks)
+		if err != nil {
+			fmt.Println("Selection canceled.")
+			interactive.PauseForEnter()
+			return nil
+		}
+	}
+
+	specs, err := discoverSpecs(network)
+	if err != nil {
+		fmt.Printf("❌ Failed to discover specs for network %s: %v\n", network, err)
+		interactive.PauseForEnter()
+		return nil
+	}
+
+	if len(specs) == 0 {
+		fmt.Printf("❌ No specs found for network %s\n", network)
+		interactive.PauseForEnter()
+		return nil
+	}
+
+	var spec string
+	if len(specs) == 1 {
+		spec = specs[0]
+		fmt.Printf("Auto-selected spec: %s\n", spec)
+	} else {
+		spec, err = interactive.SelectFromList("Select spec:", specs)
+		if err != nil {
+			fmt.Println("Selection canceled.")
+			interactive.PauseForEnter()
+			return nil
+		}
+	}
+
+	verbose := interactive.ConfirmWithDefault("Enable verbose output?", true)
+
+	args := []string{"test", "spec", "--spec", spec, "--network", network}
+	if verbose {
+		args = append(args, "--verbose")
+	}
+
+	return runCLICommand(args...)
+}
+
+// initializeAndLoadModels initializes the model cache and loads all available models.
+func initializeAndLoadModels() ([]string, error) {
+	wd, wdErr := os.Getwd()
+	if wdErr != nil {
+		return nil, fmt.Errorf("failed to get working directory: %w", wdErr)
+	}
+
+	// Create a simple logger for model cache (only show errors)
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	logger.SetOutput(os.Stderr)
+
+	modelCache := testing.NewModelCache(logger)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	fmt.Println("Loading available models...")
+	if loadErr := modelCache.LoadAll(
+		ctx,
+		filepath.Join(wd, config.ModelsExternalDir),
+		filepath.Join(wd, config.ModelsTransformationsDir),
+	); loadErr != nil {
+		return nil, fmt.Errorf("failed to load models: %w", loadErr)
+	}
+
+	// Get all models and sort them alphabetically
+	allModels := modelCache.ListAllModels()
+	sort.Strings(allModels)
+
+	if len(allModels) == 0 {
+		return nil, errNoModelsFound
+	}
+
+	return allModels, nil
+}
+
+// selectNetworkAndSpec prompts the user to select a network and spec.
+func selectNetworkAndSpec() (network, spec string, err error) {
+	networks, err := discoverNetworks()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to discover networks: %w", err)
+	}
+
+	if len(networks) == 0 {
+		return "", "", errNoNetworksFound
+	}
+
+	// Select or auto-select network
+	if len(networks) == 1 {
+		network = networks[0]
+		fmt.Printf("Auto-selected network: %s\n", network)
+	} else {
+		network, err = interactive.SelectFromList("Select network:", networks)
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	// Discover and select spec
+	specs, err := discoverSpecs(network)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to discover specs for network %s: %w", network, err)
+	}
+
+	if len(specs) == 0 {
+		return "", "", fmt.Errorf("%w %s", errNoSpecsFound, network)
+	}
+
+	// Select or auto-select spec
+	if len(specs) == 1 {
+		spec = specs[0]
+		fmt.Printf("Auto-selected spec: %s\n", spec)
+	} else {
+		spec, err = interactive.SelectFromList("Select spec:", specs)
+		if err != nil {
+			return "", "", err
+		}
+	}
+
+	return network, spec, nil
+}
+
+// promptForNextAction prompts the user for what to do after a test run.
+func promptForNextAction() (string, error) {
+	choices := []string{
+		"Test again (same settings)",
+		"Test with different settings",
+		"Return to menu",
+	}
+
+	return interactive.SelectFromList("\nWhat would you like to do?", choices)
+}
+
+func runTestModelsInteractive() error {
+	// Initialize and load models
+	allModels, err := initializeAndLoadModels()
+	if err != nil {
+		fmt.Printf("❌ %v\n", err)
+		interactive.PauseForEnter()
+		return nil
+	}
+
+	// Loop to allow repeated testing with the same or different parameters
+	for {
+		// Select network and spec
+		network, spec, err := selectNetworkAndSpec()
+		if err != nil {
+			fmt.Printf("❌ %v\n", err)
+			interactive.PauseForEnter()
+			return nil
+		}
+
+		// Use multi-select for models
+		selectedModels, selectErr := interactive.MultiSelectFromList(
+			"Select models to test (space to select, / to search, enter to confirm):",
+			allModels,
+		)
+		if selectErr != nil {
+			fmt.Println("Selection canceled.")
+			interactive.PauseForEnter()
+			return nil
+		}
+
+		if len(selectedModels) == 0 {
+			fmt.Println("\n❌ No models selected")
+			interactive.PauseForEnter()
+			continue
+		}
+
+		verbose := interactive.ConfirmWithDefault("Enable verbose output?", true)
+
+		// Join selected models with commas
+		modelsArg := strings.Join(selectedModels, ",")
+		args := []string{"test", "models", modelsArg, "--spec", spec, "--network", network}
+		if verbose {
+			args = append(args, "--verbose")
+		}
+
+		// Inner loop for re-running the same test
+		for {
+			// Run the test (errors are displayed by runCLICommand)
+			_ = runCLICommand(args...)
+
+			// Ask user what to do next
+			nextAction, actionErr := promptForNextAction()
+			if actionErr != nil || nextAction == "Return to menu" {
+				return nil
+			}
+
+			if nextAction == "Test again (same settings)" {
+				fmt.Println() // Add blank line for readability
+				continue      // Re-run with same args
+			}
+
+			// "Test with different settings" - break inner loop to prompt for new settings
+			fmt.Println() // Add blank line for readability
+			break
+		}
+	}
+}
+
+func runCLICommand(args ...string) error {
+	// Get the binary path - should be in ./bin/xatu-cbt
+	binaryPath := filepath.Join(".", "bin", "xatu-cbt")
+
+	// Check if binary exists
+	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
+		fmt.Printf("\n❌ Binary not found at %s\n", binaryPath)
+		fmt.Println("Please run 'make' to build the binary first.")
+		interactive.PauseForEnter()
+		return nil
+	}
+
+	fmt.Printf("\n🚀 Running: %s %v\n\n", binaryPath, args)
+
+	// #nosec G204 -- binaryPath is hardcoded to ./bin/xatu-cbt and args are controlled by menu selections
+	cmd := exec.Command(binaryPath, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("\n❌ Command failed: %v\n", err)
+		interactive.PauseForEnter()
+		return nil
+	}
+
+	interactive.PauseForEnter()
+	return nil
 }

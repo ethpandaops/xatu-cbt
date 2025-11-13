@@ -1,0 +1,50 @@
+model: int_address_last_access
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_balance_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_balance_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_balance_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_balance_reads.parquet
+        network_column: meta_network_name
+    canonical_execution_contracts:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_contracts.parquet
+        network_column: meta_network_name
+    canonical_execution_nonce_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_nonce_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_nonce_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_nonce_reads.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(block_number) AS min,
+          MAX(block_number) AS max
+        FROM
+          int_address_last_access FINAL
+      expected:
+        count: 5824
+        max: "22923437"
+        min: "22923418"
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          MAX(position + interval) AS max,
+          MIN(position) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'int_address_last_access'
+      expected:
+        max: "22923437"
+        min: "22923418"

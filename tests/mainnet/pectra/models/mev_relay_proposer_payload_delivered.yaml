@@ -1,0 +1,16 @@
+model: mev_relay_proposer_payload_delivered
+network: mainnet
+spec: pectra
+external_data:
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.mev_relay_proposer_payload_delivered) FINAL
+      expected:
+        count: 86

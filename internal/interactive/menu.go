@@ -98,3 +98,23 @@ func SelectFromList(message string, items []string) (string, error) {
 
 	return selected, nil
 }
+
+// MultiSelectFromList displays a searchable multi-select list and returns the selected items
+func MultiSelectFromList(message string, items []string) ([]string, error) {
+	if len(items) == 0 {
+		return nil, ErrNoItems
+	}
+
+	var selected []string
+	prompt := &survey.MultiSelect{
+		Message: message,
+		Options: items,
+		Help:    "Use arrow keys to navigate, space to select/deselect, / to search, enter to confirm",
+	}
+
+	if err := survey.AskOne(prompt, &selected, survey.WithKeepFilter(true)); err != nil {
+		return nil, err
+	}
+
+	return selected, nil
+}

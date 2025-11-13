@@ -1,0 +1,26 @@
+model: dim_node
+network: mainnet
+spec: pectra
+external_data:
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/ethseer_validator_entity.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected size
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          dim_node FINAL
+      expected:
+        count: 1
+    - name: Has been scheduled at least once
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          admin_cbt_scheduled FINAL
+        WHERE
+          table = 'dim_node'
+      expected:
+        count: 1
