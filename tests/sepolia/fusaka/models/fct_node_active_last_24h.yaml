@@ -1,6 +1,10 @@
 model: fct_node_active_last_24h
 network: sepolia
 spec: fusaka
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected size
       sql: |

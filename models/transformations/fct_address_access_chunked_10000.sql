@@ -5,6 +5,9 @@ schedule: "@every 24h"
 tags:
   - address
   - access
+dependencies:
+  - "{{transformation}}.int_address_first_access"
+  - "{{transformation}}.int_address_last_access"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -20,7 +23,7 @@ FROM (
     intDiv(block_number, window_size) * window_size AS chunk_start_block_number,
     1 AS first_accessed,
     0 AS last_accessed
-  FROM `{{ .self.database }}`.`int_address_first_access` FINAL
+  FROM {{ index .dep "{{transformation}}" "int_address_first_access" "helpers" "from" }} FINAL
 
   UNION ALL
 
@@ -28,7 +31,7 @@ FROM (
     intDiv(block_number, window_size) * window_size AS chunk_start_block_number,
     0 AS first_accessed,
     1 AS last_accessed
-  FROM `{{ .self.database }}`.`int_address_last_access` FINAL
+  FROM {{ index .dep "{{transformation}}" "int_address_last_access" "helpers" "from" }} FINAL
 )
 GROUP BY chunk_start_block_number
 ORDER BY chunk_start_block_number;

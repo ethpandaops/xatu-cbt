@@ -5,3 +5,5 @@ tags:
   - validator
   - node
 exec: "python3 /models/scripts/dim_node.py"
+dependencies:
+  - "{{external}}.ethseer_validator_entity"

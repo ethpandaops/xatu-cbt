@@ -1,6 +1,9 @@
 model: fct_address_access_total
 network: sepolia
-spec: fusaka
+spec: fusakaexternal_data:
+    canonical_execution_contracts:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_execution_contracts.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected size
       sql: |

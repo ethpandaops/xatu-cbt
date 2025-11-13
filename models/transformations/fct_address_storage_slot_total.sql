@@ -6,12 +6,15 @@ tags:
   - address
   - storage
   - total
+dependencies:
+  - "{{transformation}}.fct_block"
+  - "{{transformation}}.int_address_storage_slot_last_access"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH latest_block AS (
     SELECT max(slot_start_date_time) AS slot_start_date_time
-    FROM `{{ .self.database }}`.`fct_block` FINAL
+    FROM {{ index .dep "{{transformation}}" "fct_block" "helpers" "from" }} FINAL
     WHERE `status` = 'canonical'
 ),
 block_range AS (
@@ -19,19 +22,19 @@ block_range AS (
     SELECT
         max(execution_payload_block_number) AS max_block_number,
         min(execution_payload_block_number) AS min_block_number
-    FROM `{{ .self.database }}`.`fct_block` FINAL
+    FROM {{ index .dep "{{transformation}}" "fct_block" "helpers" "from" }} FINAL
     WHERE `status` = 'canonical'
         AND execution_payload_block_number IS NOT NULL
         AND slot_start_date_time >= (SELECT slot_start_date_time - INTERVAL 365 DAY FROM latest_block)
 ),
 total_storage_slots AS (
     SELECT COUNT(*) AS count
-    FROM `{{ .self.database }}`.`int_address_storage_slot_last_access` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_address_storage_slot_last_access" "helpers" "from" }} FINAL
 ),
 expired_storage_slots AS (
     -- Expired storage slots (not accessed in last 365 days)
     SELECT COUNT(*) AS count
-    FROM `{{ .self.database }}`.`int_address_storage_slot_last_access` FINAL
+    FROM {{ index .dep "{{transformation}}" "int_address_storage_slot_last_access" "helpers" "from" }} FINAL
     WHERE block_number < (SELECT min_block_number FROM block_range)
 )
 SELECT

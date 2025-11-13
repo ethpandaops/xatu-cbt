@@ -1,6 +1,10 @@
 model: dim_node
 network: sepolia
 spec: fusaka
+external_data:
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/ethseer_validator_entity.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected size
       sql: |

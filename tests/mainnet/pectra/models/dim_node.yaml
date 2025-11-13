@@ -1,6 +1,10 @@
 model: dim_node
 network: mainnet
 spec: pectra
+external_data:
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/ethseer_validator_entity.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected size
       sql: |
