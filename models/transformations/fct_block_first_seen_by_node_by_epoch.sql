@@ -70,8 +70,19 @@ FROM (
     quantile(0.95)(seen_slot_start_diff) AS p95_seen_slot_start_diff_ms,
     quantile(0.99)(seen_slot_start_diff) AS p99_seen_slot_start_diff_ms,
     max(seen_slot_start_diff) AS max_seen_slot_start_diff_ms
-FROM {{ index .dep "{{transformation}}" "fct_block_first_seen_by_node" "helpers" "from" }} FINAL
-WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+FROM {{ index .dep "{{transformation}}" "fct_block_first_seen_by_node" "helpers" "from" }} AS base FINAL
+WHERE slot_start_date_time >= fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 DAY
+  AND slot_start_date_time <= fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 DAY
+  AND epoch >= (
+    SELECT min(epoch)
+    FROM {{ index .dep "{{transformation}}" "fct_block_first_seen_by_node" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time >= fromUnixTimestamp({{ .bounds.start }})
+  )
+  AND epoch <= (
+    SELECT max(epoch)
+    FROM {{ index .dep "{{transformation}}" "fct_block_first_seen_by_node" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time <= fromUnixTimestamp({{ .bounds.end }})
+  )
 GROUP BY
     epoch,
     epoch_start_date_time,

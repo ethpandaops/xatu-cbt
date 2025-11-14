@@ -34,7 +34,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_monthly_local on clu
     `updated_date_time`
 ) PARTITION BY month
 ORDER BY
-    (`month`, `meta_client_name`)
+    (`month`, `username`, `node_id`, `classification`, `meta_client_name`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 384,
@@ -45,12 +45,12 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_monthly ON CLUSTER '
     '{cluster}',
     '${NETWORK_NAME}',
     fct_block_first_seen_by_node_monthly_local,
-    cityHash64(`month`, `meta_client_name`)
+    cityHash64(`month`, `username`, `node_id`, `classification`, `meta_client_name`)
 );
 
 ALTER TABLE `${NETWORK_NAME}`.fct_block_first_seen_by_node_monthly_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_month_node
 (
     SELECT *
-    ORDER BY (`month`, `meta_client_name`)
+    ORDER BY (`month`, `username`, `node_id`, `classification`, `meta_client_name`)
 );
