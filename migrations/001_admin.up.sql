@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS ${NETWORK_NAME}.admin_cbt_incremental_local ON CLUSTE
     '{replica}',
     updated_date_time
 )
-ORDER BY (database, table, position);
+ORDER BY (database, table, position, interval);
 
 CREATE TABLE IF NOT EXISTS ${NETWORK_NAME}.admin_cbt_incremental ON CLUSTER '{cluster}' AS ${NETWORK_NAME}.admin_cbt_incremental_local
 ENGINE = Distributed(
