@@ -33,27 +33,9 @@ assertions:
         FROM
           fct_attestation_liveness_by_entity_head FINAL
       expected:
-        count: 40
+        count: 20
         max: "12145389"
         min: "12145370"
-    - name: Expected status values
-      sql: |
-        SELECT
-          COUNT(DISTINCT status) AS status_count
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-      expected:
-        status_count: 2
-    - name: Verify status values are attested or missed
-      sql: |
-        SELECT
-          COUNT(*) as valid_statuses
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-        WHERE
-          status IN ('attested', 'missed')
-      expected:
-        valid_statuses: 40
     - name: Expected distinct slots
       sql: |
         SELECT
@@ -81,15 +63,27 @@ assertions:
           fct_attestation_liveness_by_entity_head FINAL
       expected:
         entity_count: 1
-        unknown_count: 40
+        unknown_count: 20
     - name: Total attestation count matches validator table
       sql: |
         SELECT
-          SUM(attestation_count) AS total_from_aggregated
+          SUM(attestation_count) + SUM(missed_count) AS total_from_aggregated
         FROM
           fct_attestation_liveness_by_entity_head FINAL
       expected:
         total_from_aggregated: 685007
+    - name: Verify both attestation_count and missed_count exist
+      sql: |
+        SELECT
+          SUM(attestation_count) as total_attested,
+          SUM(missed_count) as total_missed
+        FROM
+          fct_attestation_liveness_by_entity_head FINAL
+        WHERE
+          attestation_count >= 0 AND missed_count >= 0
+      expected:
+        total_attested: 683483
+        total_missed: 1524
     - name: Expected admin bounds
       sql: |
         SELECT

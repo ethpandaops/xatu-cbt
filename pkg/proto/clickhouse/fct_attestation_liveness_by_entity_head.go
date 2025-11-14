@@ -227,36 +227,6 @@ func BuildListFctAttestationLivenessByEntityHeadQuery(req *ListFctAttestationLiv
 		}
 	}
 
-	// Add filter for column: status
-	if req.Status != nil {
-		switch filter := req.Status.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("status", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("status", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("status", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("status", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("status", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("status", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("status", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("status", StringSliceToInterface(filter.In.Values))
-			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("status", StringSliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
 	// Add filter for column: attestation_count
 	if req.AttestationCount != nil {
 		switch filter := req.AttestationCount.Filter.(type) {
@@ -281,6 +251,36 @@ func BuildListFctAttestationLivenessByEntityHeadQuery(req *ListFctAttestationLiv
 		case *UInt32Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
 				qb.AddNotInCondition("attestation_count", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: missed_count
+	if req.MissedCount != nil {
+		switch filter := req.MissedCount.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("missed_count", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("missed_count", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("missed_count", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("missed_count", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("missed_count", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("missed_count", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("missed_count", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("missed_count", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("missed_count", UInt32SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -312,7 +312,7 @@ func BuildListFctAttestationLivenessByEntityHeadQuery(req *ListFctAttestationLiv
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "entity", "status", "attestation_count"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "entity", "attestation_count", "missed_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -320,11 +320,11 @@ func BuildListFctAttestationLivenessByEntityHeadQuery(req *ListFctAttestationLiv
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", entity" + ", status"
+		orderByClause = " ORDER BY slot_start_date_time" + ", entity"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity", "status", "attestation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity", "attestation_count", "missed_count"}
 
 	return BuildParameterizedQuery("fct_attestation_liveness_by_entity_head", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -341,10 +341,10 @@ func BuildGetFctAttestationLivenessByEntityHeadQuery(req *GetFctAttestationLiven
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, entity, status"
+	orderByClause := " ORDER BY slot_start_date_time, entity"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity", "status", "attestation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "entity", "attestation_count", "missed_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_attestation_liveness_by_entity_head", columns, qb, orderByClause, 1, 0, options...)

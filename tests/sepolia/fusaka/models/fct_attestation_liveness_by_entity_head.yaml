@@ -36,6 +36,20 @@ assertions:
         count: 347
         max: "2025-10-27T00:30:24Z"
         min: "2025-10-27T00:26:36Z"
+    - name: Verify both attestation_count and missed_count columns exist
+      sql: |
+        SELECT
+          COUNT(*) as row_count,
+          SUM(attestation_count) as total_attested,
+          SUM(missed_count) as total_missed
+        FROM
+          fct_attestation_liveness_by_entity_head FINAL
+        WHERE
+          attestation_count >= 0 AND missed_count >= 0
+      expected:
+        row_count: 347
+        total_attested: 1105
+        total_missed: 3
     - name: Expected admin bounds
       sql: |
         SELECT
