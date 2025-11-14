@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -28,9 +27,8 @@ var (
 	infraClickhouseURL  string
 	infraRedisURL       string
 
-	errInvalidXatuMode        = errors.New("invalid xatu-mode")
-	errXatuRepositoryNotFound = errors.New("xatu repository not found")
-	errXatuURLRequired        = errors.New("xatu-url is required when xatu-source is external")
+	errInvalidXatuMode = errors.New("invalid xatu-mode")
+	errXatuURLRequired = errors.New("xatu-url is required when xatu-source is external")
 )
 
 // infraCmd represents the infrastructure command
@@ -185,18 +183,6 @@ func configureXatuSource(log logrus.FieldLogger, xatuSource, xatuURL string) ([]
 	return []string{"xatu-local"}, nil
 }
 
-// validateLocalXatuRepo validates that the local xatu repository exists.
-func validateLocalXatuRepo(log logrus.FieldLogger) error {
-	xatuRepo := filepath.Join(".", "xatu")
-	log.WithField("path", xatuRepo).Debug("verifying xatu repository exists")
-
-	if _, statErr := os.Stat(xatuRepo); os.IsNotExist(statErr) {
-		return fmt.Errorf("%w at %s (required for local Xatu source)", errXatuRepositoryNotFound, xatuRepo)
-	}
-
-	return nil
-}
-
 func runInfraStart(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -226,11 +212,19 @@ func runInfraStart(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// Validate xatu repository for local mode
+	// Ensure xatu repository for local mode
 	if xatuSource == xatuModeLocal {
-		if validationErr := validateLocalXatuRepo(log); validationErr != nil {
-			return validationErr
+		wd, wdErr := os.Getwd()
+		if wdErr != nil {
+			return fmt.Errorf("getting working directory: %w", wdErr)
 		}
+
+		xatuRepoPath, repoErr := ensureXatuRepo(log, wd, config.XatuRepoURL, config.XatuDefaultRef)
+		if repoErr != nil {
+			return fmt.Errorf("ensuring xatu repository: %w", repoErr)
+		}
+
+		log.WithField("path", xatuRepoPath).Debug("xatu repository ready")
 		log.Debug("activating xatu-local profile")
 	} else {
 		log.Info("skipping local Xatu cluster (external source)")
