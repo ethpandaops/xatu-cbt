@@ -7,15 +7,19 @@ interval:
   type: slot
 lag: 384
 ---
-SELECT 
-    toUnixTimestamp(min(slot_start_date_time)) as min,
+SELECT
+    {{ if .cache.is_incremental_scan }}
+      '{{ .cache.previous_min }}' as min,
+    {{ else }}
+      toUnixTimestamp(min(slot_start_date_time)) as min,
+    {{ end }}
     toUnixTimestamp(max(slot_start_date_time)) as max
 FROM {{ .self.helpers.from }}
 WHERE 
     meta_network_name = '{{ .env.NETWORK }}'
+
 {{ if .cache.is_incremental_scan }}
-    AND (
-      slot_start_date_time <= fromUnixTimestamp({{ .cache.previous_min }})
-      OR slot_start_date_time >= fromUnixTimestamp({{ .cache.previous_max }})
-    )
+  AND slot_start_date_time >= fromUnixTimestamp({{ .cache.previous_max }})
+{{ else }}
+  AND slot_start_date_time > fromUnixTimestamp({{ .env.EXTERNAL_MODEL_MIN_TIMESTAMP }})
 {{ end }}
