@@ -52,6 +52,8 @@ services:
     environment:
       - TESTING=${TESTING:-false}
       - NETWORK=${NETWORK}
+      - EXTERNAL_MODEL_MIN_TIMESTAMP=${EXTERNAL_MODEL_MIN_TIMESTAMP}
+      - EXTERNAL_MODEL_MIN_BLOCK=${EXTERNAL_MODEL_MIN_BLOCK}
       - CLICKHOUSE_USERNAME=${CLICKHOUSE_USERNAME}
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
     command:
@@ -67,7 +69,9 @@ services:
         testing = os.environ.get('TESTING', 'false').lower() == 'true'
         clickhouse_user = os.environ.get('CLICKHOUSE_USERNAME', 'default')
         clickhouse_pass = os.environ.get('CLICKHOUSE_PASSWORD', '')
-        
+        external_model_min_timestamp = os.environ.get('EXTERNAL_MODEL_MIN_TIMESTAMP', 0)
+        external_model_min_block = os.environ.get('EXTERNAL_MODEL_MIN_BLOCK', 0)
+
         # Base configuration
         config = {
             'logging': 'debug',
@@ -107,7 +111,9 @@ services:
                     'defaultDatabase': network
                 },
                 'env': {
-                    'NETWORK': network
+                    'NETWORK': network,
+                    'EXTERNAL_MODEL_MIN_TIMESTAMP': external_model_min_timestamp,
+                    'EXTERNAL_MODEL_MIN_BLOCK': external_model_min_block
                 }
             },
             'frontend': {
