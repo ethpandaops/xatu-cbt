@@ -47,7 +47,7 @@ FROM (
         round(max(max_response_time_ms)) AS max_response_time_ms,
         max(max_blob_count) AS max_blob_count
     FROM {{ index .dep "{{transformation}}" "fct_data_column_availability_by_epoch" "helpers" "from" }} FINAL
-    WHERE toStartOfHour(epoch_start_date_time) >= now() - INTERVAL 19 DAY
+    WHERE toStartOfHour(epoch_start_date_time) >= now() - INTERVAL {{ default "19" .env.DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS }} DAY
     GROUP BY
         toStartOfHour(epoch_start_date_time),
         column_index
