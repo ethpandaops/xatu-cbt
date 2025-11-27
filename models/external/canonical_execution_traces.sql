@@ -21,5 +21,5 @@ WHERE
 {{ if .cache.is_incremental_scan }}
   AND block_number >= {{ .cache.previous_max }}
 {{ else }}
-  AND block_number > {{ .env.EXTERNAL_MODEL_MIN_BLOCK }}
+  AND block_number >= {{ default "0" .env.EXTERNAL_MODEL_MIN_BLOCK }}
 {{ end }}
