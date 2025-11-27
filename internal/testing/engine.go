@@ -237,9 +237,10 @@ func (e *CBTEngine) generateConfig(network, dbName string, models []string, outp
 
 	// Set global environment variables
 	cfg.Models.Env = map[string]string{
-		"NETWORK":                      network,
-		"EXTERNAL_MODEL_MIN_TIMESTAMP": "0",
-		"EXTERNAL_MODEL_MIN_BLOCK":     "0",
+		"NETWORK":                                network,
+		"EXTERNAL_MODEL_MIN_TIMESTAMP":           "0",
+		"EXTERNAL_MODEL_MIN_BLOCK":               "0",
+		"DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS": "3650", // 10 years for tests.
 	}
 
 	// Configure for fast test execution
