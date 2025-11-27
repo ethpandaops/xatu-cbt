@@ -21,5 +21,5 @@ WHERE
 {{ if .cache.is_incremental_scan }}
   AND slot_start_date_time >= fromUnixTimestamp({{ .cache.previous_max }})
 {{ else }}
-  AND slot_start_date_time > '2025-06-01 00:00:00'
+  AND slot_start_date_time > fromUnixTimestamp({{ .env.EXTERNAL_MODEL_MIN_TIMESTAMP }})
 {{ end }}

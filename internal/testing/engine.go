@@ -70,7 +70,7 @@ type cbtConfig struct {
 			DefaultDatabase string   `yaml:"defaultDatabase,omitempty"`
 			Paths           []string `yaml:"paths"`
 		} `yaml:"transformations"`
-		Env       map[string]string     `yaml:"env,omitempty"`
+		Env       map[string]string          `yaml:"env,omitempty"`
 		Overrides map[string]*modelOverrides `yaml:"overrides,omitempty"`
 	} `yaml:"models"`
 	Scheduler struct {
@@ -237,7 +237,9 @@ func (e *CBTEngine) generateConfig(network, dbName string, models []string, outp
 
 	// Set global environment variables
 	cfg.Models.Env = map[string]string{
-		"NETWORK": network,
+		"NETWORK":                      network,
+		"EXTERNAL_MODEL_MIN_TIMESTAMP": "0",
+		"EXTERNAL_MODEL_MIN_BLOCK":     "0",
 	}
 
 	// Configure for fast test execution

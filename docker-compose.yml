@@ -67,7 +67,7 @@ services:
         testing = os.environ.get('TESTING', 'false').lower() == 'true'
         clickhouse_user = os.environ.get('CLICKHOUSE_USERNAME', 'default')
         clickhouse_pass = os.environ.get('CLICKHOUSE_PASSWORD', '')
-        
+
         # Base configuration
         config = {
             'logging': 'debug',
@@ -107,7 +107,9 @@ services:
                     'defaultDatabase': network
                 },
                 'env': {
-                    'NETWORK': network
+                    'NETWORK': network,
+                    'EXTERNAL_MODEL_MIN_TIMESTAMP': 0,
+                    'EXTERNAL_MODEL_MIN_BLOCK': 0
                 }
             },
             'frontend': {
