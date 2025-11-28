@@ -1,12 +1,12 @@
-model: fct_status_by_head_last_30m
-network: sepolia
-spec: fusaka
+model: fct_peer_head_last_30m
+network: mainnet
+spec: pectra
 external_data:
     libp2p_handle_status:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_handle_status.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/libp2p_handle_status.parquet
         network_column: meta_network_name
     libp2p_synthetic_heartbeat:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_synthetic_heartbeat.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/libp2p_synthetic_heartbeat.parquet
         network_column: meta_network_name
 assertions:
     - name: Expected size
@@ -14,7 +14,7 @@ assertions:
         SELECT
           COUNT(*) AS count
         FROM
-          'fct_status_by_head_last_30m' FINAL
+          'fct_peer_head_last_30m' FINAL
       expected:
         count: 0
     - name: Has been scheduled at least once
@@ -24,6 +24,6 @@ assertions:
         FROM
           admin_cbt_scheduled FINAL
         WHERE
-          table = 'fct_status_by_head_last_30m'
+          table = 'fct_peer_head_last_30m'
       expected:
         count: 1

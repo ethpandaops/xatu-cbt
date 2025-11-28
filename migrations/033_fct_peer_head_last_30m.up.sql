@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_status_by_head_last_30m_local ON CLUSTER '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_peer_head_last_30m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `head_slot` UInt32 COMMENT 'The head slot reported by peers' CODEC(DoubleDelta, ZSTD(1)),
     `head_root` String COMMENT 'The head block root reported by peers (unknown if not available)' CODEC(ZSTD(1)),
@@ -8,7 +8,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_status_by_head_last_30m_local ON CLUSTER '{cl
     `count_by_continent` Map(String, UInt32) COMMENT 'Peer count breakdown by continent code' CODEC(ZSTD(1)),
     `count_by_fork_digest` Map(String, UInt32) COMMENT 'Peer count breakdown by fork digest' CODEC(ZSTD(1)),
     `count_by_platform` Map(String, UInt32) COMMENT 'Peer count breakdown by platform (os)' CODEC(ZSTD(1)),
-    `count_by_finalized_epoch` Map(UInt32, UInt32) COMMENT 'Peer count breakdown by finalized epoch' CODEC(ZSTD(1))
+    `count_by_finalized_epoch` Map(String, UInt32) COMMENT 'Peer count breakdown by finalized epoch' CODEC(ZSTD(1))
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',
@@ -17,11 +17,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_status_by_head_last_30m_local ON CLUSTER '{cl
 ORDER BY (`head_slot`, `head_root`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Aggregated peer status by head from the last 30 minutes of handle_status events';
+COMMENT 'Aggregated peer head distribution from the last 30 minutes of handle_status events';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_status_by_head_last_30m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_status_by_head_last_30m_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_peer_head_last_30m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_peer_head_last_30m_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_status_by_head_last_30m_local,
+    fct_peer_head_last_30m_local,
     cityHash64(`head_slot`, `head_root`)
 );
