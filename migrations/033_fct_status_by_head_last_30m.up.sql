@@ -1,10 +1,3 @@
--- Drop old tables with previous names
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_peer_network_head_last_30m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_peer_network_head_last_30m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_peer_status_last_30m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_peer_status_last_30m_local ON CLUSTER '{cluster}';
-
--- Create new table with correct name
 CREATE TABLE `${NETWORK_NAME}`.fct_status_by_head_last_30m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `head_slot` UInt32 COMMENT 'The head slot reported by peers' CODEC(DoubleDelta, ZSTD(1)),
