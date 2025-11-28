@@ -1,0 +1,18 @@
+model: libp2p_handle_status
+network: sepolia
+spec: fusaka
+external_data:
+    libp2p_handle_status:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_handle_status.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Has valid bounds
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          admin_cbt_external FINAL
+        WHERE
+          table = 'libp2p_handle_status'
+      expected:
+        count: 1
