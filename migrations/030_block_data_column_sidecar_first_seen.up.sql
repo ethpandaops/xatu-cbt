@@ -32,9 +32,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_data_column_sidecar_first_seen_by_node_
 ORDER BY
     (`slot_start_date_time`, `block_root`, `column_index`, `meta_client_name`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'When the data column was first seen on the network by a sentry node';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_block_data_column_sidecar_first_seen_by_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_data_column_sidecar_first_seen_by_node_local ENGINE = Distributed(

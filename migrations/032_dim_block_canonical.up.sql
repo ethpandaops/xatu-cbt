@@ -17,9 +17,7 @@ CREATE TABLE `${NETWORK_NAME}`.dim_block_canonical_local ON CLUSTER '{cluster}' 
 ) PARTITION BY toYYYYMM(block_date_time)
 ORDER BY (block_number)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Block details for the finalized chain, this includes before and after the merge.';
 
 CREATE TABLE `${NETWORK_NAME}`.dim_block_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.dim_block_canonical_local ENGINE = Distributed(

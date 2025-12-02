@@ -33,9 +33,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_attestation_first_seen_local on cluster '{clu
 ORDER BY
     (`slot_start_date_time`, `attesting_validator_index`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'When the attestation was first seen on the network by a sentry node';
 
 CREATE TABLE `${NETWORK_NAME}`.int_attestation_first_seen ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_attestation_first_seen_local ENGINE = Distributed(
