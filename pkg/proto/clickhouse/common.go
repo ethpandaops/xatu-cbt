@@ -134,8 +134,10 @@ func (qb *QueryBuilder) AddCondition(column, operator string, value interface{})
 		qb.conditions = append(qb.conditions, fmt.Sprintf("%s %s fromUnixTimestamp(%s)", column, operator, placeholder))
 		qb.args = append(qb.args, v.Timestamp)
 	case DateTime64Value:
-		// For DateTime64 values, wrap with fromUnixTimestamp64Micro
-		qb.conditions = append(qb.conditions, fmt.Sprintf("%s %s fromUnixTimestamp64Micro(%s)", column, operator, placeholder))
+		// For DateTime64 values, use table alias _t. to reference original column and avoid
+		// collision with SELECT aliases. Wrap parameter with toInt64() to prevent ClickHouse
+		// Go driver from auto-casting uint64 values to DateTime64 type.
+		qb.conditions = append(qb.conditions, fmt.Sprintf("_t.%s %s fromUnixTimestamp64Micro(toInt64(%s))", column, operator, placeholder))
 		qb.args = append(qb.args, v.Timestamp)
 	default:
 		// Regular value
@@ -163,7 +165,7 @@ func (qb *QueryBuilder) AddBetweenCondition(column string, minValue, maxValue in
 	case DateTime64Value:
 		minV := minValue.(DateTime64Value)
 		maxV := maxValue.(DateTime64Value)
-		qb.conditions = append(qb.conditions, fmt.Sprintf("%s BETWEEN fromUnixTimestamp64Micro(%s) AND fromUnixTimestamp64Micro(%s)",
+		qb.conditions = append(qb.conditions, fmt.Sprintf("_t.%s BETWEEN fromUnixTimestamp64Micro(toInt64(%s)) AND fromUnixTimestamp64Micro(toInt64(%s))",
 			column, placeholderMin, placeholderMax))
 		qb.args = append(qb.args, minV.Timestamp, maxV.Timestamp)
 	default:
@@ -195,11 +197,11 @@ func (qb *QueryBuilder) AddInCondition(column string, values []interface{}) {
 			placeholders := make([]string, len(values))
 			for i, v := range values {
 				dt := v.(DateTime64Value)
-				placeholders[i] = fmt.Sprintf("fromUnixTimestamp64Micro(%s)", qb.formatVariable(qb.argCounter))
+				placeholders[i] = fmt.Sprintf("fromUnixTimestamp64Micro(toInt64(%s))", qb.formatVariable(qb.argCounter))
 				qb.args = append(qb.args, dt.Timestamp)
 				qb.argCounter++
 			}
-			qb.conditions = append(qb.conditions, fmt.Sprintf("%s IN (%s)", column, strings.Join(placeholders, ", ")))
+			qb.conditions = append(qb.conditions, fmt.Sprintf("_t.%s IN (%s)", column, strings.Join(placeholders, ", ")))
 			return
 		}
 	}
@@ -237,11 +239,11 @@ func (qb *QueryBuilder) AddNotInCondition(column string, values []interface{}) {
 			placeholders := make([]string, len(values))
 			for i, v := range values {
 				dt := v.(DateTime64Value)
-				placeholders[i] = fmt.Sprintf("fromUnixTimestamp64Micro(%s)", qb.formatVariable(qb.argCounter))
+				placeholders[i] = fmt.Sprintf("fromUnixTimestamp64Micro(toInt64(%s))", qb.formatVariable(qb.argCounter))
 				qb.args = append(qb.args, dt.Timestamp)
 				qb.argCounter++
 			}
-			qb.conditions = append(qb.conditions, fmt.Sprintf("%s NOT IN (%s)", column, strings.Join(placeholders, ", ")))
+			qb.conditions = append(qb.conditions, fmt.Sprintf("_t.%s NOT IN (%s)", column, strings.Join(placeholders, ", ")))
 			return
 		}
 	}
@@ -398,8 +400,8 @@ func (qb *QueryBuilder) AddDateTimeNotInCondition(column string, timestamps []ui
 // AddDateTime64Condition adds a condition for DateTime64 columns (converts Unix timestamp to DateTime64)
 func (qb *QueryBuilder) AddDateTime64Condition(column, operator string, unixTimestamp uint64) {
 	placeholder := qb.formatVariable(qb.argCounter)
-	// DateTime64 with microsecond precision needs division by 1000000
-	qb.conditions = append(qb.conditions, fmt.Sprintf("%s %s fromUnixTimestamp64Micro(%s)", column, operator, placeholder))
+	// Use _t. prefix and toInt64() wrapper to avoid driver auto-casting
+	qb.conditions = append(qb.conditions, fmt.Sprintf("_t.%s %s fromUnixTimestamp64Micro(toInt64(%s))", column, operator, placeholder))
 	qb.args = append(qb.args, unixTimestamp)
 	qb.argCounter++
 }
@@ -410,7 +412,7 @@ func (qb *QueryBuilder) AddDateTime64BetweenCondition(column string, minTimestam
 	qb.argCounter++
 	placeholderMax := qb.formatVariable(qb.argCounter)
 	qb.argCounter++
-	qb.conditions = append(qb.conditions, fmt.Sprintf("%s BETWEEN fromUnixTimestamp64Micro(%s) AND fromUnixTimestamp64Micro(%s)",
+	qb.conditions = append(qb.conditions, fmt.Sprintf("_t.%s BETWEEN fromUnixTimestamp64Micro(toInt64(%s)) AND fromUnixTimestamp64Micro(toInt64(%s))",
 		column, placeholderMin, placeholderMax))
 	qb.args = append(qb.args, minTimestamp, maxTimestamp)
 }
@@ -422,11 +424,11 @@ func (qb *QueryBuilder) AddDateTime64InCondition(column string, timestamps []uin
 	}
 	placeholders := make([]string, len(timestamps))
 	for i, ts := range timestamps {
-		placeholders[i] = fmt.Sprintf("fromUnixTimestamp64Micro(%s)", qb.formatVariable(qb.argCounter))
+		placeholders[i] = fmt.Sprintf("fromUnixTimestamp64Micro(toInt64(%s))", qb.formatVariable(qb.argCounter))
 		qb.args = append(qb.args, ts)
 		qb.argCounter++
 	}
-	qb.conditions = append(qb.conditions, fmt.Sprintf("%s IN (%s)", column, strings.Join(placeholders, ", ")))
+	qb.conditions = append(qb.conditions, fmt.Sprintf("_t.%s IN (%s)", column, strings.Join(placeholders, ", ")))
 }
 
 // AddDateTime64NotInCondition adds a NOT IN condition for DateTime64 columns
@@ -436,11 +438,11 @@ func (qb *QueryBuilder) AddDateTime64NotInCondition(column string, timestamps []
 	}
 	placeholders := make([]string, len(timestamps))
 	for i, ts := range timestamps {
-		placeholders[i] = fmt.Sprintf("fromUnixTimestamp64Micro(%s)", qb.formatVariable(qb.argCounter))
+		placeholders[i] = fmt.Sprintf("fromUnixTimestamp64Micro(toInt64(%s))", qb.formatVariable(qb.argCounter))
 		qb.args = append(qb.args, ts)
 		qb.argCounter++
 	}
-	qb.conditions = append(qb.conditions, fmt.Sprintf("%s NOT IN (%s)", column, strings.Join(placeholders, ", ")))
+	qb.conditions = append(qb.conditions, fmt.Sprintf("_t.%s NOT IN (%s)", column, strings.Join(placeholders, ", ")))
 }
 
 // GetWhereClause returns the WHERE clause if conditions exist
@@ -639,12 +641,16 @@ func BuildParameterizedQuery(table string, columns []string, qb *QueryBuilder, o
 		opt(opts)
 	}
 
-	// Build FROM clause with optional database and FINAL
+	// Build FROM clause with optional database, table alias, and FINAL
+	// The table alias "_t" is used to disambiguate column references in the WHERE clause
+	// from column aliases in the SELECT clause (e.g., when SELECT has
+	// "toUnixTimestamp64Micro(probe_date_time) AS probe_date_time", the WHERE clause
+	// needs to reference "_t.probe_date_time" to get the original DateTime64 column)
 	var fromClause string
 	if opts.Database != "" {
-		fromClause = fmt.Sprintf("`%s`.%s", opts.Database, table)
+		fromClause = fmt.Sprintf("`%s`.%s AS _t", opts.Database, table)
 	} else {
-		fromClause = table
+		fromClause = fmt.Sprintf("%s AS _t", table)
 	}
 
 	// Add projection if specified
