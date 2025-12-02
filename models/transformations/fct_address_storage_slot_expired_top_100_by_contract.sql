@@ -34,6 +34,7 @@ SELECT
   count(*) AS expired_slots
 FROM {{ index .dep "{{transformation}}" "int_address_storage_slot_last_access" "helpers" "from" }} FINAL
 WHERE block_number < (SELECT min_block_number FROM block_range)
+    AND value != '0x0000000000000000000000000000000000000000000000000000000000000000'
 GROUP BY address
 ORDER BY expired_slots DESC
 LIMIT 100;
