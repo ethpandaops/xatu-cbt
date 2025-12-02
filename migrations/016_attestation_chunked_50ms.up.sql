@@ -15,9 +15,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms_local on 
 ORDER BY
     (`slot_start_date_time`, `block_root`, `chunk_slot_start_diff`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestations first seen on the unfinalized chain broken down by 50ms chunks. Only includes attestations that were seen within 12000ms of the slot start time. There can be multiple block roots + chunk_slot_start_diff for the same slot, it most likely means votes for prior slot blocks';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms_local ENGINE = Distributed(

@@ -15,9 +15,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_local on 
 ORDER BY
     (`slot_start_date_time`, `entity`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestation liveness aggregated by entity for the head chain. One row per (slot, entity) with counts for both attested and missed attestations.';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_local ENGINE = Distributed(

@@ -21,9 +21,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_attestation_attested_canonical_local on clust
 ORDER BY
     (`slot_start_date_time`, `block_root`, `attesting_validator_index`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attested head of a block for the unfinalized chain.';
 
 CREATE TABLE `${NETWORK_NAME}`.int_attestation_attested_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_attestation_attested_canonical_local ENGINE = Distributed(
@@ -51,9 +49,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_canonical_local on cl
 ORDER BY
     (`slot_start_date_time`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestation correctness of a block for the finalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_correctness_canonical_local ENGINE = Distributed(
@@ -88,9 +84,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_head_loc
 ORDER BY
     (`slot_start_date_time`, `attesting_validator_index`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestation correctness by validator for the finalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_head_local ENGINE = Distributed(
@@ -119,9 +113,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_canonica
 ORDER BY
     (`slot_start_date_time`, `attesting_validator_index`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestation correctness by validator for the finalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_canonical_local ENGINE = Distributed(

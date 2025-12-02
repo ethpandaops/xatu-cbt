@@ -26,9 +26,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_by_epoch_local on cl
 ORDER BY
     (`epoch_start_date_time`, `column_index`)
 SETTINGS
-  deduplicate_merge_projection_mode = 'rebuild',
-  min_age_to_force_merge_seconds = 384,
-  min_age_to_force_merge_on_partition_only=false
+  deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Data column availability by epoch and column index';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_by_epoch ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_data_column_availability_by_epoch_local ENGINE = Distributed(

@@ -16,9 +16,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_head_local on cluster
 ORDER BY
     (`slot_start_date_time`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestation correctness of a block for the unfinalized chain. Forks in the chain may cause multiple block roots for the same slot to be present';
 
 

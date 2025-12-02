@@ -15,9 +15,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_head_local on cluster '{cluste
 ORDER BY
     (`slot_start_date_time`, `proposer_validator_index`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Block proposers for the unfinalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_proposer_head_local ENGINE = Distributed(
@@ -51,9 +49,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_canonical_local on cluster '{c
 ORDER BY
     (`slot_start_date_time`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Block proposers for the finalized chain';
 
 CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_proposer_canonical_local ENGINE = Distributed(
@@ -81,9 +77,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_local on cluster '{cluster}' (
 ORDER BY
     (`slot_start_date_time`)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Block proposers for the finalized chain including orphaned blocks';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_proposer_local ENGINE = Distributed(
