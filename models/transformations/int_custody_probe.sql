@@ -145,7 +145,7 @@ FROM (
     ) AS heartbeat ON probe.peer_id_unique_key = heartbeat.remote_peer_id_unique_key
         AND probe.meta_network_name = heartbeat.meta_network_name
     WHERE
-        probe.slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        probe.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND probe.meta_network_name = '{{ .env.NETWORK }}'
 )
 GROUP BY

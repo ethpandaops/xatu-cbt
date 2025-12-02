@@ -20,33 +20,33 @@ func BuildListIntCustodyProbeQuery(req *ListIntCustodyProbeRequest, options ...Q
 
 	// Add primary key filter
 	switch filter := req.ProbeDateTime.Filter.(type) {
-	case *Int64Filter_Eq:
-		qb.AddCondition("probe_date_time", "=", DateTime64Value{uint64(filter.Eq)})
-	case *Int64Filter_Ne:
-		qb.AddCondition("probe_date_time", "!=", DateTime64Value{uint64(filter.Ne)})
-	case *Int64Filter_Lt:
-		qb.AddCondition("probe_date_time", "<", DateTime64Value{uint64(filter.Lt)})
-	case *Int64Filter_Lte:
-		qb.AddCondition("probe_date_time", "<=", DateTime64Value{uint64(filter.Lte)})
-	case *Int64Filter_Gt:
-		qb.AddCondition("probe_date_time", ">", DateTime64Value{uint64(filter.Gt)})
-	case *Int64Filter_Gte:
-		qb.AddCondition("probe_date_time", ">=", DateTime64Value{uint64(filter.Gte)})
-	case *Int64Filter_Between:
-		qb.AddBetweenCondition("probe_date_time", DateTime64Value{uint64(filter.Between.Min)}, DateTime64Value{uint64(filter.Between.Max.GetValue())})
-	case *Int64Filter_In:
+	case *UInt32Filter_Eq:
+		qb.AddCondition("probe_date_time", "=", DateTimeValue{filter.Eq})
+	case *UInt32Filter_Ne:
+		qb.AddCondition("probe_date_time", "!=", DateTimeValue{filter.Ne})
+	case *UInt32Filter_Lt:
+		qb.AddCondition("probe_date_time", "<", DateTimeValue{filter.Lt})
+	case *UInt32Filter_Lte:
+		qb.AddCondition("probe_date_time", "<=", DateTimeValue{filter.Lte})
+	case *UInt32Filter_Gt:
+		qb.AddCondition("probe_date_time", ">", DateTimeValue{filter.Gt})
+	case *UInt32Filter_Gte:
+		qb.AddCondition("probe_date_time", ">=", DateTimeValue{filter.Gte})
+	case *UInt32Filter_Between:
+		qb.AddBetweenCondition("probe_date_time", DateTimeValue{filter.Between.Min}, DateTimeValue{filter.Between.Max.GetValue()})
+	case *UInt32Filter_In:
 		if len(filter.In.Values) > 0 {
 			converted := make([]interface{}, len(filter.In.Values))
 			for i, v := range filter.In.Values {
-				converted[i] = DateTime64Value{uint64(v)}
+				converted[i] = DateTimeValue{v}
 			}
 			qb.AddInCondition("probe_date_time", converted)
 		}
-	case *Int64Filter_NotIn:
+	case *UInt32Filter_NotIn:
 		if len(filter.NotIn.Values) > 0 {
 			converted := make([]interface{}, len(filter.NotIn.Values))
 			for i, v := range filter.NotIn.Values {
-				converted[i] = DateTime64Value{uint64(v)}
+				converted[i] = DateTimeValue{v}
 			}
 			qb.AddNotInCondition("probe_date_time", converted)
 		}
@@ -907,7 +907,7 @@ func BuildListIntCustodyProbeQuery(req *ListIntCustodyProbeRequest, options ...Q
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp64Micro(`probe_date_time`) AS `probe_date_time`", "peer_id_unique_key", "result", "error", "slots", "column_indices", "response_time_ms", "username", "node_id", "classification", "meta_client_version", "meta_client_implementation", "meta_client_os", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_peer_implementation", "meta_peer_version", "meta_peer_platform", "meta_peer_geo_city", "meta_peer_geo_country", "meta_peer_geo_country_code", "meta_peer_geo_continent_code", "meta_peer_geo_longitude", "meta_peer_geo_latitude", "meta_peer_geo_autonomous_system_number", "meta_peer_geo_autonomous_system_organization"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp(`probe_date_time`) AS `probe_date_time`", "peer_id_unique_key", "result", "error", "slots", "column_indices", "response_time_ms", "username", "node_id", "classification", "meta_client_version", "meta_client_implementation", "meta_client_os", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_peer_implementation", "meta_peer_version", "meta_peer_platform", "meta_peer_geo_city", "meta_peer_geo_country", "meta_peer_geo_country_code", "meta_peer_geo_continent_code", "meta_peer_geo_longitude", "meta_peer_geo_latitude", "meta_peer_geo_autonomous_system_number", "meta_peer_geo_autonomous_system_organization"}
 
 	return BuildParameterizedQuery("int_custody_probe", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -927,7 +927,7 @@ func BuildGetIntCustodyProbeQuery(req *GetIntCustodyProbeRequest, options ...Que
 	orderByClause := " ORDER BY probe_date_time, peer_id_unique_key, result, error"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp64Micro(`probe_date_time`) AS `probe_date_time`", "peer_id_unique_key", "result", "error", "slots", "column_indices", "response_time_ms", "username", "node_id", "classification", "meta_client_version", "meta_client_implementation", "meta_client_os", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_peer_implementation", "meta_peer_version", "meta_peer_platform", "meta_peer_geo_city", "meta_peer_geo_country", "meta_peer_geo_country_code", "meta_peer_geo_continent_code", "meta_peer_geo_longitude", "meta_peer_geo_latitude", "meta_peer_geo_autonomous_system_number", "meta_peer_geo_autonomous_system_organization"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp(`probe_date_time`) AS `probe_date_time`", "peer_id_unique_key", "result", "error", "slots", "column_indices", "response_time_ms", "username", "node_id", "classification", "meta_client_version", "meta_client_implementation", "meta_client_os", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_peer_implementation", "meta_peer_version", "meta_peer_platform", "meta_peer_geo_city", "meta_peer_geo_country", "meta_peer_geo_country_code", "meta_peer_geo_continent_code", "meta_peer_geo_longitude", "meta_peer_geo_latitude", "meta_peer_geo_autonomous_system_number", "meta_peer_geo_autonomous_system_organization"}
 
 	// Return single record
 	return BuildParameterizedQuery("int_custody_probe", columns, qb, orderByClause, 1, 0, options...)

@@ -12,7 +12,7 @@ message IntCustodyProbe {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Time bucket for grouped probes (3 second intervals)
-  int64 probe_date_time = 12;
+  uint32 probe_date_time = 12;
   // Unique key associated with the identifier of the peer
   int64 peer_id_unique_key = 13;
   // Result of the probe (success, failure, missing)
@@ -80,7 +80,7 @@ message IntCustodyProbe {
 // Request for listing int_custody_probe records
 message ListIntCustodyProbeRequest {
   // Filter by probe_date_time - Time bucket for grouped probes (3 second intervals) (PRIMARY KEY - required)
-  Int64Filter probe_date_time = 1;
+  UInt32Filter probe_date_time = 1;
 
   // Filter by peer_id_unique_key - Unique key associated with the identifier of the peer (ORDER BY column 2 - optional)
   Int64Filter peer_id_unique_key = 2;
@@ -175,7 +175,7 @@ message ListIntCustodyProbeResponse {
 // Request for getting a single int_custody_probe record by primary key
 message GetIntCustodyProbeRequest {
   // Time bucket for grouped probes (3 second intervals)
-  int64 probe_date_time = 1; // Primary key (required)
+  uint32 probe_date_time = 1; // Primary key (required)
 }
 
 // Response for getting a single int_custody_probe record
