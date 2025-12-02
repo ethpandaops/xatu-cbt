@@ -1,7 +1,7 @@
 CREATE TABLE `${NETWORK_NAME}`.int_custody_probe_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     -- Time bucket (3 second window)
-    `probe_date_time` DateTime64(3) COMMENT 'Time bucket for grouped probes (3 second intervals)' CODEC(DoubleDelta, ZSTD(1)),
+    `probe_date_time` DateTime COMMENT 'Time bucket for grouped probes (3 second intervals)' CODEC(DoubleDelta, ZSTD(1)),
     -- Group key fields
     `peer_id_unique_key` Int64 COMMENT 'Unique key associated with the identifier of the peer' CODEC(ZSTD(1)),
     `result` LowCardinality(String) COMMENT 'Result of the probe (success, failure, missing)' CODEC(ZSTD(1)),
