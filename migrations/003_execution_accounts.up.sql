@@ -9,9 +9,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_address_last_access_local on cluster '{cluste
 ORDER BY
     (address)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Table for accounts last access data';
 
 CREATE TABLE `${NETWORK_NAME}`.int_address_last_access ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_address_last_access_local ENGINE = Distributed(
@@ -33,9 +31,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_address_first_access_local on cluster '{clust
 ORDER BY
     (address)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Table for accounts first access data';
 
 CREATE TABLE `${NETWORK_NAME}`.int_address_first_access ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_address_first_access_local ENGINE = Distributed(
@@ -57,9 +53,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_address_storage_slot_last_access_local on clu
 ) PARTITION BY cityHash64(`address`) % 16
 ORDER BY (address, slot_key)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Table for storage last access data';
 
 CREATE TABLE `${NETWORK_NAME}`.int_address_storage_slot_last_access ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_address_storage_slot_last_access_local ENGINE = Distributed(
@@ -82,9 +76,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_address_storage_slot_first_access_local on cl
 ) PARTITION BY cityHash64(`address`) % 16
 ORDER BY (address, slot_key)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only=false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Table for storage first access data';
 
 CREATE TABLE `${NETWORK_NAME}`.int_address_storage_slot_first_access ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_address_storage_slot_first_access_local ENGINE = Distributed(
