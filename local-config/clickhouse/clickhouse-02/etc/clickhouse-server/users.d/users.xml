@@ -6,6 +6,10 @@
             <use_uncompressed_cache>0</use_uncompressed_cache>
             <load_balancing>in_order</load_balancing>
             <log_queries>1</log_queries>
+            <insert_quorum>2</insert_quorum>
+            <insert_quorum_timeout>60000</insert_quorum_timeout>
+            <insert_quorum_parallel>1</insert_quorum_parallel>
+            <insert_distributed_sync>1</insert_distributed_sync>
         </default>
         <readonly>
             <max_memory_usage>10000000000</max_memory_usage>
