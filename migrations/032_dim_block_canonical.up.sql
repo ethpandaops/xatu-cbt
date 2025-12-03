@@ -1,4 +1,5 @@
 CREATE TABLE `${NETWORK_NAME}`.dim_block_canonical_local ON CLUSTER '{cluster}' (
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The execution block number' CODEC(DoubleDelta, ZSTD(1)),
     `execution_block_hash` FixedString(66) COMMENT 'The hash of the execution block' CODEC(ZSTD(1)),
     `block_date_time` DateTime COMMENT 'The execution block date and time' CODEC(DoubleDelta, ZSTD(1)),
@@ -13,7 +14,7 @@ CREATE TABLE `${NETWORK_NAME}`.dim_block_canonical_local ON CLUSTER '{cluster}' 
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',
-    `block_number`
+    `updated_date_time`
 ) PARTITION BY toYYYYMM(block_date_time)
 ORDER BY (block_number)
 SETTINGS
