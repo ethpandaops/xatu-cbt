@@ -1,6 +1,6 @@
 table: dim_node
 type: scheduled
-schedule: "@every 10s"
+schedule: "@every 24h"
 tags:
   - validator
   - node
