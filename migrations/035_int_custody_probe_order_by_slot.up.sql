@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_custody_probe_local ON CLUSTER '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.int_custody_probe_order_by_slot_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `probe_date_time` DateTime COMMENT 'Earliest event time for this probe batch' CODEC(DoubleDelta, ZSTD(1)),
     -- Slot-level grouping
@@ -46,9 +46,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_custody_probe_local ON CLUSTER '{cluster}' (
     '{replica}',
     `updated_date_time`
 )
-PARTITION BY toYYYYMM(probe_date_time)
+PARTITION BY toYYYYMM(slot_start_date_time)
 ORDER BY (
-    probe_date_time,
+    slot_start_date_time,
     slot,
     peer_id_unique_key,
     result,
@@ -58,14 +58,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Custody probe results per slot with aggregated column indices';
 
-CREATE TABLE `${NETWORK_NAME}`.int_custody_probe ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_custody_probe_local
+CREATE TABLE `${NETWORK_NAME}`.int_custody_probe_order_by_slot ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.int_custody_probe_order_by_slot_local
 ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_custody_probe_local,
+    int_custody_probe_order_by_slot_local,
     cityHash64(
-        probe_date_time,
+        slot_start_date_time,
         slot,
         peer_id_unique_key
     )

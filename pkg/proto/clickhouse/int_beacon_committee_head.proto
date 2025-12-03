@@ -41,7 +41,7 @@ message ListIntBeaconCommitteeHeadRequest {
   // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
   UInt32Filter epoch_start_date_time = 6;
   // Filter by validators - The validator indices in the beacon API committee payload (optional)
-  repeated uint32 validators = 7;
+  ArrayUInt32Filter validators = 7;
 
   // The maximum number of int_beacon_committee_head to return.
   // If unspecified, at most 100 items will be returned.

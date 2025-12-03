@@ -266,6 +266,36 @@ func BuildListFctMevBidHighestValueByBuilderChunked50MsQuery(req *ListFctMevBidH
 	}
 
 	// Add filter for column: relay_names
+	if req.RelayNames != nil {
+		switch filter := req.RelayNames.Filter.(type) {
+		case *ArrayStringFilter_Has:
+			qb.AddArrayHasCondition("relay_names", filter.Has)
+		case *ArrayStringFilter_HasAll:
+			if len(filter.HasAll.Values) > 0 {
+				qb.AddArrayHasAllCondition("relay_names", StringSliceToInterface(filter.HasAll.Values))
+			}
+		case *ArrayStringFilter_HasAny:
+			if len(filter.HasAny.Values) > 0 {
+				qb.AddArrayHasAnyCondition("relay_names", StringSliceToInterface(filter.HasAny.Values))
+			}
+		case *ArrayStringFilter_LengthEq:
+			qb.AddArrayLengthCondition("relay_names", "=", filter.LengthEq)
+		case *ArrayStringFilter_LengthGt:
+			qb.AddArrayLengthCondition("relay_names", ">", filter.LengthGt)
+		case *ArrayStringFilter_LengthGte:
+			qb.AddArrayLengthCondition("relay_names", ">=", filter.LengthGte)
+		case *ArrayStringFilter_LengthLt:
+			qb.AddArrayLengthCondition("relay_names", "<", filter.LengthLt)
+		case *ArrayStringFilter_LengthLte:
+			qb.AddArrayLengthCondition("relay_names", "<=", filter.LengthLte)
+		case *ArrayStringFilter_IsEmpty:
+			qb.AddArrayIsEmptyCondition("relay_names")
+		case *ArrayStringFilter_IsNotEmpty:
+			qb.AddArrayIsNotEmptyCondition("relay_names")
+		default:
+			// Unsupported filter type
+		}
+	}
 
 	// Add filter for column: block_hash
 	if req.BlockHash != nil {
