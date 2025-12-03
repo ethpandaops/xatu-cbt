@@ -1,9 +1,9 @@
 table: dim_node
 type: scheduled
-schedule: "@every 24h"
+schedule: "@every 10s"
 tags:
   - validator
   - node
-exec: "python3 /models/scripts/dim_node.py"
+exec: "python3 ${MODELS_SCRIPTS_PATH:-/models/scripts}/dim_node.py"
 dependencies:
   - "{{external}}.ethseer_validator_entity"
