@@ -30,20 +30,24 @@ SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
     et.block_number,
     et.transaction_hash,
+    et.transaction_index,
     et.address,
+    et.versioned_hashes,
     ifNull(nullIf(bs.name, ''), 'Unknown') AS name
 FROM
 (
     SELECT
         block_number,
-        transaction_hash,
-        from_address AS address
+        hash as transaction_hash,
+        position as transaction_index,
+        blob_hashes as versioned_hashes,
+        `from` AS `address`
     FROM {{ index .dep "{{external}}" "execution_transaction" "helpers" "from" }} FINAL
     WHERE
         block_number BETWEEN reference_block_number
                          AND reference_block_number + 1000
         AND meta_network_name = '{{ .env.NETWORK }}'
-        AND transaction_type = 3
+        AND `type` = 3
         AND success = true
 ) AS et
 GLOBAL LEFT JOIN
