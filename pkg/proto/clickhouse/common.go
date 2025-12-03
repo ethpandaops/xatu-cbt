@@ -500,6 +500,60 @@ func StringSliceToInterface(values []string) []interface{} {
 	}
 	return result
 }
+
+// AddArrayHasCondition adds a has(array, value) condition
+func (qb *QueryBuilder) AddArrayHasCondition(column string, value interface{}) {
+	placeholder := qb.formatVariable(qb.argCounter)
+	qb.conditions = append(qb.conditions, fmt.Sprintf("has(%s, %s)", column, placeholder))
+	qb.args = append(qb.args, value)
+	qb.argCounter++
+}
+
+// AddArrayHasAllCondition adds a hasAll(array, [values]) condition
+func (qb *QueryBuilder) AddArrayHasAllCondition(column string, values []interface{}) {
+	if len(values) == 0 {
+		return
+	}
+	placeholders := make([]string, len(values))
+	for i, v := range values {
+		placeholders[i] = qb.formatVariable(qb.argCounter)
+		qb.args = append(qb.args, v)
+		qb.argCounter++
+	}
+	qb.conditions = append(qb.conditions, fmt.Sprintf("hasAll(%s, [%s])", column, strings.Join(placeholders, ", ")))
+}
+
+// AddArrayHasAnyCondition adds a hasAny(array, [values]) condition
+func (qb *QueryBuilder) AddArrayHasAnyCondition(column string, values []interface{}) {
+	if len(values) == 0 {
+		return
+	}
+	placeholders := make([]string, len(values))
+	for i, v := range values {
+		placeholders[i] = qb.formatVariable(qb.argCounter)
+		qb.args = append(qb.args, v)
+		qb.argCounter++
+	}
+	qb.conditions = append(qb.conditions, fmt.Sprintf("hasAny(%s, [%s])", column, strings.Join(placeholders, ", ")))
+}
+
+// AddArrayLengthCondition adds a length(array) op value condition
+func (qb *QueryBuilder) AddArrayLengthCondition(column, operator string, length uint32) {
+	placeholder := qb.formatVariable(qb.argCounter)
+	qb.conditions = append(qb.conditions, fmt.Sprintf("length(%s) %s %s", column, operator, placeholder))
+	qb.args = append(qb.args, length)
+	qb.argCounter++
+}
+
+// AddArrayIsEmptyCondition adds an empty(array) condition
+func (qb *QueryBuilder) AddArrayIsEmptyCondition(column string) {
+	qb.conditions = append(qb.conditions, fmt.Sprintf("empty(%s)", column))
+}
+
+// AddArrayIsNotEmptyCondition adds a notEmpty(array) condition
+func (qb *QueryBuilder) AddArrayIsNotEmptyCondition(column string) {
+	qb.conditions = append(qb.conditions, fmt.Sprintf("notEmpty(%s)", column))
+}
 // EncodePageToken encodes an offset as an opaque page token
 func EncodePageToken(offset uint32) string {
 	if offset == 0 {

@@ -35,9 +35,9 @@ message ListDimNodeRequest {
   // Filter by name - The name of the node (optional)
   NullableStringFilter name = 3;
   // Filter by groups - Groups the node belongs to (optional)
-  repeated string groups = 4;
+  ArrayStringFilter groups = 4;
   // Filter by tags - Tags associated with the node (optional)
-  repeated string tags = 5;
+  ArrayStringFilter tags = 5;
   // Filter by attributes - Additional attributes of the node (optional)
   MapStringStringFilter attributes = 6;
   // Filter by source - The source entity of the node (optional)

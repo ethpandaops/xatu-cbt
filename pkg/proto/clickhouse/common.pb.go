@@ -3565,6 +3565,976 @@ func (*MapStringInt64Filter_HasAnyKey) isMapStringInt64Filter_Filter() {}
 
 func (*MapStringInt64Filter_HasAllKeys) isMapStringInt64Filter_Filter() {}
 
+// ArrayUInt32Filter represents filtering options for Array(UInt32) columns
+type ArrayUInt32Filter struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Filter:
+	//
+	//	*ArrayUInt32Filter_Has
+	//	*ArrayUInt32Filter_HasAll
+	//	*ArrayUInt32Filter_HasAny
+	//	*ArrayUInt32Filter_LengthEq
+	//	*ArrayUInt32Filter_LengthGt
+	//	*ArrayUInt32Filter_LengthGte
+	//	*ArrayUInt32Filter_LengthLt
+	//	*ArrayUInt32Filter_LengthLte
+	//	*ArrayUInt32Filter_IsEmpty
+	//	*ArrayUInt32Filter_IsNotEmpty
+	Filter isArrayUInt32Filter_Filter `protobuf_oneof:"filter"`
+}
+
+func (x *ArrayUInt32Filter) Reset() {
+	*x = ArrayUInt32Filter{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_common_proto_msgTypes[31]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArrayUInt32Filter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArrayUInt32Filter) ProtoMessage() {}
+
+func (x *ArrayUInt32Filter) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[31]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArrayUInt32Filter.ProtoReflect.Descriptor instead.
+func (*ArrayUInt32Filter) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{31}
+}
+
+func (m *ArrayUInt32Filter) GetFilter() isArrayUInt32Filter_Filter {
+	if m != nil {
+		return m.Filter
+	}
+	return nil
+}
+
+func (x *ArrayUInt32Filter) GetHas() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_Has); ok {
+		return x.Has
+	}
+	return 0
+}
+
+func (x *ArrayUInt32Filter) GetHasAll() *UInt32List {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_HasAll); ok {
+		return x.HasAll
+	}
+	return nil
+}
+
+func (x *ArrayUInt32Filter) GetHasAny() *UInt32List {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_HasAny); ok {
+		return x.HasAny
+	}
+	return nil
+}
+
+func (x *ArrayUInt32Filter) GetLengthEq() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_LengthEq); ok {
+		return x.LengthEq
+	}
+	return 0
+}
+
+func (x *ArrayUInt32Filter) GetLengthGt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_LengthGt); ok {
+		return x.LengthGt
+	}
+	return 0
+}
+
+func (x *ArrayUInt32Filter) GetLengthGte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_LengthGte); ok {
+		return x.LengthGte
+	}
+	return 0
+}
+
+func (x *ArrayUInt32Filter) GetLengthLt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_LengthLt); ok {
+		return x.LengthLt
+	}
+	return 0
+}
+
+func (x *ArrayUInt32Filter) GetLengthLte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_LengthLte); ok {
+		return x.LengthLte
+	}
+	return 0
+}
+
+func (x *ArrayUInt32Filter) GetIsEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_IsEmpty); ok {
+		return x.IsEmpty
+	}
+	return nil
+}
+
+func (x *ArrayUInt32Filter) GetIsNotEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayUInt32Filter_IsNotEmpty); ok {
+		return x.IsNotEmpty
+	}
+	return nil
+}
+
+type isArrayUInt32Filter_Filter interface {
+	isArrayUInt32Filter_Filter()
+}
+
+type ArrayUInt32Filter_Has struct {
+	Has uint32 `protobuf:"varint,1,opt,name=has,proto3,oneof"` // has(arr, value) - array contains value
+}
+
+type ArrayUInt32Filter_HasAll struct {
+	HasAll *UInt32List `protobuf:"bytes,2,opt,name=has_all,json=hasAll,proto3,oneof"` // hasAll(arr, [v1, v2]) - contains all values
+}
+
+type ArrayUInt32Filter_HasAny struct {
+	HasAny *UInt32List `protobuf:"bytes,3,opt,name=has_any,json=hasAny,proto3,oneof"` // hasAny(arr, [v1, v2]) - contains any value
+}
+
+type ArrayUInt32Filter_LengthEq struct {
+	LengthEq uint32 `protobuf:"varint,4,opt,name=length_eq,json=lengthEq,proto3,oneof"` // length(arr) = n
+}
+
+type ArrayUInt32Filter_LengthGt struct {
+	LengthGt uint32 `protobuf:"varint,5,opt,name=length_gt,json=lengthGt,proto3,oneof"` // length(arr) > n
+}
+
+type ArrayUInt32Filter_LengthGte struct {
+	LengthGte uint32 `protobuf:"varint,6,opt,name=length_gte,json=lengthGte,proto3,oneof"` // length(arr) >= n
+}
+
+type ArrayUInt32Filter_LengthLt struct {
+	LengthLt uint32 `protobuf:"varint,7,opt,name=length_lt,json=lengthLt,proto3,oneof"` // length(arr) < n
+}
+
+type ArrayUInt32Filter_LengthLte struct {
+	LengthLte uint32 `protobuf:"varint,8,opt,name=length_lte,json=lengthLte,proto3,oneof"` // length(arr) <= n
+}
+
+type ArrayUInt32Filter_IsEmpty struct {
+	IsEmpty *emptypb.Empty `protobuf:"bytes,9,opt,name=is_empty,json=isEmpty,proto3,oneof"` // empty(arr)
+}
+
+type ArrayUInt32Filter_IsNotEmpty struct {
+	IsNotEmpty *emptypb.Empty `protobuf:"bytes,10,opt,name=is_not_empty,json=isNotEmpty,proto3,oneof"` // notEmpty(arr)
+}
+
+func (*ArrayUInt32Filter_Has) isArrayUInt32Filter_Filter() {}
+
+func (*ArrayUInt32Filter_HasAll) isArrayUInt32Filter_Filter() {}
+
+func (*ArrayUInt32Filter_HasAny) isArrayUInt32Filter_Filter() {}
+
+func (*ArrayUInt32Filter_LengthEq) isArrayUInt32Filter_Filter() {}
+
+func (*ArrayUInt32Filter_LengthGt) isArrayUInt32Filter_Filter() {}
+
+func (*ArrayUInt32Filter_LengthGte) isArrayUInt32Filter_Filter() {}
+
+func (*ArrayUInt32Filter_LengthLt) isArrayUInt32Filter_Filter() {}
+
+func (*ArrayUInt32Filter_LengthLte) isArrayUInt32Filter_Filter() {}
+
+func (*ArrayUInt32Filter_IsEmpty) isArrayUInt32Filter_Filter() {}
+
+func (*ArrayUInt32Filter_IsNotEmpty) isArrayUInt32Filter_Filter() {}
+
+// ArrayUInt64Filter represents filtering options for Array(UInt64) columns
+type ArrayUInt64Filter struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Filter:
+	//
+	//	*ArrayUInt64Filter_Has
+	//	*ArrayUInt64Filter_HasAll
+	//	*ArrayUInt64Filter_HasAny
+	//	*ArrayUInt64Filter_LengthEq
+	//	*ArrayUInt64Filter_LengthGt
+	//	*ArrayUInt64Filter_LengthGte
+	//	*ArrayUInt64Filter_LengthLt
+	//	*ArrayUInt64Filter_LengthLte
+	//	*ArrayUInt64Filter_IsEmpty
+	//	*ArrayUInt64Filter_IsNotEmpty
+	Filter isArrayUInt64Filter_Filter `protobuf_oneof:"filter"`
+}
+
+func (x *ArrayUInt64Filter) Reset() {
+	*x = ArrayUInt64Filter{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_common_proto_msgTypes[32]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArrayUInt64Filter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArrayUInt64Filter) ProtoMessage() {}
+
+func (x *ArrayUInt64Filter) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[32]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArrayUInt64Filter.ProtoReflect.Descriptor instead.
+func (*ArrayUInt64Filter) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{32}
+}
+
+func (m *ArrayUInt64Filter) GetFilter() isArrayUInt64Filter_Filter {
+	if m != nil {
+		return m.Filter
+	}
+	return nil
+}
+
+func (x *ArrayUInt64Filter) GetHas() uint64 {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_Has); ok {
+		return x.Has
+	}
+	return 0
+}
+
+func (x *ArrayUInt64Filter) GetHasAll() *UInt64List {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_HasAll); ok {
+		return x.HasAll
+	}
+	return nil
+}
+
+func (x *ArrayUInt64Filter) GetHasAny() *UInt64List {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_HasAny); ok {
+		return x.HasAny
+	}
+	return nil
+}
+
+func (x *ArrayUInt64Filter) GetLengthEq() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_LengthEq); ok {
+		return x.LengthEq
+	}
+	return 0
+}
+
+func (x *ArrayUInt64Filter) GetLengthGt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_LengthGt); ok {
+		return x.LengthGt
+	}
+	return 0
+}
+
+func (x *ArrayUInt64Filter) GetLengthGte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_LengthGte); ok {
+		return x.LengthGte
+	}
+	return 0
+}
+
+func (x *ArrayUInt64Filter) GetLengthLt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_LengthLt); ok {
+		return x.LengthLt
+	}
+	return 0
+}
+
+func (x *ArrayUInt64Filter) GetLengthLte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_LengthLte); ok {
+		return x.LengthLte
+	}
+	return 0
+}
+
+func (x *ArrayUInt64Filter) GetIsEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_IsEmpty); ok {
+		return x.IsEmpty
+	}
+	return nil
+}
+
+func (x *ArrayUInt64Filter) GetIsNotEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayUInt64Filter_IsNotEmpty); ok {
+		return x.IsNotEmpty
+	}
+	return nil
+}
+
+type isArrayUInt64Filter_Filter interface {
+	isArrayUInt64Filter_Filter()
+}
+
+type ArrayUInt64Filter_Has struct {
+	Has uint64 `protobuf:"varint,1,opt,name=has,proto3,oneof"` // has(arr, value) - array contains value
+}
+
+type ArrayUInt64Filter_HasAll struct {
+	HasAll *UInt64List `protobuf:"bytes,2,opt,name=has_all,json=hasAll,proto3,oneof"` // hasAll(arr, [v1, v2]) - contains all values
+}
+
+type ArrayUInt64Filter_HasAny struct {
+	HasAny *UInt64List `protobuf:"bytes,3,opt,name=has_any,json=hasAny,proto3,oneof"` // hasAny(arr, [v1, v2]) - contains any value
+}
+
+type ArrayUInt64Filter_LengthEq struct {
+	LengthEq uint32 `protobuf:"varint,4,opt,name=length_eq,json=lengthEq,proto3,oneof"` // length(arr) = n
+}
+
+type ArrayUInt64Filter_LengthGt struct {
+	LengthGt uint32 `protobuf:"varint,5,opt,name=length_gt,json=lengthGt,proto3,oneof"` // length(arr) > n
+}
+
+type ArrayUInt64Filter_LengthGte struct {
+	LengthGte uint32 `protobuf:"varint,6,opt,name=length_gte,json=lengthGte,proto3,oneof"` // length(arr) >= n
+}
+
+type ArrayUInt64Filter_LengthLt struct {
+	LengthLt uint32 `protobuf:"varint,7,opt,name=length_lt,json=lengthLt,proto3,oneof"` // length(arr) < n
+}
+
+type ArrayUInt64Filter_LengthLte struct {
+	LengthLte uint32 `protobuf:"varint,8,opt,name=length_lte,json=lengthLte,proto3,oneof"` // length(arr) <= n
+}
+
+type ArrayUInt64Filter_IsEmpty struct {
+	IsEmpty *emptypb.Empty `protobuf:"bytes,9,opt,name=is_empty,json=isEmpty,proto3,oneof"` // empty(arr)
+}
+
+type ArrayUInt64Filter_IsNotEmpty struct {
+	IsNotEmpty *emptypb.Empty `protobuf:"bytes,10,opt,name=is_not_empty,json=isNotEmpty,proto3,oneof"` // notEmpty(arr)
+}
+
+func (*ArrayUInt64Filter_Has) isArrayUInt64Filter_Filter() {}
+
+func (*ArrayUInt64Filter_HasAll) isArrayUInt64Filter_Filter() {}
+
+func (*ArrayUInt64Filter_HasAny) isArrayUInt64Filter_Filter() {}
+
+func (*ArrayUInt64Filter_LengthEq) isArrayUInt64Filter_Filter() {}
+
+func (*ArrayUInt64Filter_LengthGt) isArrayUInt64Filter_Filter() {}
+
+func (*ArrayUInt64Filter_LengthGte) isArrayUInt64Filter_Filter() {}
+
+func (*ArrayUInt64Filter_LengthLt) isArrayUInt64Filter_Filter() {}
+
+func (*ArrayUInt64Filter_LengthLte) isArrayUInt64Filter_Filter() {}
+
+func (*ArrayUInt64Filter_IsEmpty) isArrayUInt64Filter_Filter() {}
+
+func (*ArrayUInt64Filter_IsNotEmpty) isArrayUInt64Filter_Filter() {}
+
+// ArrayInt32Filter represents filtering options for Array(Int32) columns
+type ArrayInt32Filter struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Filter:
+	//
+	//	*ArrayInt32Filter_Has
+	//	*ArrayInt32Filter_HasAll
+	//	*ArrayInt32Filter_HasAny
+	//	*ArrayInt32Filter_LengthEq
+	//	*ArrayInt32Filter_LengthGt
+	//	*ArrayInt32Filter_LengthGte
+	//	*ArrayInt32Filter_LengthLt
+	//	*ArrayInt32Filter_LengthLte
+	//	*ArrayInt32Filter_IsEmpty
+	//	*ArrayInt32Filter_IsNotEmpty
+	Filter isArrayInt32Filter_Filter `protobuf_oneof:"filter"`
+}
+
+func (x *ArrayInt32Filter) Reset() {
+	*x = ArrayInt32Filter{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_common_proto_msgTypes[33]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArrayInt32Filter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArrayInt32Filter) ProtoMessage() {}
+
+func (x *ArrayInt32Filter) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[33]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArrayInt32Filter.ProtoReflect.Descriptor instead.
+func (*ArrayInt32Filter) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{33}
+}
+
+func (m *ArrayInt32Filter) GetFilter() isArrayInt32Filter_Filter {
+	if m != nil {
+		return m.Filter
+	}
+	return nil
+}
+
+func (x *ArrayInt32Filter) GetHas() int32 {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_Has); ok {
+		return x.Has
+	}
+	return 0
+}
+
+func (x *ArrayInt32Filter) GetHasAll() *Int32List {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_HasAll); ok {
+		return x.HasAll
+	}
+	return nil
+}
+
+func (x *ArrayInt32Filter) GetHasAny() *Int32List {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_HasAny); ok {
+		return x.HasAny
+	}
+	return nil
+}
+
+func (x *ArrayInt32Filter) GetLengthEq() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_LengthEq); ok {
+		return x.LengthEq
+	}
+	return 0
+}
+
+func (x *ArrayInt32Filter) GetLengthGt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_LengthGt); ok {
+		return x.LengthGt
+	}
+	return 0
+}
+
+func (x *ArrayInt32Filter) GetLengthGte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_LengthGte); ok {
+		return x.LengthGte
+	}
+	return 0
+}
+
+func (x *ArrayInt32Filter) GetLengthLt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_LengthLt); ok {
+		return x.LengthLt
+	}
+	return 0
+}
+
+func (x *ArrayInt32Filter) GetLengthLte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_LengthLte); ok {
+		return x.LengthLte
+	}
+	return 0
+}
+
+func (x *ArrayInt32Filter) GetIsEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_IsEmpty); ok {
+		return x.IsEmpty
+	}
+	return nil
+}
+
+func (x *ArrayInt32Filter) GetIsNotEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayInt32Filter_IsNotEmpty); ok {
+		return x.IsNotEmpty
+	}
+	return nil
+}
+
+type isArrayInt32Filter_Filter interface {
+	isArrayInt32Filter_Filter()
+}
+
+type ArrayInt32Filter_Has struct {
+	Has int32 `protobuf:"varint,1,opt,name=has,proto3,oneof"` // has(arr, value) - array contains value
+}
+
+type ArrayInt32Filter_HasAll struct {
+	HasAll *Int32List `protobuf:"bytes,2,opt,name=has_all,json=hasAll,proto3,oneof"` // hasAll(arr, [v1, v2]) - contains all values
+}
+
+type ArrayInt32Filter_HasAny struct {
+	HasAny *Int32List `protobuf:"bytes,3,opt,name=has_any,json=hasAny,proto3,oneof"` // hasAny(arr, [v1, v2]) - contains any value
+}
+
+type ArrayInt32Filter_LengthEq struct {
+	LengthEq uint32 `protobuf:"varint,4,opt,name=length_eq,json=lengthEq,proto3,oneof"` // length(arr) = n
+}
+
+type ArrayInt32Filter_LengthGt struct {
+	LengthGt uint32 `protobuf:"varint,5,opt,name=length_gt,json=lengthGt,proto3,oneof"` // length(arr) > n
+}
+
+type ArrayInt32Filter_LengthGte struct {
+	LengthGte uint32 `protobuf:"varint,6,opt,name=length_gte,json=lengthGte,proto3,oneof"` // length(arr) >= n
+}
+
+type ArrayInt32Filter_LengthLt struct {
+	LengthLt uint32 `protobuf:"varint,7,opt,name=length_lt,json=lengthLt,proto3,oneof"` // length(arr) < n
+}
+
+type ArrayInt32Filter_LengthLte struct {
+	LengthLte uint32 `protobuf:"varint,8,opt,name=length_lte,json=lengthLte,proto3,oneof"` // length(arr) <= n
+}
+
+type ArrayInt32Filter_IsEmpty struct {
+	IsEmpty *emptypb.Empty `protobuf:"bytes,9,opt,name=is_empty,json=isEmpty,proto3,oneof"` // empty(arr)
+}
+
+type ArrayInt32Filter_IsNotEmpty struct {
+	IsNotEmpty *emptypb.Empty `protobuf:"bytes,10,opt,name=is_not_empty,json=isNotEmpty,proto3,oneof"` // notEmpty(arr)
+}
+
+func (*ArrayInt32Filter_Has) isArrayInt32Filter_Filter() {}
+
+func (*ArrayInt32Filter_HasAll) isArrayInt32Filter_Filter() {}
+
+func (*ArrayInt32Filter_HasAny) isArrayInt32Filter_Filter() {}
+
+func (*ArrayInt32Filter_LengthEq) isArrayInt32Filter_Filter() {}
+
+func (*ArrayInt32Filter_LengthGt) isArrayInt32Filter_Filter() {}
+
+func (*ArrayInt32Filter_LengthGte) isArrayInt32Filter_Filter() {}
+
+func (*ArrayInt32Filter_LengthLt) isArrayInt32Filter_Filter() {}
+
+func (*ArrayInt32Filter_LengthLte) isArrayInt32Filter_Filter() {}
+
+func (*ArrayInt32Filter_IsEmpty) isArrayInt32Filter_Filter() {}
+
+func (*ArrayInt32Filter_IsNotEmpty) isArrayInt32Filter_Filter() {}
+
+// ArrayInt64Filter represents filtering options for Array(Int64) columns
+type ArrayInt64Filter struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Filter:
+	//
+	//	*ArrayInt64Filter_Has
+	//	*ArrayInt64Filter_HasAll
+	//	*ArrayInt64Filter_HasAny
+	//	*ArrayInt64Filter_LengthEq
+	//	*ArrayInt64Filter_LengthGt
+	//	*ArrayInt64Filter_LengthGte
+	//	*ArrayInt64Filter_LengthLt
+	//	*ArrayInt64Filter_LengthLte
+	//	*ArrayInt64Filter_IsEmpty
+	//	*ArrayInt64Filter_IsNotEmpty
+	Filter isArrayInt64Filter_Filter `protobuf_oneof:"filter"`
+}
+
+func (x *ArrayInt64Filter) Reset() {
+	*x = ArrayInt64Filter{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_common_proto_msgTypes[34]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArrayInt64Filter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArrayInt64Filter) ProtoMessage() {}
+
+func (x *ArrayInt64Filter) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[34]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArrayInt64Filter.ProtoReflect.Descriptor instead.
+func (*ArrayInt64Filter) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{34}
+}
+
+func (m *ArrayInt64Filter) GetFilter() isArrayInt64Filter_Filter {
+	if m != nil {
+		return m.Filter
+	}
+	return nil
+}
+
+func (x *ArrayInt64Filter) GetHas() int64 {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_Has); ok {
+		return x.Has
+	}
+	return 0
+}
+
+func (x *ArrayInt64Filter) GetHasAll() *Int64List {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_HasAll); ok {
+		return x.HasAll
+	}
+	return nil
+}
+
+func (x *ArrayInt64Filter) GetHasAny() *Int64List {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_HasAny); ok {
+		return x.HasAny
+	}
+	return nil
+}
+
+func (x *ArrayInt64Filter) GetLengthEq() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_LengthEq); ok {
+		return x.LengthEq
+	}
+	return 0
+}
+
+func (x *ArrayInt64Filter) GetLengthGt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_LengthGt); ok {
+		return x.LengthGt
+	}
+	return 0
+}
+
+func (x *ArrayInt64Filter) GetLengthGte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_LengthGte); ok {
+		return x.LengthGte
+	}
+	return 0
+}
+
+func (x *ArrayInt64Filter) GetLengthLt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_LengthLt); ok {
+		return x.LengthLt
+	}
+	return 0
+}
+
+func (x *ArrayInt64Filter) GetLengthLte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_LengthLte); ok {
+		return x.LengthLte
+	}
+	return 0
+}
+
+func (x *ArrayInt64Filter) GetIsEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_IsEmpty); ok {
+		return x.IsEmpty
+	}
+	return nil
+}
+
+func (x *ArrayInt64Filter) GetIsNotEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayInt64Filter_IsNotEmpty); ok {
+		return x.IsNotEmpty
+	}
+	return nil
+}
+
+type isArrayInt64Filter_Filter interface {
+	isArrayInt64Filter_Filter()
+}
+
+type ArrayInt64Filter_Has struct {
+	Has int64 `protobuf:"varint,1,opt,name=has,proto3,oneof"` // has(arr, value) - array contains value
+}
+
+type ArrayInt64Filter_HasAll struct {
+	HasAll *Int64List `protobuf:"bytes,2,opt,name=has_all,json=hasAll,proto3,oneof"` // hasAll(arr, [v1, v2]) - contains all values
+}
+
+type ArrayInt64Filter_HasAny struct {
+	HasAny *Int64List `protobuf:"bytes,3,opt,name=has_any,json=hasAny,proto3,oneof"` // hasAny(arr, [v1, v2]) - contains any value
+}
+
+type ArrayInt64Filter_LengthEq struct {
+	LengthEq uint32 `protobuf:"varint,4,opt,name=length_eq,json=lengthEq,proto3,oneof"` // length(arr) = n
+}
+
+type ArrayInt64Filter_LengthGt struct {
+	LengthGt uint32 `protobuf:"varint,5,opt,name=length_gt,json=lengthGt,proto3,oneof"` // length(arr) > n
+}
+
+type ArrayInt64Filter_LengthGte struct {
+	LengthGte uint32 `protobuf:"varint,6,opt,name=length_gte,json=lengthGte,proto3,oneof"` // length(arr) >= n
+}
+
+type ArrayInt64Filter_LengthLt struct {
+	LengthLt uint32 `protobuf:"varint,7,opt,name=length_lt,json=lengthLt,proto3,oneof"` // length(arr) < n
+}
+
+type ArrayInt64Filter_LengthLte struct {
+	LengthLte uint32 `protobuf:"varint,8,opt,name=length_lte,json=lengthLte,proto3,oneof"` // length(arr) <= n
+}
+
+type ArrayInt64Filter_IsEmpty struct {
+	IsEmpty *emptypb.Empty `protobuf:"bytes,9,opt,name=is_empty,json=isEmpty,proto3,oneof"` // empty(arr)
+}
+
+type ArrayInt64Filter_IsNotEmpty struct {
+	IsNotEmpty *emptypb.Empty `protobuf:"bytes,10,opt,name=is_not_empty,json=isNotEmpty,proto3,oneof"` // notEmpty(arr)
+}
+
+func (*ArrayInt64Filter_Has) isArrayInt64Filter_Filter() {}
+
+func (*ArrayInt64Filter_HasAll) isArrayInt64Filter_Filter() {}
+
+func (*ArrayInt64Filter_HasAny) isArrayInt64Filter_Filter() {}
+
+func (*ArrayInt64Filter_LengthEq) isArrayInt64Filter_Filter() {}
+
+func (*ArrayInt64Filter_LengthGt) isArrayInt64Filter_Filter() {}
+
+func (*ArrayInt64Filter_LengthGte) isArrayInt64Filter_Filter() {}
+
+func (*ArrayInt64Filter_LengthLt) isArrayInt64Filter_Filter() {}
+
+func (*ArrayInt64Filter_LengthLte) isArrayInt64Filter_Filter() {}
+
+func (*ArrayInt64Filter_IsEmpty) isArrayInt64Filter_Filter() {}
+
+func (*ArrayInt64Filter_IsNotEmpty) isArrayInt64Filter_Filter() {}
+
+// ArrayStringFilter represents filtering options for Array(String) columns
+type ArrayStringFilter struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Filter:
+	//
+	//	*ArrayStringFilter_Has
+	//	*ArrayStringFilter_HasAll
+	//	*ArrayStringFilter_HasAny
+	//	*ArrayStringFilter_LengthEq
+	//	*ArrayStringFilter_LengthGt
+	//	*ArrayStringFilter_LengthGte
+	//	*ArrayStringFilter_LengthLt
+	//	*ArrayStringFilter_LengthLte
+	//	*ArrayStringFilter_IsEmpty
+	//	*ArrayStringFilter_IsNotEmpty
+	Filter isArrayStringFilter_Filter `protobuf_oneof:"filter"`
+}
+
+func (x *ArrayStringFilter) Reset() {
+	*x = ArrayStringFilter{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_common_proto_msgTypes[35]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArrayStringFilter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArrayStringFilter) ProtoMessage() {}
+
+func (x *ArrayStringFilter) ProtoReflect() protoreflect.Message {
+	mi := &file_common_proto_msgTypes[35]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArrayStringFilter.ProtoReflect.Descriptor instead.
+func (*ArrayStringFilter) Descriptor() ([]byte, []int) {
+	return file_common_proto_rawDescGZIP(), []int{35}
+}
+
+func (m *ArrayStringFilter) GetFilter() isArrayStringFilter_Filter {
+	if m != nil {
+		return m.Filter
+	}
+	return nil
+}
+
+func (x *ArrayStringFilter) GetHas() string {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_Has); ok {
+		return x.Has
+	}
+	return ""
+}
+
+func (x *ArrayStringFilter) GetHasAll() *StringList {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_HasAll); ok {
+		return x.HasAll
+	}
+	return nil
+}
+
+func (x *ArrayStringFilter) GetHasAny() *StringList {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_HasAny); ok {
+		return x.HasAny
+	}
+	return nil
+}
+
+func (x *ArrayStringFilter) GetLengthEq() uint32 {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_LengthEq); ok {
+		return x.LengthEq
+	}
+	return 0
+}
+
+func (x *ArrayStringFilter) GetLengthGt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_LengthGt); ok {
+		return x.LengthGt
+	}
+	return 0
+}
+
+func (x *ArrayStringFilter) GetLengthGte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_LengthGte); ok {
+		return x.LengthGte
+	}
+	return 0
+}
+
+func (x *ArrayStringFilter) GetLengthLt() uint32 {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_LengthLt); ok {
+		return x.LengthLt
+	}
+	return 0
+}
+
+func (x *ArrayStringFilter) GetLengthLte() uint32 {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_LengthLte); ok {
+		return x.LengthLte
+	}
+	return 0
+}
+
+func (x *ArrayStringFilter) GetIsEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_IsEmpty); ok {
+		return x.IsEmpty
+	}
+	return nil
+}
+
+func (x *ArrayStringFilter) GetIsNotEmpty() *emptypb.Empty {
+	if x, ok := x.GetFilter().(*ArrayStringFilter_IsNotEmpty); ok {
+		return x.IsNotEmpty
+	}
+	return nil
+}
+
+type isArrayStringFilter_Filter interface {
+	isArrayStringFilter_Filter()
+}
+
+type ArrayStringFilter_Has struct {
+	Has string `protobuf:"bytes,1,opt,name=has,proto3,oneof"` // has(arr, value) - array contains value
+}
+
+type ArrayStringFilter_HasAll struct {
+	HasAll *StringList `protobuf:"bytes,2,opt,name=has_all,json=hasAll,proto3,oneof"` // hasAll(arr, [v1, v2]) - contains all values
+}
+
+type ArrayStringFilter_HasAny struct {
+	HasAny *StringList `protobuf:"bytes,3,opt,name=has_any,json=hasAny,proto3,oneof"` // hasAny(arr, [v1, v2]) - contains any value
+}
+
+type ArrayStringFilter_LengthEq struct {
+	LengthEq uint32 `protobuf:"varint,4,opt,name=length_eq,json=lengthEq,proto3,oneof"` // length(arr) = n
+}
+
+type ArrayStringFilter_LengthGt struct {
+	LengthGt uint32 `protobuf:"varint,5,opt,name=length_gt,json=lengthGt,proto3,oneof"` // length(arr) > n
+}
+
+type ArrayStringFilter_LengthGte struct {
+	LengthGte uint32 `protobuf:"varint,6,opt,name=length_gte,json=lengthGte,proto3,oneof"` // length(arr) >= n
+}
+
+type ArrayStringFilter_LengthLt struct {
+	LengthLt uint32 `protobuf:"varint,7,opt,name=length_lt,json=lengthLt,proto3,oneof"` // length(arr) < n
+}
+
+type ArrayStringFilter_LengthLte struct {
+	LengthLte uint32 `protobuf:"varint,8,opt,name=length_lte,json=lengthLte,proto3,oneof"` // length(arr) <= n
+}
+
+type ArrayStringFilter_IsEmpty struct {
+	IsEmpty *emptypb.Empty `protobuf:"bytes,9,opt,name=is_empty,json=isEmpty,proto3,oneof"` // empty(arr)
+}
+
+type ArrayStringFilter_IsNotEmpty struct {
+	IsNotEmpty *emptypb.Empty `protobuf:"bytes,10,opt,name=is_not_empty,json=isNotEmpty,proto3,oneof"` // notEmpty(arr)
+}
+
+func (*ArrayStringFilter_Has) isArrayStringFilter_Filter() {}
+
+func (*ArrayStringFilter_HasAll) isArrayStringFilter_Filter() {}
+
+func (*ArrayStringFilter_HasAny) isArrayStringFilter_Filter() {}
+
+func (*ArrayStringFilter_LengthEq) isArrayStringFilter_Filter() {}
+
+func (*ArrayStringFilter_LengthGt) isArrayStringFilter_Filter() {}
+
+func (*ArrayStringFilter_LengthGte) isArrayStringFilter_Filter() {}
+
+func (*ArrayStringFilter_LengthLt) isArrayStringFilter_Filter() {}
+
+func (*ArrayStringFilter_LengthLte) isArrayStringFilter_Filter() {}
+
+func (*ArrayStringFilter_IsEmpty) isArrayStringFilter_Filter() {}
+
+func (*ArrayStringFilter_IsNotEmpty) isArrayStringFilter_Filter() {}
+
 var File_common_proto protoreflect.FileDescriptor
 
 var file_common_proto_rawDesc = []byte{
@@ -3934,13 +4904,141 @@ var file_common_proto_rawDesc = []byte{
 	0x6c, 0x6c, 0x5f, 0x6b, 0x65, 0x79, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e,
 	0x63, 0x62, 0x74, 0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x4c, 0x69, 0x73, 0x74, 0x48, 0x00,
 	0x52, 0x0a, 0x68, 0x61, 0x73, 0x41, 0x6c, 0x6c, 0x4b, 0x65, 0x79, 0x73, 0x42, 0x08, 0x0a, 0x06,
-	0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x2a, 0x1e, 0x0a, 0x09, 0x53, 0x6f, 0x72, 0x74, 0x4f, 0x72,
-	0x64, 0x65, 0x72, 0x12, 0x07, 0x0a, 0x03, 0x41, 0x53, 0x43, 0x10, 0x00, 0x12, 0x08, 0x0a, 0x04,
-	0x44, 0x45, 0x53, 0x43, 0x10, 0x01, 0x42, 0x36, 0x5a, 0x34, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
-	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x65, 0x74, 0x68, 0x70, 0x61, 0x6e, 0x64, 0x61, 0x6f, 0x70, 0x73,
-	0x2f, 0x78, 0x61, 0x74, 0x75, 0x2d, 0x63, 0x62, 0x74, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x2f, 0x63, 0x6c, 0x69, 0x63, 0x6b, 0x68, 0x6f, 0x75, 0x73, 0x65, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x22, 0x99, 0x03, 0x0a, 0x11, 0x41, 0x72, 0x72, 0x61, 0x79,
+	0x55, 0x49, 0x6e, 0x74, 0x33, 0x32, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x03,
+	0x68, 0x61, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x03, 0x68, 0x61, 0x73,
+	0x12, 0x2a, 0x0a, 0x07, 0x68, 0x61, 0x73, 0x5f, 0x61, 0x6c, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x0f, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x33, 0x32, 0x4c, 0x69,
+	0x73, 0x74, 0x48, 0x00, 0x52, 0x06, 0x68, 0x61, 0x73, 0x41, 0x6c, 0x6c, 0x12, 0x2a, 0x0a, 0x07,
+	0x68, 0x61, 0x73, 0x5f, 0x61, 0x6e, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e,
+	0x63, 0x62, 0x74, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x33, 0x32, 0x4c, 0x69, 0x73, 0x74, 0x48, 0x00,
+	0x52, 0x06, 0x68, 0x61, 0x73, 0x41, 0x6e, 0x79, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67,
+	0x74, 0x68, 0x5f, 0x65, 0x71, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c,
+	0x65, 0x6e, 0x67, 0x74, 0x68, 0x45, 0x71, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74,
+	0x68, 0x5f, 0x67, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65,
+	0x6e, 0x67, 0x74, 0x68, 0x47, 0x74, 0x12, 0x1f, 0x0a, 0x0a, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x5f, 0x67, 0x74, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x09, 0x6c, 0x65,
+	0x6e, 0x67, 0x74, 0x68, 0x47, 0x74, 0x65, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74,
+	0x68, 0x5f, 0x6c, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65,
+	0x6e, 0x67, 0x74, 0x68, 0x4c, 0x74, 0x12, 0x1f, 0x0a, 0x0a, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x5f, 0x6c, 0x74, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x09, 0x6c, 0x65,
+	0x6e, 0x67, 0x74, 0x68, 0x4c, 0x74, 0x65, 0x12, 0x33, 0x0a, 0x08, 0x69, 0x73, 0x5f, 0x65, 0x6d,
+	0x70, 0x74, 0x79, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67,
+	0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74,
+	0x79, 0x48, 0x00, 0x52, 0x07, 0x69, 0x73, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x12, 0x3a, 0x0a, 0x0c,
+	0x69, 0x73, 0x5f, 0x6e, 0x6f, 0x74, 0x5f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x18, 0x0a, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x48, 0x00, 0x52, 0x0a, 0x69, 0x73,
+	0x4e, 0x6f, 0x74, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x42, 0x08, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74,
+	0x65, 0x72, 0x22, 0x99, 0x03, 0x0a, 0x11, 0x41, 0x72, 0x72, 0x61, 0x79, 0x55, 0x49, 0x6e, 0x74,
+	0x36, 0x34, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x03, 0x68, 0x61, 0x73, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x04, 0x48, 0x00, 0x52, 0x03, 0x68, 0x61, 0x73, 0x12, 0x2a, 0x0a, 0x07,
+	0x68, 0x61, 0x73, 0x5f, 0x61, 0x6c, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e,
+	0x63, 0x62, 0x74, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x36, 0x34, 0x4c, 0x69, 0x73, 0x74, 0x48, 0x00,
+	0x52, 0x06, 0x68, 0x61, 0x73, 0x41, 0x6c, 0x6c, 0x12, 0x2a, 0x0a, 0x07, 0x68, 0x61, 0x73, 0x5f,
+	0x61, 0x6e, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x63, 0x62, 0x74, 0x2e,
+	0x55, 0x49, 0x6e, 0x74, 0x36, 0x34, 0x4c, 0x69, 0x73, 0x74, 0x48, 0x00, 0x52, 0x06, 0x68, 0x61,
+	0x73, 0x41, 0x6e, 0x79, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x65,
+	0x71, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67, 0x74,
+	0x68, 0x45, 0x71, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x67, 0x74,
+	0x18, 0x05, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x47, 0x74, 0x12, 0x1f, 0x0a, 0x0a, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x67, 0x74, 0x65,
+	0x18, 0x06, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x47, 0x74, 0x65, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x6c, 0x74,
+	0x18, 0x07, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x4c, 0x74, 0x12, 0x1f, 0x0a, 0x0a, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x6c, 0x74, 0x65,
+	0x18, 0x08, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x4c, 0x74, 0x65, 0x12, 0x33, 0x0a, 0x08, 0x69, 0x73, 0x5f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x18,
+	0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x48, 0x00, 0x52,
+	0x07, 0x69, 0x73, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x12, 0x3a, 0x0a, 0x0c, 0x69, 0x73, 0x5f, 0x6e,
+	0x6f, 0x74, 0x5f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16,
+	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
+	0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x48, 0x00, 0x52, 0x0a, 0x69, 0x73, 0x4e, 0x6f, 0x74, 0x45,
+	0x6d, 0x70, 0x74, 0x79, 0x42, 0x08, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x22, 0x96,
+	0x03, 0x0a, 0x10, 0x41, 0x72, 0x72, 0x61, 0x79, 0x49, 0x6e, 0x74, 0x33, 0x32, 0x46, 0x69, 0x6c,
+	0x74, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x03, 0x68, 0x61, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05,
+	0x48, 0x00, 0x52, 0x03, 0x68, 0x61, 0x73, 0x12, 0x29, 0x0a, 0x07, 0x68, 0x61, 0x73, 0x5f, 0x61,
+	0x6c, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x49,
+	0x6e, 0x74, 0x33, 0x32, 0x4c, 0x69, 0x73, 0x74, 0x48, 0x00, 0x52, 0x06, 0x68, 0x61, 0x73, 0x41,
+	0x6c, 0x6c, 0x12, 0x29, 0x0a, 0x07, 0x68, 0x61, 0x73, 0x5f, 0x61, 0x6e, 0x79, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x49, 0x6e, 0x74, 0x33, 0x32, 0x4c,
+	0x69, 0x73, 0x74, 0x48, 0x00, 0x52, 0x06, 0x68, 0x61, 0x73, 0x41, 0x6e, 0x79, 0x12, 0x1d, 0x0a,
+	0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x65, 0x71, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0d,
+	0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x45, 0x71, 0x12, 0x1d, 0x0a, 0x09,
+	0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x67, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0d, 0x48,
+	0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x47, 0x74, 0x12, 0x1f, 0x0a, 0x0a, 0x6c,
+	0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x67, 0x74, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0d, 0x48,
+	0x00, 0x52, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x47, 0x74, 0x65, 0x12, 0x1d, 0x0a, 0x09,
+	0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x6c, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0d, 0x48,
+	0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x4c, 0x74, 0x12, 0x1f, 0x0a, 0x0a, 0x6c,
+	0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x6c, 0x74, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0d, 0x48,
+	0x00, 0x52, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x4c, 0x74, 0x65, 0x12, 0x33, 0x0a, 0x08,
+	0x69, 0x73, 0x5f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16,
+	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
+	0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x48, 0x00, 0x52, 0x07, 0x69, 0x73, 0x45, 0x6d, 0x70, 0x74,
+	0x79, 0x12, 0x3a, 0x0a, 0x0c, 0x69, 0x73, 0x5f, 0x6e, 0x6f, 0x74, 0x5f, 0x65, 0x6d, 0x70, 0x74,
+	0x79, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x48,
+	0x00, 0x52, 0x0a, 0x69, 0x73, 0x4e, 0x6f, 0x74, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x42, 0x08, 0x0a,
+	0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x22, 0x96, 0x03, 0x0a, 0x10, 0x41, 0x72, 0x72, 0x61,
+	0x79, 0x49, 0x6e, 0x74, 0x36, 0x34, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x03,
+	0x68, 0x61, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x48, 0x00, 0x52, 0x03, 0x68, 0x61, 0x73,
+	0x12, 0x29, 0x0a, 0x07, 0x68, 0x61, 0x73, 0x5f, 0x61, 0x6c, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x0e, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x49, 0x6e, 0x74, 0x36, 0x34, 0x4c, 0x69, 0x73,
+	0x74, 0x48, 0x00, 0x52, 0x06, 0x68, 0x61, 0x73, 0x41, 0x6c, 0x6c, 0x12, 0x29, 0x0a, 0x07, 0x68,
+	0x61, 0x73, 0x5f, 0x61, 0x6e, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x63,
+	0x62, 0x74, 0x2e, 0x49, 0x6e, 0x74, 0x36, 0x34, 0x4c, 0x69, 0x73, 0x74, 0x48, 0x00, 0x52, 0x06,
+	0x68, 0x61, 0x73, 0x41, 0x6e, 0x79, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x5f, 0x65, 0x71, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e,
+	0x67, 0x74, 0x68, 0x45, 0x71, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f,
+	0x67, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67,
+	0x74, 0x68, 0x47, 0x74, 0x12, 0x1f, 0x0a, 0x0a, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x67,
+	0x74, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x09, 0x6c, 0x65, 0x6e, 0x67,
+	0x74, 0x68, 0x47, 0x74, 0x65, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f,
+	0x6c, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67,
+	0x74, 0x68, 0x4c, 0x74, 0x12, 0x1f, 0x0a, 0x0a, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x6c,
+	0x74, 0x65, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x09, 0x6c, 0x65, 0x6e, 0x67,
+	0x74, 0x68, 0x4c, 0x74, 0x65, 0x12, 0x33, 0x0a, 0x08, 0x69, 0x73, 0x5f, 0x65, 0x6d, 0x70, 0x74,
+	0x79, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x48,
+	0x00, 0x52, 0x07, 0x69, 0x73, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x12, 0x3a, 0x0a, 0x0c, 0x69, 0x73,
+	0x5f, 0x6e, 0x6f, 0x74, 0x5f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62,
+	0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x48, 0x00, 0x52, 0x0a, 0x69, 0x73, 0x4e, 0x6f,
+	0x74, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x42, 0x08, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72,
+	0x22, 0x99, 0x03, 0x0a, 0x11, 0x41, 0x72, 0x72, 0x61, 0x79, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67,
+	0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x12, 0x0a, 0x03, 0x68, 0x61, 0x73, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x03, 0x68, 0x61, 0x73, 0x12, 0x2a, 0x0a, 0x07, 0x68, 0x61,
+	0x73, 0x5f, 0x61, 0x6c, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x63, 0x62,
+	0x74, 0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x4c, 0x69, 0x73, 0x74, 0x48, 0x00, 0x52, 0x06,
+	0x68, 0x61, 0x73, 0x41, 0x6c, 0x6c, 0x12, 0x2a, 0x0a, 0x07, 0x68, 0x61, 0x73, 0x5f, 0x61, 0x6e,
+	0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x63, 0x62, 0x74, 0x2e, 0x53, 0x74,
+	0x72, 0x69, 0x6e, 0x67, 0x4c, 0x69, 0x73, 0x74, 0x48, 0x00, 0x52, 0x06, 0x68, 0x61, 0x73, 0x41,
+	0x6e, 0x79, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x65, 0x71, 0x18,
+	0x04, 0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x45,
+	0x71, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x67, 0x74, 0x18, 0x05,
+	0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x47, 0x74,
+	0x12, 0x1f, 0x0a, 0x0a, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x67, 0x74, 0x65, 0x18, 0x06,
+	0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x47, 0x74,
+	0x65, 0x12, 0x1d, 0x0a, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x6c, 0x74, 0x18, 0x07,
+	0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x08, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x4c, 0x74,
+	0x12, 0x1f, 0x0a, 0x0a, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x5f, 0x6c, 0x74, 0x65, 0x18, 0x08,
+	0x20, 0x01, 0x28, 0x0d, 0x48, 0x00, 0x52, 0x09, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x4c, 0x74,
+	0x65, 0x12, 0x33, 0x0a, 0x08, 0x69, 0x73, 0x5f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x18, 0x09, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x48, 0x00, 0x52, 0x07, 0x69,
+	0x73, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x12, 0x3a, 0x0a, 0x0c, 0x69, 0x73, 0x5f, 0x6e, 0x6f, 0x74,
+	0x5f, 0x65, 0x6d, 0x70, 0x74, 0x79, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x67,
+	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45,
+	0x6d, 0x70, 0x74, 0x79, 0x48, 0x00, 0x52, 0x0a, 0x69, 0x73, 0x4e, 0x6f, 0x74, 0x45, 0x6d, 0x70,
+	0x74, 0x79, 0x42, 0x08, 0x0a, 0x06, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x2a, 0x1e, 0x0a, 0x09,
+	0x53, 0x6f, 0x72, 0x74, 0x4f, 0x72, 0x64, 0x65, 0x72, 0x12, 0x07, 0x0a, 0x03, 0x41, 0x53, 0x43,
+	0x10, 0x00, 0x12, 0x08, 0x0a, 0x04, 0x44, 0x45, 0x53, 0x43, 0x10, 0x01, 0x42, 0x36, 0x5a, 0x34,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x65, 0x74, 0x68, 0x70, 0x61,
+	0x6e, 0x64, 0x61, 0x6f, 0x70, 0x73, 0x2f, 0x78, 0x61, 0x74, 0x75, 0x2d, 0x63, 0x62, 0x74, 0x2f,
+	0x70, 0x6b, 0x67, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x63, 0x6c, 0x69, 0x63, 0x6b, 0x68,
+	0x6f, 0x75, 0x73, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -3956,7 +5054,7 @@ func file_common_proto_rawDescGZIP() []byte {
 }
 
 var file_common_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_common_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_common_proto_goTypes = []any{
 	(SortOrder)(0),                  // 0: cbt.SortOrder
 	(*UInt32Filter)(nil),            // 1: cbt.UInt32Filter
@@ -3990,11 +5088,16 @@ var file_common_proto_goTypes = []any{
 	(*MapStringUInt64Filter)(nil),   // 29: cbt.MapStringUInt64Filter
 	(*MapKeyValueStringInt64)(nil),  // 30: cbt.MapKeyValueStringInt64
 	(*MapStringInt64Filter)(nil),    // 31: cbt.MapStringInt64Filter
-	(*emptypb.Empty)(nil),           // 32: google.protobuf.Empty
-	(*wrapperspb.UInt32Value)(nil),  // 33: google.protobuf.UInt32Value
-	(*wrapperspb.UInt64Value)(nil),  // 34: google.protobuf.UInt64Value
-	(*wrapperspb.Int32Value)(nil),   // 35: google.protobuf.Int32Value
-	(*wrapperspb.Int64Value)(nil),   // 36: google.protobuf.Int64Value
+	(*ArrayUInt32Filter)(nil),       // 32: cbt.ArrayUInt32Filter
+	(*ArrayUInt64Filter)(nil),       // 33: cbt.ArrayUInt64Filter
+	(*ArrayInt32Filter)(nil),        // 34: cbt.ArrayInt32Filter
+	(*ArrayInt64Filter)(nil),        // 35: cbt.ArrayInt64Filter
+	(*ArrayStringFilter)(nil),       // 36: cbt.ArrayStringFilter
+	(*emptypb.Empty)(nil),           // 37: google.protobuf.Empty
+	(*wrapperspb.UInt32Value)(nil),  // 38: google.protobuf.UInt32Value
+	(*wrapperspb.UInt64Value)(nil),  // 39: google.protobuf.UInt64Value
+	(*wrapperspb.Int32Value)(nil),   // 40: google.protobuf.Int32Value
+	(*wrapperspb.Int64Value)(nil),   // 41: google.protobuf.Int64Value
 }
 var file_common_proto_depIdxs = []int32{
 	3,  // 0: cbt.UInt32Filter.between:type_name -> cbt.UInt32Range
@@ -4003,44 +5106,44 @@ var file_common_proto_depIdxs = []int32{
 	3,  // 3: cbt.NullableUInt32Filter.between:type_name -> cbt.UInt32Range
 	4,  // 4: cbt.NullableUInt32Filter.in:type_name -> cbt.UInt32List
 	4,  // 5: cbt.NullableUInt32Filter.not_in:type_name -> cbt.UInt32List
-	32, // 6: cbt.NullableUInt32Filter.is_null:type_name -> google.protobuf.Empty
-	32, // 7: cbt.NullableUInt32Filter.is_not_null:type_name -> google.protobuf.Empty
-	33, // 8: cbt.UInt32Range.max:type_name -> google.protobuf.UInt32Value
+	37, // 6: cbt.NullableUInt32Filter.is_null:type_name -> google.protobuf.Empty
+	37, // 7: cbt.NullableUInt32Filter.is_not_null:type_name -> google.protobuf.Empty
+	38, // 8: cbt.UInt32Range.max:type_name -> google.protobuf.UInt32Value
 	7,  // 9: cbt.UInt64Filter.between:type_name -> cbt.UInt64Range
 	8,  // 10: cbt.UInt64Filter.in:type_name -> cbt.UInt64List
 	8,  // 11: cbt.UInt64Filter.not_in:type_name -> cbt.UInt64List
 	7,  // 12: cbt.NullableUInt64Filter.between:type_name -> cbt.UInt64Range
 	8,  // 13: cbt.NullableUInt64Filter.in:type_name -> cbt.UInt64List
 	8,  // 14: cbt.NullableUInt64Filter.not_in:type_name -> cbt.UInt64List
-	32, // 15: cbt.NullableUInt64Filter.is_null:type_name -> google.protobuf.Empty
-	32, // 16: cbt.NullableUInt64Filter.is_not_null:type_name -> google.protobuf.Empty
-	34, // 17: cbt.UInt64Range.max:type_name -> google.protobuf.UInt64Value
+	37, // 15: cbt.NullableUInt64Filter.is_null:type_name -> google.protobuf.Empty
+	37, // 16: cbt.NullableUInt64Filter.is_not_null:type_name -> google.protobuf.Empty
+	39, // 17: cbt.UInt64Range.max:type_name -> google.protobuf.UInt64Value
 	11, // 18: cbt.Int32Filter.between:type_name -> cbt.Int32Range
 	12, // 19: cbt.Int32Filter.in:type_name -> cbt.Int32List
 	12, // 20: cbt.Int32Filter.not_in:type_name -> cbt.Int32List
 	11, // 21: cbt.NullableInt32Filter.between:type_name -> cbt.Int32Range
 	12, // 22: cbt.NullableInt32Filter.in:type_name -> cbt.Int32List
 	12, // 23: cbt.NullableInt32Filter.not_in:type_name -> cbt.Int32List
-	32, // 24: cbt.NullableInt32Filter.is_null:type_name -> google.protobuf.Empty
-	32, // 25: cbt.NullableInt32Filter.is_not_null:type_name -> google.protobuf.Empty
-	35, // 26: cbt.Int32Range.max:type_name -> google.protobuf.Int32Value
+	37, // 24: cbt.NullableInt32Filter.is_null:type_name -> google.protobuf.Empty
+	37, // 25: cbt.NullableInt32Filter.is_not_null:type_name -> google.protobuf.Empty
+	40, // 26: cbt.Int32Range.max:type_name -> google.protobuf.Int32Value
 	15, // 27: cbt.Int64Filter.between:type_name -> cbt.Int64Range
 	16, // 28: cbt.Int64Filter.in:type_name -> cbt.Int64List
 	16, // 29: cbt.Int64Filter.not_in:type_name -> cbt.Int64List
 	15, // 30: cbt.NullableInt64Filter.between:type_name -> cbt.Int64Range
 	16, // 31: cbt.NullableInt64Filter.in:type_name -> cbt.Int64List
 	16, // 32: cbt.NullableInt64Filter.not_in:type_name -> cbt.Int64List
-	32, // 33: cbt.NullableInt64Filter.is_null:type_name -> google.protobuf.Empty
-	32, // 34: cbt.NullableInt64Filter.is_not_null:type_name -> google.protobuf.Empty
-	36, // 35: cbt.Int64Range.max:type_name -> google.protobuf.Int64Value
+	37, // 33: cbt.NullableInt64Filter.is_null:type_name -> google.protobuf.Empty
+	37, // 34: cbt.NullableInt64Filter.is_not_null:type_name -> google.protobuf.Empty
+	41, // 35: cbt.Int64Range.max:type_name -> google.protobuf.Int64Value
 	19, // 36: cbt.StringFilter.in:type_name -> cbt.StringList
 	19, // 37: cbt.StringFilter.not_in:type_name -> cbt.StringList
 	19, // 38: cbt.NullableStringFilter.in:type_name -> cbt.StringList
 	19, // 39: cbt.NullableStringFilter.not_in:type_name -> cbt.StringList
-	32, // 40: cbt.NullableStringFilter.is_null:type_name -> google.protobuf.Empty
-	32, // 41: cbt.NullableStringFilter.is_not_null:type_name -> google.protobuf.Empty
-	32, // 42: cbt.NullableBoolFilter.is_null:type_name -> google.protobuf.Empty
-	32, // 43: cbt.NullableBoolFilter.is_not_null:type_name -> google.protobuf.Empty
+	37, // 40: cbt.NullableStringFilter.is_null:type_name -> google.protobuf.Empty
+	37, // 41: cbt.NullableStringFilter.is_not_null:type_name -> google.protobuf.Empty
+	37, // 42: cbt.NullableBoolFilter.is_null:type_name -> google.protobuf.Empty
+	37, // 43: cbt.NullableBoolFilter.is_not_null:type_name -> google.protobuf.Empty
 	17, // 44: cbt.MapKeyValueStringString.value_filter:type_name -> cbt.StringFilter
 	22, // 45: cbt.MapStringStringFilter.key_value:type_name -> cbt.MapKeyValueStringString
 	19, // 46: cbt.MapStringStringFilter.has_any_key:type_name -> cbt.StringList
@@ -4061,11 +5164,31 @@ var file_common_proto_depIdxs = []int32{
 	30, // 61: cbt.MapStringInt64Filter.key_value:type_name -> cbt.MapKeyValueStringInt64
 	19, // 62: cbt.MapStringInt64Filter.has_any_key:type_name -> cbt.StringList
 	19, // 63: cbt.MapStringInt64Filter.has_all_keys:type_name -> cbt.StringList
-	64, // [64:64] is the sub-list for method output_type
-	64, // [64:64] is the sub-list for method input_type
-	64, // [64:64] is the sub-list for extension type_name
-	64, // [64:64] is the sub-list for extension extendee
-	0,  // [0:64] is the sub-list for field type_name
+	4,  // 64: cbt.ArrayUInt32Filter.has_all:type_name -> cbt.UInt32List
+	4,  // 65: cbt.ArrayUInt32Filter.has_any:type_name -> cbt.UInt32List
+	37, // 66: cbt.ArrayUInt32Filter.is_empty:type_name -> google.protobuf.Empty
+	37, // 67: cbt.ArrayUInt32Filter.is_not_empty:type_name -> google.protobuf.Empty
+	8,  // 68: cbt.ArrayUInt64Filter.has_all:type_name -> cbt.UInt64List
+	8,  // 69: cbt.ArrayUInt64Filter.has_any:type_name -> cbt.UInt64List
+	37, // 70: cbt.ArrayUInt64Filter.is_empty:type_name -> google.protobuf.Empty
+	37, // 71: cbt.ArrayUInt64Filter.is_not_empty:type_name -> google.protobuf.Empty
+	12, // 72: cbt.ArrayInt32Filter.has_all:type_name -> cbt.Int32List
+	12, // 73: cbt.ArrayInt32Filter.has_any:type_name -> cbt.Int32List
+	37, // 74: cbt.ArrayInt32Filter.is_empty:type_name -> google.protobuf.Empty
+	37, // 75: cbt.ArrayInt32Filter.is_not_empty:type_name -> google.protobuf.Empty
+	16, // 76: cbt.ArrayInt64Filter.has_all:type_name -> cbt.Int64List
+	16, // 77: cbt.ArrayInt64Filter.has_any:type_name -> cbt.Int64List
+	37, // 78: cbt.ArrayInt64Filter.is_empty:type_name -> google.protobuf.Empty
+	37, // 79: cbt.ArrayInt64Filter.is_not_empty:type_name -> google.protobuf.Empty
+	19, // 80: cbt.ArrayStringFilter.has_all:type_name -> cbt.StringList
+	19, // 81: cbt.ArrayStringFilter.has_any:type_name -> cbt.StringList
+	37, // 82: cbt.ArrayStringFilter.is_empty:type_name -> google.protobuf.Empty
+	37, // 83: cbt.ArrayStringFilter.is_not_empty:type_name -> google.protobuf.Empty
+	84, // [84:84] is the sub-list for method output_type
+	84, // [84:84] is the sub-list for method input_type
+	84, // [84:84] is the sub-list for extension type_name
+	84, // [84:84] is the sub-list for extension extendee
+	0,  // [0:84] is the sub-list for field type_name
 }
 
 func init() { file_common_proto_init() }
@@ -4446,6 +5569,66 @@ func file_common_proto_init() {
 				return nil
 			}
 		}
+		file_common_proto_msgTypes[31].Exporter = func(v any, i int) any {
+			switch v := v.(*ArrayUInt32Filter); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_common_proto_msgTypes[32].Exporter = func(v any, i int) any {
+			switch v := v.(*ArrayUInt64Filter); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_common_proto_msgTypes[33].Exporter = func(v any, i int) any {
+			switch v := v.(*ArrayInt32Filter); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_common_proto_msgTypes[34].Exporter = func(v any, i int) any {
+			switch v := v.(*ArrayInt64Filter); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_common_proto_msgTypes[35].Exporter = func(v any, i int) any {
+			switch v := v.(*ArrayStringFilter); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	file_common_proto_msgTypes[0].OneofWrappers = []any{
 		(*UInt32Filter_Eq)(nil),
@@ -4612,13 +5795,73 @@ func file_common_proto_init() {
 		(*MapStringInt64Filter_HasAnyKey)(nil),
 		(*MapStringInt64Filter_HasAllKeys)(nil),
 	}
+	file_common_proto_msgTypes[31].OneofWrappers = []any{
+		(*ArrayUInt32Filter_Has)(nil),
+		(*ArrayUInt32Filter_HasAll)(nil),
+		(*ArrayUInt32Filter_HasAny)(nil),
+		(*ArrayUInt32Filter_LengthEq)(nil),
+		(*ArrayUInt32Filter_LengthGt)(nil),
+		(*ArrayUInt32Filter_LengthGte)(nil),
+		(*ArrayUInt32Filter_LengthLt)(nil),
+		(*ArrayUInt32Filter_LengthLte)(nil),
+		(*ArrayUInt32Filter_IsEmpty)(nil),
+		(*ArrayUInt32Filter_IsNotEmpty)(nil),
+	}
+	file_common_proto_msgTypes[32].OneofWrappers = []any{
+		(*ArrayUInt64Filter_Has)(nil),
+		(*ArrayUInt64Filter_HasAll)(nil),
+		(*ArrayUInt64Filter_HasAny)(nil),
+		(*ArrayUInt64Filter_LengthEq)(nil),
+		(*ArrayUInt64Filter_LengthGt)(nil),
+		(*ArrayUInt64Filter_LengthGte)(nil),
+		(*ArrayUInt64Filter_LengthLt)(nil),
+		(*ArrayUInt64Filter_LengthLte)(nil),
+		(*ArrayUInt64Filter_IsEmpty)(nil),
+		(*ArrayUInt64Filter_IsNotEmpty)(nil),
+	}
+	file_common_proto_msgTypes[33].OneofWrappers = []any{
+		(*ArrayInt32Filter_Has)(nil),
+		(*ArrayInt32Filter_HasAll)(nil),
+		(*ArrayInt32Filter_HasAny)(nil),
+		(*ArrayInt32Filter_LengthEq)(nil),
+		(*ArrayInt32Filter_LengthGt)(nil),
+		(*ArrayInt32Filter_LengthGte)(nil),
+		(*ArrayInt32Filter_LengthLt)(nil),
+		(*ArrayInt32Filter_LengthLte)(nil),
+		(*ArrayInt32Filter_IsEmpty)(nil),
+		(*ArrayInt32Filter_IsNotEmpty)(nil),
+	}
+	file_common_proto_msgTypes[34].OneofWrappers = []any{
+		(*ArrayInt64Filter_Has)(nil),
+		(*ArrayInt64Filter_HasAll)(nil),
+		(*ArrayInt64Filter_HasAny)(nil),
+		(*ArrayInt64Filter_LengthEq)(nil),
+		(*ArrayInt64Filter_LengthGt)(nil),
+		(*ArrayInt64Filter_LengthGte)(nil),
+		(*ArrayInt64Filter_LengthLt)(nil),
+		(*ArrayInt64Filter_LengthLte)(nil),
+		(*ArrayInt64Filter_IsEmpty)(nil),
+		(*ArrayInt64Filter_IsNotEmpty)(nil),
+	}
+	file_common_proto_msgTypes[35].OneofWrappers = []any{
+		(*ArrayStringFilter_Has)(nil),
+		(*ArrayStringFilter_HasAll)(nil),
+		(*ArrayStringFilter_HasAny)(nil),
+		(*ArrayStringFilter_LengthEq)(nil),
+		(*ArrayStringFilter_LengthGt)(nil),
+		(*ArrayStringFilter_LengthGte)(nil),
+		(*ArrayStringFilter_LengthLt)(nil),
+		(*ArrayStringFilter_LengthLte)(nil),
+		(*ArrayStringFilter_IsEmpty)(nil),
+		(*ArrayStringFilter_IsNotEmpty)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_common_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   31,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

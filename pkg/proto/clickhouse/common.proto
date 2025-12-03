@@ -320,6 +320,86 @@ message MapStringInt64Filter {
   }
 }
 
+// ArrayUInt32Filter represents filtering options for Array(UInt32) columns
+message ArrayUInt32Filter {
+  oneof filter {
+    uint32 has = 1;                         // has(arr, value) - array contains value
+    UInt32List has_all = 2;                 // hasAll(arr, [v1, v2]) - contains all values
+    UInt32List has_any = 3;                 // hasAny(arr, [v1, v2]) - contains any value
+    uint32 length_eq = 4;                   // length(arr) = n
+    uint32 length_gt = 5;                   // length(arr) > n
+    uint32 length_gte = 6;                  // length(arr) >= n
+    uint32 length_lt = 7;                   // length(arr) < n
+    uint32 length_lte = 8;                  // length(arr) <= n
+    google.protobuf.Empty is_empty = 9;     // empty(arr)
+    google.protobuf.Empty is_not_empty = 10; // notEmpty(arr)
+  }
+}
+
+// ArrayUInt64Filter represents filtering options for Array(UInt64) columns
+message ArrayUInt64Filter {
+  oneof filter {
+    uint64 has = 1;                         // has(arr, value) - array contains value
+    UInt64List has_all = 2;                 // hasAll(arr, [v1, v2]) - contains all values
+    UInt64List has_any = 3;                 // hasAny(arr, [v1, v2]) - contains any value
+    uint32 length_eq = 4;                   // length(arr) = n
+    uint32 length_gt = 5;                   // length(arr) > n
+    uint32 length_gte = 6;                  // length(arr) >= n
+    uint32 length_lt = 7;                   // length(arr) < n
+    uint32 length_lte = 8;                  // length(arr) <= n
+    google.protobuf.Empty is_empty = 9;     // empty(arr)
+    google.protobuf.Empty is_not_empty = 10; // notEmpty(arr)
+  }
+}
+
+// ArrayInt32Filter represents filtering options for Array(Int32) columns
+message ArrayInt32Filter {
+  oneof filter {
+    int32 has = 1;                          // has(arr, value) - array contains value
+    Int32List has_all = 2;                  // hasAll(arr, [v1, v2]) - contains all values
+    Int32List has_any = 3;                  // hasAny(arr, [v1, v2]) - contains any value
+    uint32 length_eq = 4;                   // length(arr) = n
+    uint32 length_gt = 5;                   // length(arr) > n
+    uint32 length_gte = 6;                  // length(arr) >= n
+    uint32 length_lt = 7;                   // length(arr) < n
+    uint32 length_lte = 8;                  // length(arr) <= n
+    google.protobuf.Empty is_empty = 9;     // empty(arr)
+    google.protobuf.Empty is_not_empty = 10; // notEmpty(arr)
+  }
+}
+
+// ArrayInt64Filter represents filtering options for Array(Int64) columns
+message ArrayInt64Filter {
+  oneof filter {
+    int64 has = 1;                          // has(arr, value) - array contains value
+    Int64List has_all = 2;                  // hasAll(arr, [v1, v2]) - contains all values
+    Int64List has_any = 3;                  // hasAny(arr, [v1, v2]) - contains any value
+    uint32 length_eq = 4;                   // length(arr) = n
+    uint32 length_gt = 5;                   // length(arr) > n
+    uint32 length_gte = 6;                  // length(arr) >= n
+    uint32 length_lt = 7;                   // length(arr) < n
+    uint32 length_lte = 8;                  // length(arr) <= n
+    google.protobuf.Empty is_empty = 9;     // empty(arr)
+    google.protobuf.Empty is_not_empty = 10; // notEmpty(arr)
+  }
+}
+
+// ArrayStringFilter represents filtering options for Array(String) columns
+message ArrayStringFilter {
+  oneof filter {
+    string has = 1;                         // has(arr, value) - array contains value
+    StringList has_all = 2;                 // hasAll(arr, [v1, v2]) - contains all values
+    StringList has_any = 3;                 // hasAny(arr, [v1, v2]) - contains any value
+    uint32 length_eq = 4;                   // length(arr) = n
+    uint32 length_gt = 5;                   // length(arr) > n
+    uint32 length_gte = 6;                  // length(arr) >= n
+    uint32 length_lt = 7;                   // length(arr) < n
+    uint32 length_lte = 8;                  // length(arr) <= n
+    google.protobuf.Empty is_empty = 9;     // empty(arr)
+    google.protobuf.Empty is_not_empty = 10; // notEmpty(arr)
+  }
+}
+
 // SortOrder defines the order of results
 enum SortOrder {
   ASC = 0;

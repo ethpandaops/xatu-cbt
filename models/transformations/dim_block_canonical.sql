@@ -71,6 +71,7 @@ post_merge_beacon_blocks AS (
 )
 
 SELECT
+  fromUnixTimestamp({{ .task.start }}) as updated_date_time,
   ex.block_number AS execution_block_number,
   ex.block_hash AS execution_block_hash,
   ex.block_date_time AS execution_block_date_time,

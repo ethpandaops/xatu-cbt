@@ -119,8 +119,68 @@ func BuildListDimNodeQuery(req *ListDimNodeRequest, options ...QueryOption) (SQL
 	}
 
 	// Add filter for column: groups
+	if req.Groups != nil {
+		switch filter := req.Groups.Filter.(type) {
+		case *ArrayStringFilter_Has:
+			qb.AddArrayHasCondition("groups", filter.Has)
+		case *ArrayStringFilter_HasAll:
+			if len(filter.HasAll.Values) > 0 {
+				qb.AddArrayHasAllCondition("groups", StringSliceToInterface(filter.HasAll.Values))
+			}
+		case *ArrayStringFilter_HasAny:
+			if len(filter.HasAny.Values) > 0 {
+				qb.AddArrayHasAnyCondition("groups", StringSliceToInterface(filter.HasAny.Values))
+			}
+		case *ArrayStringFilter_LengthEq:
+			qb.AddArrayLengthCondition("groups", "=", filter.LengthEq)
+		case *ArrayStringFilter_LengthGt:
+			qb.AddArrayLengthCondition("groups", ">", filter.LengthGt)
+		case *ArrayStringFilter_LengthGte:
+			qb.AddArrayLengthCondition("groups", ">=", filter.LengthGte)
+		case *ArrayStringFilter_LengthLt:
+			qb.AddArrayLengthCondition("groups", "<", filter.LengthLt)
+		case *ArrayStringFilter_LengthLte:
+			qb.AddArrayLengthCondition("groups", "<=", filter.LengthLte)
+		case *ArrayStringFilter_IsEmpty:
+			qb.AddArrayIsEmptyCondition("groups")
+		case *ArrayStringFilter_IsNotEmpty:
+			qb.AddArrayIsNotEmptyCondition("groups")
+		default:
+			// Unsupported filter type
+		}
+	}
 
 	// Add filter for column: tags
+	if req.Tags != nil {
+		switch filter := req.Tags.Filter.(type) {
+		case *ArrayStringFilter_Has:
+			qb.AddArrayHasCondition("tags", filter.Has)
+		case *ArrayStringFilter_HasAll:
+			if len(filter.HasAll.Values) > 0 {
+				qb.AddArrayHasAllCondition("tags", StringSliceToInterface(filter.HasAll.Values))
+			}
+		case *ArrayStringFilter_HasAny:
+			if len(filter.HasAny.Values) > 0 {
+				qb.AddArrayHasAnyCondition("tags", StringSliceToInterface(filter.HasAny.Values))
+			}
+		case *ArrayStringFilter_LengthEq:
+			qb.AddArrayLengthCondition("tags", "=", filter.LengthEq)
+		case *ArrayStringFilter_LengthGt:
+			qb.AddArrayLengthCondition("tags", ">", filter.LengthGt)
+		case *ArrayStringFilter_LengthGte:
+			qb.AddArrayLengthCondition("tags", ">=", filter.LengthGte)
+		case *ArrayStringFilter_LengthLt:
+			qb.AddArrayLengthCondition("tags", "<", filter.LengthLt)
+		case *ArrayStringFilter_LengthLte:
+			qb.AddArrayLengthCondition("tags", "<=", filter.LengthLte)
+		case *ArrayStringFilter_IsEmpty:
+			qb.AddArrayIsEmptyCondition("tags")
+		case *ArrayStringFilter_IsNotEmpty:
+			qb.AddArrayIsNotEmptyCondition("tags")
+		default:
+			// Unsupported filter type
+		}
+	}
 
 	// Add filter for column: attributes
 	if req.Attributes != nil {
