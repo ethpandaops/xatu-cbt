@@ -5,7 +5,7 @@ interval:
   type: block
   max: 100000
 schedules:
-  forwardfill: "@every 1m"
+  forwardfill: "@every 5m"
   backfill: "@every 1m"
 tags:
   - daily

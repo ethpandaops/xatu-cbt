@@ -6,7 +6,7 @@ interval:
   max: 50000
 schedules:
   forwardfill: "@every 5m"
-  backfill: "@every 5m"
+  backfill: "@every 1m"
 tags:
   - monthly
   - execution
