@@ -46,6 +46,44 @@ func BuildListDimBlockCanonicalQuery(req *ListDimBlockCanonicalRequest, options 
 		// Unsupported filter type
 	}
 
+	// Add filter for column: updated_date_time
+	if req.UpdatedDateTime != nil {
+		switch filter := req.UpdatedDateTime.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("updated_date_time", "=", DateTimeValue{filter.Eq})
+		case *UInt32Filter_Ne:
+			qb.AddCondition("updated_date_time", "!=", DateTimeValue{filter.Ne})
+		case *UInt32Filter_Lt:
+			qb.AddCondition("updated_date_time", "<", DateTimeValue{filter.Lt})
+		case *UInt32Filter_Lte:
+			qb.AddCondition("updated_date_time", "<=", DateTimeValue{filter.Lte})
+		case *UInt32Filter_Gt:
+			qb.AddCondition("updated_date_time", ">", DateTimeValue{filter.Gt})
+		case *UInt32Filter_Gte:
+			qb.AddCondition("updated_date_time", ">=", DateTimeValue{filter.Gte})
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("updated_date_time", DateTimeValue{filter.Between.Min}, DateTimeValue{filter.Between.Max.GetValue()})
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				converted := make([]interface{}, len(filter.In.Values))
+				for i, v := range filter.In.Values {
+					converted[i] = DateTimeValue{v}
+				}
+				qb.AddInCondition("updated_date_time", converted)
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				converted := make([]interface{}, len(filter.NotIn.Values))
+				for i, v := range filter.NotIn.Values {
+					converted[i] = DateTimeValue{v}
+				}
+				qb.AddNotInCondition("updated_date_time", converted)
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: execution_block_hash
 	if req.ExecutionBlockHash != nil {
 		switch filter := req.ExecutionBlockHash.Filter.(type) {
@@ -427,7 +465,7 @@ func BuildListDimBlockCanonicalQuery(req *ListDimBlockCanonicalRequest, options 
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"block_number", "execution_block_hash", "block_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "beacon_block_version", "beacon_block_root", "beacon_parent_root", "beacon_state_root"}
+		validFields := []string{"updated_date_time", "block_number", "execution_block_hash", "block_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "beacon_block_version", "beacon_block_root", "beacon_parent_root", "beacon_state_root"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -439,7 +477,7 @@ func BuildListDimBlockCanonicalQuery(req *ListDimBlockCanonicalRequest, options 
 	}
 
 	// Build column list
-	columns := []string{"block_number", "NULLIF(`execution_block_hash`, repeat('\x00', 66)) AS `execution_block_hash`", "toUnixTimestamp(`block_date_time`) AS `block_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "beacon_block_version", "NULLIF(`beacon_block_root`, repeat('\x00', 66)) AS `beacon_block_root`", "NULLIF(`beacon_parent_root`, repeat('\x00', 66)) AS `beacon_parent_root`", "NULLIF(`beacon_state_root`, repeat('\x00', 66)) AS `beacon_state_root`"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`execution_block_hash`, repeat('\x00', 66)) AS `execution_block_hash`", "toUnixTimestamp(`block_date_time`) AS `block_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "beacon_block_version", "NULLIF(`beacon_block_root`, repeat('\x00', 66)) AS `beacon_block_root`", "NULLIF(`beacon_parent_root`, repeat('\x00', 66)) AS `beacon_parent_root`", "NULLIF(`beacon_state_root`, repeat('\x00', 66)) AS `beacon_state_root`"}
 
 	return BuildParameterizedQuery("dim_block_canonical", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -459,7 +497,7 @@ func BuildGetDimBlockCanonicalQuery(req *GetDimBlockCanonicalRequest, options ..
 	orderByClause := " ORDER BY block_number"
 
 	// Build column list
-	columns := []string{"block_number", "NULLIF(`execution_block_hash`, repeat('\x00', 66)) AS `execution_block_hash`", "toUnixTimestamp(`block_date_time`) AS `block_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "beacon_block_version", "NULLIF(`beacon_block_root`, repeat('\x00', 66)) AS `beacon_block_root`", "NULLIF(`beacon_parent_root`, repeat('\x00', 66)) AS `beacon_parent_root`", "NULLIF(`beacon_state_root`, repeat('\x00', 66)) AS `beacon_state_root`"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`execution_block_hash`, repeat('\x00', 66)) AS `execution_block_hash`", "toUnixTimestamp(`block_date_time`) AS `block_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "beacon_block_version", "NULLIF(`beacon_block_root`, repeat('\x00', 66)) AS `beacon_block_root`", "NULLIF(`beacon_parent_root`, repeat('\x00', 66)) AS `beacon_parent_root`", "NULLIF(`beacon_state_root`, repeat('\x00', 66)) AS `beacon_state_root`"}
 
 	// Return single record
 	return BuildParameterizedQuery("dim_block_canonical", columns, qb, orderByClause, 1, 0, options...)

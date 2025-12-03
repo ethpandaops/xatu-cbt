@@ -1,11 +1,11 @@
 ---
-table: libp2p_rpc_data_column_custody_probe
+table: libp2p_synthetic_heartbeat
 cache:
   incremental_scan_interval: 5s
   full_scan_interval: 24h
 interval:
   type: slot
-lag: 36
+lag: 12
 ---
 SELECT
     {{ if .cache.is_incremental_scan }}

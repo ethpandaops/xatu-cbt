@@ -221,6 +221,36 @@ func BuildListIntBeaconCommitteeHeadQuery(req *ListIntBeaconCommitteeHeadRequest
 	}
 
 	// Add filter for column: validators
+	if req.Validators != nil {
+		switch filter := req.Validators.Filter.(type) {
+		case *ArrayUInt32Filter_Has:
+			qb.AddArrayHasCondition("validators", filter.Has)
+		case *ArrayUInt32Filter_HasAll:
+			if len(filter.HasAll.Values) > 0 {
+				qb.AddArrayHasAllCondition("validators", UInt32SliceToInterface(filter.HasAll.Values))
+			}
+		case *ArrayUInt32Filter_HasAny:
+			if len(filter.HasAny.Values) > 0 {
+				qb.AddArrayHasAnyCondition("validators", UInt32SliceToInterface(filter.HasAny.Values))
+			}
+		case *ArrayUInt32Filter_LengthEq:
+			qb.AddArrayLengthCondition("validators", "=", filter.LengthEq)
+		case *ArrayUInt32Filter_LengthGt:
+			qb.AddArrayLengthCondition("validators", ">", filter.LengthGt)
+		case *ArrayUInt32Filter_LengthGte:
+			qb.AddArrayLengthCondition("validators", ">=", filter.LengthGte)
+		case *ArrayUInt32Filter_LengthLt:
+			qb.AddArrayLengthCondition("validators", "<", filter.LengthLt)
+		case *ArrayUInt32Filter_LengthLte:
+			qb.AddArrayLengthCondition("validators", "<=", filter.LengthLte)
+		case *ArrayUInt32Filter_IsEmpty:
+			qb.AddArrayIsEmptyCondition("validators")
+		case *ArrayUInt32Filter_IsNotEmpty:
+			qb.AddArrayIsNotEmptyCondition("validators")
+		default:
+			// Unsupported filter type
+		}
+	}
 
 	// Handle pagination per AIP-132
 	// Validate page size
