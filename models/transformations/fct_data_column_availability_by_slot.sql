@@ -13,34 +13,40 @@ tags:
   - peerdas
   - custody
 dependencies:
-  - "{{external}}.libp2p_rpc_data_column_custody_probe"
+  - "{{transformation}}.int_custody_probe_order_by_slot"
   - "{{external}}.libp2p_gossipsub_data_column_sidecar"
 ---
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH combined_sources AS (
     -- Active custody probes (explicit results)
     -- These are direct RPC probes checking if peers have custody of specific columns
+    -- Using int_custody_probe_order_by_slot which is ordered by slot_start_date_time for better query performance
     SELECT
         'custody_probe' AS source,
         slot,
         slot_start_date_time,
-        epoch,
-        epoch_start_date_time,
-        wallclock_request_slot,
-        wallclock_request_slot_start_date_time,
-        wallclock_request_epoch,
-        wallclock_request_epoch_start_date_time,
-        column_index,
-        column_rows_count AS blob_count_raw,
-        beacon_block_root,
+        -- Calculate epoch from slot (32 slots per epoch)
+        toUInt32(slot DIV 32) AS epoch,
+        toDateTime(toUnixTimestamp(slot_start_date_time) - ((slot % 32) * 12)) AS epoch_start_date_time,
+        -- Use slot values for wallclock (probe is at slot time)
+        slot AS wallclock_request_slot,
+        slot_start_date_time AS wallclock_request_slot_start_date_time,
+        toUInt32(slot DIV 32) AS wallclock_request_epoch,
+        toDateTime(toUnixTimestamp(slot_start_date_time) - ((slot % 32) * 12)) AS wallclock_request_epoch_start_date_time,
+        -- Expand column_indices array to individual rows
+        arrayJoin(column_indices) AS column_index,
+        -- Use blob_submitters array length as blob count
+        toUInt16(length(blob_submitters)) AS blob_count_raw,
+        -- beacon_block_root not available in int_custody_probe_order_by_slot
+        -- Using empty string - beacon_block_root tracking comes from gossipsub source
+        '' AS beacon_block_root,
         result,
         response_time_ms,
         peer_id_unique_key,
-        meta_client_name,
+        username AS meta_client_name,
         meta_client_implementation
-    FROM {{ index .dep "{{external}}" "libp2p_rpc_data_column_custody_probe" "helpers" "from" }} FINAL
+    FROM {{ index .dep "{{transformation}}" "int_custody_probe_order_by_slot" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-      AND meta_network_name = '{{ .env.NETWORK }}'
 
     UNION ALL
 
@@ -83,9 +89,11 @@ SELECT
     argMin(wallclock_request_epoch_start_date_time, combined_sources.wallclock_request_slot_start_date_time) AS wallclock_request_epoch_start_date_time,
     column_index,
     -- Pick beacon_block_root from earliest observation (handles reorgs/forks)
-    argMin(beacon_block_root, combined_sources.wallclock_request_slot_start_date_time) AS beacon_block_root,
+    -- Use argMinIf to exclude empty roots from custody_probe source
+    argMinIf(beacon_block_root, combined_sources.wallclock_request_slot_start_date_time, beacon_block_root != '') AS beacon_block_root,
     -- Track number of unique block roots (>1 indicates reorg/fork)
-    uniqExact(combined_sources.beacon_block_root) AS beacon_block_root_variants,
+    -- Exclude empty strings from variant count (custody_probe doesn't have beacon_block_root)
+    uniqExactIf(combined_sources.beacon_block_root, combined_sources.beacon_block_root != '') AS beacon_block_root_variants,
     max(blob_count_raw) AS blob_count,
     countIf(result = 'success') AS success_count,
     countIf(result = 'failure') AS failure_count,
