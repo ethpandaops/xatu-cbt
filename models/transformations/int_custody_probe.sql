@@ -69,14 +69,22 @@ beacon_blocks AS (
         AND slot_start_date_time GLOBAL IN (SELECT slot_start_date_time FROM probe_slot_times)
 ),
 
--- Step 4: Get blob submitters for the block numbers we need
+-- Step 4: Get blob submitters for the block numbers we need, ordered by transaction_index
+-- with names repeated for each versioned_hash (one name per blob)
 blob_submitters AS (
     SELECT
         block_number,
-        name
+        arrayFlatten(
+            arrayMap(x -> x.2,
+                arraySort(x -> x.1,
+                    groupArray(tuple(transaction_index, arrayWithConstant(length(versioned_hashes), name)))
+                )
+            )
+        ) AS blob_submitters_ordered
     FROM {{ index .dep "{{transformation}}" "dim_block_blob_submitter" "helpers" "from" }} FINAL
     WHERE
         block_number GLOBAL IN (SELECT execution_payload_block_number FROM beacon_blocks)
+    GROUP BY block_number
 ),
 
 -- Step 5: Get heartbeat data for peer metadata
@@ -114,8 +122,8 @@ enriched_probes AS (
         p.result AS result,
         p.response_time_ms AS response_time_ms,
         p.error AS error,
-        -- Blob submitter name
-        COALESCE(bs.name, '') AS blob_submitter_name,
+        -- Blob submitters (ordered array with one name per blob)
+        COALESCE(bs.blob_submitters_ordered, []) AS blob_submitters,
         -- Client classification
         CASE
             WHEN startsWith(p.meta_client_name, 'pub-') THEN splitByChar('/', p.meta_client_name)[2]
@@ -177,7 +185,7 @@ SELECT
     result,
     error,
     groupUniqArray(column_index) AS column_indices,
-    arrayFilter(x -> x != '', groupUniqArray(blob_submitter_name)) AS blob_submitters,
+    any(blob_submitters) AS blob_submitters,
     any(response_time_ms) AS response_time_ms,
     any(username) AS username,
     any(node_id) AS node_id,
