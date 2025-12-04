@@ -18,8 +18,11 @@ FROM {{ .self.helpers.from }}
 WHERE 
     meta_network_name = '{{ .env.NETWORK }}'
 
-{{ if .cache.is_incremental_scan }}
-  AND block_number >= {{ .cache.previous_max }}
-{{ else }}
-  AND block_number >= {{ default "0" .env.EXTERNAL_MODEL_MIN_BLOCK }}
-{{ end }}
+    -- previous_max if incremental scan and is set, otherwise default/env
+    {{- $bn := default "0" .env.EXTERNAL_MODEL_MIN_BLOCK -}}
+    {{- if .cache.is_incremental_scan -}}
+      {{- if .cache.previous_max -}}
+        {{- $bn = .cache.previous_max -}}
+      {{- end -}}
+    {{- end }}
+    AND block_number >= {{ $bn }}
