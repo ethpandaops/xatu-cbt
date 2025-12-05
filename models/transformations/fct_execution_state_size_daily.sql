@@ -4,7 +4,9 @@ type: incremental
 interval:
   type: block
   max: 100000
-schedule: "@every 5m"
+schedules:
+  forwardfill: "@every 5m"
+  backfill: "@every 1m"
 tags:
   - daily
   - execution
