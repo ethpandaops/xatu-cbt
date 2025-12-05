@@ -84,120 +84,30 @@ func BuildListFctExecutionStateSizeMonthlyQuery(req *ListFctExecutionStateSizeMo
 		}
 	}
 
-	// Add filter for column: day_count
-	if req.DayCount != nil {
-		switch filter := req.DayCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("day_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("day_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("day_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("day_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("day_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("day_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("day_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("day_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("day_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: min_block_number
-	if req.MinBlockNumber != nil {
-		switch filter := req.MinBlockNumber.Filter.(type) {
+	// Add filter for column: account_count
+	if req.AccountCount != nil {
+		switch filter := req.AccountCount.Filter.(type) {
 		case *UInt64Filter_Eq:
-			qb.AddCondition("min_block_number", "=", filter.Eq)
+			qb.AddCondition("account_count", "=", filter.Eq)
 		case *UInt64Filter_Ne:
-			qb.AddCondition("min_block_number", "!=", filter.Ne)
+			qb.AddCondition("account_count", "!=", filter.Ne)
 		case *UInt64Filter_Lt:
-			qb.AddCondition("min_block_number", "<", filter.Lt)
+			qb.AddCondition("account_count", "<", filter.Lt)
 		case *UInt64Filter_Lte:
-			qb.AddCondition("min_block_number", "<=", filter.Lte)
+			qb.AddCondition("account_count", "<=", filter.Lte)
 		case *UInt64Filter_Gt:
-			qb.AddCondition("min_block_number", ">", filter.Gt)
+			qb.AddCondition("account_count", ">", filter.Gt)
 		case *UInt64Filter_Gte:
-			qb.AddCondition("min_block_number", ">=", filter.Gte)
+			qb.AddCondition("account_count", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("min_block_number", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("account_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("min_block_number", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("account_count", UInt64SliceToInterface(filter.In.Values))
 			}
 		case *UInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("min_block_number", UInt64SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: max_block_number
-	if req.MaxBlockNumber != nil {
-		switch filter := req.MaxBlockNumber.Filter.(type) {
-		case *UInt64Filter_Eq:
-			qb.AddCondition("max_block_number", "=", filter.Eq)
-		case *UInt64Filter_Ne:
-			qb.AddCondition("max_block_number", "!=", filter.Ne)
-		case *UInt64Filter_Lt:
-			qb.AddCondition("max_block_number", "<", filter.Lt)
-		case *UInt64Filter_Lte:
-			qb.AddCondition("max_block_number", "<=", filter.Lte)
-		case *UInt64Filter_Gt:
-			qb.AddCondition("max_block_number", ">", filter.Gt)
-		case *UInt64Filter_Gte:
-			qb.AddCondition("max_block_number", ">=", filter.Gte)
-		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("max_block_number", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt64Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("max_block_number", UInt64SliceToInterface(filter.In.Values))
-			}
-		case *UInt64Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("max_block_number", UInt64SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: accounts
-	if req.Accounts != nil {
-		switch filter := req.Accounts.Filter.(type) {
-		case *UInt64Filter_Eq:
-			qb.AddCondition("accounts", "=", filter.Eq)
-		case *UInt64Filter_Ne:
-			qb.AddCondition("accounts", "!=", filter.Ne)
-		case *UInt64Filter_Lt:
-			qb.AddCondition("accounts", "<", filter.Lt)
-		case *UInt64Filter_Lte:
-			qb.AddCondition("accounts", "<=", filter.Lte)
-		case *UInt64Filter_Gt:
-			qb.AddCondition("accounts", ">", filter.Gt)
-		case *UInt64Filter_Gte:
-			qb.AddCondition("accounts", ">=", filter.Gte)
-		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("accounts", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt64Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("accounts", UInt64SliceToInterface(filter.In.Values))
-			}
-		case *UInt64Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("accounts", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("account_count", UInt64SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -354,30 +264,30 @@ func BuildListFctExecutionStateSizeMonthlyQuery(req *ListFctExecutionStateSizeMo
 		}
 	}
 
-	// Add filter for column: storages
-	if req.Storages != nil {
-		switch filter := req.Storages.Filter.(type) {
+	// Add filter for column: storage_count
+	if req.StorageCount != nil {
+		switch filter := req.StorageCount.Filter.(type) {
 		case *UInt64Filter_Eq:
-			qb.AddCondition("storages", "=", filter.Eq)
+			qb.AddCondition("storage_count", "=", filter.Eq)
 		case *UInt64Filter_Ne:
-			qb.AddCondition("storages", "!=", filter.Ne)
+			qb.AddCondition("storage_count", "!=", filter.Ne)
 		case *UInt64Filter_Lt:
-			qb.AddCondition("storages", "<", filter.Lt)
+			qb.AddCondition("storage_count", "<", filter.Lt)
 		case *UInt64Filter_Lte:
-			qb.AddCondition("storages", "<=", filter.Lte)
+			qb.AddCondition("storage_count", "<=", filter.Lte)
 		case *UInt64Filter_Gt:
-			qb.AddCondition("storages", ">", filter.Gt)
+			qb.AddCondition("storage_count", ">", filter.Gt)
 		case *UInt64Filter_Gte:
-			qb.AddCondition("storages", ">=", filter.Gte)
+			qb.AddCondition("storage_count", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("storages", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("storage_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("storages", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("storage_count", UInt64SliceToInterface(filter.In.Values))
 			}
 		case *UInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("storages", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("storage_count", UInt64SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -474,126 +384,6 @@ func BuildListFctExecutionStateSizeMonthlyQuery(req *ListFctExecutionStateSizeMo
 		}
 	}
 
-	// Add filter for column: accounts_delta
-	if req.AccountsDelta != nil {
-		switch filter := req.AccountsDelta.Filter.(type) {
-		case *Int64Filter_Eq:
-			qb.AddCondition("accounts_delta", "=", filter.Eq)
-		case *Int64Filter_Ne:
-			qb.AddCondition("accounts_delta", "!=", filter.Ne)
-		case *Int64Filter_Lt:
-			qb.AddCondition("accounts_delta", "<", filter.Lt)
-		case *Int64Filter_Lte:
-			qb.AddCondition("accounts_delta", "<=", filter.Lte)
-		case *Int64Filter_Gt:
-			qb.AddCondition("accounts_delta", ">", filter.Gt)
-		case *Int64Filter_Gte:
-			qb.AddCondition("accounts_delta", ">=", filter.Gte)
-		case *Int64Filter_Between:
-			qb.AddBetweenCondition("accounts_delta", filter.Between.Min, filter.Between.Max.GetValue())
-		case *Int64Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("accounts_delta", Int64SliceToInterface(filter.In.Values))
-			}
-		case *Int64Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("accounts_delta", Int64SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: account_bytes_delta
-	if req.AccountBytesDelta != nil {
-		switch filter := req.AccountBytesDelta.Filter.(type) {
-		case *Int64Filter_Eq:
-			qb.AddCondition("account_bytes_delta", "=", filter.Eq)
-		case *Int64Filter_Ne:
-			qb.AddCondition("account_bytes_delta", "!=", filter.Ne)
-		case *Int64Filter_Lt:
-			qb.AddCondition("account_bytes_delta", "<", filter.Lt)
-		case *Int64Filter_Lte:
-			qb.AddCondition("account_bytes_delta", "<=", filter.Lte)
-		case *Int64Filter_Gt:
-			qb.AddCondition("account_bytes_delta", ">", filter.Gt)
-		case *Int64Filter_Gte:
-			qb.AddCondition("account_bytes_delta", ">=", filter.Gte)
-		case *Int64Filter_Between:
-			qb.AddBetweenCondition("account_bytes_delta", filter.Between.Min, filter.Between.Max.GetValue())
-		case *Int64Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("account_bytes_delta", Int64SliceToInterface(filter.In.Values))
-			}
-		case *Int64Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("account_bytes_delta", Int64SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: storage_bytes_delta
-	if req.StorageBytesDelta != nil {
-		switch filter := req.StorageBytesDelta.Filter.(type) {
-		case *Int64Filter_Eq:
-			qb.AddCondition("storage_bytes_delta", "=", filter.Eq)
-		case *Int64Filter_Ne:
-			qb.AddCondition("storage_bytes_delta", "!=", filter.Ne)
-		case *Int64Filter_Lt:
-			qb.AddCondition("storage_bytes_delta", "<", filter.Lt)
-		case *Int64Filter_Lte:
-			qb.AddCondition("storage_bytes_delta", "<=", filter.Lte)
-		case *Int64Filter_Gt:
-			qb.AddCondition("storage_bytes_delta", ">", filter.Gt)
-		case *Int64Filter_Gte:
-			qb.AddCondition("storage_bytes_delta", ">=", filter.Gte)
-		case *Int64Filter_Between:
-			qb.AddBetweenCondition("storage_bytes_delta", filter.Between.Min, filter.Between.Max.GetValue())
-		case *Int64Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("storage_bytes_delta", Int64SliceToInterface(filter.In.Values))
-			}
-		case *Int64Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("storage_bytes_delta", Int64SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: contract_code_bytes_delta
-	if req.ContractCodeBytesDelta != nil {
-		switch filter := req.ContractCodeBytesDelta.Filter.(type) {
-		case *Int64Filter_Eq:
-			qb.AddCondition("contract_code_bytes_delta", "=", filter.Eq)
-		case *Int64Filter_Ne:
-			qb.AddCondition("contract_code_bytes_delta", "!=", filter.Ne)
-		case *Int64Filter_Lt:
-			qb.AddCondition("contract_code_bytes_delta", "<", filter.Lt)
-		case *Int64Filter_Lte:
-			qb.AddCondition("contract_code_bytes_delta", "<=", filter.Lte)
-		case *Int64Filter_Gt:
-			qb.AddCondition("contract_code_bytes_delta", ">", filter.Gt)
-		case *Int64Filter_Gte:
-			qb.AddCondition("contract_code_bytes_delta", ">=", filter.Gte)
-		case *Int64Filter_Between:
-			qb.AddBetweenCondition("contract_code_bytes_delta", filter.Between.Min, filter.Between.Max.GetValue())
-		case *Int64Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("contract_code_bytes_delta", Int64SliceToInterface(filter.In.Values))
-			}
-		case *Int64Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("contract_code_bytes_delta", Int64SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
 	// Add filter for column: total_bytes
 	if req.TotalBytes != nil {
 		switch filter := req.TotalBytes.Filter.(type) {
@@ -649,7 +439,7 @@ func BuildListFctExecutionStateSizeMonthlyQuery(req *ListFctExecutionStateSizeMo
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "month", "day_count", "min_block_number", "max_block_number", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "accounts_delta", "account_bytes_delta", "storage_bytes_delta", "contract_code_bytes_delta", "total_bytes"}
+		validFields := []string{"updated_date_time", "month", "account_count", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storage_count", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -661,7 +451,7 @@ func BuildListFctExecutionStateSizeMonthlyQuery(req *ListFctExecutionStateSizeMo
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`month`) AS `month`", "day_count", "min_block_number", "max_block_number", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "accounts_delta", "account_bytes_delta", "storage_bytes_delta", "contract_code_bytes_delta", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`month`) AS `month`", "account_count", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storage_count", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	return BuildParameterizedQuery("fct_execution_state_size_monthly", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -681,7 +471,7 @@ func BuildGetFctExecutionStateSizeMonthlyQuery(req *GetFctExecutionStateSizeMont
 	orderByClause := " ORDER BY month"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`month`) AS `month`", "day_count", "min_block_number", "max_block_number", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "accounts_delta", "account_bytes_delta", "storage_bytes_delta", "contract_code_bytes_delta", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`month`) AS `month`", "account_count", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storage_count", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_execution_state_size_monthly", columns, qb, orderByClause, 1, 0, options...)

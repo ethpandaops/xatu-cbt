@@ -15,42 +15,28 @@ message FctExecutionStateSizeHourly {
   uint32 updated_date_time = 11;
   // Start of the hour period
   uint32 hour_start_date_time = 12;
-  // Number of measurements in this hour
-  uint32 measurement_count = 13;
-  // Minimum block number in this hour
-  uint64 min_block_number = 14;
-  // Maximum block number in this hour
-  uint64 max_block_number = 15;
   // Total accounts at end of hour
-  uint64 accounts = 16;
+  uint64 account_count = 13;
   // Account bytes at end of hour
-  uint64 account_bytes = 17;
+  uint64 account_bytes = 14;
   // Account trie nodes at end of hour
-  uint64 account_trienodes = 18;
+  uint64 account_trienodes = 15;
   // Account trie node bytes at end of hour
-  uint64 account_trienode_bytes = 19;
+  uint64 account_trienode_bytes = 16;
   // Contract codes at end of hour
-  uint64 contract_codes = 20;
+  uint64 contract_codes = 17;
   // Contract code bytes at end of hour
-  uint64 contract_code_bytes = 21;
+  uint64 contract_code_bytes = 18;
   // Storage slots at end of hour
-  uint64 storages = 22;
+  uint64 storage_count = 19;
   // Storage bytes at end of hour
-  uint64 storage_bytes = 23;
+  uint64 storage_bytes = 20;
   // Storage trie nodes at end of hour
-  uint64 storage_trienodes = 24;
+  uint64 storage_trienodes = 21;
   // Storage trie node bytes at end of hour
-  uint64 storage_trienode_bytes = 25;
-  // Account count change within the hour
-  int64 accounts_delta = 26;
-  // Account bytes change within the hour
-  int64 account_bytes_delta = 27;
-  // Storage bytes change within the hour
-  int64 storage_bytes_delta = 28;
-  // Contract code bytes change within the hour
-  int64 contract_code_bytes_delta = 29;
+  uint64 storage_trienode_bytes = 22;
   // Total state size in bytes
-  uint64 total_bytes = 30;
+  uint64 total_bytes = 23;
 }
 
 // Request for listing fct_execution_state_size_hourly records
@@ -60,54 +46,40 @@ message ListFctExecutionStateSizeHourlyRequest {
 
   // Filter by updated_date_time - Timestamp when the record was last updated (optional)
   UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by measurement_count - Number of measurements in this hour (optional)
-  UInt32Filter measurement_count = 3 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by min_block_number - Minimum block number in this hour (optional)
-  UInt64Filter min_block_number = 4 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by max_block_number - Maximum block number in this hour (optional)
-  UInt64Filter max_block_number = 5 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by accounts - Total accounts at end of hour (optional)
-  UInt64Filter accounts = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by account_count - Total accounts at end of hour (optional)
+  UInt64Filter account_count = 3 [(google.api.field_behavior) = OPTIONAL];
   // Filter by account_bytes - Account bytes at end of hour (optional)
-  UInt64Filter account_bytes = 7 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter account_bytes = 4 [(google.api.field_behavior) = OPTIONAL];
   // Filter by account_trienodes - Account trie nodes at end of hour (optional)
-  UInt64Filter account_trienodes = 8 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter account_trienodes = 5 [(google.api.field_behavior) = OPTIONAL];
   // Filter by account_trienode_bytes - Account trie node bytes at end of hour (optional)
-  UInt64Filter account_trienode_bytes = 9 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter account_trienode_bytes = 6 [(google.api.field_behavior) = OPTIONAL];
   // Filter by contract_codes - Contract codes at end of hour (optional)
-  UInt64Filter contract_codes = 10 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter contract_codes = 7 [(google.api.field_behavior) = OPTIONAL];
   // Filter by contract_code_bytes - Contract code bytes at end of hour (optional)
-  UInt64Filter contract_code_bytes = 11 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by storages - Storage slots at end of hour (optional)
-  UInt64Filter storages = 12 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter contract_code_bytes = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by storage_count - Storage slots at end of hour (optional)
+  UInt64Filter storage_count = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by storage_bytes - Storage bytes at end of hour (optional)
-  UInt64Filter storage_bytes = 13 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter storage_bytes = 10 [(google.api.field_behavior) = OPTIONAL];
   // Filter by storage_trienodes - Storage trie nodes at end of hour (optional)
-  UInt64Filter storage_trienodes = 14 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter storage_trienodes = 11 [(google.api.field_behavior) = OPTIONAL];
   // Filter by storage_trienode_bytes - Storage trie node bytes at end of hour (optional)
-  UInt64Filter storage_trienode_bytes = 15 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by accounts_delta - Account count change within the hour (optional)
-  Int64Filter accounts_delta = 16 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by account_bytes_delta - Account bytes change within the hour (optional)
-  Int64Filter account_bytes_delta = 17 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by storage_bytes_delta - Storage bytes change within the hour (optional)
-  Int64Filter storage_bytes_delta = 18 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by contract_code_bytes_delta - Contract code bytes change within the hour (optional)
-  Int64Filter contract_code_bytes_delta = 19 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter storage_trienode_bytes = 12 [(google.api.field_behavior) = OPTIONAL];
   // Filter by total_bytes - Total state size in bytes (optional)
-  UInt64Filter total_bytes = 20 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter total_bytes = 13 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_execution_state_size_hourly to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 21 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 14 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctExecutionStateSizeHourly` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 22 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 15 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 23 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 16 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_execution_state_size_hourly records
