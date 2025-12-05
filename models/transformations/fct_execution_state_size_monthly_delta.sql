@@ -27,8 +27,8 @@ SELECT
     toInt64(argMax(s.storage_trienode_bytes, s.block_number)) - toInt64(argMin(s.storage_trienode_bytes, s.block_number)) AS storage_trienode_bytes_delta,
     (toInt64(argMax(s.account_trienode_bytes, s.block_number)) + toInt64(argMax(s.contract_code_bytes, s.block_number)) + toInt64(argMax(s.storage_trienode_bytes, s.block_number)))
         - (toInt64(argMin(s.account_trienode_bytes, s.block_number)) + toInt64(argMin(s.contract_code_bytes, s.block_number)) + toInt64(argMin(s.storage_trienode_bytes, s.block_number))) AS total_bytes_delta
-FROM {{ index .dep "{{external}}" "execution_state_size" "helpers" "from" }} AS s FINAL
-GLOBAL INNER JOIN {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} AS b FINAL
+FROM {{ index .dep "{{external}}" "execution_state_size" "helpers" "from" }} AS s
+GLOBAL INNER JOIN {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} AS b
     ON s.block_number = b.block_number
 WHERE b.block_date_time >= now() - INTERVAL 24 MONTH
 GROUP BY toStartOfMonth(b.block_date_time);
