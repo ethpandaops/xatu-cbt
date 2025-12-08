@@ -14,13 +14,15 @@ assertions:
           int_execution_block_by_date FINAL
       expected:
         count: 21
-    - name: Has been scheduled at least once
+    - name: Expected admin bounds
       sql: |
         SELECT
-          COUNT(*) AS count
+          MAX(position + interval) AS max,
+          MIN(position) AS min
         FROM
-          admin_cbt_scheduled FINAL
+          admin_cbt_incremental FINAL
         WHERE
           table = 'int_execution_block_by_date'
       expected:
-        count: 1
+        max: "123476"
+        min: "123456"
