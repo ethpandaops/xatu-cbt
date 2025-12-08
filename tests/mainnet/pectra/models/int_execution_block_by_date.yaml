@@ -1,0 +1,26 @@
+model: int_execution_block_by_date
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_block:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected size
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          int_execution_block_by_date FINAL
+      expected:
+        count: 20
+    - name: Has been scheduled at least once
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          admin_cbt_scheduled FINAL
+        WHERE
+          table = 'int_execution_block_by_date'
+      expected:
+        count: 1
