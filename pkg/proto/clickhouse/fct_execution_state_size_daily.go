@@ -84,30 +84,30 @@ func BuildListFctExecutionStateSizeDailyQuery(req *ListFctExecutionStateSizeDail
 		}
 	}
 
-	// Add filter for column: account_count
-	if req.AccountCount != nil {
-		switch filter := req.AccountCount.Filter.(type) {
+	// Add filter for column: accounts
+	if req.Accounts != nil {
+		switch filter := req.Accounts.Filter.(type) {
 		case *UInt64Filter_Eq:
-			qb.AddCondition("account_count", "=", filter.Eq)
+			qb.AddCondition("accounts", "=", filter.Eq)
 		case *UInt64Filter_Ne:
-			qb.AddCondition("account_count", "!=", filter.Ne)
+			qb.AddCondition("accounts", "!=", filter.Ne)
 		case *UInt64Filter_Lt:
-			qb.AddCondition("account_count", "<", filter.Lt)
+			qb.AddCondition("accounts", "<", filter.Lt)
 		case *UInt64Filter_Lte:
-			qb.AddCondition("account_count", "<=", filter.Lte)
+			qb.AddCondition("accounts", "<=", filter.Lte)
 		case *UInt64Filter_Gt:
-			qb.AddCondition("account_count", ">", filter.Gt)
+			qb.AddCondition("accounts", ">", filter.Gt)
 		case *UInt64Filter_Gte:
-			qb.AddCondition("account_count", ">=", filter.Gte)
+			qb.AddCondition("accounts", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("account_count", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("accounts", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("account_count", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("accounts", UInt64SliceToInterface(filter.In.Values))
 			}
 		case *UInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("account_count", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("accounts", UInt64SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -264,30 +264,30 @@ func BuildListFctExecutionStateSizeDailyQuery(req *ListFctExecutionStateSizeDail
 		}
 	}
 
-	// Add filter for column: storage_count
-	if req.StorageCount != nil {
-		switch filter := req.StorageCount.Filter.(type) {
+	// Add filter for column: storages
+	if req.Storages != nil {
+		switch filter := req.Storages.Filter.(type) {
 		case *UInt64Filter_Eq:
-			qb.AddCondition("storage_count", "=", filter.Eq)
+			qb.AddCondition("storages", "=", filter.Eq)
 		case *UInt64Filter_Ne:
-			qb.AddCondition("storage_count", "!=", filter.Ne)
+			qb.AddCondition("storages", "!=", filter.Ne)
 		case *UInt64Filter_Lt:
-			qb.AddCondition("storage_count", "<", filter.Lt)
+			qb.AddCondition("storages", "<", filter.Lt)
 		case *UInt64Filter_Lte:
-			qb.AddCondition("storage_count", "<=", filter.Lte)
+			qb.AddCondition("storages", "<=", filter.Lte)
 		case *UInt64Filter_Gt:
-			qb.AddCondition("storage_count", ">", filter.Gt)
+			qb.AddCondition("storages", ">", filter.Gt)
 		case *UInt64Filter_Gte:
-			qb.AddCondition("storage_count", ">=", filter.Gte)
+			qb.AddCondition("storages", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("storage_count", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("storages", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("storage_count", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("storages", UInt64SliceToInterface(filter.In.Values))
 			}
 		case *UInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("storage_count", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("storages", UInt64SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -439,7 +439,7 @@ func BuildListFctExecutionStateSizeDailyQuery(req *ListFctExecutionStateSizeDail
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "date", "account_count", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storage_count", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+		validFields := []string{"updated_date_time", "date", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -451,7 +451,7 @@ func BuildListFctExecutionStateSizeDailyQuery(req *ListFctExecutionStateSizeDail
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`date`) AS `date`", "account_count", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storage_count", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`date`) AS `date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	return BuildParameterizedQuery("fct_execution_state_size_daily", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -471,7 +471,7 @@ func BuildGetFctExecutionStateSizeDailyQuery(req *GetFctExecutionStateSizeDailyR
 	orderByClause := " ORDER BY date"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`date`) AS `date`", "account_count", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storage_count", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`date`) AS `date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_execution_state_size_daily", columns, qb, orderByClause, 1, 0, options...)

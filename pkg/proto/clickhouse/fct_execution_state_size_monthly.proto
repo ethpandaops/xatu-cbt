@@ -16,7 +16,7 @@ message FctExecutionStateSizeMonthly {
   // First day of the month
   string month = 12;
   // Total accounts at end of month
-  uint64 account_count = 13;
+  uint64 accounts = 13;
   // Account bytes at end of month
   uint64 account_bytes = 14;
   // Account trie nodes at end of month
@@ -28,7 +28,7 @@ message FctExecutionStateSizeMonthly {
   // Contract code bytes at end of month
   uint64 contract_code_bytes = 18;
   // Storage slots at end of month
-  uint64 storage_count = 19;
+  uint64 storages = 19;
   // Storage bytes at end of month
   uint64 storage_bytes = 20;
   // Storage trie nodes at end of month
@@ -46,8 +46,8 @@ message ListFctExecutionStateSizeMonthlyRequest {
 
   // Filter by updated_date_time - Timestamp when the record was last updated (optional)
   UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by account_count - Total accounts at end of month (optional)
-  UInt64Filter account_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by accounts - Total accounts at end of month (optional)
+  UInt64Filter accounts = 3 [(google.api.field_behavior) = OPTIONAL];
   // Filter by account_bytes - Account bytes at end of month (optional)
   UInt64Filter account_bytes = 4 [(google.api.field_behavior) = OPTIONAL];
   // Filter by account_trienodes - Account trie nodes at end of month (optional)
@@ -58,8 +58,8 @@ message ListFctExecutionStateSizeMonthlyRequest {
   UInt64Filter contract_codes = 7 [(google.api.field_behavior) = OPTIONAL];
   // Filter by contract_code_bytes - Contract code bytes at end of month (optional)
   UInt64Filter contract_code_bytes = 8 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by storage_count - Storage slots at end of month (optional)
-  UInt64Filter storage_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by storages - Storage slots at end of month (optional)
+  UInt64Filter storages = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by storage_bytes - Storage bytes at end of month (optional)
   UInt64Filter storage_bytes = 10 [(google.api.field_behavior) = OPTIONAL];
   // Filter by storage_trienodes - Storage trie nodes at end of month (optional)
