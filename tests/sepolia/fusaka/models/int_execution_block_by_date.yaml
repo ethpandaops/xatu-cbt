@@ -1,12 +1,9 @@
-model: dim_block_canonical
+model: int_execution_block_by_date
 network: sepolia
 spec: fusaka
 external_data:
     canonical_execution_block:
         url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_execution_block.parquet
-        network_column: meta_network_name
-    canonical_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_beacon_block.parquet
         network_column: meta_network_name
 assertions:
     - name: Expected size
@@ -14,16 +11,18 @@ assertions:
         SELECT
           COUNT(*) AS count
         FROM
-          dim_block_canonical FINAL
+          int_execution_block_by_date FINAL
       expected:
         count: 21
-    - name: Has been scheduled at least once
+    - name: Expected admin bounds
       sql: |
         SELECT
-          COUNT(*) AS count
+          MAX(position + interval) AS max,
+          MIN(position) AS min
         FROM
-          admin_cbt_scheduled FINAL
+          admin_cbt_incremental FINAL
         WHERE
-          table = 'dim_block_canonical'
+          table = 'int_execution_block_by_date'
       expected:
-        count: 1
+        max: "123476"
+        min: "123456"
