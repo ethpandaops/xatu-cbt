@@ -116,3 +116,6 @@ models:
     mev_relay_proposer_payload_delivered:
       config:
         lag: 12
+    canonical_execution_block:
+      config:
+        lag: 0

@@ -18,7 +18,7 @@ assertions:
       expected:
         expired_accounts: 0
         expired_contracts: 0
-        total_accounts: 5824
+        total_accounts: 5182
         total_contract_accounts: 10
     - name: Has been scheduled at least once
       sql: |
