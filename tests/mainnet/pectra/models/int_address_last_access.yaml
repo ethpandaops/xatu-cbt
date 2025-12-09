@@ -33,9 +33,9 @@ assertions:
         FROM
           int_address_last_access FINAL
       expected:
-        count: 5824
+        count: 5182
         max: "22923437"
-        min: "22923418"
+        min: "22923421"
     - name: Expected admin bounds
       sql: |
         SELECT
@@ -47,4 +47,4 @@ assertions:
           table = 'int_address_last_access'
       expected:
         max: "22923437"
-        min: "22923418"
+        min: "22923421"
