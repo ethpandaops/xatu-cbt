@@ -26,11 +26,11 @@ WITH payloads AS (
         epoch_start_date_time,
         block_hash,
         duration_ms,
-        status
+        status,
+        positionCaseInsensitive(meta_client_name, '7870') > 0 AS is_reference_node
     FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
-        AND positionCaseInsensitive(meta_client_name, '7870') > 0
 ),
 
 -- Group payloads into 50ms chunks
@@ -41,12 +41,13 @@ payloads_chunked AS (
         epoch,
         epoch_start_date_time,
         block_hash,
+        is_reference_node,
         floor(duration_ms / 50) * 50 AS chunk_duration_ms,
         COUNT(*) as observation_count,
         countIf(status = 'VALID') AS valid_count,
         countIf(status = 'INVALID' OR status = 'INVALID_BLOCK_HASH') AS invalid_count
     FROM payloads
-    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_hash, chunk_duration_ms
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_hash, is_reference_node, chunk_duration_ms
 )
 
 SELECT
@@ -56,6 +57,7 @@ SELECT
     epoch,
     epoch_start_date_time,
     block_hash,
+    is_reference_node,
     toInt64(chunk_duration_ms) AS chunk_duration_ms,
     observation_count,
     valid_count,

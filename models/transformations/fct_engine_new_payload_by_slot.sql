@@ -30,6 +30,7 @@ SELECT
     argMin(gas_limit, duration_ms) AS gas_limit,
     argMin(tx_count, duration_ms) AS tx_count,
     argMin(blob_count, duration_ms) AS blob_count,
+    positionCaseInsensitive(meta_client_name, '7870') > 0 AS is_reference_node,
     -- Observation counts
     COUNT(*) AS observation_count,
     COUNT(DISTINCT meta_client_name) AS unique_node_count,
@@ -53,5 +54,4 @@ SELECT
 FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     AND meta_network_name = '{{ .env.NETWORK }}'
-    AND positionCaseInsensitive(meta_client_name, '7870') > 0
-GROUP BY slot_start_date_time, block_hash
+GROUP BY slot_start_date_time, block_hash, is_reference_node

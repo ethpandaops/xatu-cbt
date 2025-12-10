@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_client_pair_local ON CLUSTER '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number of the beacon block being reconstructed' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -7,8 +7,9 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_client_pair_local ON CLUS
     `block_root` FixedString(66) COMMENT 'Root of the beacon block (hex encoded with 0x prefix)' CODEC(ZSTD(1)),
     `meta_client_implementation` LowCardinality(String) COMMENT 'Consensus client implementation (e.g., lighthouse, prysm, teku)',
     `meta_execution_implementation` LowCardinality(String) COMMENT 'Execution client implementation (e.g., Geth, Nethermind, Besu, Reth)',
-    `observation_count` UInt32 COMMENT 'Number of observations for this client pair' CODEC(ZSTD(1)),
-    `unique_node_count` UInt32 COMMENT 'Number of unique nodes with this client pair' CODEC(ZSTD(1)),
+    `is_reference_node` Bool COMMENT 'Whether this observation is from a reference node (controlled fleet with 7870 in name)' CODEC(ZSTD(1)),
+    `observation_count` UInt32 COMMENT 'Number of observations for this EL client' CODEC(ZSTD(1)),
+    `unique_node_count` UInt32 COMMENT 'Number of unique nodes with this EL client' CODEC(ZSTD(1)),
     `max_requested_count` UInt32 COMMENT 'Maximum number of versioned hashes requested' CODEC(ZSTD(1)),
     `avg_returned_count` Float64 COMMENT 'Average number of non-null blobs returned' CODEC(ZSTD(1)),
     `success_count` UInt32 COMMENT 'Number of observations with SUCCESS status' CODEC(ZSTD(1)),
@@ -27,14 +28,14 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_client_pair_local ON CLUS
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
-ORDER BY (slot_start_date_time, block_root, meta_client_implementation, meta_execution_implementation)
-COMMENT 'engine_getBlobs observations aggregated by CL/EL client pair for client comparison';
+ORDER BY (slot_start_date_time, block_root, meta_client_implementation, meta_execution_implementation, is_reference_node)
+COMMENT 'engine_getBlobs observations aggregated by execution client for EL comparison';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_client_pair ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_engine_get_blobs_by_client_pair_local
+CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_local
 ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_engine_get_blobs_by_client_pair_local,
-    cityHash64(slot_start_date_time, block_root, meta_client_implementation, meta_execution_implementation)
+    fct_engine_get_blobs_by_el_client_local,
+    cityHash64(slot_start_date_time, block_root, meta_client_implementation, meta_execution_implementation, is_reference_node)
 );

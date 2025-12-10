@@ -1,5 +1,5 @@
 ---
-table: fct_engine_get_blobs_by_client_pair
+table: fct_engine_get_blobs_by_el_client
 type: incremental
 interval:
   type: slot
@@ -11,7 +11,7 @@ tags:
   - slot
   - engine_api
   - get_blobs
-  - client_pair
+  - el_client
 dependencies:
   - "{{external}}.consensus_engine_api_get_blobs"
 ---
@@ -26,6 +26,7 @@ SELECT
     block_root,
     meta_client_implementation,
     meta_execution_implementation,
+    positionCaseInsensitive(meta_client_name, '7870') > 0 AS is_reference_node,
     -- Observation counts
     COUNT(*) AS observation_count,
     COUNT(DISTINCT meta_client_name) AS unique_node_count,
@@ -48,5 +49,4 @@ SELECT
 FROM {{ index .dep "{{external}}" "consensus_engine_api_get_blobs" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     AND meta_network_name = '{{ .env.NETWORK }}'
-    AND positionCaseInsensitive(meta_client_name, '7870') > 0
-GROUP BY slot_start_date_time, block_root, meta_client_implementation, meta_execution_implementation
+GROUP BY slot_start_date_time, block_root, meta_client_implementation, meta_execution_implementation, is_reference_node

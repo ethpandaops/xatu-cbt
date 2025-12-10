@@ -5,6 +5,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_slot_local ON CLUSTER '{c
     `epoch` UInt32 COMMENT 'Epoch number derived from the slot' CODEC(DoubleDelta, ZSTD(1)),
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
     `block_root` FixedString(66) COMMENT 'Root of the beacon block (hex encoded with 0x prefix)' CODEC(ZSTD(1)),
+    `is_reference_node` Bool COMMENT 'Whether this observation is from a reference node (controlled fleet with 7870 in name)' CODEC(ZSTD(1)),
     `observation_count` UInt32 COMMENT 'Number of observations for this slot/block' CODEC(ZSTD(1)),
     `unique_node_count` UInt32 COMMENT 'Number of unique nodes that observed this block' CODEC(ZSTD(1)),
     `max_requested_count` UInt32 COMMENT 'Maximum number of versioned hashes requested' CODEC(ZSTD(1)),
@@ -28,7 +29,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_slot_local ON CLUSTER '{c
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
-ORDER BY (slot_start_date_time, block_root)
+ORDER BY (slot_start_date_time, block_root, is_reference_node)
 COMMENT 'Slot-level aggregated engine_getBlobs observations with status distribution and duration statistics';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_slot ON CLUSTER '{cluster}'
@@ -37,5 +38,5 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_engine_get_blobs_by_slot_local,
-    cityHash64(slot_start_date_time, block_root)
+    cityHash64(slot_start_date_time, block_root, is_reference_node)
 );

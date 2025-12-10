@@ -12,6 +12,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_slot_local ON CLUSTER '
     `gas_limit` UInt64 COMMENT 'Gas limit of the block' CODEC(ZSTD(1)),
     `tx_count` UInt32 COMMENT 'Number of transactions in the block' CODEC(ZSTD(1)),
     `blob_count` UInt32 COMMENT 'Number of blobs in the block' CODEC(ZSTD(1)),
+    `is_reference_node` Bool COMMENT 'Whether this observation is from a reference node (controlled fleet with 7870 in name)' CODEC(ZSTD(1)),
     `observation_count` UInt32 COMMENT 'Number of observations for this slot/block' CODEC(ZSTD(1)),
     `unique_node_count` UInt32 COMMENT 'Number of unique nodes that observed this block' CODEC(ZSTD(1)),
     `valid_count` UInt32 COMMENT 'Number of observations with VALID status' CODEC(ZSTD(1)),
@@ -33,7 +34,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_slot_local ON CLUSTER '
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
-ORDER BY (slot_start_date_time, block_hash)
+ORDER BY (slot_start_date_time, block_hash, is_reference_node)
 COMMENT 'Slot-level aggregated engine_newPayload observations with status distribution and duration statistics';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_slot ON CLUSTER '{cluster}'
@@ -42,5 +43,5 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_engine_new_payload_by_slot_local,
-    cityHash64(slot_start_date_time, block_hash)
+    cityHash64(slot_start_date_time, block_hash, is_reference_node)
 );

@@ -1,6 +1,7 @@
 CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_status_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
+    `is_reference_node` Bool COMMENT 'Whether this observation is from a reference node (controlled fleet with 7870 in name)' CODEC(ZSTD(1)),
     `slot_count` UInt32 COMMENT 'Number of slots in this hour aggregation' CODEC(ZSTD(1)),
     `observation_count` UInt64 COMMENT 'Total number of observations in this hour' CODEC(ZSTD(1)),
     `success_count` UInt64 COMMENT 'Number of observations with SUCCESS status' CODEC(ZSTD(1)),
@@ -18,7 +19,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_status_hourly_local ON CLUST
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(hour_start_date_time)
-ORDER BY (hour_start_date_time)
+ORDER BY (hour_start_date_time, is_reference_node)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Hourly aggregated engine_getBlobs status distribution and duration statistics';
 
@@ -28,5 +29,5 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_engine_get_blobs_status_hourly_local,
-    cityHash64(hour_start_date_time)
+    cityHash64(hour_start_date_time, is_reference_node)
 );
