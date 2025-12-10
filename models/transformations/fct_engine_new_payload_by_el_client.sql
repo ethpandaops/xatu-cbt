@@ -28,6 +28,11 @@ SELECT
     meta_client_implementation,
     meta_execution_implementation,
     positionCaseInsensitive(meta_client_name, '7870') > 0 AS is_reference_node,
+    -- Block complexity metrics
+    argMin(gas_used, duration_ms) AS gas_used,
+    argMin(gas_limit, duration_ms) AS gas_limit,
+    argMin(tx_count, duration_ms) AS tx_count,
+    argMin(blob_count, duration_ms) AS blob_count,
     -- Observation counts
     COUNT(*) AS observation_count,
     COUNT(DISTINCT meta_client_name) AS unique_node_count,
