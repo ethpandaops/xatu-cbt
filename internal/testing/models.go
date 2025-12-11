@@ -293,10 +293,24 @@ func (c *ModelCache) parseModel(path string, _ ModelType) (*ModelMetadata, error
 		return nil, fmt.Errorf("reading file: %w", err)
 	}
 
-	// Extract frontmatter
-	frontmatter, _, err := c.extractFrontmatter(string(content))
-	if err != nil {
+	var frontmatter *Frontmatter
+
+	// Check if this is a pure YAML file (.yml or .yaml) - parse directly
+	// Otherwise, extract frontmatter from SQL files (content between --- delimiters)
+	ext := strings.ToLower(filepath.Ext(path))
+	if ext == ".yml" || ext == ".yaml" {
+		// Pure YAML file - parse directly
 		frontmatter = &Frontmatter{}
+		if unmarshalErr := yaml.Unmarshal(content, frontmatter); unmarshalErr != nil {
+			return nil, fmt.Errorf("parsing yaml file %s: %w", path, unmarshalErr)
+		}
+	} else {
+		// SQL file with frontmatter - extract frontmatter section
+		var extractErr error
+		frontmatter, _, extractErr = c.extractFrontmatter(string(content))
+		if extractErr != nil {
+			frontmatter = &Frontmatter{}
+		}
 	}
 
 	// Determine table name

@@ -36,6 +36,10 @@ type CBTEngine struct {
 	// Track running containers for cleanup
 	runningContainers   []string
 	runningContainersMu sync.Mutex
+
+	// Pool of Redis DB numbers (1-15) for isolation between concurrent CBT containers.
+	// Each CBT container gets its own Redis DB to prevent task queue conflicts.
+	redisDBPool chan int
 }
 
 // Config represents the structure of the CBT YAML configuration file.
@@ -108,6 +112,18 @@ func NewCBTEngine(
 		cfg = DefaultTestConfig()
 	}
 
+	// Create Redis DB pool with numbers 1-15 (max 15 concurrent, DB 0 reserved).
+	// This ensures each concurrent CBT container gets its own Redis DB for task isolation.
+	poolSize := cfg.CBTConcurrency
+	if poolSize > 15 {
+		poolSize = 15 // Redis only has DBs 0-15, reserve 0
+	}
+
+	redisDBPool := make(chan int, poolSize)
+	for i := 1; i <= poolSize; i++ {
+		redisDBPool <- i
+	}
+
 	return &CBTEngine{
 		clickhouseURL: clickhouseURL,
 		redisURL:      redisURL,
@@ -116,6 +132,7 @@ func NewCBTEngine(
 		log:           log.WithField("component", "cbt_engine"),
 		config:        cfg,
 		modelCache:    modelCache,
+		redisDBPool:   redisDBPool,
 	}
 }
 
@@ -136,10 +153,14 @@ func (e *CBTEngine) Stop() error {
 	e.runningContainersMu.Unlock()
 
 	for _, containerName := range containers {
-		e.log.WithField("container", containerName).Debug("killing CBT container")
+		e.log.WithField("container", containerName).Debug("cleaning up CBT container")
+
 		killCmd := exec.Command("docker", "kill", containerName) //nolint:gosec // G204: Docker command with trusted container name
-		if err := killCmd.Run(); err != nil {
-			e.log.WithError(err).WithField("container", containerName).Warn("failed to kill container")
+		_ = killCmd.Run()                                        // Ignore errors - container may already be stopped
+
+		rmCmd := exec.Command("docker", "rm", "-f", containerName) //nolint:gosec // G204: Docker command with trusted container name
+		if err := rmCmd.Run(); err != nil {
+			e.log.WithError(err).WithField("container", containerName).Warn("failed to remove container")
 		}
 	}
 
@@ -157,13 +178,26 @@ func (e *CBTEngine) Stop() error {
 func (e *CBTEngine) RunTransformations(
 	ctx context.Context,
 	network,
-	dbName string,
+	dbName,
+	externalDB string,
 	allModels,
 	transformationModels []string,
 ) error {
+	// Acquire a Redis DB number from the pool for isolation.
+	// This ensures each concurrent CBT container uses a separate Redis database.
+	var redisDB int
+	select {
+	case redisDB = <-e.redisDBPool:
+		defer func() { e.redisDBPool <- redisDB }()
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
 	logCtx := e.log.WithFields(logrus.Fields{
-		"database": dbName,
-		"models":   len(transformationModels),
+		"database":   dbName,
+		"externalDB": externalDB,
+		"models":     len(transformationModels),
+		"redisDB":    redisDB,
 	})
 	logCtx.Info("running transformations")
 
@@ -177,12 +211,12 @@ func (e *CBTEngine) RunTransformations(
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	e.configPath = filepath.Join(tmpDir, "config.yml")
-	if err := e.generateConfig(network, dbName, allModels, e.configPath); err != nil {
+	if err := e.generateConfig(network, dbName, externalDB, allModels, redisDB, e.configPath); err != nil {
 		return fmt.Errorf("generating CBT config: %w", err)
 	}
 
 	// Execute CBT via docker, but only wait for test models
-	if err := e.runDockerCBT(ctx, network, dbName, transformationModels, e.configPath); err != nil {
+	if err := e.runDockerCBT(ctx, network, dbName, externalDB, transformationModels, e.configPath); err != nil {
 		return fmt.Errorf("running CBT docker: %w", err)
 	}
 
@@ -194,7 +228,7 @@ func (e *CBTEngine) RunTransformations(
 }
 
 // generateConfig generates a CBT config file for specific models.
-func (e *CBTEngine) generateConfig(network, dbName string, models []string, outputPath string) error {
+func (e *CBTEngine) generateConfig(network, dbName, externalDB string, models []string, redisDB int, outputPath string) error {
 	// Build model paths separated by type.
 	externalPaths, transformationPaths, err := e.buildModelPaths(models)
 	if err != nil {
@@ -221,17 +255,18 @@ func (e *CBTEngine) generateConfig(network, dbName string, models []string, outp
 	cfg.ClickHouse.Admin.Scheduled.Database = dbName
 	cfg.ClickHouse.Admin.Scheduled.Table = "admin_cbt_scheduled"
 
-	// Configure Redis with namespace per test database
+	// Configure Redis with isolated database per concurrent CBT container.
+	// Each container gets its own Redis DB (1-15) to prevent task queue conflicts.
 	redisContainerEndpoint := fmt.Sprintf("%s:%s", config.RedisContainerName, config.RedisContainerPort)
 	redisURL := strings.Replace(e.redisURL, "localhost:6380", redisContainerEndpoint, 1)
 	redisURL = strings.Replace(redisURL, "localhost:6379", redisContainerEndpoint, 1)
-	cfg.Redis.URL = redisURL
+	cfg.Redis.URL = fmt.Sprintf("%s/%d", redisURL, redisDB)
 	cfg.Redis.Prefix = fmt.Sprintf("test:%s:", dbName)
 
 	// Set model paths and default databases
 	cfg.Models.External.Paths = externalPaths
 	cfg.Models.External.DefaultCluster = config.XatuClusterName
-	cfg.Models.External.DefaultDatabase = config.DefaultDatabase
+	cfg.Models.External.DefaultDatabase = externalDB
 	cfg.Models.Transformations.Paths = transformationPaths
 	cfg.Models.Transformations.DefaultDatabase = dbName
 
@@ -241,6 +276,7 @@ func (e *CBTEngine) generateConfig(network, dbName string, models []string, outp
 		"EXTERNAL_MODEL_MIN_TIMESTAMP":           "0",
 		"EXTERNAL_MODEL_MIN_BLOCK":               "0",
 		"DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS": "3650", // 10 years for tests.
+		"EXTERNAL_DATABASE":                      externalDB,
 	}
 
 	// Configure for fast test execution
@@ -405,7 +441,8 @@ func (e *CBTEngine) buildDefaultTestOverrides(models []string) map[string]*model
 func (e *CBTEngine) runDockerCBT(
 	ctx context.Context,
 	network,
-	dbName string,
+	dbName,
+	externalDB string,
 	models []string,
 	configPath string,
 ) error {
@@ -425,13 +462,15 @@ func (e *CBTEngine) runDockerCBT(
 		return fmt.Errorf("getting absolute models path: %w", err)
 	}
 
-	containerName := fmt.Sprintf("xatu-cbt-test-%d", time.Now().Unix())
+	// Use UnixNano to avoid container name collisions when tests start within the same second
+	containerName := fmt.Sprintf("xatu-cbt-test-%d", time.Now().UnixNano())
 	args := []string{
 		"run",
 		"--rm",
 		"--name", containerName,
 		"--network", e.config.DockerNetwork,
 		"-e", fmt.Sprintf("NETWORK=%s", network),
+		"-e", fmt.Sprintf("EXTERNAL_DATABASE=%s", externalDB),
 		"-v", fmt.Sprintf("%s:/config/config.yml", absConfigPath),
 		"-v", fmt.Sprintf("%s:/models", absModelsDir),
 		e.config.DockerImage,
@@ -459,6 +498,9 @@ func (e *CBTEngine) runDockerCBT(
 		killCmd := exec.Command("docker", "kill", containerName) //nolint:gosec // G204: Docker cleanup with trusted container name
 		_ = killCmd.Run()
 
+		rmCmd := exec.Command("docker", "rm", "-f", containerName) //nolint:gosec // G204: Docker cleanup with trusted container name
+		_ = rmCmd.Run()
+
 		e.runningContainersMu.Lock()
 		for i, name := range e.runningContainers {
 			if name == containerName {
@@ -469,7 +511,7 @@ func (e *CBTEngine) runDockerCBT(
 		e.runningContainersMu.Unlock()
 	}()
 
-	if err := e.waitForTransformations(ctx, dbName, models); err != nil {
+	if err := e.waitForTransformations(ctx, dbName, externalDB, models); err != nil {
 		e.log.WithError(err).Warn("error waiting for transformations, continuing anyway")
 	}
 
@@ -479,7 +521,7 @@ func (e *CBTEngine) runDockerCBT(
 // waitForTransformations polls admin tables with exponential backoff and verifies models have data
 //
 //nolint:gocyclo // Complex transformation waiting logic with multiple state checks
-func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName string, models []string) error {
+func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName, externalDB string, models []string) error {
 	scheduledModels := make(map[string]bool)
 	allModels := make(map[string]bool)
 
@@ -524,6 +566,8 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName string, m
 	defer timeout.Stop()
 
 	modelPendingSince := make(map[string]time.Time)
+	scheduledRetryCount := 0
+	const maxScheduledRetries = 3 // Allow up to 3 schedule cycles for scheduled models to catch up
 
 	if err := e.waitForAdminTables(ctx, conn, dbName, timeout); err != nil {
 		return fmt.Errorf("waiting for admin tables: %w", err)
@@ -615,6 +659,20 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName string, m
 			}).Debug("transformation progress")
 
 			if len(pending) == 0 {
+				// Check for scheduled models that might need another cycle.
+				// This handles the race condition where scheduled models run before deps have data.
+				emptyScheduledWithDataDeps := e.findScheduledModelsNeedingRetry(ctx, conn, dbName, externalDB, scheduledModels)
+				if len(emptyScheduledWithDataDeps) > 0 && scheduledRetryCount < maxScheduledRetries {
+					scheduledRetryCount++
+					e.log.WithFields(logrus.Fields{
+						"models": emptyScheduledWithDataDeps,
+						"retry":  scheduledRetryCount,
+						"max":    maxScheduledRetries,
+					}).Debug("scheduled models have 0 rows but deps have data, waiting for another cycle")
+					// Don't return - continue the loop to wait for another schedule run
+					continue
+				}
+
 				return nil
 			}
 
@@ -725,6 +783,92 @@ func (e *CBTEngine) tableExists(ctx context.Context, conn *sql.DB, dbName, table
 	}
 
 	return count > 0, nil
+}
+
+// findScheduledModelsNeedingRetry returns scheduled models that have 0 rows but their
+// dependencies have data. This indicates the scheduled model ran before
+// its deps were ready and needs another schedule cycle.
+func (e *CBTEngine) findScheduledModelsNeedingRetry(
+	ctx context.Context,
+	conn *sql.DB,
+	dbName string,
+	externalDB string,
+	scheduledModels map[string]bool,
+) []string {
+	needsRetry := []string{}
+
+	for model := range scheduledModels {
+		// Check if this scheduled model has 0 rows
+		modelRows, err := e.getTableRowCount(ctx, conn, dbName, model)
+		if err != nil {
+			e.log.WithError(err).WithField("model", model).Debug("error checking model row count")
+
+			continue
+		}
+
+		if modelRows > 0 {
+			// Model has data, no need to retry
+			continue
+		}
+
+		// Model has 0 rows - check if any of its deps have data
+		e.modelCache.mu.RLock()
+		metadata := e.modelCache.transformationModels[model]
+		e.modelCache.mu.RUnlock()
+
+		if metadata == nil {
+			continue
+		}
+
+		// Check all dependencies for data (both transformation and external)
+		depsHaveData := false
+
+		for _, dep := range metadata.Dependencies {
+			var depRows uint64
+
+			var checkErr error
+
+			switch {
+			case e.modelCache.IsTransformationModel(dep):
+				// Transformation dep - check in CBT database
+				depRows, checkErr = e.getTableRowCount(ctx, conn, dbName, dep)
+			case e.modelCache.IsExternalModel(dep) && externalDB != "":
+				// External dep - check in external database
+				depRows, checkErr = e.getTableRowCount(ctx, conn, externalDB, dep)
+			default:
+				continue
+			}
+
+			if checkErr != nil {
+				continue
+			}
+
+			if depRows > 0 {
+				depsHaveData = true
+
+				break
+			}
+		}
+
+		// If deps have data but model has 0 rows, it needs another cycle
+		if depsHaveData {
+			needsRetry = append(needsRetry, model)
+		}
+	}
+
+	return needsRetry
+}
+
+// getTableRowCount returns the number of rows in a table
+func (e *CBTEngine) getTableRowCount(ctx context.Context, conn *sql.DB, dbName, tableName string) (uint64, error) {
+	query := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+		"SELECT count() FROM `%s`.`%s` FINAL",
+		dbName, tableName)
+
+	var count uint64
+	err := conn.QueryRowContext(ctx, query).Scan(&count)
+
+	return count, err
 }
 
 // getModelType returns the execution type from cached model metadata.

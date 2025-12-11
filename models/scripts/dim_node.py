@@ -111,13 +111,14 @@ def parse_validator_ranges_data(json_data, database_name):
     
     return validators
 
-def fetch_ethseer_validators(ch_url, database_name):
+def fetch_ethseer_validators(ch_url, database_name, external_database):
     """Fetch validator data from ethseer_validator_entity table"""
+    db = external_database if external_database else 'default'
     query = f"""
-    SELECT 
+    SELECT
         `index` AS validator_index,
         entity AS source
-    FROM cluster('{{remote_cluster}}', default.ethseer_validator_entity_local)
+    FROM cluster('{{remote_cluster}}', {db}.ethseer_validator_entity_local)
     FINAL
     WHERE meta_network_name = '{database_name}'
     FORMAT JSONCompact
@@ -168,6 +169,9 @@ def main():
     # Get environment variables
     ch_url = os.environ['CLICKHOUSE_URL']
 
+    # External database for per-test isolation (empty in production, uses 'default')
+    external_database = os.environ.get('EXTERNAL_DATABASE', '')
+
     # Model info
     target_db = os.environ['SELF_DATABASE']
     target_table = os.environ['SELF_TABLE']
@@ -179,15 +183,9 @@ def main():
     cluster = os.environ.get('CLICKHOUSE_CLUSTER', '')
     local_suffix = os.environ.get('CLICKHOUSE_LOCAL_SUFFIX', '')
 
-    # Extract network name from database name
-    # For test databases: test_{network}_{spec}_{timestamp}_{hash} -> extract 'network'
-    # For production databases: {network} -> use as-is
-    network_name = target_db
-    if target_db.startswith('test_'):
-        parts = target_db.split('_')
-        if len(parts) >= 2:
-            network_name = parts[1]  # Extract network (e.g., 'mainnet' from 'test_mainnet_pectra_...')
-            print(f"Detected test database, extracted network: {network_name}")
+    # Get network name from NETWORK env var (passed by CBT)
+    # Fallback to database name for backwards compatibility in production
+    network_name = os.environ.get('NETWORK', target_db)
 
     print(f"=== Node Data Collection ===")
     print(f"Target: {target_db}.{target_table}")
@@ -233,7 +231,7 @@ def main():
 
         # Step 4: Fetch ethseer validators
         print(f"\nFetching validators from ethseer_validator_entity table...")
-        ethseer_validators = fetch_ethseer_validators(ch_url, network_name)
+        ethseer_validators = fetch_ethseer_validators(ch_url, network_name, external_database)
         print(f"Found {len(ethseer_validators)} validator entries from ethseer")
         
         # Step 5: Merge data from both sources

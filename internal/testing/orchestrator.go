@@ -43,7 +43,8 @@ type OrchestratorConfig struct {
 	ParquetCache     *ParquetCache
 	DBManager        *DatabaseManager
 	CBTEngine        *CBTEngine
-	AssertionRunner  assertion.Runner
+	AssertionRunner  assertion.Runner // For CBT cluster (transformation models)
+	XatuAssertion    assertion.Runner // For Xatu cluster (external models)
 	MigrationDir     string
 }
 
@@ -55,7 +56,8 @@ type Orchestrator struct {
 	cache              *ParquetCache
 	dbManager          *DatabaseManager
 	cbtEngine          *CBTEngine
-	assertionRunner    assertion.Runner
+	assertionRunner    assertion.Runner // For CBT cluster (transformation models)
+	xatuAssertion      assertion.Runner // For Xatu cluster (external models)
 	migrationDir       string
 	log                logrus.FieldLogger
 	metrics            Collector
@@ -64,6 +66,10 @@ type Orchestrator struct {
 	cleanupTestDB      bool
 	preparedNetworks   map[string]bool
 	preparedNetworksMu sync.Mutex
+
+	// Template database tracking for per-test isolation
+	templatesPrepared bool
+	templatesMu       sync.Mutex
 }
 
 // metricsAdapter adapts Collector to output.MetricsProvider.
@@ -152,6 +158,7 @@ func NewOrchestrator(cfg *OrchestratorConfig) *Orchestrator {
 		dbManager:        cfg.DBManager,
 		cbtEngine:        cfg.CBTEngine,
 		assertionRunner:  cfg.AssertionRunner,
+		xatuAssertion:    cfg.XatuAssertion,
 		migrationDir:     cfg.MigrationDir,
 		log:              cfg.Logger.WithField("component", "test_orchestrator"),
 		metrics:          cfg.MetricsCollector,
@@ -179,11 +186,21 @@ func (o *Orchestrator) Start(ctx context.Context) error {
 	}
 
 	if err := o.assertionRunner.Start(ctx); err != nil {
-		return fmt.Errorf("starting assertion runner: %w", err)
+		return fmt.Errorf("starting CBT assertion runner: %w", err)
+	}
+
+	if err := o.xatuAssertion.Start(ctx); err != nil {
+		return fmt.Errorf("starting xatu assertion runner: %w", err)
 	}
 
 	if err := o.cbtEngine.Start(ctx); err != nil {
 		return fmt.Errorf("starting cbt engine: %w", err)
+	}
+
+	// Flush Redis once at startup to clear stale tasks from previous runs.
+	// This must happen BEFORE any tests run, not per-test (which would race).
+	if err := o.flushRedisCache(ctx); err != nil {
+		o.log.WithError(err).Warn("failed to flush Redis at startup (non-fatal)")
 	}
 
 	o.log.Info("test orchestrator started")
@@ -211,7 +228,11 @@ func (o *Orchestrator) Stop() error {
 	}
 
 	if err := o.assertionRunner.Stop(); err != nil {
-		errs = append(errs, fmt.Errorf("stopping assertion runner: %w", err))
+		errs = append(errs, fmt.Errorf("stopping CBT assertion runner: %w", err))
+	}
+
+	if err := o.xatuAssertion.Stop(); err != nil {
+		errs = append(errs, fmt.Errorf("stopping xatu assertion runner: %w", err))
 	}
 
 	if err := o.dbManager.Stop(); err != nil {
@@ -294,8 +315,15 @@ func (o *Orchestrator) TestSpec(ctx context.Context, network, spec string, concu
 	return o.executeTestGroup(ctx, network, spec, testConfigs, concurrency)
 }
 
-// executeTestGroup performs grouped test execution for a (network, spec).
-// All tests share one database and one CBT container for optimal performance.
+// preclonedDBs holds pre-cloned database names and resolved dependencies for a test.
+type preclonedDBs struct {
+	extDB string
+	cbtDB string
+	deps  *Dependencies
+}
+
+// executeTestGroup performs test execution with per-test database isolation.
+// Each test gets its own cloned databases to prevent data conflicts.
 func (o *Orchestrator) executeTestGroup(
 	ctx context.Context,
 	network, spec string,
@@ -304,48 +332,350 @@ func (o *Orchestrator) executeTestGroup(
 ) ([]*TestResult, error) {
 	start := time.Now()
 
-	// Step 1: Resolve all dependencies
-	aggregatedDeps, resolutions, err := o.resolveDependencies(testConfigs)
+	o.log.WithFields(logrus.Fields{
+		"network":     network,
+		"spec":        spec,
+		"tests":       len(testConfigs),
+		"concurrency": concurrency,
+	}).Info("starting test group with per-test isolation")
+
+	// Step 1: Ensure template databases are prepared (migrations run once)
+	if err := o.ensureTemplatesPrepared(ctx, network); err != nil {
+		return nil, fmt.Errorf("preparing templates: %w", err)
+	}
+
+	// Step 2: Pre-clone ALL databases in parallel (both ext and cbt for each test)
+	o.log.WithField("tests", len(testConfigs)).Info("pre-cloning all test databases in parallel")
+	cloneStart := time.Now()
+
+	testDBs, err := o.precloneAllDatabases(ctx, testConfigs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("pre-cloning databases: %w", err)
 	}
 
-	// Step 2: Prepare network database with parquet data
-	if prepareErr := o.prepareInfrastructure(ctx, network, aggregatedDeps.ParquetURLs); prepareErr != nil {
-		return nil, prepareErr
+	o.log.WithFields(logrus.Fields{
+		"tests":    len(testDBs),
+		"duration": time.Since(cloneStart),
+	}).Info("all test databases pre-cloned")
+
+	// Ensure cleanup of all pre-cloned databases
+	defer o.cleanupPreclonedDatabases(ctx, testDBs)
+
+	// Step 3: Run tests in parallel with worker pool (DBs already cloned)
+	results := make([]*TestResult, 0, len(testConfigs))
+	resultChan := make(chan *TestResult, len(testConfigs))
+	sem := make(chan struct{}, concurrency)
+
+	var wg sync.WaitGroup
+
+	for _, testCfg := range testConfigs {
+		wg.Add(1)
+
+		go func(cfg *testdef.TestDefinition) {
+			defer wg.Done()
+
+			// Acquire semaphore
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			// Get pre-cloned databases and deps for this test
+			dbs := testDBs[cfg.Model]
+
+			// Execute test with pre-cloned databases and pre-resolved deps
+			result := o.executeTestWithDBs(ctx, network, spec, cfg, dbs.extDB, dbs.cbtDB, dbs.deps)
+			resultChan <- result
+		}(testCfg)
 	}
 
-	// Step 3: Create test database
-	dbName, err := o.createTestDatabase(ctx, network, spec)
-	if err != nil {
-		return nil, err
+	// Close result channel when all tests complete
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Collect results
+	for result := range resultChan {
+		results = append(results, result)
 	}
-
-	// Cleanup test database if requested
-	defer o.cleanupTestDatabase(dbName)
-
-	// Step 4: Run transformations
-	if err := o.runTransformations(ctx, network, dbName, aggregatedDeps); err != nil {
-		return nil, err
-	}
-
-	o.formatter.PrintParquetSummary()
-
-	// Step 5: Run assertions in parallel
-	results := o.runAssertions(ctx, network, spec, dbName, testConfigs, resolutions, concurrency, start)
 
 	o.log.WithFields(logrus.Fields{
 		"network":  network,
 		"spec":     spec,
 		"tests":    len(results),
 		"duration": time.Since(start),
-	}).Info("all assertions completed")
+	}).Info("all tests completed")
 
+	o.formatter.PrintParquetSummary()
 	o.formatter.PrintTestResults()
-
 	o.formatter.PrintSummary()
 
 	return results, nil
+}
+
+// precloneAllDatabases clones all test databases in parallel upfront.
+// It resolves dependencies first to clone only the needed tables per test.
+func (o *Orchestrator) precloneAllDatabases(
+	ctx context.Context,
+	testConfigs []*testdef.TestDefinition,
+) (map[string]*preclonedDBs, error) {
+	testDBs := make(map[string]*preclonedDBs, len(testConfigs))
+	var mu sync.Mutex
+
+	// Step 1: Resolve dependencies for all tests upfront (fast, no I/O)
+	for _, cfg := range testConfigs {
+		deps, err := o.modelCache.ResolveTestDependencies(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("resolving dependencies for %s: %w", cfg.Model, err)
+		}
+
+		testDBs[cfg.Model] = &preclonedDBs{deps: deps}
+	}
+
+	// Step 2: Clone databases in parallel with only needed tables
+	var wg sync.WaitGroup
+
+	errChan := make(chan error, len(testConfigs)*2) // 2 clones per test
+
+	// Limit parallel clone operations to avoid overwhelming ClickHouse
+	const maxConcurrentClones = 15
+	cloneSem := make(chan struct{}, maxConcurrentClones)
+
+	for _, cfg := range testConfigs {
+		testID := o.generateTestID()
+		model := cfg.Model
+		deps := testDBs[model].deps
+
+		// Merge external tables from model deps + test definition's ExternalData
+		extTableSet := make(map[string]bool)
+		for _, t := range deps.ExternalTables {
+			extTableSet[t] = true
+		}
+		for tableName := range cfg.ExternalData {
+			extTableSet[tableName] = true
+		}
+
+		extTables := make([]string, 0, len(extTableSet))
+		for t := range extTableSet {
+			extTables = append(extTables, t)
+		}
+
+		// Clone external DB with only needed tables
+		wg.Add(1)
+
+		go func(m, id string, tables []string) {
+			defer wg.Done()
+
+			cloneSem <- struct{}{}
+			defer func() { <-cloneSem }()
+
+			extDB, err := o.dbManager.CloneExternalDatabase(ctx, id, tables)
+			if err != nil {
+				errChan <- fmt.Errorf("cloning ext DB for %s: %w", m, err)
+
+				return
+			}
+
+			mu.Lock()
+			testDBs[m].extDB = extDB
+			mu.Unlock()
+		}(model, testID, extTables)
+
+		// Clone CBT DB with only needed tables (transformation model names)
+		wg.Add(1)
+
+		go func(m, id string, transformations []*ModelMetadata) {
+			defer wg.Done()
+
+			cloneSem <- struct{}{}
+			defer func() { <-cloneSem }()
+
+			// Extract table names from transformation models
+			cbtTables := extractModelNames(transformations)
+
+			cbtDB, err := o.dbManager.CloneCBTDatabase(ctx, id, cbtTables)
+			if err != nil {
+				errChan <- fmt.Errorf("cloning cbt DB for %s: %w", m, err)
+
+				return
+			}
+
+			mu.Lock()
+			testDBs[m].cbtDB = cbtDB
+			mu.Unlock()
+		}(model, testID, deps.TransformationModels)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	// Check for errors
+	for err := range errChan {
+		o.cleanupPreclonedDatabases(ctx, testDBs)
+
+		return nil, err
+	}
+
+	return testDBs, nil
+}
+
+// cleanupPreclonedDatabases drops all pre-cloned databases.
+func (o *Orchestrator) cleanupPreclonedDatabases(ctx context.Context, testDBs map[string]*preclonedDBs) {
+	if !o.cleanupTestDB {
+		return
+	}
+
+	for model, dbs := range testDBs {
+		if dbs.extDB != "" {
+			if err := o.dbManager.DropExternalDatabase(ctx, dbs.extDB); err != nil {
+				o.log.WithError(err).WithField("model", model).Warn("failed to drop external database")
+			}
+		}
+
+		if dbs.cbtDB != "" {
+			if err := o.dbManager.DropCBTDatabase(ctx, dbs.cbtDB); err != nil {
+				o.log.WithError(err).WithField("model", model).Warn("failed to drop CBT database")
+			}
+		}
+	}
+}
+
+// executeTestWithDBs runs a test using pre-cloned databases and pre-resolved dependencies.
+// This is used when databases are pre-cloned upfront for all tests.
+// Cleanup is handled at the group level, not per-test.
+func (o *Orchestrator) executeTestWithDBs(
+	ctx context.Context,
+	network, spec string,
+	testConfig *testdef.TestDefinition,
+	extDB, cbtDB string,
+	deps *Dependencies,
+) *TestResult {
+	start := time.Now()
+
+	logCtx := o.log.WithFields(logrus.Fields{
+		"model": testConfig.Model,
+		"extDB": extDB,
+		"cbtDB": cbtDB,
+	})
+	logCtx.Info("executing test with pre-cloned databases")
+
+	result := &TestResult{
+		Model:   testConfig.Model,
+		Network: network,
+		Spec:    spec,
+	}
+
+	// Ensure metrics are recorded for ALL cases (including early errors)
+	defer func() {
+		result.Duration = time.Since(start)
+		o.recordTestMetrics(result, testConfig)
+
+		switch {
+		case result.Error != nil:
+			logCtx.WithError(result.Error).Error("test failed")
+		case !result.Success:
+			logCtx.Error("assertion(s) failed")
+		default:
+			logCtx.WithField("duration", result.Duration).Info("test completed successfully")
+		}
+	}()
+
+	// Use pre-resolved dependencies
+	result.ExternalTables = deps.ExternalTables
+	result.ParquetURLs = deps.ParquetURLs
+	result.Transformations = extractModelNames(deps.TransformationModels)
+
+	// Step 2: Fetch and load parquet data into pre-cloned external database
+	if loadErr := o.fetchAndLoadParquetData(ctx, extDB, deps.ParquetURLs); loadErr != nil {
+		result.Error = loadErr
+		return result
+	}
+
+	// Step 3: Run transformations (reads extDB, writes cbtDB)
+	if transformErr := o.runTestTransformations(ctx, network, cbtDB, extDB, deps); transformErr != nil {
+		result.Error = transformErr
+		return result
+	}
+
+	// Step 4: Run assertions against the appropriate database and cluster
+	var (
+		assertionResults *assertion.RunResult
+		assertErr        error
+	)
+
+	if len(deps.TransformationModels) == 0 {
+		// External model test - use Xatu cluster runner with extDB
+		assertionResults, assertErr = o.xatuAssertion.RunAssertions(ctx, testConfig.Model, extDB, testConfig.Assertions)
+	} else {
+		// Transformation model test - use CBT cluster runner with cbtDB
+		assertionResults, assertErr = o.assertionRunner.RunAssertions(ctx, testConfig.Model, cbtDB, testConfig.Assertions)
+	}
+
+	if assertErr != nil {
+		result.Error = fmt.Errorf("running assertions: %w", assertErr)
+		result.Success = false
+
+		return result
+	}
+
+	result.AssertionResults = assertionResults
+	result.Success = assertionResults.Failed == 0
+
+	return result
+}
+
+// fetchAndLoadParquetData fetches parquet files from cache and loads them into the database.
+func (o *Orchestrator) fetchAndLoadParquetData(
+	ctx context.Context,
+	database string,
+	parquetURLs map[string]string,
+) error {
+	localPaths := make(map[string]string, len(parquetURLs))
+
+	for tableName, url := range parquetURLs {
+		path, err := o.cache.Get(ctx, url, tableName)
+		if err != nil {
+			return fmt.Errorf("fetching parquet file for %s: %w", tableName, err)
+		}
+
+		localPaths[tableName] = path
+	}
+
+	if err := o.dbManager.LoadParquetData(ctx, database, localPaths); err != nil {
+		return fmt.Errorf("loading parquet data: %w", err)
+	}
+
+	return nil
+}
+
+// runTestTransformations runs CBT transformations for the test.
+// Skips if there are no transformation models (external model tests).
+func (o *Orchestrator) runTestTransformations(
+	ctx context.Context,
+	network, cbtDB, extDB string,
+	deps *Dependencies,
+) error {
+	// Skip for external model tests - no transformations to run
+	if len(deps.TransformationModels) == 0 {
+		o.log.Debug("skipping transformations (external model test)")
+		return nil
+	}
+
+	transformationNames := extractModelNames(deps.TransformationModels)
+	allModels := make([]string, 0, len(deps.ExternalTables)+len(transformationNames))
+	allModels = append(allModels, deps.ExternalTables...)
+	allModels = append(allModels, transformationNames...)
+
+	if err := o.cbtEngine.RunTransformations(ctx, network, cbtDB, extDB, allModels, transformationNames); err != nil {
+		return fmt.Errorf("running transformations: %w", err)
+	}
+
+	return nil
+}
+
+// generateTestID creates a unique identifier for a test execution.
+func (o *Orchestrator) generateTestID() string {
+	timestamp := time.Now().UnixNano()
+	return fmt.Sprintf("%d", timestamp)
 }
 
 // aggregatedDependencies holds combined dependencies for all test configs in a group.
@@ -467,11 +797,6 @@ func (o *Orchestrator) runTransformations(
 		return nil
 	}
 
-	// Clear Redis cache BEFORE starting CBT to remove stale data from previous runs
-	if err := o.flushRedisCache(ctx); err != nil {
-		o.log.WithError(err).Warn("failed to clear Redis cache (non-fatal)")
-	}
-
 	// Run transformations
 	// Pass allModels for config (so CBT knows about all dependencies)
 	// Wait for transformationsList (all transformation models including dependencies)
@@ -479,6 +804,7 @@ func (o *Orchestrator) runTransformations(
 		ctx,
 		network,
 		dbName,
+		config.DefaultDatabase, // External database - shared until per-test isolation is implemented
 		aggregatedDeps.AllModels,
 		aggregatedDeps.Transformations,
 	); err != nil {
@@ -642,6 +968,61 @@ func extractModelNames(models []*ModelMetadata) []string {
 	return names
 }
 
+// ensureTemplatesPrepared runs both xatu and xatu-cbt migrations once to create template databases.
+// Per-test databases will be cloned from these templates to avoid re-running migrations.
+func (o *Orchestrator) ensureTemplatesPrepared(ctx context.Context, network string) error {
+	o.templatesMu.Lock()
+	defer o.templatesMu.Unlock()
+
+	if o.templatesPrepared {
+		o.log.Debug("templates already prepared, skipping")
+		return nil
+	}
+
+	o.log.Info("preparing template databases in parallel")
+
+	// Run both migrations in parallel - they're on different clusters
+	var (
+		wg      sync.WaitGroup
+		errChan = make(chan error, 2)
+	)
+
+	// Xatu migrations (external model template)
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		if err := o.dbManager.PrepareNetworkDatabase(ctx, network); err != nil {
+			errChan <- fmt.Errorf("creating xatu template: %w", err)
+		}
+	}()
+
+	// CBT migrations (transformation template)
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		if err := o.dbManager.CreateCBTTemplate(ctx, o.migrationDir); err != nil {
+			errChan <- fmt.Errorf("creating CBT template: %w", err)
+		}
+	}()
+
+	wg.Wait()
+	close(errChan)
+
+	// Return first error if any
+	for err := range errChan {
+		return err
+	}
+
+	o.templatesPrepared = true
+	o.log.Info("template databases ready")
+
+	return nil
+}
+
 // ensureNetworkDatabaseReady prepares the network database with parquet data if needed.
 func (o *Orchestrator) ensureNetworkDatabaseReady(ctx context.Context, network string, allParquetURLs map[string]string) error {
 	// Check if network is already prepared
@@ -678,9 +1059,9 @@ func (o *Orchestrator) ensureNetworkDatabaseReady(ctx context.Context, network s
 		return fmt.Errorf("preparing network database: %w", err)
 	}
 
-	// Load parquet data into xatu cluster network database.
+	// Load parquet data into xatu cluster default database.
 	xatuLogCtx.Info("loading parquet data")
-	if err := o.dbManager.LoadParquetData(ctx, network, localPaths); err != nil {
+	if err := o.dbManager.LoadParquetData(ctx, config.DefaultDatabase, localPaths); err != nil {
 		return fmt.Errorf("loading parquet data: %w", err)
 	}
 
