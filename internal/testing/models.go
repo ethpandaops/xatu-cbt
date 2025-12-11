@@ -26,6 +26,9 @@ const (
 	ModelTypeTransformation ModelType = "transformation"
 	// ModelTypeUnknown represents an unknown model type
 	ModelTypeUnknown ModelType = "unknown"
+
+	// DefaultNetworkColumn is the column name used to filter by network in external tables.
+	DefaultNetworkColumn = "meta_network_name"
 )
 
 // ModelMetadata represents a parsed model with all cached metadata.
@@ -170,13 +173,18 @@ func (c *ModelCache) ResolveTestDependencies(testConfig *testdef.TestDefinition)
 		return nil, circErr
 	}
 
-	// Extract leaf external tables
-	externalTables := c.extractLeafExternalTables(transformations)
+	// Extract leaf external tables and build dependency map for error messages
+	externalTables, externalDependents := c.extractLeafExternalTablesWithDependents(transformations)
 
-	// Build parquet URL map from test config
+	// Validate that all required external tables are provided in test config
+	if validationErr := c.validateExternalDataWithContext(externalTables, externalDependents, testConfig.ExternalData); validationErr != nil {
+		return nil, validationErr
+	}
+
+	// Build parquet URL map from explicitly provided external data
 	parquetURLs := make(map[string]string)
-	if testConfig.ExternalData != nil {
-		for tableName, extData := range testConfig.ExternalData {
+	for _, tableName := range externalTables {
+		if extData, ok := testConfig.ExternalData[tableName]; ok {
 			parquetURLs[tableName] = extData.URL
 		}
 	}
@@ -194,10 +202,17 @@ func (c *ModelCache) ResolveTestDependencies(testConfig *testdef.TestDefinition)
 		ParquetURLs:          parquetURLs,
 	}
 
+	// Extract transformation names for logging
+	transformationNames := make([]string, len(sortedTransformations))
+	for i, t := range sortedTransformations {
+		transformationNames[i] = t.Name
+	}
+
 	c.log.WithFields(logrus.Fields{
-		"model":           testConfig.Model,
-		"transformations": len(deps.TransformationModels),
-		"external_tables": len(deps.ExternalTables),
+		"model":                testConfig.Model,
+		"transformations":      len(deps.TransformationModels),
+		"transformation_names": transformationNames,
+		"external_tables":      len(deps.ExternalTables),
 	}).Debug("resolved dependencies")
 
 	return deps, nil
@@ -449,6 +464,60 @@ func (c *ModelCache) extractLeafExternalTables(transformations []*ModelMetadata)
 	}
 
 	return externals
+}
+
+// extractLeafExternalTablesWithDependents finds all external table dependencies
+// and returns a map of which transformation(s) depend on each external table.
+// Caller must hold c.mu read lock.
+func (c *ModelCache) extractLeafExternalTablesWithDependents(transformations []*ModelMetadata) (externals []string, dependents map[string][]string) {
+	externalSet := make(map[string]bool)
+	dependents = make(map[string][]string) // external table -> list of transformations that depend on it
+
+	for _, model := range transformations {
+		for _, dep := range model.Dependencies {
+			// Check if dependency is an external model
+			if _, isExternal := c.externalModels[dep]; isExternal {
+				externalSet[dep] = true
+				dependents[dep] = append(dependents[dep], model.Name)
+			}
+		}
+	}
+
+	// Convert set to slice
+	externals = make([]string, 0, len(externalSet))
+	for ext := range externalSet {
+		externals = append(externals, ext)
+	}
+
+	return externals, dependents
+}
+
+// validateExternalDataWithContext checks that all required external tables are provided
+// and returns a helpful error message showing which transformation depends on each missing table.
+func (c *ModelCache) validateExternalDataWithContext(
+	required []string,
+	dependents map[string][]string,
+	provided map[string]*testdef.ExternalTable,
+) error {
+	var missingDetails []string
+
+	for _, tableName := range required {
+		if provided == nil || provided[tableName] == nil {
+			// Build helpful message showing which transformation(s) need this table
+			deps := dependents[tableName]
+			if len(deps) > 0 {
+				missingDetails = append(missingDetails, fmt.Sprintf("  - %s (dependency of: %s)", tableName, strings.Join(deps, ", ")))
+			} else {
+				missingDetails = append(missingDetails, fmt.Sprintf("  - %s", tableName))
+			}
+		}
+	}
+
+	if len(missingDetails) > 0 {
+		return fmt.Errorf("test config missing required external_data for:\n%s", strings.Join(missingDetails, "\n")) //nolint:err113 // Include missing tables for debugging
+	}
+
+	return nil
 }
 
 // topologicalSort sorts transformations in execution order (dependencies first).

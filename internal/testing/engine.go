@@ -573,6 +573,29 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName, external
 		return fmt.Errorf("waiting for admin tables: %w", err)
 	}
 
+	// Build a map of scheduled models → their transitive incremental deps.
+	// Used to verify deps have data before considering a scheduled model complete.
+	scheduledModelIncrementalDeps := make(map[string][]string)
+	for model := range scheduledModels {
+		incrementalDeps := e.getIncrementalDependencies(model)
+		if len(incrementalDeps) > 0 {
+			scheduledModelIncrementalDeps[model] = incrementalDeps
+		}
+	}
+
+	// Build a map of incremental models → their scheduled deps.
+	// Used to verify scheduled deps have data before considering an incremental model complete.
+	incrementalModelScheduledDeps := make(map[string][]string)
+	for model := range allModels {
+		if scheduledModels[model] {
+			continue // Skip scheduled models
+		}
+		scheduledDeps := e.getScheduledDependencies(model)
+		if len(scheduledDeps) > 0 {
+			incrementalModelScheduledDeps[model] = scheduledDeps
+		}
+	}
+
 	// Start with initial poll interval
 	interval := e.config.InitialPollInterval
 	ticker := time.NewTicker(interval)
@@ -650,6 +673,65 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName, external
 					continue
 				}
 
+				// For scheduled models, verify incremental deps have data before considering complete.
+				// This prevents the race where a scheduled model runs before its incremental deps,
+				// producing 0 rows because it read from empty tables.
+				if incrementalDeps, hasIncrDeps := scheduledModelIncrementalDeps[model]; hasIncrDeps {
+					allDepsHaveData := true
+					for _, dep := range incrementalDeps {
+						rows, err := e.getTableRowCount(ctx, conn, dbName, dep)
+						if err != nil || rows == 0 {
+							allDepsHaveData = false
+							break
+						}
+					}
+					if !allDepsHaveData {
+						e.log.WithFields(logrus.Fields{
+							"model": model,
+							"deps":  incrementalDeps,
+						}).Debug("scheduled model waiting for incremental deps to have data")
+						pending = append(pending, model)
+						continue
+					}
+				}
+
+				// For incremental models, verify scheduled deps have data before considering complete.
+				// CBT's bounds validation skips scheduled deps, so incremental models can run and
+				// produce wrong results by reading from empty scheduled tables.
+				if scheduledDeps, hasSchedDeps := incrementalModelScheduledDeps[model]; hasSchedDeps {
+					allDepsHaveData := true
+					for _, dep := range scheduledDeps {
+						rows, rowErr := e.getTableRowCount(ctx, conn, dbName, dep)
+						if rowErr != nil || rows == 0 {
+							allDepsHaveData = false
+							break
+						}
+					}
+					if !allDepsHaveData {
+						e.log.WithFields(logrus.Fields{
+							"model": model,
+							"deps":  scheduledDeps,
+						}).Debug("incremental model waiting for scheduled deps to have data")
+						pending = append(pending, model)
+						continue
+					}
+				}
+
+				// For incremental models only: check if model has 0 rows but deps have data.
+				// This catches cases where an incremental model ran before deps had data.
+				// We skip this check for scheduled models - they may legitimately produce 0 rows
+				// based on their business logic (e.g., "last 365 days" queries with limited test data).
+				if !scheduledModels[model] {
+					modelRows, rowErr := e.getTableRowCount(ctx, conn, dbName, model)
+					if rowErr == nil && modelRows == 0 {
+						if e.modelHasDepsWithData(ctx, conn, dbName, externalDB, model) {
+							e.log.WithField("model", model).Debug("incremental model has 0 rows but deps have data, waiting for re-run")
+							pending = append(pending, model)
+							continue
+						}
+					}
+				}
+
 				delete(modelPendingSince, model)
 			}
 
@@ -659,27 +741,26 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName, external
 			}).Debug("transformation progress")
 
 			if len(pending) == 0 {
-				// TEST SUITE ONLY: Check for scheduled models that might need another cycle.
+				// TEST SUITE ONLY: Check for models that might need another cycle.
 				//
-				// In production, CBT runs continuously and scheduled models execute on cron schedules
-				// (e.g., "@every 24h"). Dependencies are populated by incremental models running
-				// frequently, so scheduled models always find data when they run.
+				// In production, CBT runs continuously and models execute on their schedules.
+				// Dependencies are populated over time, so models find data when they run.
 				//
 				// In tests, we start CBT fresh with empty tables and load parquet data. There's a
-				// race condition where a scheduled model's first cron tick fires before its
-				// dependencies (incremental models) have processed data. The scheduled model runs,
-				// finds empty dependency tables, and produces 0 rows.
+				// race condition where a model's first execution fires before its dependencies
+				// have processed data. The model runs, finds empty dependency tables, and produces
+				// 0 rows.
 				//
-				// This retry logic detects when scheduled models produced 0 rows but their
-				// dependencies now have data, and waits for the next scheduled cycle to re-run them.
-				emptyScheduledWithDataDeps := e.findScheduledModelsNeedingRetry(ctx, conn, dbName, externalDB, scheduledModels)
-				if len(emptyScheduledWithDataDeps) > 0 && scheduledRetryCount < maxScheduledRetries {
+				// This retry logic detects when models produced 0 rows but their dependencies
+				// now have data, and waits for the next execution cycle to re-run them.
+				modelsNeedingRetry := e.findModelsNeedingRetry(ctx, conn, dbName, externalDB, allModels)
+				if len(modelsNeedingRetry) > 0 && scheduledRetryCount < maxScheduledRetries {
 					scheduledRetryCount++
 					e.log.WithFields(logrus.Fields{
-						"models": emptyScheduledWithDataDeps,
+						"models": modelsNeedingRetry,
 						"retry":  scheduledRetryCount,
 						"max":    maxScheduledRetries,
-					}).Debug("scheduled models have 0 rows but deps have data, waiting for another cycle")
+					}).Debug("models have 0 rows but deps have data, waiting for another cycle")
 					// Don't return - continue the loop to wait for another schedule run
 					continue
 				}
@@ -796,20 +877,20 @@ func (e *CBTEngine) tableExists(ctx context.Context, conn *sql.DB, dbName, table
 	return count > 0, nil
 }
 
-// findScheduledModelsNeedingRetry returns scheduled models that have 0 rows but their
-// dependencies have data. This indicates the scheduled model ran before
-// its deps were ready and needs another schedule cycle.
-func (e *CBTEngine) findScheduledModelsNeedingRetry(
+// findModelsNeedingRetry returns transformation models that have 0 rows but their
+// dependencies have data. This indicates the model ran before its deps were ready
+// and needs another execution cycle. Applies to both scheduled and incremental models.
+func (e *CBTEngine) findModelsNeedingRetry(
 	ctx context.Context,
 	conn *sql.DB,
 	dbName string,
 	externalDB string,
-	scheduledModels map[string]bool,
+	allModels map[string]bool,
 ) []string {
 	needsRetry := []string{}
 
-	for model := range scheduledModels {
-		// Check if this scheduled model has 0 rows
+	for model := range allModels {
+		// Check if this model has 0 rows
 		modelRows, err := e.getTableRowCount(ctx, conn, dbName, model)
 		if err != nil {
 			e.log.WithError(err).WithField("model", model).Debug("error checking model row count")
@@ -870,6 +951,51 @@ func (e *CBTEngine) findScheduledModelsNeedingRetry(
 	return needsRetry
 }
 
+// modelHasDepsWithData checks if any of the model's dependencies have data.
+// Used to determine if a model with 0 rows should be retried.
+func (e *CBTEngine) modelHasDepsWithData(
+	ctx context.Context,
+	conn *sql.DB,
+	dbName string,
+	externalDB string,
+	model string,
+) bool {
+	e.modelCache.mu.RLock()
+	metadata := e.modelCache.transformationModels[model]
+	e.modelCache.mu.RUnlock()
+
+	if metadata == nil {
+		return false
+	}
+
+	for _, dep := range metadata.Dependencies {
+		var depRows uint64
+
+		var checkErr error
+
+		switch {
+		case e.modelCache.IsTransformationModel(dep):
+			// Transformation dep - check in CBT database
+			depRows, checkErr = e.getTableRowCount(ctx, conn, dbName, dep)
+		case e.modelCache.IsExternalModel(dep) && externalDB != "":
+			// External dep - check in external database
+			depRows, checkErr = e.getTableRowCount(ctx, conn, externalDB, dep)
+		default:
+			continue
+		}
+
+		if checkErr != nil {
+			continue
+		}
+
+		if depRows > 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
 // getTableRowCount returns the number of rows in a table
 func (e *CBTEngine) getTableRowCount(ctx context.Context, conn *sql.DB, dbName, tableName string) (uint64, error) {
 	query := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
@@ -899,5 +1025,86 @@ func (e *CBTEngine) getModelType(metadata *ModelMetadata) string {
 	default:
 		// Default to scheduled for empty or unknown types
 		return modelTypeScheduled
+	}
+}
+
+// getScheduledDependencies returns scheduled model dependencies for a given model.
+// This is used to identify incremental models that depend on scheduled models,
+// which require special handling to ensure the scheduled deps have data first.
+func (e *CBTEngine) getScheduledDependencies(model string) []string {
+	e.modelCache.mu.RLock()
+	defer e.modelCache.mu.RUnlock()
+
+	metadata := e.modelCache.transformationModels[model]
+	if metadata == nil {
+		return nil
+	}
+
+	// Only check incremental models - scheduled models don't have this race condition
+	if e.getModelType(metadata) != modelTypeIncremental {
+		return nil
+	}
+
+	scheduledDeps := make([]string, 0)
+
+	for _, dep := range metadata.Dependencies {
+		depMeta := e.modelCache.transformationModels[dep]
+		if depMeta != nil && e.getModelType(depMeta) == modelTypeScheduled {
+			scheduledDeps = append(scheduledDeps, dep)
+		}
+	}
+
+	return scheduledDeps
+}
+
+// getIncrementalDependencies returns all incremental model dependencies (transitively) for a given scheduled model.
+// This is used to identify scheduled models that depend on incremental models,
+// which need their incremental deps to have data before the scheduled model can produce results.
+// It recursively walks the dependency tree to find ALL incremental models, not just direct deps.
+func (e *CBTEngine) getIncrementalDependencies(model string) []string {
+	e.modelCache.mu.RLock()
+	defer e.modelCache.mu.RUnlock()
+
+	metadata := e.modelCache.transformationModels[model]
+	if metadata == nil {
+		return nil
+	}
+
+	// Only check scheduled models
+	if e.getModelType(metadata) != modelTypeScheduled {
+		return nil
+	}
+
+	// Use a set to track visited models and avoid cycles
+	visited := make(map[string]bool)
+	incrementalDeps := make([]string, 0)
+
+	// Recursively collect all incremental deps
+	e.collectIncrementalDepsRecursive(metadata.Dependencies, visited, &incrementalDeps)
+
+	return incrementalDeps
+}
+
+// collectIncrementalDepsRecursive walks the dependency tree and collects all incremental models.
+// Must be called with modelCache.mu already held (RLock).
+func (e *CBTEngine) collectIncrementalDepsRecursive(deps []string, visited map[string]bool, result *[]string) {
+	for _, dep := range deps {
+		if visited[dep] {
+			continue
+		}
+
+		visited[dep] = true
+
+		depMeta := e.modelCache.transformationModels[dep]
+		if depMeta == nil {
+			continue // External model, skip
+		}
+
+		if e.getModelType(depMeta) == modelTypeIncremental {
+			*result = append(*result, dep)
+		}
+
+		// Recursively check this model's dependencies
+		e.collectIncrementalDepsRecursive(depMeta.Dependencies, visited, result)
 	}
 }

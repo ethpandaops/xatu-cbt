@@ -23,6 +23,12 @@ external_data:
     canonical_execution_storage_reads:
         url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_reads.parquet
         network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_beacon_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected bounds and size
       sql: |
