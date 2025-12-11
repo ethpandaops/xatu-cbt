@@ -40,6 +40,7 @@ SELECT
     countIf(status = 'SYNCING') AS syncing_count,
     countIf(status = 'ACCEPTED') AS accepted_count,
     countIf(status = 'INVALID_BLOCK_HASH') AS invalid_block_hash_count,
+    countIf(status = 'ERROR') AS error_count,
     round(countIf(status = 'VALID') * 100.0 / COUNT(*), 2) AS valid_pct,
     -- Duration statistics
     round(AVG(duration_ms)) AS avg_duration_ms,

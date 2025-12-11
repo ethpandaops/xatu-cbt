@@ -20,6 +20,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_slot_local ON CLUSTER '
     `syncing_count` UInt32 COMMENT 'Number of observations with SYNCING status' CODEC(ZSTD(1)),
     `accepted_count` UInt32 COMMENT 'Number of observations with ACCEPTED status' CODEC(ZSTD(1)),
     `invalid_block_hash_count` UInt32 COMMENT 'Number of observations with INVALID_BLOCK_HASH status' CODEC(ZSTD(1)),
+    `error_count` UInt32 COMMENT 'Number of observations with ERROR status' CODEC(ZSTD(1)),
     `valid_pct` Float64 COMMENT 'Percentage of observations with VALID status' CODEC(ZSTD(1)),
     `avg_duration_ms` UInt64 COMMENT 'Average duration of engine_newPayload calls in milliseconds' CODEC(ZSTD(1)),
     `median_duration_ms` UInt64 COMMENT 'Median duration of engine_newPayload calls in milliseconds' CODEC(ZSTD(1)),
