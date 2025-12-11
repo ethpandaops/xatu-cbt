@@ -659,8 +659,19 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName, external
 			}).Debug("transformation progress")
 
 			if len(pending) == 0 {
-				// Check for scheduled models that might need another cycle.
-				// This handles the race condition where scheduled models run before deps have data.
+				// TEST SUITE ONLY: Check for scheduled models that might need another cycle.
+				//
+				// In production, CBT runs continuously and scheduled models execute on cron schedules
+				// (e.g., "@every 24h"). Dependencies are populated by incremental models running
+				// frequently, so scheduled models always find data when they run.
+				//
+				// In tests, we start CBT fresh with empty tables and load parquet data. There's a
+				// race condition where a scheduled model's first cron tick fires before its
+				// dependencies (incremental models) have processed data. The scheduled model runs,
+				// finds empty dependency tables, and produces 0 rows.
+				//
+				// This retry logic detects when scheduled models produced 0 rows but their
+				// dependencies now have data, and waits for the next scheduled cycle to re-run them.
 				emptyScheduledWithDataDeps := e.findScheduledModelsNeedingRetry(ctx, conn, dbName, externalDB, scheduledModels)
 				if len(emptyScheduledWithDataDeps) > 0 && scheduledRetryCount < maxScheduledRetries {
 					scheduledRetryCount++

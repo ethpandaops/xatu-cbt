@@ -51,21 +51,19 @@ type OrchestratorConfig struct {
 // Orchestrator coordinates end-to-end test execution.
 // This is the concrete implementation without an interface abstraction.
 type Orchestrator struct {
-	configLoader       testdef.Loader
-	modelCache         *ModelCache
-	cache              *ParquetCache
-	dbManager          *DatabaseManager
-	cbtEngine          *CBTEngine
-	assertionRunner    assertion.Runner // For CBT cluster (transformation models)
-	xatuAssertion      assertion.Runner // For Xatu cluster (external models)
-	migrationDir       string
-	log                logrus.FieldLogger
-	metrics            Collector
-	formatter          *output.Formatter
-	verbose            bool
-	cleanupTestDB      bool
-	preparedNetworks   map[string]bool
-	preparedNetworksMu sync.Mutex
+	configLoader    testdef.Loader
+	modelCache      *ModelCache
+	cache           *ParquetCache
+	dbManager       *DatabaseManager
+	cbtEngine       *CBTEngine
+	assertionRunner assertion.Runner // For CBT cluster (transformation models)
+	xatuAssertion   assertion.Runner // For Xatu cluster (external models)
+	migrationDir    string
+	log             logrus.FieldLogger
+	metrics         Collector
+	formatter       *output.Formatter
+	verbose         bool
+	cleanupTestDB   bool
 
 	// Template database tracking for per-test isolation
 	templatesPrepared bool
@@ -152,20 +150,19 @@ func NewOrchestrator(cfg *OrchestratorConfig) *Orchestrator {
 	)
 
 	return &Orchestrator{
-		configLoader:     cfg.ConfigLoader,
-		modelCache:       cfg.ModelCache,
-		cache:            cfg.ParquetCache,
-		dbManager:        cfg.DBManager,
-		cbtEngine:        cfg.CBTEngine,
-		assertionRunner:  cfg.AssertionRunner,
-		xatuAssertion:    cfg.XatuAssertion,
-		migrationDir:     cfg.MigrationDir,
-		log:              cfg.Logger.WithField("component", "test_orchestrator"),
-		metrics:          cfg.MetricsCollector,
-		formatter:        outputFormatter,
-		verbose:          cfg.Verbose,
-		cleanupTestDB:    cfg.CleanupTestDB,
-		preparedNetworks: make(map[string]bool),
+		configLoader:    cfg.ConfigLoader,
+		modelCache:      cfg.ModelCache,
+		cache:           cfg.ParquetCache,
+		dbManager:       cfg.DBManager,
+		cbtEngine:       cfg.CBTEngine,
+		assertionRunner: cfg.AssertionRunner,
+		xatuAssertion:   cfg.XatuAssertion,
+		migrationDir:    cfg.MigrationDir,
+		log:             cfg.Logger.WithField("component", "test_orchestrator"),
+		metrics:         cfg.MetricsCollector,
+		formatter:       outputFormatter,
+		verbose:         cfg.Verbose,
+		cleanupTestDB:   cfg.CleanupTestDB,
 	}
 }
 
@@ -678,236 +675,6 @@ func (o *Orchestrator) generateTestID() string {
 	return fmt.Sprintf("%d", timestamp)
 }
 
-// aggregatedDependencies holds combined dependencies for all test configs in a group.
-type aggregatedDependencies struct {
-	ExternalTables  []string
-	Transformations []string
-	AllModels       []string // Combined external + transformations for CBT config
-	ParquetURLs     map[string]string
-}
-
-// resolveDependencies resolves dependencies for all test configs and aggregates them.
-func (o *Orchestrator) resolveDependencies(
-	testConfigs []*testdef.TestDefinition,
-) (*aggregatedDependencies, map[string]*Dependencies, error) {
-	resolutions := make(map[string]*Dependencies, len(testConfigs))
-	allExternalTables := make(map[string]bool)
-	allTransformations := make(map[string]bool)
-	allParquetURLs := make(map[string]string)
-
-	// Resolve dependencies for each test config
-	for _, testConfig := range testConfigs {
-		deps, err := o.modelCache.ResolveTestDependencies(testConfig)
-		if err != nil {
-			return nil, nil, fmt.Errorf("resolving dependencies for %s: %w", testConfig.Model, err)
-		}
-
-		resolutions[testConfig.Model] = deps
-
-		// Collect unique external tables
-		for _, ext := range deps.ExternalTables {
-			if o.modelCache.IsExternalModel(ext) {
-				allExternalTables[ext] = true
-			}
-		}
-
-		// Collect unique transformations
-		for _, model := range deps.TransformationModels {
-			allTransformations[model.Name] = true
-		}
-
-		// Collect parquet URLs
-		for table, url := range deps.ParquetURLs {
-			allParquetURLs[table] = url
-		}
-	}
-
-	// Convert maps to slices
-	externalTablesList := make([]string, 0, len(allExternalTables))
-	for ext := range allExternalTables {
-		externalTablesList = append(externalTablesList, ext)
-	}
-
-	transformationsList := make([]string, 0, len(allTransformations))
-	for trans := range allTransformations {
-		transformationsList = append(transformationsList, trans)
-	}
-
-	// Combine for CBT config
-	allModels := make([]string, 0, len(externalTablesList)+len(transformationsList))
-	allModels = append(allModels, externalTablesList...)
-	allModels = append(allModels, transformationsList...)
-
-	o.log.WithFields(logrus.Fields{
-		"external_tables": len(externalTablesList),
-		"transformations": len(transformationsList),
-		"test_configs":    len(testConfigs),
-	}).Info("resolved dependencies")
-
-	return &aggregatedDependencies{
-		ExternalTables:  externalTablesList,
-		Transformations: transformationsList,
-		AllModels:       allModels,
-		ParquetURLs:     allParquetURLs,
-	}, resolutions, nil
-}
-
-// prepareInfrastructure prepares network database with parquet data.
-func (o *Orchestrator) prepareInfrastructure(
-	ctx context.Context,
-	network string,
-	parquetURLs map[string]string,
-) error {
-	return o.ensureNetworkDatabaseReady(ctx, network, parquetURLs)
-}
-
-// createTestDatabase creates an ephemeral test database in CBT cluster.
-func (o *Orchestrator) createTestDatabase(
-	ctx context.Context,
-	network, spec string,
-) (string, error) {
-	dbName, err := o.dbManager.CreateTestDatabase(ctx, network, spec, o.migrationDir)
-	if err != nil {
-		return "", fmt.Errorf("creating test database: %w", err)
-	}
-
-	return dbName, nil
-}
-
-// cleanupTestDatabase cleans up a test database if cleanup is enabled.
-func (o *Orchestrator) cleanupTestDatabase(dbName string) {
-	if !o.cleanupTestDB {
-		o.log.WithField("database", dbName).Debug("skipping test database cleanup (--cleanup-test-db not set)")
-		return
-	}
-
-	if err := o.dbManager.DropDatabase(context.Background(), dbName); err != nil {
-		o.log.WithError(err).WithField("database", dbName).Error("failed to drop test database")
-	}
-}
-
-// runTransformations executes CBT transformations for all models.
-func (o *Orchestrator) runTransformations(
-	ctx context.Context,
-	network, dbName string,
-	aggregatedDeps *aggregatedDependencies,
-) error {
-	if len(aggregatedDeps.Transformations) == 0 {
-		o.log.Debug("no transformations to run")
-		return nil
-	}
-
-	// Run transformations
-	// Pass allModels for config (so CBT knows about all dependencies)
-	// Wait for transformationsList (all transformation models including dependencies)
-	if err := o.cbtEngine.RunTransformations(
-		ctx,
-		network,
-		dbName,
-		config.DefaultDatabase, // External database - shared until per-test isolation is implemented
-		aggregatedDeps.AllModels,
-		aggregatedDeps.Transformations,
-	); err != nil {
-		return fmt.Errorf("running transformations: %w", err)
-	}
-
-	return nil
-}
-
-// runAssertions executes assertions for all test configs in parallel using a worker pool.
-func (o *Orchestrator) runAssertions(
-	ctx context.Context,
-	network, spec, dbName string,
-	testConfigs []*testdef.TestDefinition,
-	resolutions map[string]*Dependencies,
-	concurrency int,
-	startTime time.Time,
-) []*TestResult {
-	o.log.WithField("tests", len(testConfigs)).Info("running assertions")
-
-	type assertionJob struct {
-		index      int
-		testConfig *testdef.TestDefinition
-	}
-
-	results := make([]*TestResult, len(testConfigs))
-	jobs := make(chan assertionJob, len(testConfigs))
-	var wg sync.WaitGroup
-
-	// Start worker pool
-	for i := 0; i < concurrency; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			for job := range jobs {
-				result := o.runSingleAssertion(
-					ctx,
-					network,
-					spec,
-					dbName,
-					job.testConfig,
-					resolutions[job.testConfig.Model],
-					startTime,
-				)
-
-				// No mutex needed - each worker writes to unique index
-				results[job.index] = result
-			}
-		}()
-	}
-
-	// Queue assertion jobs
-	for i, testConfig := range testConfigs {
-		jobs <- assertionJob{index: i, testConfig: testConfig}
-	}
-	close(jobs)
-
-	// Wait for all assertions to complete
-	wg.Wait()
-
-	return results
-}
-
-// runSingleAssertion executes assertions for a single test config.
-func (o *Orchestrator) runSingleAssertion(
-	ctx context.Context,
-	network, spec, dbName string,
-	testConfig *testdef.TestDefinition,
-	deps *Dependencies,
-	startTime time.Time,
-) *TestResult {
-	result := &TestResult{
-		Model:           testConfig.Model,
-		Network:         network,
-		Spec:            spec,
-		ExternalTables:  deps.ExternalTables,
-		ParquetURLs:     deps.ParquetURLs,
-		Transformations: extractModelNames(deps.TransformationModels),
-	}
-
-	// Run assertions for this test
-	assertionResults, err := o.assertionRunner.RunAssertions(ctx, testConfig.Model, dbName, testConfig.Assertions)
-	if err != nil {
-		result.Error = fmt.Errorf("running assertions: %w", err)
-		result.Success = false
-	} else {
-		result.AssertionResults = assertionResults
-		result.Success = assertionResults.Failed == 0
-	}
-
-	result.Duration = time.Since(startTime)
-
-	// Record test result metrics
-	o.recordTestMetrics(result, testConfig)
-
-	if !result.Success {
-		o.log.WithField("model", testConfig.Model).Error("assertion(s) failed")
-	}
-
-	return result
-}
-
 // recordTestMetrics records metrics for a test result.
 func (o *Orchestrator) recordTestMetrics(result *TestResult, testConfig *testdef.TestDefinition) {
 	var (
@@ -1019,51 +786,6 @@ func (o *Orchestrator) ensureTemplatesPrepared(ctx context.Context, network stri
 
 	o.templatesPrepared = true
 	o.log.Info("template databases ready")
-
-	return nil
-}
-
-// ensureNetworkDatabaseReady prepares the network database with parquet data if needed.
-func (o *Orchestrator) ensureNetworkDatabaseReady(ctx context.Context, network string, allParquetURLs map[string]string) error {
-	// Check if network is already prepared
-	o.preparedNetworksMu.Lock()
-	alreadyPrepared := o.preparedNetworks[network]
-	if alreadyPrepared {
-		o.preparedNetworksMu.Unlock()
-		o.log.WithField("network", network).Debug("network database already prepared, skipping")
-		return nil
-	}
-	o.preparedNetworks[network] = true
-	o.preparedNetworksMu.Unlock()
-
-	// Network needs preparation - fetch parquet files and load data.
-	xatuLogCtx := o.log.WithField("cluster", "xatu")
-
-	xatuLogCtx.WithFields(logrus.Fields{
-		"count": len(allParquetURLs),
-	}).Info("fetching parquet files")
-
-	localPaths := make(map[string]string, len(allParquetURLs))
-	for tableName, url := range allParquetURLs {
-		path, err := o.cache.Get(ctx, url, tableName)
-		if err != nil {
-			return fmt.Errorf("fetching parquet file for %s: %w", tableName, err)
-		}
-
-		localPaths[tableName] = path
-	}
-
-	// Prepare network database in xatu cluster.
-	xatuLogCtx.Info("preparing network database")
-	if err := o.dbManager.PrepareNetworkDatabase(ctx, network); err != nil {
-		return fmt.Errorf("preparing network database: %w", err)
-	}
-
-	// Load parquet data into xatu cluster default database.
-	xatuLogCtx.Info("loading parquet data")
-	if err := o.dbManager.LoadParquetData(ctx, config.DefaultDatabase, localPaths); err != nil {
-		return fmt.Errorf("loading parquet data: %w", err)
-	}
 
 	return nil
 }

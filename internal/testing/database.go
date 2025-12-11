@@ -917,13 +917,6 @@ func (m *DatabaseManager) LoadParquetData(ctx context.Context, database string, 
 
 	start := time.Now()
 
-	logCtx.Info("truncating tables")
-	for tableName := range dataFiles {
-		if err := m.truncateExternalTable(ctx, logCtx, database, tableName); err != nil {
-			m.log.WithError(err).WithField("table", tableName).Warn("failed to truncate table (non-fatal)")
-		}
-	}
-
 	type job struct {
 		tableName string
 		filePath  string
@@ -995,23 +988,6 @@ func (m *DatabaseManager) loadParquetFile(ctx context.Context, log *logrus.Entry
 
 	if _, err := m.xatuConn.ExecContext(queryCtx, insertSQL); err != nil {
 		return fmt.Errorf("inserting from parquet: %w", err)
-	}
-
-	return nil
-}
-
-// truncateExternalTable truncates an external model table
-func (m *DatabaseManager) truncateExternalTable(ctx context.Context, log *logrus.Entry, database, tableName string) error {
-	localTableName := tableName + "_local"
-	truncateSQL := fmt.Sprintf("TRUNCATE TABLE `%s`.`%s` ON CLUSTER %s SYNC", database, localTableName, config.XatuClusterName)
-
-	log.WithField("table", localTableName).Debug("truncating table")
-
-	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
-	defer cancel()
-
-	if _, err := m.xatuConn.ExecContext(queryCtx, truncateSQL); err != nil {
-		return fmt.Errorf("truncating table: %w", err)
 	}
 
 	return nil
