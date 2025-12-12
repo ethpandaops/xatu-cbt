@@ -522,7 +522,6 @@ func (m *DatabaseManager) CloneExternalDatabase(ctx context.Context, testID stri
 		"database": extDBName,
 		"tables":   len(tableNames),
 	})
-	logCtx.Info("cloning external database from template")
 
 	start := time.Now()
 
@@ -726,7 +725,6 @@ func (m *DatabaseManager) CloneCBTDatabase(ctx context.Context, testID string, t
 		"database": cbtDBName,
 		"tables":   len(tableNames),
 	})
-	logCtx.Info("cloning CBT database from template")
 
 	start := time.Now()
 
@@ -737,7 +735,7 @@ func (m *DatabaseManager) CloneCBTDatabase(ctx context.Context, testID string, t
 	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	if _, err := m.cbtConn.ExecContext(queryCtx, createSQL); err != nil {
 		cancel()
-		return "", fmt.Errorf("creating CBT database: %w", err)
+		return "", fmt.Errorf("creating cbt database: %w", err)
 	}
 	cancel()
 
@@ -761,11 +759,6 @@ func (m *DatabaseManager) CloneCBTDatabase(ctx context.Context, testID string, t
 	}
 
 	tables = append(tables, adminTables...)
-
-	// If only admin tables (no transformation tables), log differently
-	if len(tableNames) == 0 {
-		logCtx.WithField("admin_tables", len(adminTables)).Debug("cloning admin tables only (no transformations)")
-	}
 
 	// Clone tables in parallel with worker pool for speed
 	const cloneWorkers = 20
@@ -806,7 +799,7 @@ func (m *DatabaseManager) CloneCBTDatabase(ctx context.Context, testID string, t
 	logCtx.WithFields(logrus.Fields{
 		"tables":   len(tables),
 		"duration": time.Since(start),
-	}).Info("CBT database cloned")
+	}).Info("cbt database cloned")
 
 	return cbtDBName, nil
 }
@@ -961,11 +954,6 @@ func (m *DatabaseManager) LoadParquetData(ctx context.Context, database string, 
 
 // loadParquetFile loads a single parquet file into a table
 func (m *DatabaseManager) loadParquetFile(ctx context.Context, log *logrus.Entry, database, tableName, filePath string) error {
-	log.WithFields(logrus.Fields{
-		"table": tableName,
-		"file":  filePath,
-	}).Debug("loading parquet file")
-
 	localTableName := tableName + "_local"
 	// Use streaming settings to avoid loading entire parquet into memory:
 	// - max_insert_block_size: flush every 10k rows (smaller batches)

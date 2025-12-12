@@ -5,6 +5,18 @@ external_data:
     canonical_beacon_blob_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_beacon_blob_sidecar.parquet
         network_column: meta_network_name
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
 assertions:
     - name: Contains orphaned block
       sql: |

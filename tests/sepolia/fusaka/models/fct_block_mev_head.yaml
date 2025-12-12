@@ -3,36 +3,82 @@ network: sepolia
 spec: fusaka
 external_data:
     beacon_api_eth_v2_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v2_beacon_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_mev_head_beacon_api_eth_v2_beacon_block.parquet
         network_column: meta_network_name
     mev_relay_bid_trace:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/mev_relay_bid_trace.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_mev_head_mev_relay_bid_trace.parquet
         network_column: meta_network_name
     mev_relay_proposer_payload_delivered:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/mev_relay_proposer_payload_delivered.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_mev_head_mev_relay_proposer_payload_delivered.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          fct_block_mev_head FINAL
-      expected:
-        count: 0
-        max: "1970-01-01T00:00:00Z"
-        min: "1970-01-01T00:00:00Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS count FROM fct_block_mev_head FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot values should be non-negative
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_block_mev_head'
-      expected:
-        max: "1970-01-01T00:00:00Z"
-        min: "1970-01-01T00:00:00Z"
+        SELECT MIN(slot) AS min_slot FROM fct_block_mev_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 0
+    - name: Epoch should be consistent with slot (slot / 32)
+      sql: |
+        SELECT COUNT(*) AS mismatched_epochs FROM fct_block_mev_head FINAL WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: mismatched_epochs
+          value: 0
+    - name: Block number should be non-negative
+      sql: |
+        SELECT MIN(block_number) AS min_block_number FROM fct_block_mev_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_block_number
+          value: 0
+    - name: Gas used should not exceed gas limit
+      sql: |
+        SELECT COUNT(*) AS invalid_gas FROM fct_block_mev_head FINAL WHERE gas_used > gas_limit
+      assertions:
+        - type: equals
+          column: invalid_gas
+          value: 0
+    - name: Transaction count should be non-negative
+      sql: |
+        SELECT MIN(transaction_count) AS min_tx_count FROM fct_block_mev_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_tx_count
+          value: 0
+    - name: Relay names array should not be empty
+      sql: |
+        SELECT COUNT(*) AS empty_relays FROM fct_block_mev_head FINAL WHERE length(relay_names) = 0
+      assertions:
+        - type: equals
+          column: empty_relays
+          value: 0
+    - name: Block hash should not be empty
+      sql: |
+        SELECT COUNT(*) AS empty_block_hash FROM fct_block_mev_head FINAL WHERE block_hash = ''
+      assertions:
+        - type: equals
+          column: empty_block_hash
+          value: 0
+    - name: Slot start datetime should be before or equal to updated datetime
+      sql: |
+        SELECT COUNT(*) AS invalid_times FROM fct_block_mev_head FINAL WHERE slot_start_date_time > updated_date_time
+      assertions:
+        - type: equals
+          column: invalid_times
+          value: 0
+    - name: Value should be non-negative when present
+      sql: |
+        SELECT COUNT(*) AS negative_values FROM fct_block_mev_head FINAL WHERE value IS NOT NULL AND value < 0
+      assertions:
+        - type: equals
+          column: negative_values
+          value: 0

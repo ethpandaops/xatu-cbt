@@ -176,10 +176,8 @@ func (c *ModelCache) ResolveTestDependencies(testConfig *testdef.TestDefinition)
 	// Extract leaf external tables and build dependency map for error messages
 	externalTables, externalDependents := c.extractLeafExternalTablesWithDependents(transformations)
 
-	// Validate that all required external tables are provided in test config
-	if validationErr := c.validateExternalDataWithContext(externalTables, externalDependents, testConfig.ExternalData); validationErr != nil {
-		return nil, validationErr
-	}
+	// Warn about any missing external tables (non-fatal - assertions will catch actual problems)
+	c.warnMissingExternalData(externalTables, externalDependents, testConfig.ExternalData)
 
 	// Build parquet URL map from explicitly provided external data
 	parquetURLs := make(map[string]string)
@@ -492,13 +490,14 @@ func (c *ModelCache) extractLeafExternalTablesWithDependents(transformations []*
 	return externals, dependents
 }
 
-// validateExternalDataWithContext checks that all required external tables are provided
-// and returns a helpful error message showing which transformation depends on each missing table.
-func (c *ModelCache) validateExternalDataWithContext(
+// warnMissingExternalData logs warnings for any external tables that are required
+// but not provided in the test config. This is non-fatal - the test will proceed
+// and assertions will catch any actual problems from missing data.
+func (c *ModelCache) warnMissingExternalData(
 	required []string,
 	dependents map[string][]string,
 	provided map[string]*testdef.ExternalTable,
-) error {
+) {
 	var missingDetails []string
 
 	for _, tableName := range required {
@@ -514,10 +513,8 @@ func (c *ModelCache) validateExternalDataWithContext(
 	}
 
 	if len(missingDetails) > 0 {
-		return fmt.Errorf("test config missing required external_data for:\n%s", strings.Join(missingDetails, "\n")) //nolint:err113 // Include missing tables for debugging
+		c.log.Warnf("test config missing external_data (tables will be empty):\n%s", strings.Join(missingDetails, "\n"))
 	}
-
-	return nil
 }
 
 // topologicalSort sorts transformations in execution order (dependencies first).

@@ -23,6 +23,9 @@ external_data:
     libp2p_gossipsub_beacon_block:
         url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/ethseer_validator_entity.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected bounds and size
       sql: |

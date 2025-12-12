@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ethpandaops/xatu-cbt/internal/config"
@@ -68,6 +69,10 @@ type Orchestrator struct {
 	// Template database tracking for per-test isolation
 	templatesPrepared bool
 	templatesMu       sync.Mutex
+
+	// Atomic counter for generating unique test IDs.
+	// Prevents collisions when consecutive generateTestID() calls occur within the same nanosecond.
+	testIDCounter atomic.Uint64
 }
 
 // metricsAdapter adapts Collector to output.MetricsProvider.
@@ -549,11 +554,11 @@ func (o *Orchestrator) executeTestWithDBs(
 	start := time.Now()
 
 	logCtx := o.log.WithFields(logrus.Fields{
-		"model": testConfig.Model,
-		"extDB": extDB,
-		"cbtDB": cbtDB,
+		"model":  testConfig.Model,
+		"ext_db": extDB,
+		"cbt_db": cbtDB,
 	})
-	logCtx.Info("executing test with pre-cloned databases")
+	logCtx.Info("executing test")
 
 	result := &TestResult{
 		Model:   testConfig.Model,
@@ -653,7 +658,6 @@ func (o *Orchestrator) runTestTransformations(
 ) error {
 	// Skip for external model tests - no transformations to run
 	if len(deps.TransformationModels) == 0 {
-		o.log.Debug("skipping transformations (external model test)")
 		return nil
 	}
 
@@ -670,9 +674,13 @@ func (o *Orchestrator) runTestTransformations(
 }
 
 // generateTestID creates a unique identifier for a test execution.
+// Uses an atomic counter combined with timestamp to guarantee uniqueness even when
+// consecutive calls occur within the same nanosecond (common in tight loops).
 func (o *Orchestrator) generateTestID() string {
+	counter := o.testIDCounter.Add(1)
 	timestamp := time.Now().UnixNano()
-	return fmt.Sprintf("%d", timestamp)
+
+	return fmt.Sprintf("%d_%d", timestamp, counter)
 }
 
 // recordTestMetrics records metrics for a test result.
