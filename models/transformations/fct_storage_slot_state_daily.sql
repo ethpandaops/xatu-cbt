@@ -47,15 +47,15 @@ SELECT
     day_start_date,
     active_slots,
     effective_bytes,
-    active_slots_with_6m_expiry,
-    effective_bytes_with_6m_expiry
+    active_slots_with_six_months_expiry,
+    effective_bytes_with_six_months_expiry
 FROM (
     SELECT
         toDate(b.block_date_time) AS day_start_date,
         argMax(s.active_slots, s.block_number) AS active_slots,
         argMax(s.effective_bytes, s.block_number) AS effective_bytes,
-        argMax(e.active_slots, e.block_number) AS active_slots_with_6m_expiry,
-        argMax(e.effective_bytes, e.block_number) AS effective_bytes_with_6m_expiry
+        argMax(e.active_slots, e.block_number) AS active_slots_with_six_months_expiry,
+        argMax(e.effective_bytes, e.block_number) AS effective_bytes_with_six_months_expiry
     FROM blocks_in_days AS b
     GLOBAL INNER JOIN {{ index .dep "{{transformation}}" "fct_storage_slot_state" "helpers" "from" }} AS s FINAL
         ON b.block_number = s.block_number
