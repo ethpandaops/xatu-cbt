@@ -9,14 +9,12 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_next_touch_local ON CLUSTER '{cl
     '{replica}',
     `updated_date_time`
 ) PARTITION BY intDiv(block_number, 5000000)
-ORDER BY (address, slot_key, block_number)
-SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Storage slot touches with precomputed next touch block for efficient expiry range checks';
+ORDER BY (block_number, address, slot_key)
+COMMENT 'Storage slot touches with precomputed next touch block - ordered by block_number for efficient range queries';
 
 CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_next_touch ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_next_touch_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     int_storage_slot_next_touch_local,
-    cityHash64(address, slot_key)
+    cityHash64(block_number, address)
 );

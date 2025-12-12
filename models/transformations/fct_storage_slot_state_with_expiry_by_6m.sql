@@ -16,16 +16,23 @@ tags:
 dependencies:
   - "{{transformation}}.fct_storage_slot_state"
   - "{{transformation}}.int_storage_slot_expiry_by_6m"
+  - "{{transformation}}.int_storage_slot_reactivation_by_6m"
 ---
 -- Layers 6-month expiry policy on top of fct_storage_slot_state: slots not accessed (read or written) for 6 months are cleared.
+-- Combines expiry events (negative deltas) and reactivation/cancellation events (positive deltas) for correct accounting.
+--
+-- FIX: Includes reactivations to balance out expiries (Issues 1-5):
+--   - Expiry: slot inactive for 6 months → -1 slot, -X bytes
+--   - Reactivation: slot touched after expiry → +1 slot, +X bytes (undoes the expiry)
+--   - Cancellation: slot CLEARED after expiry → +1 slot, +X bytes (prevents double-counting)
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
--- Get the last known cumulative expiry totals before this chunk
+-- Get the last known cumulative net totals before this chunk
 prev_state AS (
     SELECT
-        cumulative_expiry_slots,
-        cumulative_expiry_bytes
+        cumulative_net_slots,
+        cumulative_net_bytes
     FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
     WHERE block_number < {{ .bounds.start }}
     ORDER BY block_number DESC
@@ -40,43 +47,74 @@ base_stats AS (
     FROM {{ index .dep "{{transformation}}" "fct_storage_slot_state" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 ),
--- Expiry deltas: slots cleared due to 6-month inactivity
+-- Expiry deltas: slots cleared due to 6-month inactivity (NEGATIVE)
 expiry_deltas AS (
     SELECT
         block_number,
-        -toInt64(count()) as expiry_slots_delta,
-        -SUM(toInt64(effective_bytes)) as expiry_bytes_delta
+        -toInt64(count()) as slots_delta,
+        -SUM(toInt64(effective_bytes)) as bytes_delta
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_by_6m" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     GROUP BY block_number
 ),
--- Join base stats with expiry deltas
+-- Reactivation deltas: slots un-expired by subsequent touch (POSITIVE)
+reactivation_deltas AS (
+    SELECT
+        block_number,
+        toInt64(count()) as slots_delta,
+        SUM(toInt64(effective_bytes)) as bytes_delta
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_by_6m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    GROUP BY block_number
+),
+-- Combine expiry and reactivation into net deltas per block
+combined_deltas AS (
+    SELECT
+        block_number,
+        SUM(slots_delta) as net_slots_delta,
+        SUM(bytes_delta) as net_bytes_delta
+    FROM (
+        SELECT * FROM expiry_deltas
+        UNION ALL
+        SELECT * FROM reactivation_deltas
+    )
+    GROUP BY block_number
+),
+-- Join base stats with combined deltas
 combined AS (
     SELECT
         b.block_number,
         b.base_active_slots,
         b.base_effective_bytes,
-        COALESCE(e.expiry_slots_delta, 0) as expiry_slots_delta,
-        COALESCE(e.expiry_bytes_delta, 0) as expiry_bytes_delta
+        COALESCE(d.net_slots_delta, 0) as net_slots_delta,
+        COALESCE(d.net_bytes_delta, 0) as net_bytes_delta
     FROM base_stats b
-    LEFT JOIN expiry_deltas e ON b.block_number = e.block_number
+    LEFT JOIN combined_deltas d ON b.block_number = d.block_number
 )
 SELECT
-    now() as updated_date_time,
+    fromUnixTimestamp({{ .task.start }}) as updated_date_time,
     block_number,
-    expiry_slots_delta,
-    expiry_bytes_delta,
-    COALESCE((SELECT cumulative_expiry_slots FROM prev_state), 0)
-        + SUM(expiry_slots_delta) OVER (ORDER BY block_number ROWS UNBOUNDED PRECEDING) as cumulative_expiry_slots,
-    COALESCE((SELECT cumulative_expiry_bytes FROM prev_state), 0)
-        + SUM(expiry_bytes_delta) OVER (ORDER BY block_number ROWS UNBOUNDED PRECEDING) as cumulative_expiry_bytes,
+    net_slots_delta,
+    net_bytes_delta,
+    COALESCE((SELECT cumulative_net_slots FROM prev_state), 0)
+        + SUM(net_slots_delta) OVER (ORDER BY block_number ROWS UNBOUNDED PRECEDING) as cumulative_net_slots,
+    COALESCE((SELECT cumulative_net_bytes FROM prev_state), 0)
+        + SUM(net_bytes_delta) OVER (ORDER BY block_number ROWS UNBOUNDED PRECEDING) as cumulative_net_bytes,
     base_active_slots + (
-        COALESCE((SELECT cumulative_expiry_slots FROM prev_state), 0)
-        + SUM(expiry_slots_delta) OVER (ORDER BY block_number ROWS UNBOUNDED PRECEDING)
+        COALESCE((SELECT cumulative_net_slots FROM prev_state), 0)
+        + SUM(net_slots_delta) OVER (ORDER BY block_number ROWS UNBOUNDED PRECEDING)
     ) as active_slots,
     base_effective_bytes + (
-        COALESCE((SELECT cumulative_expiry_bytes FROM prev_state), 0)
-        + SUM(expiry_bytes_delta) OVER (ORDER BY block_number ROWS UNBOUNDED PRECEDING)
+        COALESCE((SELECT cumulative_net_bytes FROM prev_state), 0)
+        + SUM(net_bytes_delta) OVER (ORDER BY block_number ROWS UNBOUNDED PRECEDING)
     ) as effective_bytes
 FROM combined
-ORDER BY block_number
+ORDER BY block_number;
+
+DELETE FROM
+  `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
+{{ if .clickhouse.cluster }}
+  ON CLUSTER '{{ .clickhouse.cluster }}'
+{{ end }}
+WHERE updated_date_time != fromUnixTimestamp({{ .task.start }})
+AND block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }};

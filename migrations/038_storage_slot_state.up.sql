@@ -11,8 +11,6 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_local ON CLUSTER '{cluster
     `updated_date_time`
 ) PARTITION BY intDiv(block_number, 5000000)
 ORDER BY (block_number)
-SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Cumulative storage slot state per block - tracks active slots and effective bytes with per-block deltas';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_storage_slot_state_local ENGINE = Distributed(

@@ -8,10 +8,8 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m_local ON CLUSTER '{
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',
     `updated_date_time`
-) PARTITION BY intDiv(block_number, 5000000)
+)  PARTITION BY intDiv(block_number, 5000000)
 ORDER BY (block_number, address, slot_key)
-SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Storage slot expiries - records slots that were set 6 months ago and are now candidates for clearing';
 
 CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m_local ENGINE = Distributed(

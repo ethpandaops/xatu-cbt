@@ -59,7 +59,7 @@ block_deltas AS (
     LEFT JOIN sparse_deltas d ON a.block_number = d.block_number
 )
 SELECT
-    now() as updated_date_time,
+    fromUnixTimestamp({{ .task.start }}) as updated_date_time,
     block_number,
     slots_delta,
     bytes_delta,
@@ -69,3 +69,6 @@ SELECT
         + SUM(bytes_delta) OVER (ORDER BY block_number ROWS UNBOUNDED PRECEDING) as effective_bytes
 FROM block_deltas
 ORDER BY block_number
+SETTINGS
+    join_algorithm = 'hash',
+    max_threads = 4;
