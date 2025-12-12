@@ -1,7 +1,6 @@
 CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_address_1y_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address (lowercase hex)' CODEC(ZSTD(1)),
-    `last_block_number` UInt32 COMMENT 'The last block number where this address had storage changes or expiries' CODEC(DoubleDelta, ZSTD(1)),
     `cumulative_expiry_slots` Int64 COMMENT 'Cumulative slots removed by expiry for this address' CODEC(DoubleDelta, ZSTD(1)),
     `cumulative_expiry_bytes` Int64 COMMENT 'Cumulative bytes freed by expiry for this address' CODEC(DoubleDelta, ZSTD(1)),
     `active_slots` Int64 COMMENT 'Current count of active storage slots for this address (with 1-year expiry applied)' CODEC(DoubleDelta, ZSTD(1)),
