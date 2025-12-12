@@ -1,0 +1,82 @@
+model: fct_peer_count_by_custody_bucket_country_monthly
+network: mainnet
+spec: fusaka
+external_data:
+    libp2p_handle_metadata:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_peer_custody_count_by_epoch_libp2p_handle_metadata.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_peer_custody_count_by_epoch_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_country_monthly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: No empty country names
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_country_monthly FINAL WHERE peer_geo_country = ''
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Custody bucket should be valid
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_country_monthly FINAL
+        WHERE custody_bucket NOT IN ('1-4', '5-8', '9-16', '17-32', '33-64', '65-127', '128')
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Epoch count should be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_country_monthly FINAL WHERE epoch_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Peer count should be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_country_monthly FINAL WHERE peer_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Min should be less than or equal to max epoch peer count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_country_monthly FINAL WHERE min_epoch_peer_count > max_epoch_peer_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Avg should be between min and max epoch peer count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_country_monthly FINAL
+        WHERE avg_epoch_peer_count < min_epoch_peer_count OR avg_epoch_peer_count > max_epoch_peer_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Month start date should not be in the future
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_country_monthly FINAL
+        WHERE month_start_date > toStartOfMonth(today()) + INTERVAL 1 MONTH
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No duplicate month, country, bucket combinations after deduplication
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT month_start_date, peer_geo_country, custody_bucket, COUNT(*) AS cnt
+          FROM fct_peer_count_by_custody_bucket_country_monthly FINAL
+          GROUP BY month_start_date, peer_geo_country, custody_bucket
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0

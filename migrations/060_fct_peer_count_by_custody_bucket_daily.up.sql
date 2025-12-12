@@ -1,6 +1,6 @@
 CREATE TABLE `${NETWORK_NAME}`.fct_peer_count_by_custody_bucket_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `day_start_date` Date COMMENT 'Start date of the day' CODEC(DoubleDelta, ZSTD(1)),
+    `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `custody_bucket` LowCardinality(String) COMMENT 'Custody group count bucket (1-4, 5-8, 9-16, 17-32, 33-64, 65-127, 128)' CODEC(ZSTD(1)),
     `epoch_count` UInt32 COMMENT 'Number of epochs in this day' CODEC(ZSTD(1)),
     `peer_count` UInt32 COMMENT 'Number of distinct peers in this custody bucket in this day' CODEC(ZSTD(1))
@@ -9,7 +9,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_peer_count_by_custody_bucket_daily_local ON C
     '{replica}',
     `updated_date_time`
 )
-PARTITION BY toYYYYMM(day_start_date)
+PARTITION BY toStartOfMonth(day_start_date)
 ORDER BY (
     day_start_date,
     custody_bucket
