@@ -1,0 +1,75 @@
+model: int_peer_custody_count_by_epoch
+network: mainnet
+spec: fusaka
+external_data:
+    libp2p_handle_metadata:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_peer_custody_count_by_epoch_libp2p_handle_metadata.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_peer_custody_count_by_epoch_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM int_peer_custody_count_by_epoch FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: All epochs should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM int_peer_custody_count_by_epoch FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Custody group count should be within valid UInt8 range (0-128 for PeerDAS)
+      sql: |
+        SELECT COUNT(*) AS count FROM int_peer_custody_count_by_epoch FINAL WHERE custody_group_count > 128
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Peer ID unique key should not be empty
+      sql: |
+        SELECT COUNT(*) AS count FROM int_peer_custody_count_by_epoch FINAL WHERE peer_id_unique_key = ''
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No duplicate epoch and peer combinations after deduplication
+      sql: "SELECT COUNT(*) AS count FROM (\n  SELECT epoch, peer_id_unique_key, COUNT(*) AS cnt \n  FROM int_peer_custody_count_by_epoch FINAL \n  GROUP BY epoch, peer_id_unique_key \n  HAVING cnt > 1\n)\n"
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Longitude values should be within valid range when present
+      sql: "SELECT COUNT(*) AS count FROM int_peer_custody_count_by_epoch FINAL \nWHERE peer_geo_longitude IS NOT NULL AND (peer_geo_longitude < -180 OR peer_geo_longitude > 180)\n"
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Latitude values should be within valid range when present
+      sql: "SELECT COUNT(*) AS count FROM int_peer_custody_count_by_epoch FINAL \nWHERE peer_geo_latitude IS NOT NULL AND (peer_geo_latitude < -90 OR peer_geo_latitude > 90)\n"
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Epoch start date time should be consistent with epoch value
+      sql: "SELECT COUNT(*) AS count FROM int_peer_custody_count_by_epoch FINAL \nWHERE epoch_start_date_time IS NULL OR epoch_start_date_time < '2020-01-01 00:00:00'\n"
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Port values should be within valid range when present
+      sql: "SELECT COUNT(*) AS count FROM int_peer_custody_count_by_epoch FINAL \nWHERE peer_port IS NOT NULL AND (peer_port < 0 OR peer_port > 65535)\n"
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Updated date time should not be in the future
+      sql: "SELECT COUNT(*) AS count FROM int_peer_custody_count_by_epoch FINAL \nWHERE updated_date_time > now() + INTERVAL 1 HOUR\n"
+      assertions:
+        - type: equals
+          column: count
+          value: 0

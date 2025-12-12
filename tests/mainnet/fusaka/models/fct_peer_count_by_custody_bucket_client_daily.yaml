@@ -1,0 +1,82 @@
+model: fct_peer_count_by_custody_bucket_client_daily
+network: mainnet
+spec: fusaka
+external_data:
+    libp2p_handle_metadata:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_peer_custody_count_by_epoch_libp2p_handle_metadata.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_peer_custody_count_by_epoch_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: No empty client implementations
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_client_daily FINAL WHERE peer_agent_implementation = ''
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Custody bucket should be valid
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_client_daily FINAL
+        WHERE custody_bucket NOT IN ('1-4', '5-8', '9-16', '17-32', '33-64', '65-127', '128')
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Epoch count should be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_client_daily FINAL WHERE epoch_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Peer count should be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_client_daily FINAL WHERE peer_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Min should be less than or equal to max epoch peer count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_client_daily FINAL WHERE min_epoch_peer_count > max_epoch_peer_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Avg should be between min and max epoch peer count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_client_daily FINAL
+        WHERE avg_epoch_peer_count < min_epoch_peer_count OR avg_epoch_peer_count > max_epoch_peer_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Day start date should not be in the future
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_client_daily FINAL
+        WHERE day_start_date > today() + INTERVAL 1 DAY
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No duplicate day, client, bucket combinations after deduplication
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT day_start_date, peer_agent_implementation, custody_bucket, COUNT(*) AS cnt
+          FROM fct_peer_count_by_custody_bucket_client_daily FINAL
+          GROUP BY day_start_date, peer_agent_implementation, custody_bucket
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
