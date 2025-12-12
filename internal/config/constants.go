@@ -11,7 +11,7 @@ const (
 	RedisContainerName = "xatu-cbt-redis"
 	// RedisContainerPort is the internal port Redis listens on within the container.
 	RedisContainerPort = "6379"
-	// ClickHouseContainer is the name of the ClickHouse container.
+	// ClickHouseContainer is the name of the CBT ClickHouse container.
 	ClickHouseContainer = "xatu-cbt-clickhouse-01"
 	// ClickHouseContainerHTTPPort is the internal HTTP port ClickHouse listens on within the container.
 	ClickHouseContainerHTTPPort = "8123"
@@ -31,8 +31,14 @@ const (
 	TestsDir = "tests"
 	// SchemaMigrationsPrefix is the prefix used for schema migration tables.
 	SchemaMigrationsPrefix = "schema_migrations_"
-	// DefaultDatabase is the name of the default database.
+	// DefaultDatabase is the name of the default database (used as xatu template).
 	DefaultDatabase = "default"
+	// CBTTemplateDatabase is the name of the CBT template database for cloning.
+	CBTTemplateDatabase = "cbt_template"
+	// ExternalDBPrefix is the prefix for per-test external databases.
+	ExternalDBPrefix = "ext_"
+	// CBTDBPrefix is the prefix for per-test CBT databases.
+	CBTDBPrefix = "cbt_"
 	// XatuRepoURL is the URL of the xatu repository.
 	XatuRepoURL = "https://github.com/ethpandaops/xatu"
 	// XatuDefaultRef is the default git reference for the xatu repository.

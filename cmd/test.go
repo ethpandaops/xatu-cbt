@@ -132,7 +132,7 @@ func init() {
 	testCmd.PersistentFlags().BoolVar(&testVerbose, "verbose", false, "Verbose output")
 	testCmd.PersistentFlags().StringVar(&testCacheDir, "cache-dir", getDefaultCacheDir(), "Parquet cache directory")
 	testCmd.PersistentFlags().Int64Var(&testCacheSize, "cache-max-size", 10*1024*1024*1024, "Max cache size in bytes (10GB)")
-	testCmd.PersistentFlags().IntVar(&testConcurrency, "concurrency", 10, "Number of tests to run in parallel")
+	testCmd.PersistentFlags().IntVar(&testConcurrency, "concurrency", 15, "Number of tests to run in parallel (max 15)")
 	testCmd.PersistentFlags().BoolVar(&testForceRebuild, "force-rebuild", false, "Force rebuild of xatu cluster (clear tables and re-run migrations)")
 	testCmd.PersistentFlags().BoolVar(&testCleanupTestDB, "cleanup-test-db", false, "Cleanup test database on completion (useful for CI, disabled by default for debugging)")
 	testCmd.PersistentFlags().StringVar(&xatuClickhouseURL, "xatu-clickhouse-url", config.GetXatuClickHouseURL(), "Xatu ClickHouse cluster URL (external data)")
@@ -181,6 +181,13 @@ func setupOrchestrator(ctx context.Context, _ *cobra.Command) (*testing.Orchestr
 	xatuMigrationDir := filepath.Join(xatuRepoPath, config.XatuMigrationsPath)
 	metricsCollector := testing.NewCollector(log)
 	testConfig := testing.DefaultTestConfig()
+
+	// Cap concurrency at 15 (Redis DB limit: databases 1-15)
+	if testConcurrency > 15 {
+		testConcurrency = 15
+	}
+
+	testConfig.CBTConcurrency = testConcurrency
 	configLoader := testdef.NewLoader(log, filepath.Join(wd, config.TestsDir))
 
 	// Create and initialize model cache
@@ -210,9 +217,19 @@ func setupOrchestrator(ctx context.Context, _ *cobra.Command) (*testing.Orchestr
 		redisURL,
 		filepath.Join(wd, config.ModelsDir),
 	)
-	assertionRunner := assertion.NewRunner(
+	// CBT cluster assertion runner (for transformation models)
+	cbtAssertionRunner := assertion.NewRunner(
 		log,
 		cbtClickhouseURL,
+		testConfig.AssertionWorkers,
+		testConfig.AssertionTimeout,
+		testConfig.AssertionMaxRetries,
+		testConfig.AssertionRetryDelay,
+	)
+	// Xatu cluster assertion runner (for external models)
+	xatuAssertionRunner := assertion.NewRunner(
+		log,
+		xatuClickhouseURL,
 		testConfig.AssertionWorkers,
 		testConfig.AssertionTimeout,
 		testConfig.AssertionMaxRetries,
@@ -231,7 +248,8 @@ func setupOrchestrator(ctx context.Context, _ *cobra.Command) (*testing.Orchestr
 		ParquetCache:     parquetCache,
 		DBManager:        dbManager,
 		CBTEngine:        cbtEngine,
-		AssertionRunner:  assertionRunner,
+		AssertionRunner:  cbtAssertionRunner,
+		XatuAssertion:    xatuAssertionRunner,
 		MigrationDir:     filepath.Join(wd, config.MigrationsDir),
 	})
 

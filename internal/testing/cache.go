@@ -130,9 +130,8 @@ func (c *ParquetCache) Get(ctx context.Context, url, tableName string) (string, 
 
 			c.log.WithFields(logrus.Fields{
 				"url":       url,
-				"table":     tableName,
 				"cache_hit": "true",
-			}).Debug("fetching parquet file")
+			}).Debug("fetching parquet")
 
 			c.metrics.RecordParquetLoad(ParquetLoadMetric{
 				Table:     tableName,

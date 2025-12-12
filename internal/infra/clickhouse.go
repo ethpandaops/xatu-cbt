@@ -124,7 +124,7 @@ func (m *clickhouseManager) CleanupEphemeralDatabases(ctx context.Context, maxAg
 	query := `
 		SELECT name
 		FROM system.databases
-		WHERE name LIKE 'test_%'
+		WHERE name LIKE 'test_%' OR name LIKE 'cbt_%'
 	`
 
 	rows, err := conn.QueryContext(ctx, query)

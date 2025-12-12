@@ -2,84 +2,128 @@ model: fct_data_column_availability_daily
 network: sepolia
 spec: fusaka
 external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_daily_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    blob_submitter:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_daily_blob_submitter.parquet
+        network_column: meta_network_name
+    execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_daily_execution_transaction.parquet
+        network_column: meta_network_name
     libp2p_gossipsub_data_column_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_data_column_sidecar.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_daily_libp2p_gossipsub_data_column_sidecar.parquet
         network_column: meta_network_name
     libp2p_rpc_data_column_custody_probe:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_rpc_data_column_custody_probe.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_daily_libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_daily_libp2p_synthetic_heartbeat.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          fct_data_column_availability_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_data_column_availability_daily FINAL
       assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Column index should be in valid range (0-127)
-      sql: |
-        SELECT
-          MIN(column_index) AS min_col,
-          MAX(column_index) AS max_col
-        FROM
-          fct_data_column_availability_daily FINAL
+    - name: Column index should be valid (0-127 for PeerDAS)
+      sql: "SELECT \n  MIN(column_index) AS min_column_index,\n  MAX(column_index) AS max_column_index\nFROM fct_data_column_availability_daily FINAL\n"
       assertions:
         - type: greater_than_or_equal
-          column: min_col
+          column: min_column_index
           value: 0
         - type: less_than_or_equal
-          column: max_col
+          column: max_column_index
           value: 127
-    - name: Hour count should be reasonable (1-24 hours per day)
-      sql: |
-        SELECT
-          MIN(hour_count) AS min_hours,
-          MAX(hour_count) AS max_hours
-        FROM
-          fct_data_column_availability_daily FINAL
+    - name: Availability percentage should be between 0 and 100
+      sql: "SELECT \n  MIN(avg_availability_pct) AS min_avg_pct,\n  MAX(avg_availability_pct) AS max_avg_pct,\n  MIN(min_availability_pct) AS min_pct,\n  MAX(max_availability_pct) AS max_pct\nFROM fct_data_column_availability_daily FINAL\n"
       assertions:
-        - type: greater_than
-          column: min_hours
+        - type: greater_than_or_equal
+          column: min_avg_pct
           value: 0
         - type: less_than_or_equal
-          column: max_hours
-          value: 24
-    - name: Average availability percentage should be valid (0-100)
-      sql: |
-        SELECT
-          MIN(avg_availability_pct) AS min_pct,
-          MAX(avg_availability_pct) AS max_pct
-        FROM
-          fct_data_column_availability_daily FINAL
-      assertions:
+          column: max_avg_pct
+          value: 100
         - type: greater_than_or_equal
           column: min_pct
           value: 0
         - type: less_than_or_equal
           column: max_pct
           value: 100
-    - name: Total probe count should be greater than zero
-      sql: |
-        SELECT
-          MIN(total_probe_count) AS min_probes
-        FROM
-          fct_data_column_availability_daily FINAL
+    - name: Hour count per day should be between 1 and 24
+      sql: "SELECT \n  MIN(hour_count) AS min_hour_count,\n  MAX(hour_count) AS max_hour_count\nFROM fct_data_column_availability_daily FINAL\n"
       assertions:
-        - type: greater_than
-          column: min_probes
-          value: 0
-    - name: Date should be valid Date type
-      sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          fct_data_column_availability_daily FINAL
-        WHERE
-          date IS NULL
+        - type: greater_than_or_equal
+          column: min_hour_count
+          value: 1
+        - type: less_than_or_equal
+          column: max_hour_count
+          value: 24
+    - name: Probe counts should be non-negative and consistent
+      sql: "SELECT \n  MIN(total_probe_count) AS min_probe_count,\n  MIN(total_success_count) AS min_success_count,\n  MIN(total_failure_count) AS min_failure_count,\n  MIN(total_missing_count) AS min_missing_count\nFROM fct_data_column_availability_daily FINAL\n"
       assertions:
-        - type: equal
-          column: count
+        - type: greater_than_or_equal
+          column: min_probe_count
           value: 0
+        - type: greater_than_or_equal
+          column: min_success_count
+          value: 0
+        - type: greater_than_or_equal
+          column: min_failure_count
+          value: 0
+        - type: greater_than_or_equal
+          column: min_missing_count
+          value: 0
+    - name: Success count should not exceed total probe count
+      sql: |
+        SELECT COUNT(*) AS invalid_count
+        FROM fct_data_column_availability_daily FINAL
+        WHERE total_success_count > total_probe_count
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Response time metrics should be non-negative
+      sql: "SELECT \n  MIN(min_response_time_ms) AS min_response,\n  MIN(avg_p50_response_time_ms) AS min_p50,\n  MIN(avg_p95_response_time_ms) AS min_p95,\n  MIN(avg_p99_response_time_ms) AS min_p99,\n  MIN(max_response_time_ms) AS min_max_response\nFROM fct_data_column_availability_daily FINAL\n"
+      assertions:
+        - type: greater_than_or_equal
+          column: min_response
+          value: 0
+        - type: greater_than_or_equal
+          column: min_p50
+          value: 0
+        - type: greater_than_or_equal
+          column: min_p95
+          value: 0
+        - type: greater_than_or_equal
+          column: min_p99
+          value: 0
+        - type: greater_than_or_equal
+          column: min_max_response
+          value: 0
+    - name: Response time percentiles should be ordered correctly
+      sql: |
+        SELECT COUNT(*) AS invalid_percentile_order
+        FROM fct_data_column_availability_daily FINAL
+        WHERE avg_p50_response_time_ms > avg_p95_response_time_ms
+           OR avg_p95_response_time_ms > avg_p99_response_time_ms
+      assertions:
+        - type: equals
+          column: invalid_percentile_order
+          value: 0
+    - name: Max blob count should be non-negative
+      sql: |
+        SELECT MIN(max_blob_count) AS min_blob_count
+        FROM fct_data_column_availability_daily FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_blob_count
+          value: 0
+    - name: Date should be within expected lookback range
+      sql: "SELECT \n  MIN(date) AS min_date,\n  MAX(date) AS max_date,\n  dateDiff('day', MIN(date), MAX(date)) AS date_range_days\nFROM fct_data_column_availability_daily FINAL\n"
+      assertions:
+        - type: less_than_or_equal
+          column: date_range_days
+          value: 19

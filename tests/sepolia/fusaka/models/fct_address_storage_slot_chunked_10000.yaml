@@ -1,6 +1,13 @@
 model: fct_address_storage_slot_chunked_10000
 network: sepolia
 spec: fusaka
+external_data:
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected size
       sql: |
