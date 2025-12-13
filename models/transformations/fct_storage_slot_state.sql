@@ -3,7 +3,7 @@ table: fct_storage_slot_state
 type: incremental
 interval:
   type: block
-  max: 100000
+  max: 10000
 fill:
   direction: "tail"
   allow_gap_skipping: false

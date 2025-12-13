@@ -3,12 +3,12 @@ table: int_storage_slot_expiry_by_6m
 type: incremental
 interval:
   type: block
-  max: 100000
+  max: 10000
 fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 1s"
+  forwardfill: "@every 5s"
 tags:
   - execution
   - storage
@@ -21,22 +21,11 @@ dependencies:
   - "{{external}}.canonical_execution_block"
 ---
 -- Tracks storage slots eligible for expiry: slots touched 6 months ago with no subsequent access.
--- A slot expires at block N if it was last touched at timestamp(N) - 6 months and not accessed since.
--- "Touch" includes both writes (storage diffs) AND reads - any interaction resets the expiry clock.
---
--- OPTIMIZATIONS:
--- 1. Use canonical_execution_block for block→timestamp lookups (indexed by block_number)
--- 2. Use int_execution_block_by_date for timestamp→block lookups (indexed by block_date_time)
--- 3. Materialize block metadata for current bounds to avoid multiple FINAL passes
--- 4. Replace CROSS JOIN with INNER JOIN + filter for first_expiry_block_map
--- 5. Start from diff/read tables (efficient block_number index) and JOIN to get next_touch_block
--- 6. Two-phase diff lookup: use int_storage_slot_diff_latest_state for O(1) lookups,
---    fall back to historical scan only for slots modified after the 6-month window
--- 7. Filter next_touch JOIN by block_number range to use primary key index (ORDER BY block_number, ...)
+-- A "touch" includes both writes (diffs) and reads.
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
--- STEP 1: Get timestamps for current bounds using canonical_execution_block (indexed by block_number)
+-- Get timestamps for current bounds
 current_bounds AS (
     SELECT
         min(block_date_time) as min_time,
@@ -45,7 +34,7 @@ current_bounds AS (
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
--- STEP 2: Get 6-month-ago block range using int_execution_block_by_date (indexed by block_date_time)
+-- Get 6-month-ago block range
 old_block_range AS (
     SELECT
         min(block_number) as min_old_block,
@@ -54,14 +43,14 @@ old_block_range AS (
     WHERE block_date_time >= (SELECT min_time - INTERVAL 6 MONTH - INTERVAL 1 DAY FROM current_bounds)
         AND block_date_time <= (SELECT max_time - INTERVAL 6 MONTH + INTERVAL 1 DAY FROM current_bounds)
 ),
--- OPTIMIZATION: Materialize block metadata for current bounds (used multiple times below)
+-- Block metadata for current bounds
 current_bounds_blocks AS (
     SELECT block_number, block_date_time
     FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
--- Get all touches from 6-month-ago window (EFFICIENT - both tables ordered by block_number)
+-- Get all touches from 6-month-ago window
 old_touches AS (
     SELECT block_number, address, slot_key
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_diff" "helpers" "from" }}
@@ -71,12 +60,12 @@ old_touches AS (
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_read" "helpers" "from" }}
     WHERE block_number BETWEEN (SELECT min_old_block FROM old_block_range) AND (SELECT max_old_block FROM old_block_range)
 ),
--- Deduplicate: a slot touched by both read and write in same block counts as one
+-- Deduplicate touches per block
 unique_old_touches AS (
     SELECT DISTINCT block_number, address, slot_key
     FROM old_touches
 ),
--- Materialize old block metadata for touch_time lookups (indexed by block_number)
+-- Block metadata for old window
 old_block_metadata AS (
     SELECT block_number, block_date_time
     FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
@@ -84,8 +73,6 @@ old_block_metadata AS (
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 -- Join touches with next_touch and block metadata
--- OPTIMIZATION: Filter next_touch by block_number range to use primary key index
--- (next_touch is ORDER BY block_number, address, slot_key)
 touches_with_metadata AS (
     SELECT
         t.block_number as touch_block,
@@ -102,13 +89,7 @@ touches_with_metadata AS (
         ON t.block_number = bm.block_number
     WHERE nt.block_number BETWEEN (SELECT min_old_block FROM old_block_range) AND (SELECT max_old_block FROM old_block_range)
 ),
--- Get effective_bytes using two-phase lookup to avoid scanning all historical diffs:
--- Phase 1: Use int_storage_slot_diff_latest_state (105M rows) for O(1) lookups
--- Phase 2: Fall back to historical scan ONLY for slots modified after max_old_block
---
--- This avoids the unbounded historical scan that caused memory issues.
-
--- Step 1: Get latest diff info for each touched slot from the helper table
+-- Two-phase effective_bytes lookup: use latest_state helper, fall back to historical for recently modified slots
 slot_latest_info AS (
     SELECT
         t.address,
@@ -119,8 +100,7 @@ slot_latest_info AS (
     LEFT JOIN `{{ .self.database }}`.int_storage_slot_diff_latest_state ls FINAL
         ON ls.address = t.address AND ls.slot_key = t.slot_key
 ),
--- Step 2a: Slots where latest diff <= max_old_block → use latest_state directly (FAST PATH)
--- These slots haven't been modified since the old window, so latest_state has the right answer
+-- Slots where latest diff is in or before old window - use latest_state directly
 slots_use_latest AS (
     SELECT
         address,
@@ -131,15 +111,14 @@ slots_use_latest AS (
     WHERE latest_diff_block IS NOT NULL
         AND latest_diff_block <= (SELECT max_old_block FROM old_block_range)
 ),
--- Step 2b: Slots where latest diff > max_old_block → need historical lookup (SLOW PATH)
--- These slots were modified AFTER the old window, so we need to find the diff before that
+-- Slots modified after old window - need historical lookup
 slots_need_historical AS (
     SELECT address, slot_key
     FROM slot_latest_info
     WHERE latest_diff_block IS NOT NULL
         AND latest_diff_block > (SELECT max_old_block FROM old_block_range)
 ),
--- Step 3: Historical lookup ONLY for the small subset that needs it
+-- Historical lookup for slots that need it
 slots_from_history AS (
     SELECT
         address,
@@ -151,7 +130,7 @@ slots_from_history AS (
         AND (address, slot_key) IN (SELECT address, slot_key FROM slots_need_historical)
     GROUP BY address, slot_key
 ),
--- Step 4: Combine both paths
+-- Combine both lookup paths
 latest_diffs_for_candidates AS (
     SELECT address, slot_key, diff_block, effective_bytes FROM slots_use_latest
     UNION ALL
@@ -169,21 +148,18 @@ candidate_expiries_raw AS (
     LEFT JOIN latest_diffs_for_candidates d
         ON t.address = d.address
         AND t.slot_key = d.slot_key
-    -- Diff must be at or before this touch (argMax gives latest overall, filter per-touch here)
     WHERE d.diff_block <= t.touch_block
-    -- Slot must be active: most recent diff has bytes > 0 (not a CLEAR)
         AND d.effective_bytes > 0
 ),
--- Add join_key for ASOF JOIN (requires equality condition)
 candidate_expiries AS (
     SELECT 1 as join_key, * FROM candidate_expiries_raw
 ),
--- Pre-filter blocks in bounds for expiry calculations (from materialized current bounds)
+-- Blocks in bounds for expiry calculations
 expiry_blocks_in_bounds AS (
     SELECT block_number, block_date_time
     FROM current_bounds_blocks
 ),
--- Build expiry threshold mapping: for each block in bounds, calculate the 6-month-ago threshold
+-- Expiry threshold per block (6 months ago)
 expiry_thresholds AS (
     SELECT
         1 as join_key,
@@ -191,8 +167,7 @@ expiry_thresholds AS (
         block_date_time - INTERVAL 6 MONTH as threshold_time
     FROM expiry_blocks_in_bounds
 ),
--- Map candidates to their expiry block using ASOF JOIN
--- Finds the first block where threshold_time >= touch_time (slot becomes eligible for expiry)
+-- Map candidates to their expiry block via ASOF JOIN
 candidates_with_expiry AS (
     SELECT
         c.touch_block,
@@ -206,12 +181,7 @@ candidates_with_expiry AS (
     ASOF LEFT JOIN expiry_thresholds e
         ON c.join_key = e.join_key AND c.touch_time <= e.threshold_time
 ),
--- OPTIMIZATION 3: Use INNER JOIN with filter instead of CROSS JOIN
--- This is more selective and avoids cartesian product explosion
--- IMPORTANT: Use subtraction-based logic (touch_time <= block_time - 6 MONTH) to match
--- the ASOF JOIN in candidates_with_expiry. Using addition (block_time >= touch_time + 6 MONTH)
--- gives different results due to month length asymmetry (e.g., May 31 + 6 months = Nov 30,
--- but Nov 30 - 6 months = May 30, not May 31).
+-- Map touch_time to first valid expiry block (uses subtraction for month length consistency)
 first_expiry_block_map AS (
     SELECT
         c.touch_time,
@@ -231,18 +201,12 @@ SELECT
 FROM candidates_with_expiry c
 INNER JOIN first_expiry_block_map f ON c.touch_time = f.touch_time
 WHERE
-    -- Guard: only process if current bounds are 6+ months after Ethereum genesis
+    -- Only process if bounds are 6+ months after Ethereum genesis
     (SELECT min_time FROM current_bounds) >= toDateTime('2016-01-30 00:00:00')
-    -- Expiry block must fall within current bounds
     AND c.expiry_block BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    -- Only expire if no touch occurred between touch and expiry:
-    -- next_touch_block IS NULL means never touched again, OR
-    -- next_touch_block > expiry_block means next touch is after expiry window
+    -- No touch between original touch and expiry
     AND (c.next_touch_block IS NULL OR c.next_touch_block > c.expiry_block)
-    -- CRITICAL: Ensure this is the globally first valid expiry block for this candidate.
-    -- The ASOF JOIN finds the first match WITHIN bounds, but due to ±1 day buffer overlap,
-    -- the same candidate can be selected in multiple runs. This check ensures we only
-    -- emit the expiry at the TRUE first block where touch_time + 6 months <= block_time.
+    -- Must be the first valid expiry block for this candidate
     AND c.expiry_block = f.first_expiry_block
 SETTINGS
     max_bytes_before_external_group_by = 10000000000,

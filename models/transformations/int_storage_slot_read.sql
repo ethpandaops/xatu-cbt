@@ -3,12 +3,12 @@ table: int_storage_slot_read
 type: incremental
 interval:
   type: block
-  max: 100000
+  max: 1
 fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 1s"
+  forwardfill: "@every 60m"
 tags:
   - execution
   - storage

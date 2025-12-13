@@ -3,7 +3,7 @@ table: fct_storage_slot_state_with_expiry_by_6m
 type: incremental
 interval:
   type: block
-  max: 100000
+  max: 10000
 fill:
   direction: "tail"
   allow_gap_skipping: false
@@ -18,13 +18,8 @@ dependencies:
   - "{{transformation}}.int_storage_slot_expiry_by_6m"
   - "{{transformation}}.int_storage_slot_reactivation_by_6m"
 ---
--- Layers 6-month expiry policy on top of fct_storage_slot_state: slots not accessed (read or written) for 6 months are cleared.
--- Combines expiry events (negative deltas) and reactivation/cancellation events (positive deltas) for correct accounting.
---
--- FIX: Includes reactivations to balance out expiries (Issues 1-5):
---   - Expiry: slot inactive for 6 months → -1 slot, -X bytes
---   - Reactivation: slot touched after expiry → +1 slot, +X bytes (undoes the expiry)
---   - Cancellation: slot CLEARED after expiry → +1 slot, +X bytes (prevents double-counting)
+-- Layers 6-month expiry policy on top of fct_storage_slot_state.
+-- Combines expiry events (negative deltas) and reactivation events (positive deltas).
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
