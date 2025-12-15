@@ -1,0 +1,165 @@
+---
+table: fct_block_data_column_sidecar_first_seen
+type: incremental
+interval:
+  type: slot
+  max: 50000
+schedules:
+  forwardfill: "@every 5s"
+  backfill: "@every 30s"
+tags:
+  - slot
+  - block
+  - data_column
+dependencies:
+  - "{{external}}.beacon_api_eth_v1_events_data_column_sidecar"
+  - "{{external}}.libp2p_gossipsub_data_column_sidecar"
+---
+INSERT INTO
+  `{{ .self.database }}`.`{{ .self.table }}`
+WITH combined_events AS (
+    SELECT
+        'beacon_api_eth_v1_events_data_column_sidecar' AS source,
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        propagation_slot_start_diff,
+        if(startsWith(block_root, '0x'), block_root, concat('0x', block_root)) AS block_root,
+        column_index,
+        kzg_commitments_count,
+        meta_client_name,
+        meta_client_version,
+        meta_client_implementation,
+        meta_client_geo_city,
+        meta_client_geo_country,
+        meta_client_geo_country_code,
+        meta_client_geo_continent_code,
+        meta_client_geo_longitude,
+        meta_client_geo_latitude,
+        meta_client_geo_autonomous_system_number,
+        meta_client_geo_autonomous_system_organization,
+        meta_consensus_version,
+        meta_consensus_implementation
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_data_column_sidecar" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+
+    UNION ALL
+
+    SELECT
+        'libp2p_gossipsub_data_column_sidecar' AS source,
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        propagation_slot_start_diff,
+        if(startsWith(beacon_block_root, '0x'), beacon_block_root, concat('0x', beacon_block_root)) AS block_root,
+        column_index,
+        kzg_commitments_count,
+        meta_client_name,
+        meta_client_version,
+        meta_client_implementation,
+        meta_client_geo_city,
+        meta_client_geo_country,
+        meta_client_geo_country_code,
+        meta_client_geo_continent_code,
+        meta_client_geo_longitude,
+        meta_client_geo_latitude,
+        meta_client_geo_autonomous_system_number,
+        meta_client_geo_autonomous_system_organization,
+        '' AS meta_consensus_version,
+        CASE
+            WHEN hasSubsequence(meta_client_implementation, 'tysm') THEN
+                'prysm'
+            WHEN hasSubsequence(meta_client_implementation, 'dimhouse') THEN
+                'lighthouse'
+            WHEN hasSubsequence(meta_client_implementation, 'temu') THEN
+                'teku'
+            ELSE
+                ''
+        END AS meta_consensus_implementation
+    FROM {{ index .dep "{{external}}" "libp2p_gossipsub_data_column_sidecar" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND beacon_block_root != ''
+        AND meta_network_name = '{{ .env.NETWORK }}'
+)
+, aggregated AS (
+    SELECT
+        fromUnixTimestamp({{ .task.start }}) as updated_date_time,
+        argMin(source, propagation_slot_start_diff) AS source,
+        argMin(slot, propagation_slot_start_diff) AS slot,
+        slot_start_date_time,
+        argMin(epoch, propagation_slot_start_diff) AS epoch,
+        argMin(epoch_start_date_time, propagation_slot_start_diff) AS epoch_start_date_time,
+        MIN(propagation_slot_start_diff) as seen_slot_start_diff,
+        block_root,
+        column_index,
+        coalesce(argMin(kzg_commitments_count, propagation_slot_start_diff), 0) AS row_count,
+        argMin(meta_client_name, propagation_slot_start_diff) AS first_seen_meta_client_name,
+        argMin(meta_client_version, propagation_slot_start_diff) AS meta_client_version,
+        argMin(meta_client_implementation, propagation_slot_start_diff) AS meta_client_implementation,
+        argMin(meta_client_geo_city, propagation_slot_start_diff) AS meta_client_geo_city,
+        argMin(meta_client_geo_country, propagation_slot_start_diff) AS meta_client_geo_country,
+        argMin(meta_client_geo_country_code, propagation_slot_start_diff) AS meta_client_geo_country_code,
+        argMin(meta_client_geo_continent_code, propagation_slot_start_diff) AS meta_client_geo_continent_code,
+        argMin(meta_client_geo_longitude, propagation_slot_start_diff) AS meta_client_geo_longitude,
+        argMin(meta_client_geo_latitude, propagation_slot_start_diff) AS meta_client_geo_latitude,
+        argMin(meta_client_geo_autonomous_system_number, propagation_slot_start_diff) AS meta_client_geo_autonomous_system_number,
+        argMin(meta_client_geo_autonomous_system_organization, propagation_slot_start_diff) AS meta_client_geo_autonomous_system_organization,
+        argMin(meta_consensus_version, propagation_slot_start_diff) AS meta_consensus_version,
+        argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation
+    FROM combined_events
+    GROUP BY slot_start_date_time, block_root, column_index
+)
+SELECT
+    updated_date_time,
+    source,
+    slot,
+    slot_start_date_time,
+    epoch,
+    epoch_start_date_time,
+    seen_slot_start_diff,
+    block_root,
+    column_index,
+    row_count,
+    CASE
+        WHEN startsWith(first_seen_meta_client_name, 'pub-') THEN
+            splitByChar('/', first_seen_meta_client_name)[2]
+        WHEN startsWith(first_seen_meta_client_name, 'corp-') THEN
+            splitByChar('/', first_seen_meta_client_name)[2]
+        ELSE
+            'ethpandaops'
+    END AS username,
+    CASE
+        WHEN startsWith(first_seen_meta_client_name, 'pub-') THEN
+            splitByChar('/', first_seen_meta_client_name)[3]
+        WHEN startsWith(first_seen_meta_client_name, 'corp-') THEN
+            splitByChar('/', first_seen_meta_client_name)[3]
+        ELSE
+            splitByChar('/', first_seen_meta_client_name)[-1]
+    END AS node_id,
+    CASE
+        WHEN startsWith(first_seen_meta_client_name, 'pub-') THEN
+            'individual'
+        WHEN startsWith(first_seen_meta_client_name, 'corp-') THEN
+            'corporate'
+        WHEN startsWith(first_seen_meta_client_name, 'ethpandaops') THEN
+            'internal'
+        ELSE
+            'unclassified'
+    END AS classification,
+    first_seen_meta_client_name AS meta_client_name,
+    meta_client_version,
+    meta_client_implementation,
+    meta_client_geo_city,
+    meta_client_geo_country,
+    meta_client_geo_country_code,
+    meta_client_geo_continent_code,
+    meta_client_geo_longitude,
+    meta_client_geo_latitude,
+    meta_client_geo_autonomous_system_number,
+    meta_client_geo_autonomous_system_organization,
+    meta_consensus_version,
+    meta_consensus_implementation
+FROM aggregated
