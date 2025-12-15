@@ -26,6 +26,9 @@ type TestConfig struct {
 	MaxParquetLoadWorkers int
 	QueryTimeout          time.Duration
 
+	// CBT container configuration
+	CBTConcurrency int // Max concurrent CBT Docker containers
+
 	// Cache configuration
 	MaxConcurrentDownloads int
 	DefaultHTTPTimeout     time.Duration
@@ -67,6 +70,9 @@ func DefaultTestConfig() *TestConfig {
 		// Database
 		MaxParquetLoadWorkers: 10,
 		QueryTimeout:          5 * time.Minute,
+
+		// CBT containers
+		CBTConcurrency: 15, // Default to 15 concurrent CBT containers (max due to Redis DB limit)
 
 		// Cache
 		MaxConcurrentDownloads: 10,

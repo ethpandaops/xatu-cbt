@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/ethpandaops/xatu-cbt/internal/testing/testdef"
@@ -218,9 +219,34 @@ func (r *runner) executeAssertion(ctx context.Context, log logrus.FieldLogger, d
 			}
 		}
 
+		// Substitute variables in SQL:
+		// - {database} -> actual test database name (e.g., ext_xxx or cbt_xxx)
+		// - cluster('{remote_cluster}', default.TABLE) -> TABLE (since we USE dbName)
+		// - default. -> empty (since we USE dbName, tables are in current db context)
+		query := strings.ReplaceAll(assertion.SQL, "{database}", dbName)
+
+		// Handle cluster() wrapper - must remove BOTH the prefix AND trailing ) together
+		// Pattern: cluster('{remote_cluster}', default.TABLE) -> TABLE
+		const clusterPrefix = "cluster('{remote_cluster}', default."
+		for strings.Contains(query, clusterPrefix) {
+			startIdx := strings.Index(query, clusterPrefix)
+			// Find the matching closing ) after the table name
+			afterPrefix := startIdx + len(clusterPrefix)
+			closeIdx := strings.Index(query[afterPrefix:], ")")
+			if closeIdx >= 0 {
+				// Remove the cluster() wrapper entirely (prefix and closing paren)
+				query = query[:startIdx] + query[afterPrefix:afterPrefix+closeIdx] + query[afterPrefix+closeIdx+1:]
+			} else {
+				break // Malformed, stop processing
+			}
+		}
+
+		query = strings.ReplaceAll(query, "{remote_cluster}", dbName) // Fallback for other uses
+		query = strings.ReplaceAll(query, "default.", "")             // Remove default. prefix
+
 		// Execute query with timeout.
 		queryCtx, cancel := context.WithTimeout(ctx, r.timeout)
-		actual, err := r.queryToMap(queryCtx, dbName, assertion.SQL)
+		actual, err := r.queryToMap(queryCtx, dbName, query)
 		cancel()
 
 		if err != nil {

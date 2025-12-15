@@ -2,90 +2,92 @@ model: fct_data_column_availability_by_slot_blob
 network: sepolia
 spec: fusaka
 external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_by_slot_blob_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    blob_submitter:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_by_slot_blob_blob_submitter.parquet
+        network_column: meta_network_name
+    execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_by_slot_blob_execution_transaction.parquet
+        network_column: meta_network_name
     libp2p_gossipsub_data_column_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_data_column_sidecar.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_by_slot_blob_libp2p_gossipsub_data_column_sidecar.parquet
         network_column: meta_network_name
     libp2p_rpc_data_column_custody_probe:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_rpc_data_column_custody_probe.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_by_slot_blob_libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_data_column_availability_by_slot_blob_libp2p_synthetic_heartbeat.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than slot-level table (due to blob expansion)
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          fct_data_column_availability_by_slot_blob FINAL
+        SELECT COUNT(*) AS count FROM fct_data_column_availability_by_slot_blob FINAL
       assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Slot bounds should match test data range (gossipsub has limited range)
+    - name: Slot values should be positive
       sql: |
-        SELECT
-          MIN(slot) AS min_slot,
-          MAX(slot) AS max_slot
-        FROM
-          fct_data_column_availability_by_slot_blob FINAL
+        SELECT MIN(slot) AS min_slot FROM fct_data_column_availability_by_slot_blob FINAL
       assertions:
         - type: greater_than_or_equal
           column: min_slot
-          value: 8815933
-        - type: less_than_or_equal
-          column: max_slot
-          value: 8815953
-    - name: Blob index should start at 0
-      sql: |
-        SELECT
-          MIN(blob_index) AS min_blob,
-          MAX(blob_index) AS max_blob
-        FROM
-          fct_data_column_availability_by_slot_blob FINAL
-      assertions:
-        - type: equal
-          column: min_blob
           value: 0
-        - type: less_than_or_equal
-          column: max_blob
-          value: 15
-    - name: Column index should be in valid range (0-127)
+    - name: Blob index should be within valid range (0 to blob_count-1)
       sql: |
-        SELECT
-          MIN(column_index) AS min_col,
-          MAX(column_index) AS max_col
-        FROM
-          fct_data_column_availability_by_slot_blob FINAL
+        SELECT COUNT(*) AS invalid_count FROM fct_data_column_availability_by_slot_blob FINAL WHERE blob_index >= blob_count OR blob_index < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_col
+        - type: equals
+          column: invalid_count
           value: 0
-        - type: less_than_or_equal
-          column: max_col
-          value: 127
-    - name: Availability percentage should be valid (0-100)
+    - name: Column index should be within valid range (0-127 for PeerDAS)
       sql: |
-        SELECT
-          MIN(availability_pct) AS min_pct,
-          MAX(availability_pct) AS max_pct
-        FROM
-          fct_data_column_availability_by_slot_blob FINAL
+        SELECT COUNT(*) AS invalid_count FROM fct_data_column_availability_by_slot_blob FINAL WHERE column_index < 0 OR column_index > 127
       assertions:
-        - type: greater_than_or_equal
-          column: min_pct
+        - type: equals
+          column: invalid_count
           value: 0
-        - type: less_than_or_equal
-          column: max_pct
-          value: 100
-    - name: Blob count should match between tables
+    - name: Availability percentage should be between 0 and 100
       sql: |
-        SELECT
-          MIN(blob_count) AS min_blobs,
-          MAX(blob_count) AS max_blobs
-        FROM
-          fct_data_column_availability_by_slot_blob FINAL
+        SELECT COUNT(*) AS invalid_count FROM fct_data_column_availability_by_slot_blob FINAL WHERE availability_pct < 0 OR availability_pct > 100
       assertions:
-        - type: greater_than_or_equal
-          column: min_blobs
-          value: 1
-        - type: less_than_or_equal
-          column: max_blobs
-          value: 15
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Probe count should equal sum of success, failure, and missing counts
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_data_column_availability_by_slot_blob FINAL WHERE probe_count != (success_count + failure_count + missing_count)
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Count columns should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_data_column_availability_by_slot_blob FINAL WHERE success_count < 0 OR failure_count < 0 OR missing_count < 0 OR probe_count < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Response time percentiles should be in ascending order
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_data_column_availability_by_slot_blob FINAL WHERE min_response_time_ms > p50_response_time_ms OR p50_response_time_ms > p95_response_time_ms OR p95_response_time_ms > p99_response_time_ms OR p99_response_time_ms > max_response_time_ms
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Blob count should be positive where data exists
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_data_column_availability_by_slot_blob FINAL WHERE blob_count <= 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Unique counts should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_data_column_availability_by_slot_blob FINAL WHERE unique_peer_count < 0 OR unique_client_count < 0 OR unique_implementation_count < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0

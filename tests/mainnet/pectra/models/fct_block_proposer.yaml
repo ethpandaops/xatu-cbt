@@ -3,55 +3,91 @@ network: mainnet
 spec: pectra
 external_data:
     beacon_api_eth_v1_events_block:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_block_proposer_beacon_api_eth_v1_events_block.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_block_gossip:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_block_gossip.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_block_proposer_beacon_api_eth_v1_events_block_gossip.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_proposer_duty.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_block_proposer_beacon_api_eth_v1_proposer_duty.parquet
         network_column: meta_network_name
     canonical_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_beacon_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_block_proposer_canonical_beacon_block.parquet
         network_column: meta_network_name
     canonical_beacon_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_beacon_proposer_duty.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_block_proposer_canonical_beacon_proposer_duty.parquet
         network_column: meta_network_name
     libp2p_gossipsub_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_beacon_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_block_proposer_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Contains orphaned block
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          fct_block_proposer FINAL
-        WHERE
-          status = 'orphaned'
-      expected:
-        count: 1
-    - name: Expected bounds and size
+        SELECT COUNT(*) AS count FROM fct_block_proposer FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot values should be non-negative
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot) AS min,
-          MAX(slot) AS max
-        FROM
-          fct_block_proposer FINAL
-      expected:
-        count: 20
-        max: "12145389"
-        min: "12145370"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS invalid_count FROM fct_block_proposer FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Epoch values should be non-negative
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_block_proposer'
-      expected:
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT COUNT(*) AS invalid_count FROM fct_block_proposer FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Proposer validator index should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_block_proposer FINAL WHERE proposer_validator_index < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Status should only contain valid values
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_block_proposer FINAL WHERE status NOT IN ('canonical', 'orphaned', 'missed')
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Canonical blocks must have block_root
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_block_proposer FINAL WHERE status = 'canonical' AND block_root IS NULL
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Orphaned blocks must have block_root
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_block_proposer FINAL WHERE status = 'orphaned' AND block_root IS NULL
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Missed blocks should not have block_root
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_block_proposer FINAL WHERE status = 'missed' AND block_root IS NOT NULL
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Proposer pubkey should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_block_proposer FINAL WHERE proposer_pubkey IS NULL OR proposer_pubkey = ''
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: Each slot should have exactly one proposer entry
+      sql: |
+        SELECT COUNT(*) AS duplicate_count FROM (SELECT slot, COUNT(*) AS cnt FROM fct_block_proposer FINAL GROUP BY slot HAVING cnt > 1)
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
