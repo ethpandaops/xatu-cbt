@@ -8,7 +8,7 @@ fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 1s"
+  forwardfill: "@every 5s"
 tags:
   - execution
   - storage
