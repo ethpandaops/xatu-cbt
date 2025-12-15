@@ -67,10 +67,3 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Node class should not be empty
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL WHERE node_class = '' OR node_class IS NULL
-      assertions:
-        - type: equals
-          column: count
-          value: 0

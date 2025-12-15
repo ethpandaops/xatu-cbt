@@ -140,7 +140,13 @@ models:
     fct_engine_get_blobs_status_hourly:
       config:
         schedule: "@every 5s"
+    fct_engine_get_blobs_status_daily:
+      config:
+        schedule: "@every 5s"
     fct_engine_new_payload_status_hourly:
+      config:
+        schedule: "@every 5s"
+    fct_engine_new_payload_status_daily:
       config:
         schedule: "@every 5s"
     consensus_engine_api_new_payload:
