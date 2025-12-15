@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Fine-grained engine_getBlobs duration distribution in 50ms chunks for latency histogram analysis
+
+message FctEngineGetBlobsDurationChunked50ms {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Slot number of the beacon block being reconstructed
+  uint32 slot = 12;
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 13;
+  // Epoch number derived from the slot
+  uint32 epoch = 14;
+  // The wall clock time when the epoch started
+  uint32 epoch_start_date_time = 15;
+  // Root of the beacon block (hex encoded with 0x prefix)
+  string block_root = 16;
+  // Whether this observation is from a reference node (controlled fleet with 7870 in name)
+  bool is_reference_node = 17;
+  // Duration bucket in 50ms chunks (0, 50, 100, 150, ...)
+  int64 chunk_duration_ms = 18;
+  // Number of observations in this duration chunk
+  uint32 observation_count = 19;
+  // Number of SUCCESS status observations in this chunk
+  uint32 success_count = 20;
+  // Number of PARTIAL status observations in this chunk
+  uint32 partial_count = 21;
+  // Number of EMPTY status observations in this chunk
+  uint32 empty_count = 22;
+  // Number of ERROR or UNSUPPORTED status observations in this chunk
+  uint32 error_count = 23;
+}
+
+// Request for listing fct_engine_get_blobs_duration_chunked_50ms records
+message ListFctEngineGetBlobsDurationChunked50msRequest {
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by block_root - Root of the beacon block (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
+  StringFilter block_root = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by is_reference_node - Whether this observation is from a reference node (controlled fleet with 7870 in name) (ORDER BY column 3 - optional)
+  BoolFilter is_reference_node = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by chunk_duration_ms - Duration bucket in 50ms chunks (0, 50, 100, 150, ...) (ORDER BY column 4 - optional)
+  Int64Filter chunk_duration_ms = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by slot - Slot number of the beacon block being reconstructed (optional)
+  UInt32Filter slot = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch - Epoch number derived from the slot (optional)
+  UInt32Filter epoch = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
+  UInt32Filter epoch_start_date_time = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by observation_count - Number of observations in this duration chunk (optional)
+  UInt32Filter observation_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by success_count - Number of SUCCESS status observations in this chunk (optional)
+  UInt32Filter success_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by partial_count - Number of PARTIAL status observations in this chunk (optional)
+  UInt32Filter partial_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by empty_count - Number of EMPTY status observations in this chunk (optional)
+  UInt32Filter empty_count = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by error_count - Number of ERROR or UNSUPPORTED status observations in this chunk (optional)
+  UInt32Filter error_count = 13 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_engine_get_blobs_duration_chunked_50ms to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 14 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctEngineGetBlobsDurationChunked50ms` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 15 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 16 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_engine_get_blobs_duration_chunked_50ms records
+message ListFctEngineGetBlobsDurationChunked50msResponse {
+  // The list of fct_engine_get_blobs_duration_chunked_50ms.
+  repeated FctEngineGetBlobsDurationChunked50ms fct_engine_get_blobs_duration_chunked_50ms = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_engine_get_blobs_duration_chunked_50ms record by primary key
+message GetFctEngineGetBlobsDurationChunked50msRequest {
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_engine_get_blobs_duration_chunked_50ms record
+message GetFctEngineGetBlobsDurationChunked50msResponse {
+  FctEngineGetBlobsDurationChunked50ms item = 1;
+}
+
+// Query fct_engine_get_blobs_duration_chunked_50ms data
+service FctEngineGetBlobsDurationChunked50msService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctEngineGetBlobsDurationChunked50msRequest) returns (ListFctEngineGetBlobsDurationChunked50msResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_engine_get_blobs_duration_chunked_50ms"
+    };
+  }
+  // Get record | Retrieve a single record by slot_start_date_time
+  rpc Get(GetFctEngineGetBlobsDurationChunked50msRequest) returns (GetFctEngineGetBlobsDurationChunked50msResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_engine_get_blobs_duration_chunked_50ms/{slot_start_date_time}"
+    };
+  }
+}
