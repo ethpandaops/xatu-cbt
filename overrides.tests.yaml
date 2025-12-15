@@ -134,3 +134,15 @@ models:
     ethseer_validator_entity:
       config:
         lag: 0
+    consensus_engine_api_get_blobs:
+      config:
+        lag: 0
+    fct_engine_get_blobs_status_hourly:
+      config:
+        schedule: "@every 5s"
+    fct_engine_new_payload_status_hourly:
+      config:
+        schedule: "@every 5s"
+    consensus_engine_api_new_payload:
+      config:
+        lag: 0
