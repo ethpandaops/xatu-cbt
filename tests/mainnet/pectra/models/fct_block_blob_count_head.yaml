@@ -1,6 +1,19 @@
 model: fct_block_blob_count_head
 network: mainnet
 spec: pectra
+external_data:
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
 assertions:
     - name: Expected bounds and size
       sql: |

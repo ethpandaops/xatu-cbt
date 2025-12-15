@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Storage slot reactivations/cancellations - records slots that were touched after 6+ months of inactivity, undoing their expiry
+
+message IntStorageSlotReactivationBy6m {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The block number where this slot was reactivated/cancelled (touched after 6+ months of inactivity)
+  uint32 block_number = 12;
+  // The contract address
+  string address = 13;
+  // The storage slot key
+  string slot_key = 14;
+  // Number of effective bytes being reactivated (must match corresponding expiry record)
+  uint32 effective_bytes = 15;
+}
+
+// Request for listing int_storage_slot_reactivation_by_6m records
+message ListIntStorageSlotReactivationBy6mRequest {
+  // Filter by block_number - The block number where this slot was reactivated/cancelled (touched after 6+ months of inactivity) (PRIMARY KEY - required)
+  UInt32Filter block_number = 1;
+
+  // Filter by address - The contract address (ORDER BY column 2 - optional)
+  StringFilter address = 2;
+
+  // Filter by slot_key - The storage slot key (ORDER BY column 3 - optional)
+  StringFilter slot_key = 3;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4;
+  // Filter by effective_bytes - Number of effective bytes being reactivated (must match corresponding expiry record) (optional)
+  UInt32Filter effective_bytes = 5;
+
+  // The maximum number of int_storage_slot_reactivation_by_6m to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 6;
+  // A page token, received from a previous `ListIntStorageSlotReactivationBy6m` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 7;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 8;
+}
+
+// Response for listing int_storage_slot_reactivation_by_6m records
+message ListIntStorageSlotReactivationBy6mResponse {
+  // The list of int_storage_slot_reactivation_by_6m.
+  repeated IntStorageSlotReactivationBy6m int_storage_slot_reactivation_by_6m = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_storage_slot_reactivation_by_6m record by primary key
+message GetIntStorageSlotReactivationBy6mRequest {
+  // The block number where this slot was reactivated/cancelled (touched after 6+ months of inactivity)
+  uint32 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single int_storage_slot_reactivation_by_6m record
+message GetIntStorageSlotReactivationBy6mResponse {
+  IntStorageSlotReactivationBy6m item = 1;
+}
+
+// Query int_storage_slot_reactivation_by_6m data
+service IntStorageSlotReactivationBy6mService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntStorageSlotReactivationBy6mRequest) returns (ListIntStorageSlotReactivationBy6mResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntStorageSlotReactivationBy6mRequest) returns (GetIntStorageSlotReactivationBy6mResponse);
+}

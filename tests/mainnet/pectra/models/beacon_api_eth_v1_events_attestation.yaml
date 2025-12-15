@@ -11,6 +11,6 @@ assertions:
         SELECT
           COUNT(*) AS count
         FROM
-          remote('xatu-clickhouse-01', default.beacon_api_eth_v1_events_attestation, 'default', 'supersecret')
+          cluster('{remote_cluster}', default.beacon_api_eth_v1_events_attestation)
       expected:
         count: 7102577

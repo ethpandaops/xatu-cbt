@@ -31,11 +31,13 @@ type CBTEngine struct {
 	config        *TestConfig
 	modelCache    *ModelCache
 
-	configPath string
-
 	// Track running containers for cleanup
 	runningContainers   []string
 	runningContainersMu sync.Mutex
+
+	// Pool of Redis DB numbers (1-15) for isolation between concurrent CBT containers.
+	// Each CBT container gets its own Redis DB to prevent task queue conflicts.
+	redisDBPool chan int
 }
 
 // Config represents the structure of the CBT YAML configuration file.
@@ -108,6 +110,18 @@ func NewCBTEngine(
 		cfg = DefaultTestConfig()
 	}
 
+	// Create Redis DB pool with numbers 1-15 (max 15 concurrent, DB 0 reserved).
+	// This ensures each concurrent CBT container gets its own Redis DB for task isolation.
+	poolSize := cfg.CBTConcurrency
+	if poolSize > 15 {
+		poolSize = 15 // Redis only has DBs 0-15, reserve 0
+	}
+
+	redisDBPool := make(chan int, poolSize)
+	for i := 1; i <= poolSize; i++ {
+		redisDBPool <- i
+	}
+
 	return &CBTEngine{
 		clickhouseURL: clickhouseURL,
 		redisURL:      redisURL,
@@ -116,6 +130,7 @@ func NewCBTEngine(
 		log:           log.WithField("component", "cbt_engine"),
 		config:        cfg,
 		modelCache:    modelCache,
+		redisDBPool:   redisDBPool,
 	}
 }
 
@@ -136,19 +151,36 @@ func (e *CBTEngine) Stop() error {
 	e.runningContainersMu.Unlock()
 
 	for _, containerName := range containers {
-		e.log.WithField("container", containerName).Debug("killing CBT container")
+		e.log.WithField("container", containerName).Debug("cleaning up CBT container")
+
 		killCmd := exec.Command("docker", "kill", containerName) //nolint:gosec // G204: Docker command with trusted container name
-		if err := killCmd.Run(); err != nil {
-			e.log.WithError(err).WithField("container", containerName).Warn("failed to kill container")
+		_ = killCmd.Run()                                        // Ignore errors - container may already be stopped
+
+		rmCmd := exec.Command("docker", "rm", "-f", containerName) //nolint:gosec // G204: Docker command with trusted container name
+		if err := rmCmd.Run(); err != nil {
+			e.log.WithError(err).WithField("container", containerName).Warn("failed to remove container")
 		}
 	}
 
-	// Clean up config file if it exists
-	if e.configPath != "" {
-		if err := os.Remove(e.configPath); err != nil && !os.IsNotExist(err) {
-			e.log.WithError(err).Warn("failed to remove config file")
-		}
+	return nil
+}
+
+// flushRedisDB flushes a specific Redis database to clear stale data.
+// This is called when acquiring a DB number from the pool to ensure clean state.
+func (e *CBTEngine) flushRedisDB(ctx context.Context, dbNum int) error {
+	// Use redis-cli -n to select the DB, then FLUSHDB to clear it.
+	// dbNum is from a controlled pool (1-15), not user input.
+	dbNumStr := fmt.Sprintf("%d", dbNum)
+	args := []string{"exec", config.RedisContainerName, "redis-cli", "-n", dbNumStr, "FLUSHDB"}
+
+	cmd := exec.CommandContext(ctx, "docker", args...) //nolint:gosec // G204: args are from trusted internal pool
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("redis FLUSHDB failed: %w (output: %s)", err, string(output))
 	}
+
+	e.log.WithField("redisDB", dbNum).Debug("flushed redis database")
 
 	return nil
 }
@@ -157,13 +189,32 @@ func (e *CBTEngine) Stop() error {
 func (e *CBTEngine) RunTransformations(
 	ctx context.Context,
 	network,
-	dbName string,
+	dbName,
+	externalDB string,
 	allModels,
 	transformationModels []string,
 ) error {
+	// Acquire a Redis DB number from the pool for isolation.
+	// This ensures each concurrent CBT container uses a separate Redis database.
+	var redisDB int
+	select {
+	case redisDB = <-e.redisDBPool:
+		defer func() { e.redisDBPool <- redisDB }()
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	// Flush the Redis DB to clear any stale data from previous tests.
+	// This is critical because DB numbers are reused from a pool.
+	if err := e.flushRedisDB(ctx, redisDB); err != nil {
+		return fmt.Errorf("flushing redis DB %d: %w", redisDB, err)
+	}
+
 	logCtx := e.log.WithFields(logrus.Fields{
-		"database": dbName,
-		"models":   len(transformationModels),
+		"database":   dbName,
+		"externalDB": externalDB,
+		"models":     len(transformationModels),
+		"redisDB":    redisDB,
 	})
 	logCtx.Info("running transformations")
 
@@ -176,13 +227,15 @@ func (e *CBTEngine) RunTransformations(
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
-	e.configPath = filepath.Join(tmpDir, "config.yml")
-	if err := e.generateConfig(network, dbName, allModels, e.configPath); err != nil {
+	// Use local variable for config path to avoid race condition.
+	// Multiple concurrent tests share the same CBTEngine instance.
+	configPath := filepath.Join(tmpDir, "config.yml")
+	if err := e.generateConfig(network, dbName, externalDB, allModels, redisDB, configPath); err != nil {
 		return fmt.Errorf("generating CBT config: %w", err)
 	}
 
 	// Execute CBT via docker, but only wait for test models
-	if err := e.runDockerCBT(ctx, network, dbName, transformationModels, e.configPath); err != nil {
+	if err := e.runDockerCBT(ctx, network, dbName, externalDB, transformationModels, configPath); err != nil {
 		return fmt.Errorf("running CBT docker: %w", err)
 	}
 
@@ -194,7 +247,7 @@ func (e *CBTEngine) RunTransformations(
 }
 
 // generateConfig generates a CBT config file for specific models.
-func (e *CBTEngine) generateConfig(network, dbName string, models []string, outputPath string) error {
+func (e *CBTEngine) generateConfig(network, dbName, externalDB string, models []string, redisDB int, outputPath string) error {
 	// Build model paths separated by type.
 	externalPaths, transformationPaths, err := e.buildModelPaths(models)
 	if err != nil {
@@ -221,17 +274,18 @@ func (e *CBTEngine) generateConfig(network, dbName string, models []string, outp
 	cfg.ClickHouse.Admin.Scheduled.Database = dbName
 	cfg.ClickHouse.Admin.Scheduled.Table = "admin_cbt_scheduled"
 
-	// Configure Redis with namespace per test database
+	// Configure Redis with isolated database per concurrent CBT container.
+	// Each container gets its own Redis DB (1-15) to prevent task queue conflicts.
 	redisContainerEndpoint := fmt.Sprintf("%s:%s", config.RedisContainerName, config.RedisContainerPort)
 	redisURL := strings.Replace(e.redisURL, "localhost:6380", redisContainerEndpoint, 1)
 	redisURL = strings.Replace(redisURL, "localhost:6379", redisContainerEndpoint, 1)
-	cfg.Redis.URL = redisURL
+	cfg.Redis.URL = fmt.Sprintf("%s/%d", redisURL, redisDB)
 	cfg.Redis.Prefix = fmt.Sprintf("test:%s:", dbName)
 
 	// Set model paths and default databases
 	cfg.Models.External.Paths = externalPaths
 	cfg.Models.External.DefaultCluster = config.XatuClusterName
-	cfg.Models.External.DefaultDatabase = config.DefaultDatabase
+	cfg.Models.External.DefaultDatabase = externalDB
 	cfg.Models.Transformations.Paths = transformationPaths
 	cfg.Models.Transformations.DefaultDatabase = dbName
 
@@ -241,6 +295,7 @@ func (e *CBTEngine) generateConfig(network, dbName string, models []string, outp
 		"EXTERNAL_MODEL_MIN_TIMESTAMP":           "0",
 		"EXTERNAL_MODEL_MIN_BLOCK":               "0",
 		"DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS": "3650", // 10 years for tests.
+		"EXTERNAL_DATABASE":                      externalDB,
 	}
 
 	// Configure for fast test execution
@@ -266,7 +321,6 @@ func (e *CBTEngine) generateConfig(network, dbName string, models []string, outp
 	e.log.WithFields(logrus.Fields{
 		"external":        len(externalPaths),
 		"transformations": len(transformationPaths),
-		"output":          outputPath,
 	}).Debug("generated cbt config")
 
 	return nil
@@ -405,14 +459,14 @@ func (e *CBTEngine) buildDefaultTestOverrides(models []string) map[string]*model
 func (e *CBTEngine) runDockerCBT(
 	ctx context.Context,
 	network,
-	dbName string,
+	dbName,
+	externalDB string,
 	models []string,
 	configPath string,
 ) error {
 	e.log.WithFields(logrus.Fields{
 		"network":  network,
 		"database": dbName,
-		"config":   configPath,
 	}).Debug("starting cbt")
 
 	absConfigPath, err := filepath.Abs(configPath)
@@ -425,13 +479,15 @@ func (e *CBTEngine) runDockerCBT(
 		return fmt.Errorf("getting absolute models path: %w", err)
 	}
 
-	containerName := fmt.Sprintf("xatu-cbt-test-%d", time.Now().Unix())
+	// Use UnixNano to avoid container name collisions when tests start within the same second
+	containerName := fmt.Sprintf("xatu-cbt-test-%d", time.Now().UnixNano())
 	args := []string{
 		"run",
 		"--rm",
 		"--name", containerName,
 		"--network", e.config.DockerNetwork,
 		"-e", fmt.Sprintf("NETWORK=%s", network),
+		"-e", fmt.Sprintf("EXTERNAL_DATABASE=%s", externalDB),
 		"-v", fmt.Sprintf("%s:/config/config.yml", absConfigPath),
 		"-v", fmt.Sprintf("%s:/models", absModelsDir),
 		e.config.DockerImage,
@@ -459,6 +515,9 @@ func (e *CBTEngine) runDockerCBT(
 		killCmd := exec.Command("docker", "kill", containerName) //nolint:gosec // G204: Docker cleanup with trusted container name
 		_ = killCmd.Run()
 
+		rmCmd := exec.Command("docker", "rm", "-f", containerName) //nolint:gosec // G204: Docker cleanup with trusted container name
+		_ = rmCmd.Run()
+
 		e.runningContainersMu.Lock()
 		for i, name := range e.runningContainers {
 			if name == containerName {
@@ -469,7 +528,7 @@ func (e *CBTEngine) runDockerCBT(
 		e.runningContainersMu.Unlock()
 	}()
 
-	if err := e.waitForTransformations(ctx, dbName, models); err != nil {
+	if err := e.waitForTransformations(ctx, dbName, externalDB, models); err != nil {
 		e.log.WithError(err).Warn("error waiting for transformations, continuing anyway")
 	}
 
@@ -479,7 +538,7 @@ func (e *CBTEngine) runDockerCBT(
 // waitForTransformations polls admin tables with exponential backoff and verifies models have data
 //
 //nolint:gocyclo // Complex transformation waiting logic with multiple state checks
-func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName string, models []string) error {
+func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName, externalDB string, models []string) error {
 	scheduledModels := make(map[string]bool)
 	allModels := make(map[string]bool)
 
@@ -524,9 +583,35 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName string, m
 	defer timeout.Stop()
 
 	modelPendingSince := make(map[string]time.Time)
+	scheduledRetryCount := 0
+	const maxScheduledRetries = 3 // Allow up to 3 schedule cycles for scheduled models to catch up
 
 	if err := e.waitForAdminTables(ctx, conn, dbName, timeout); err != nil {
 		return fmt.Errorf("waiting for admin tables: %w", err)
+	}
+
+	// Build a map of scheduled models → their transitive incremental deps.
+	// Used to verify deps have data before considering a scheduled model complete.
+	scheduledModelIncrementalDeps := make(map[string][]string)
+	for model := range scheduledModels {
+		incrementalDeps := e.getIncrementalDependencies(model)
+		if len(incrementalDeps) > 0 {
+			scheduledModelIncrementalDeps[model] = incrementalDeps
+		}
+	}
+
+	// Build a map of incremental models → their scheduled deps.
+	// Used to verify scheduled deps have run before considering an incremental model complete.
+	incrementalModelScheduledDeps := make(map[string][]string)
+	for model := range allModels {
+		if scheduledModels[model] {
+			continue // Skip scheduled models
+		}
+
+		scheduledDeps := e.getScheduledDependencies(model)
+		if len(scheduledDeps) > 0 {
+			incrementalModelScheduledDeps[model] = scheduledDeps
+		}
 	}
 
 	// Start with initial poll interval
@@ -606,6 +691,66 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName string, m
 					continue
 				}
 
+				// For scheduled models, verify incremental deps have data before considering complete.
+				// This prevents the race where a scheduled model runs before its incremental deps,
+				// producing 0 rows because it read from empty tables.
+				if incrementalDeps, hasIncrDeps := scheduledModelIncrementalDeps[model]; hasIncrDeps {
+					allDepsHaveData := true
+					for _, dep := range incrementalDeps {
+						rows, err := e.getTableRowCount(ctx, conn, dbName, dep)
+						if err != nil || rows == 0 {
+							allDepsHaveData = false
+							break
+						}
+					}
+					if !allDepsHaveData {
+						e.log.WithFields(logrus.Fields{
+							"model": model,
+							"deps":  incrementalDeps,
+						}).Debug("scheduled model waiting for incremental deps to have data")
+						pending = append(pending, model)
+						continue
+					}
+				}
+
+				// For incremental models, verify scheduled deps have run before considering complete.
+				// CBT's bounds validation skips scheduled deps, so incremental models can run and
+				// produce wrong results by reading from scheduled tables that haven't executed yet.
+				// We check admin_cbt_scheduled (not row count) because scheduled models can
+				// legitimately produce 0 rows.
+				if scheduledDeps, hasSchedDeps := incrementalModelScheduledDeps[model]; hasSchedDeps {
+					allDepsHaveRun := true
+					for _, dep := range scheduledDeps {
+						if !completedScheduled[dep] {
+							allDepsHaveRun = false
+							break
+						}
+					}
+					if !allDepsHaveRun {
+						e.log.WithFields(logrus.Fields{
+							"model": model,
+							"deps":  scheduledDeps,
+						}).Debug("incremental model waiting for scheduled deps to run")
+						pending = append(pending, model)
+						continue
+					}
+				}
+
+				// For incremental models only: check if model has 0 rows but deps have data.
+				// This catches cases where an incremental model ran before deps had data.
+				// We skip this check for scheduled models - they may legitimately produce 0 rows
+				// based on their business logic (e.g., "last 365 days" queries with limited test data).
+				if !scheduledModels[model] {
+					modelRows, rowErr := e.getTableRowCount(ctx, conn, dbName, model)
+					if rowErr == nil && modelRows == 0 {
+						if e.modelHasDepsWithData(ctx, conn, dbName, externalDB, model) {
+							e.log.WithField("model", model).Debug("incremental model has 0 rows but deps have data, waiting for re-run")
+							pending = append(pending, model)
+							continue
+						}
+					}
+				}
+
 				delete(modelPendingSince, model)
 			}
 
@@ -615,6 +760,31 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName string, m
 			}).Debug("transformation progress")
 
 			if len(pending) == 0 {
+				// TEST SUITE ONLY: Check for models that might need another cycle.
+				//
+				// In production, CBT runs continuously and models execute on their schedules.
+				// Dependencies are populated over time, so models find data when they run.
+				//
+				// In tests, we start CBT fresh with empty tables and load parquet data. There's a
+				// race condition where a model's first execution fires before its dependencies
+				// have processed data. The model runs, finds empty dependency tables, and produces
+				// 0 rows.
+				//
+				// This retry logic detects when models produced 0 rows but their dependencies
+				// now have data, and waits for the next execution cycle to re-run them.
+				modelsNeedingRetry := e.findModelsNeedingRetry(ctx, conn, dbName, externalDB, allModels)
+				if len(modelsNeedingRetry) > 0 && scheduledRetryCount < maxScheduledRetries {
+					scheduledRetryCount++
+
+					e.log.WithFields(logrus.Fields{
+						"models": modelsNeedingRetry,
+						"retry":  scheduledRetryCount,
+						"max":    maxScheduledRetries,
+					}).Debug("deps have data, waiting for another cycle")
+
+					continue
+				}
+
 				return nil
 			}
 
@@ -727,6 +897,137 @@ func (e *CBTEngine) tableExists(ctx context.Context, conn *sql.DB, dbName, table
 	return count > 0, nil
 }
 
+// findModelsNeedingRetry returns transformation models that have 0 rows but their
+// dependencies have data. This indicates the model ran before its deps were ready
+// and needs another execution cycle. Applies to both scheduled and incremental models.
+func (e *CBTEngine) findModelsNeedingRetry(
+	ctx context.Context,
+	conn *sql.DB,
+	dbName string,
+	externalDB string,
+	allModels map[string]bool,
+) []string {
+	needsRetry := []string{}
+
+	for model := range allModels {
+		// Check if this model has 0 rows
+		modelRows, err := e.getTableRowCount(ctx, conn, dbName, model)
+		if err != nil {
+			e.log.WithError(err).WithField("model", model).Debug("error checking model row count")
+
+			continue
+		}
+
+		if modelRows > 0 {
+			// Model has data, no need to retry
+			continue
+		}
+
+		// Model has 0 rows - check if any of its deps have data
+		e.modelCache.mu.RLock()
+		metadata := e.modelCache.transformationModels[model]
+		e.modelCache.mu.RUnlock()
+
+		if metadata == nil {
+			continue
+		}
+
+		// Check all dependencies for data (both transformation and external)
+		depsHaveData := false
+
+		for _, dep := range metadata.Dependencies {
+			var depRows uint64
+
+			var checkErr error
+
+			switch {
+			case e.modelCache.IsTransformationModel(dep):
+				// Transformation dep - check in CBT database
+				depRows, checkErr = e.getTableRowCount(ctx, conn, dbName, dep)
+			case e.modelCache.IsExternalModel(dep) && externalDB != "":
+				// External dep - check in external database
+				depRows, checkErr = e.getTableRowCount(ctx, conn, externalDB, dep)
+			default:
+				continue
+			}
+
+			if checkErr != nil {
+				continue
+			}
+
+			if depRows > 0 {
+				depsHaveData = true
+
+				break
+			}
+		}
+
+		// If deps have data but model has 0 rows, it needs another cycle
+		if depsHaveData {
+			needsRetry = append(needsRetry, model)
+		}
+	}
+
+	return needsRetry
+}
+
+// modelHasDepsWithData checks if any of the model's dependencies have data.
+// Used to determine if a model with 0 rows should be retried.
+func (e *CBTEngine) modelHasDepsWithData(
+	ctx context.Context,
+	conn *sql.DB,
+	dbName string,
+	externalDB string,
+	model string,
+) bool {
+	e.modelCache.mu.RLock()
+	metadata := e.modelCache.transformationModels[model]
+	e.modelCache.mu.RUnlock()
+
+	if metadata == nil {
+		return false
+	}
+
+	for _, dep := range metadata.Dependencies {
+		var depRows uint64
+
+		var checkErr error
+
+		switch {
+		case e.modelCache.IsTransformationModel(dep):
+			// Transformation dep - check in CBT database
+			depRows, checkErr = e.getTableRowCount(ctx, conn, dbName, dep)
+		case e.modelCache.IsExternalModel(dep) && externalDB != "":
+			// External dep - check in external database
+			depRows, checkErr = e.getTableRowCount(ctx, conn, externalDB, dep)
+		default:
+			continue
+		}
+
+		if checkErr != nil {
+			continue
+		}
+
+		if depRows > 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
+// getTableRowCount returns the number of rows in a table
+func (e *CBTEngine) getTableRowCount(ctx context.Context, conn *sql.DB, dbName, tableName string) (uint64, error) {
+	query := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+		"SELECT count() FROM `%s`.`%s` FINAL",
+		dbName, tableName)
+
+	var count uint64
+	err := conn.QueryRowContext(ctx, query).Scan(&count)
+
+	return count, err
+}
+
 // getModelType returns the execution type from cached model metadata.
 // Returns modelTypeIncremental, modelTypeScheduled, or defaults to modelTypeScheduled.
 func (e *CBTEngine) getModelType(metadata *ModelMetadata) string {
@@ -744,5 +1045,86 @@ func (e *CBTEngine) getModelType(metadata *ModelMetadata) string {
 	default:
 		// Default to scheduled for empty or unknown types
 		return modelTypeScheduled
+	}
+}
+
+// getScheduledDependencies returns scheduled model dependencies for a given incremental model.
+// This is used to identify incremental models that depend on scheduled models,
+// which require the scheduled deps to have run first.
+func (e *CBTEngine) getScheduledDependencies(model string) []string {
+	e.modelCache.mu.RLock()
+	defer e.modelCache.mu.RUnlock()
+
+	metadata := e.modelCache.transformationModels[model]
+	if metadata == nil {
+		return nil
+	}
+
+	// Only check incremental models - scheduled models don't have this race condition
+	if e.getModelType(metadata) != modelTypeIncremental {
+		return nil
+	}
+
+	scheduledDeps := make([]string, 0)
+
+	for _, dep := range metadata.Dependencies {
+		depMeta := e.modelCache.transformationModels[dep]
+		if depMeta != nil && e.getModelType(depMeta) == modelTypeScheduled {
+			scheduledDeps = append(scheduledDeps, dep)
+		}
+	}
+
+	return scheduledDeps
+}
+
+// getIncrementalDependencies returns all incremental model dependencies (transitively) for a given scheduled model.
+// This is used to identify scheduled models that depend on incremental models,
+// which need their incremental deps to have data before the scheduled model can produce results.
+// It recursively walks the dependency tree to find ALL incremental models, not just direct deps.
+func (e *CBTEngine) getIncrementalDependencies(model string) []string {
+	e.modelCache.mu.RLock()
+	defer e.modelCache.mu.RUnlock()
+
+	metadata := e.modelCache.transformationModels[model]
+	if metadata == nil {
+		return nil
+	}
+
+	// Only check scheduled models
+	if e.getModelType(metadata) != modelTypeScheduled {
+		return nil
+	}
+
+	// Use a set to track visited models and avoid cycles
+	visited := make(map[string]bool)
+	incrementalDeps := make([]string, 0)
+
+	// Recursively collect all incremental deps
+	e.collectIncrementalDepsRecursive(metadata.Dependencies, visited, &incrementalDeps)
+
+	return incrementalDeps
+}
+
+// collectIncrementalDepsRecursive walks the dependency tree and collects all incremental models.
+// Must be called with modelCache.mu already held (RLock).
+func (e *CBTEngine) collectIncrementalDepsRecursive(deps []string, visited map[string]bool, result *[]string) {
+	for _, dep := range deps {
+		if visited[dep] {
+			continue
+		}
+
+		visited[dep] = true
+
+		depMeta := e.modelCache.transformationModels[dep]
+		if depMeta == nil {
+			continue // External model, skip
+		}
+
+		if e.getModelType(depMeta) == modelTypeIncremental {
+			*result = append(*result, dep)
+		}
+
+		// Recursively check this model's dependencies
+		e.collectIncrementalDepsRecursive(depMeta.Dependencies, visited, result)
 	}
 }

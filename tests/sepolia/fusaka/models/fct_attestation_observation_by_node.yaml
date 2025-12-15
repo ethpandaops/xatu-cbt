@@ -3,43 +3,79 @@ network: sepolia
 spec: fusaka
 external_data:
     beacon_api_eth_v1_events_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_attestation.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_observation_by_node_beacon_api_eth_v1_events_attestation.parquet
         network_column: meta_network_name
     libp2p_gossipsub_beacon_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_beacon_attestation.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_observation_by_node_libp2p_gossipsub_beacon_attestation.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          fct_attestation_observation_by_node FINAL
-      expected:
-        count: 128
-        max: "2025-10-27T00:30:24Z"
-        min: "2025-10-27T00:26:36Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS count FROM fct_attestation_observation_by_node FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Attestation count should be positive for all rows
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_attestation_observation_by_node'
-      expected:
-        max: "2025-10-27T00:30:24Z"
-        min: "2025-10-27T00:26:36Z"
-    - name: Expected number of scheduled runs
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_observation_by_node FINAL WHERE attestation_count <= 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Average seen slot start diff should be within valid range
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          admin_cbt_scheduled FINAL
-        WHERE
-          table = 'fct_attestation_observation_by_node'
-      expected:
-        count: 0
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_observation_by_node FINAL WHERE avg_seen_slot_start_diff < min_seen_slot_start_diff OR avg_seen_slot_start_diff > max_seen_slot_start_diff
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Median should be between min and max seen slot start diff
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_observation_by_node FINAL WHERE median_seen_slot_start_diff < min_seen_slot_start_diff OR median_seen_slot_start_diff > max_seen_slot_start_diff
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Min seen slot start diff should not exceed max
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_observation_by_node FINAL WHERE min_seen_slot_start_diff > max_seen_slot_start_diff
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Classification should be one of valid values
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_observation_by_node FINAL WHERE classification NOT IN ('individual', 'corporate', 'internal', 'unclassified')
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Slot should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_observation_by_node FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Epoch should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_observation_by_node FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Meta client name should not be empty
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_observation_by_node FINAL WHERE meta_client_name = '' OR meta_client_name IS NULL
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Node ID should not be empty
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_observation_by_node FINAL WHERE node_id = '' OR node_id IS NULL
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0

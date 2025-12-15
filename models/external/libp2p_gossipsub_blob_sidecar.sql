@@ -26,3 +26,6 @@ WHERE
       {{- end -}}
     {{- end }}
     AND slot_start_date_time >= fromUnixTimestamp({{ $ts }})
+    {{- if .cache.is_incremental_scan }}
+      AND slot_start_date_time <= fromUnixTimestamp({{ $ts }}) + {{ default "100000" .env.EXTERNAL_MODEL_SCAN_SIZE_TIMESTAMP }}
+    {{- end }}

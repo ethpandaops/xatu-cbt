@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Storage slot diffs aggregated per block - stores effective bytes from first and last value per address/slot
+
+message IntStorageSlotDiffByAddressSlot {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The block number
+  uint32 block_number = 12;
+  // The contract address
+  string address = 13;
+  // The storage slot key
+  string slot_key = 14;
+  // Number of effective bytes in the first from_value of the block (0-32)
+  uint32 effective_bytes_from = 15;
+  // Number of effective bytes in the last to_value of the block (0-32)
+  uint32 effective_bytes_to = 16;
+}
+
+// Request for listing int_storage_slot_diff_by_address_slot records
+message ListIntStorageSlotDiffByAddressSlotRequest {
+  // Filter by address - The contract address (PRIMARY KEY - required)
+  StringFilter address = 1;
+
+  // Filter by slot_key - The storage slot key (ORDER BY column 2 - optional)
+  StringFilter slot_key = 2;
+
+  // Filter by block_number - The block number (ORDER BY column 3 - optional)
+  UInt32Filter block_number = 3;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4;
+  // Filter by effective_bytes_from - Number of effective bytes in the first from_value of the block (0-32) (optional)
+  UInt32Filter effective_bytes_from = 5;
+  // Filter by effective_bytes_to - Number of effective bytes in the last to_value of the block (0-32) (optional)
+  UInt32Filter effective_bytes_to = 6;
+
+  // The maximum number of int_storage_slot_diff_by_address_slot to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 7;
+  // A page token, received from a previous `ListIntStorageSlotDiffByAddressSlot` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 8;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 9;
+}
+
+// Response for listing int_storage_slot_diff_by_address_slot records
+message ListIntStorageSlotDiffByAddressSlotResponse {
+  // The list of int_storage_slot_diff_by_address_slot.
+  repeated IntStorageSlotDiffByAddressSlot int_storage_slot_diff_by_address_slot = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_storage_slot_diff_by_address_slot record by primary key
+message GetIntStorageSlotDiffByAddressSlotRequest {
+  // The contract address
+  string address = 1; // Primary key (required)
+}
+
+// Response for getting a single int_storage_slot_diff_by_address_slot record
+message GetIntStorageSlotDiffByAddressSlotResponse {
+  IntStorageSlotDiffByAddressSlot item = 1;
+}
+
+// Query int_storage_slot_diff_by_address_slot data
+service IntStorageSlotDiffByAddressSlotService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntStorageSlotDiffByAddressSlotRequest) returns (ListIntStorageSlotDiffByAddressSlotResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntStorageSlotDiffByAddressSlotRequest) returns (GetIntStorageSlotDiffByAddressSlotResponse);
+}
