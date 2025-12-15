@@ -34,19 +34,19 @@ models:
         schedule: "@every 5s"
     beacon_api_eth_v1_beacon_committee:
       config:
-        lag: 12
+        lag: 0
     beacon_api_eth_v1_events_attestation:
       config:
-        lag: 12
+        lag: 0
     beacon_api_eth_v1_events_blob_sidecar:
       config:
         lag: 12
     beacon_api_eth_v1_events_block:
       config:
-        lag: 12
+        lag: 0
     beacon_api_eth_v1_events_block_gossip:
       config:
-        lag: 12
+        lag: 0
     beacon_api_eth_v1_events_data_column_sidecar:
       config:
         lag: 12
@@ -55,7 +55,7 @@ models:
         lag: 12
     beacon_api_eth_v1_proposer_duty:
       config:
-        lag: 12
+        lag: 0
     beacon_api_eth_v2_beacon_block:
       config:
         lag: 12
@@ -100,10 +100,22 @@ models:
         lag: 0
     libp2p_gossipsub_beacon_attestation:
       config:
-        lag: 12
+        lag: 0
+    # Stagger transformation schedules to ensure deps initialize first
+    # int_ models (intermediate) should run before fct_ models (final)
+    int_attestation_first_seen:
+      config:
+        schedules:
+          forwardfill: "@every 2s"
+          backfill: "@every 2s"
+    fct_attestation_observation_by_node:
+      config:
+        schedules:
+          forwardfill: "@every 10s"
+          backfill: "@every 10s"
     libp2p_gossipsub_beacon_block:
       config:
-        lag: 12
+        lag: 0
     libp2p_gossipsub_blob_sidecar:
       config:
         lag: 12
@@ -117,5 +129,8 @@ models:
       config:
         lag: 12
     canonical_execution_block:
+      config:
+        lag: 0
+    ethseer_validator_entity:
       config:
         lag: 0

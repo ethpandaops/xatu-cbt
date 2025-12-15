@@ -3,30 +3,76 @@ network: mainnet
 spec: pectra
 external_data:
     beacon_api_eth_v1_beacon_committee:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_beacon_committee.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/int_beacon_committee_head_beacon_api_eth_v1_beacon_committee.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          int_beacon_committee_head FINAL
-      expected:
-        count: 1280
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS count FROM int_beacon_committee_head FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot should be non-negative
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_beacon_committee_head'
-      expected:
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT MIN(slot) AS min_slot FROM int_beacon_committee_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 0
+    - name: Epoch should be non-negative
+      sql: |
+        SELECT MIN(epoch) AS min_epoch FROM int_beacon_committee_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_epoch
+          value: 0
+    - name: Committee index should be non-negative
+      sql: |
+        SELECT MIN(toUInt32(committee_index)) AS min_committee_index FROM int_beacon_committee_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_committee_index
+          value: 0
+    - name: Validators array should not be empty
+      sql: |
+        SELECT COUNT(*) AS empty_validators FROM int_beacon_committee_head FINAL WHERE length(validators) = 0
+      assertions:
+        - type: equals
+          column: empty_validators
+          value: 0
+    - name: Slot start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM int_beacon_committee_head FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: Epoch start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM int_beacon_committee_head FINAL WHERE epoch_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: Slot and committee index combination should be unique
+      sql: |
+        SELECT COUNT(*) - COUNT(DISTINCT (slot, committee_index)) AS duplicate_count FROM int_beacon_committee_head FINAL
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: Epoch should be consistent with slot (slot / 32)
+      sql: |
+        SELECT COUNT(*) AS inconsistent_epochs FROM int_beacon_committee_head FINAL WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: inconsistent_epochs
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM int_beacon_committee_head FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0

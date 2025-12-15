@@ -25,30 +25,30 @@ def execute_clickhouse_query(url, query):
     try:
         # Parse URL to extract auth and build clean URL
         parsed = urllib.parse.urlparse(url)
-        
+
         # Build URL without auth credentials
         if parsed.port:
             clean_url = f"{parsed.scheme}://{parsed.hostname}:{parsed.port}{parsed.path}"
         else:
             clean_url = f"{parsed.scheme}://{parsed.hostname}{parsed.path}"
-        
+
         if parsed.query:
             clean_url += f"?{parsed.query}"
-        
-        req = urllib.request.Request(clean_url, 
+
+        req = urllib.request.Request(clean_url,
                                     data=query.encode('utf-8'),
                                     method='POST')
-        
+
         # Add Basic Auth header if credentials exist
         if parsed.username:
             password = parsed.password or ''
             auth_str = f"{parsed.username}:{password}"
             b64_auth = base64.b64encode(auth_str.encode()).decode()
             req.add_header("Authorization", f"Basic {b64_auth}")
-        
+
         response = urllib.request.urlopen(req)
         result = response.read().decode('utf-8')
-        
+
         if result.strip():
             if 'SELECT' in query.upper():
                 try:
@@ -82,22 +82,22 @@ def fetch_url(url):
 def parse_validator_ranges_data(json_data, database_name):
     """Parse validator ranges JSON and expand into individual validator rows"""
     validators = {}
-    
+
     data = json.loads(json_data)
     nodes = data.get('nodes', {})
-    
+
     for node_name, node_info in nodes.items():
         groups = node_info.get('groups', [])
         tags = node_info.get('tags', [])
         attributes = node_info.get('attributes', {})
         source = node_info.get('source', 'unknown')
         validator_ranges = node_info.get('validatorRanges', [])
-        
+
         # Expand validator ranges into individual rows
         for vrange in validator_ranges:
             start = vrange.get('start', 0)
             end = vrange.get('end', 0)
-            
+
             # Create a row for each validator index in the range (inclusive)
             for validator_index in range(start, end + 1):
                 validators[validator_index] = {
@@ -108,30 +108,31 @@ def parse_validator_ranges_data(json_data, database_name):
                     'validator_index': validator_index,
                     'source': source
                 }
-    
+
     return validators
 
-def fetch_ethseer_validators(ch_url, database_name):
+def fetch_ethseer_validators(ch_url, database_name, external_database):
     """Fetch validator data from ethseer_validator_entity table"""
+    db = external_database if external_database else 'default'
     query = f"""
-    SELECT 
+    SELECT
         `index` AS validator_index,
         entity AS source
-    FROM cluster('{{remote_cluster}}', default.ethseer_validator_entity_local)
+    FROM cluster('{{remote_cluster}}', {db}.ethseer_validator_entity_local)
     FINAL
     WHERE meta_network_name = '{database_name}'
     FORMAT JSONCompact
     """
-    
+
     try:
         result = execute_clickhouse_query(ch_url, query)
         validators = {}
-        
+
         if result and 'data' in result:
             for row in result['data']:
                 validator_index = int(row[0])
                 source = row[1]
-                
+
                 validators[validator_index] = {
                     'name': None,  # No name from ethseer
                     'groups': [],
@@ -140,7 +141,7 @@ def fetch_ethseer_validators(ch_url, database_name):
                     'validator_index': validator_index,
                     'source': source
                 }
-        
+
         return validators
     except Exception as e:
         print(f"Warning: Failed to fetch ethseer validators: {e}", file=sys.stderr)
@@ -150,23 +151,26 @@ def merge_validator_data(cartographoor_validators, ethseer_validators):
     """Merge validator data from both sources, with cartographoor taking precedence"""
     # Start with all cartographoor validators (they have richer metadata)
     merged = dict(cartographoor_validators)
-    
+
     # Add ethseer validators that are not in cartographoor
     ethseer_only_count = 0
     for validator_index, ethseer_data in ethseer_validators.items():
         if validator_index not in merged:
             merged[validator_index] = ethseer_data
             ethseer_only_count += 1
-    
+
     print(f"  Validators from cartographoor: {len(cartographoor_validators)}")
     print(f"  Validators from ethseer only (gap-filled): {ethseer_only_count}")
     print(f"  Total unique validators: {len(merged)}")
-    
+
     return merged
 
 def main():
     # Get environment variables
     ch_url = os.environ['CLICKHOUSE_URL']
+
+    # External database for per-test isolation (empty in production, uses 'default')
+    external_database = os.environ.get('EXTERNAL_DATABASE', '')
 
     # Model info
     target_db = os.environ['SELF_DATABASE']
@@ -179,22 +183,16 @@ def main():
     cluster = os.environ.get('CLICKHOUSE_CLUSTER', '')
     local_suffix = os.environ.get('CLICKHOUSE_LOCAL_SUFFIX', '')
 
-    # Extract network name from database name
-    # For test databases: test_{network}_{spec}_{timestamp}_{hash} -> extract 'network'
-    # For production databases: {network} -> use as-is
-    network_name = target_db
-    if target_db.startswith('test_'):
-        parts = target_db.split('_')
-        if len(parts) >= 2:
-            network_name = parts[1]  # Extract network (e.g., 'mainnet' from 'test_mainnet_pectra_...')
-            print(f"Detected test database, extracted network: {network_name}")
+    # Get network name from NETWORK env var (passed by CBT).
+    # Or if not set, use the database name.
+    network_name = os.environ.get('NETWORK', target_db)
 
     print(f"=== Node Data Collection ===")
     print(f"Target: {target_db}.{target_table}")
     print(f"Database: {target_db}")
     print(f"Network: {network_name}")
     print(f"ClickHouse URL: {ch_url}")
-    
+
     try:
         # Test ClickHouse connection first
         print("Testing ClickHouse connection...")
@@ -233,43 +231,43 @@ def main():
 
         # Step 4: Fetch ethseer validators
         print(f"\nFetching validators from ethseer_validator_entity table...")
-        ethseer_validators = fetch_ethseer_validators(ch_url, network_name)
+        ethseer_validators = fetch_ethseer_validators(ch_url, network_name, external_database)
         print(f"Found {len(ethseer_validators)} validator entries from ethseer")
-        
+
         # Step 5: Merge data from both sources
         print(f"\nMerging validator data from both sources...")
         merged_validators = merge_validator_data(cartographoor_validators, ethseer_validators)
         validators_to_insert = list(merged_validators.values())
-        
+
         if not validators_to_insert:
             print("No validator data found from either source")
             return 0
-        
+
         # Show summary of what we found
         node_counts = {}
         unique_groups = set()
         unique_tags = set()
-        
+
         for v in validators_to_insert:
             node_name = v['name']
             if node_name:
                 node_counts[node_name] = node_counts.get(node_name, 0) + 1
             unique_groups.update(v['groups'])
             unique_tags.update(v['tags'])
-        
+
         print(f"\nData Summary (before insertion):")
         print(f"  Total nodes: {len(node_counts)}")
         print(f"  Total validators: {len(validators_to_insert)}")
         print(f"  Unique groups: {len(unique_groups)}")
         print(f"  Unique tags: {len(unique_tags)}")
-        
+
         # Show top nodes by validator count
         if node_counts:
             top_nodes = sorted(node_counts.items(), key=lambda x: x[1], reverse=True)[:5]
             print(f"\n  Top 5 nodes by validator count:")
             for node_name, count in top_nodes:
                 print(f"    - {node_name}: {count} validators")
-        
+
         # Step 6: Prepare and insert data
         print(f"\nPreparing to insert data into ClickHouse...")
         values = []
@@ -277,11 +275,11 @@ def main():
             # Escape strings properly
             name_escaped = validator['name'].replace("'", "''") if validator['name'] else 'NULL'
             source_escaped = validator['source'].replace("'", "''")
-            
+
             # Format arrays
             groups_array = "[" + ",".join(["'" + g.replace("'", "''") + "'" for g in validator['groups']]) + "]"
             tags_array = "[" + ",".join(["'" + t.replace("'", "''") + "'" for t in validator['tags']]) + "]"
-            
+
             # Format map - handle various value types
             map_items = []
             for k, v in validator['attributes'].items():
@@ -296,7 +294,7 @@ def main():
                 v_escaped = v_str.replace("'", "''")
                 map_items.append(f"'{k_escaped}':'{v_escaped}'")
             attributes_map = "{" + ",".join(map_items) + "}"
-            
+
             # Handle NULL name for ethseer-only validators
             if validator['name'] is None:
                 values.append(f"""
@@ -308,7 +306,7 @@ def main():
                     (fromUnixTimestamp({task_start}), '{name_escaped}', {groups_array}, {tags_array},
                      {attributes_map}, {validator['validator_index']}, '{source_escaped}')
                 """)
-        
+
         # Batch insert (in chunks to avoid too large queries)
         chunk_size = 1000
         inserted_count = 0
@@ -316,7 +314,7 @@ def main():
             for i in range(0, len(values), chunk_size):
                 chunk = values[i:i+chunk_size]
                 insert_query = f"""
-                INSERT INTO `{target_db}`.`{target_table}` 
+                INSERT INTO `{target_db}`.`{target_table}`
                 (updated_date_time, name, groups, tags, attributes, validator_index, source)
                 VALUES {','.join(chunk)}
                 """
@@ -324,7 +322,7 @@ def main():
                 inserted_count += len(chunk)
                 if i % 10000 == 0 and i > 0:
                     print(f"  Progress: {inserted_count}/{len(validators_to_insert)} rows inserted...")
-            
+
             print(f"✓ Successfully inserted {inserted_count} validator node entries")
 
             # Delete old rows (rows with different updated_date_time)
@@ -358,7 +356,7 @@ def main():
             return 1
 
         return 0
-        
+
     except Exception as e:
         print(f"\n❌ Error collecting node data: {e}", file=sys.stderr)
         import traceback

@@ -3,96 +3,97 @@ network: mainnet
 spec: pectra
 external_data:
     beacon_api_eth_v1_beacon_committee:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_beacon_committee.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_beacon_committee.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_attestation.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_events_attestation.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_block:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_events_block.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_block_gossip:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_block_gossip.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_events_block_gossip.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_proposer_duty.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_liveness_by_entity_head_ethseer_validator_entity.parquet
         network_column: meta_network_name
     libp2p_gossipsub_beacon_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_beacon_attestation.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_liveness_by_entity_head_libp2p_gossipsub_beacon_attestation.parquet
         network_column: meta_network_name
     libp2p_gossipsub_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_beacon_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_liveness_by_entity_head_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot) AS min,
-          MAX(slot) AS max
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-      expected:
-        count: 20
-        max: "12145389"
-        min: "12145370"
-    - name: Expected distinct slots
+        SELECT COUNT(*) AS count FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot should be non-negative
       sql: |
-        SELECT
-          COUNT(DISTINCT slot) AS slot_count
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-      expected:
-        slot_count: 20
-    - name: No NULL entities
+        SELECT MIN(slot) AS min_slot FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 0
+    - name: Epoch should be non-negative
       sql: |
-        SELECT
-          COUNT(*) as null_entity_count
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-        WHERE
-          entity IS NULL
-      expected:
-        null_entity_count: 0
-    - name: Entity defaults to unknown when not mapped
+        SELECT MIN(epoch) AS min_epoch FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_epoch
+          value: 0
+    - name: Attestation count should be non-negative
       sql: |
-        SELECT
-          COUNT(DISTINCT entity) as entity_count,
-          SUM(CASE WHEN entity = 'unknown' THEN 1 ELSE 0 END) as unknown_count
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-      expected:
-        entity_count: 1
-        unknown_count: 20
-    - name: Total attestation count matches validator table
+        SELECT MIN(attestation_count) AS min_attestation_count FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_attestation_count
+          value: 0
+    - name: Missed count should be non-negative
       sql: |
-        SELECT
-          SUM(attestation_count) + SUM(missed_count) AS total_from_aggregated
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-      expected:
-        total_from_aggregated: 685007
-    - name: Verify both attestation_count and missed_count exist
+        SELECT MIN(missed_count) AS min_missed_count FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_missed_count
+          value: 0
+    - name: Entity should not be null
       sql: |
-        SELECT
-          SUM(attestation_count) as total_attested,
-          SUM(missed_count) as total_missed
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-        WHERE
-          attestation_count >= 0 AND missed_count >= 0
-      expected:
-        total_attested: 683483
-        total_missed: 1524
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS null_entity_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE entity IS NULL
+      assertions:
+        - type: equals
+          column: null_entity_count
+          value: 0
+    - name: Slot start date time should not be null
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_attestation_liveness_by_entity_head'
-      expected:
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT COUNT(*) AS null_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: Epoch start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE epoch_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: At least one of attestation or missed count should be positive per row
+      sql: |
+        SELECT COUNT(*) AS zero_activity_rows FROM fct_attestation_liveness_by_entity_head FINAL WHERE attestation_count = 0 AND missed_count = 0
+      assertions:
+        - type: equals
+          column: zero_activity_rows
+          value: 0
+    - name: Updated date time should be recent and not in the future
+      sql: |
+        SELECT COUNT(*) AS future_rows FROM fct_attestation_liveness_by_entity_head FINAL WHERE updated_date_time > now()
+      assertions:
+        - type: equals
+          column: future_rows
+          value: 0

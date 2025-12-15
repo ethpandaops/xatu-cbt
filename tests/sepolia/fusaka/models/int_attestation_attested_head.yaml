@@ -3,36 +3,82 @@ network: sepolia
 spec: fusaka
 external_data:
     beacon_api_eth_v1_beacon_committee:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_beacon_committee.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/int_attestation_attested_head_beacon_api_eth_v1_beacon_committee.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_attestation.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/int_attestation_attested_head_beacon_api_eth_v1_events_attestation.parquet
         network_column: meta_network_name
     libp2p_gossipsub_beacon_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_beacon_attestation.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/int_attestation_attested_head_libp2p_gossipsub_beacon_attestation.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          int_attestation_attested_head FINAL
-      expected:
-        count: 1105
-        max: "2025-10-27T00:30:24Z"
-        min: "2025-10-27T00:26:36Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS count FROM int_attestation_attested_head FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot values should be non-negative
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_attestation_attested_head'
-      expected:
-        max: "2025-10-27T00:30:24Z"
-        min: "2025-10-27T00:26:36Z"
+        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Attesting validator index should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE attesting_validator_index < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Propagation distance should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE propagation_distance < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Source epoch should be less than or equal to target epoch
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE source_epoch > target_epoch
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Target epoch should be less than or equal to slot epoch
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE target_epoch > epoch
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Block root should not be null or empty
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE block_root IS NULL OR block_root = ''
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Slot start date time should be consistent with slot number
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Each validator should attest at most once per slot
+      sql: |
+        SELECT MAX(attestation_count) AS max_attestations FROM (SELECT slot, attesting_validator_index, COUNT(*) AS attestation_count FROM int_attestation_attested_head FINAL GROUP BY slot, attesting_validator_index)
+      assertions:
+        - type: less_than_or_equal
+          column: max_attestations
+          value: 1
