@@ -74,8 +74,8 @@ assertions:
           value: 0
     - name: Each slot_start_date_time and validator combination should be unique
       sql: |
-        SELECT COUNT(*) AS total_rows, COUNT(DISTINCT (slot_start_date_time, attesting_validator_index)) AS unique_combinations FROM int_attestation_first_seen FINAL
+        SELECT COUNT(*) - COUNT(DISTINCT (slot_start_date_time, attesting_validator_index)) AS duplicate_count FROM int_attestation_first_seen FINAL
       assertions:
         - type: equals
-          column: total_rows
-          value: unique_combinations
+          column: duplicate_count
+          value: 0
