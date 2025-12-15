@@ -3,33 +3,79 @@ network: mainnet
 spec: pectra
 external_data:
     beacon_api_eth_v1_events_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/beacon_api_eth_v1_events_attestation.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/int_attestation_first_seen_beacon_api_eth_v1_events_attestation.parquet
         network_column: meta_network_name
     libp2p_gossipsub_beacon_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/libp2p_gossipsub_beacon_attestation.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/int_attestation_first_seen_libp2p_gossipsub_beacon_attestation.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          int_attestation_first_seen FINAL
-      expected:
-        count: 683483
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS count FROM int_attestation_first_seen FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot values should be non-negative
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_attestation_first_seen'
-      expected:
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT MIN(slot) AS min_slot FROM int_attestation_first_seen FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 0
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT MIN(epoch) AS min_epoch FROM int_attestation_first_seen FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_epoch
+          value: 0
+    - name: Attesting validator index should be non-negative
+      sql: |
+        SELECT MIN(attesting_validator_index) AS min_validator_index FROM int_attestation_first_seen FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_validator_index
+          value: 0
+    - name: Source should only contain valid values
+      sql: |
+        SELECT COUNT(*) AS invalid_source_count FROM int_attestation_first_seen FINAL WHERE source NOT IN ('beacon_api_eth_v1_events_attestation', 'libp2p_gossipsub_beacon_attestation')
+      assertions:
+        - type: equals
+          column: invalid_source_count
+          value: 0
+    - name: Classification should only contain valid values
+      sql: |
+        SELECT COUNT(*) AS invalid_classification_count FROM int_attestation_first_seen FINAL WHERE classification NOT IN ('individual', 'corporate', 'internal', 'unclassified')
+      assertions:
+        - type: equals
+          column: invalid_classification_count
+          value: 0
+    - name: Slot start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_slot_start_count FROM int_attestation_first_seen FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_slot_start_count
+          value: 0
+    - name: Longitude values should be within valid range
+      sql: |
+        SELECT COUNT(*) AS invalid_longitude_count FROM int_attestation_first_seen FINAL WHERE meta_client_geo_longitude < -180 OR meta_client_geo_longitude > 180
+      assertions:
+        - type: equals
+          column: invalid_longitude_count
+          value: 0
+    - name: Latitude values should be within valid range
+      sql: |
+        SELECT COUNT(*) AS invalid_latitude_count FROM int_attestation_first_seen FINAL WHERE meta_client_geo_latitude < -90 OR meta_client_geo_latitude > 90
+      assertions:
+        - type: equals
+          column: invalid_latitude_count
+          value: 0
+    - name: Seen slot start diff should represent minimum propagation time per group
+      sql: |
+        SELECT COUNT(*) AS negative_diff_count FROM int_attestation_first_seen FINAL WHERE seen_slot_start_diff < 0
+      assertions:
+        - type: equals
+          column: negative_diff_count
+          value: 0

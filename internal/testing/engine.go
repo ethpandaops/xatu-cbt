@@ -467,7 +467,6 @@ func (e *CBTEngine) runDockerCBT(
 	e.log.WithFields(logrus.Fields{
 		"network":  network,
 		"database": dbName,
-		"config":   configPath,
 	}).Debug("starting cbt")
 
 	absConfigPath, err := filepath.Abs(configPath)
