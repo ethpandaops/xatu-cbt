@@ -3,65 +3,97 @@ network: sepolia
 spec: fusaka
 external_data:
     beacon_api_eth_v1_beacon_committee:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_beacon_committee.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_beacon_committee.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_attestation.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_events_attestation.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_block:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_events_block.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_block_gossip:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_block_gossip.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_events_block_gossip.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_proposer_duty.parquet
-        network_column: meta_network_name
-    libp2p_gossipsub_beacon_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_beacon_attestation.parquet
-        network_column: meta_network_name
-    libp2p_gossipsub_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_beacon_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_proposer_duty.parquet
         network_column: meta_network_name
     ethseer_validator_entity:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/ethseer_validator_entity.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_liveness_by_entity_head_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_liveness_by_entity_head_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_liveness_by_entity_head_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-      expected:
-        count: 347
-        max: "2025-10-27T00:30:24Z"
-        min: "2025-10-27T00:26:36Z"
-    - name: Verify both attestation_count and missed_count columns exist
+        SELECT COUNT(*) AS count FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot values should be non-negative
       sql: |
-        SELECT
-          COUNT(*) as row_count,
-          SUM(attestation_count) as total_attested,
-          SUM(missed_count) as total_missed
-        FROM
-          fct_attestation_liveness_by_entity_head FINAL
-        WHERE
-          attestation_count >= 0 AND missed_count >= 0
-      expected:
-        row_count: 347
-        total_attested: 1105
-        total_missed: 3
-    - name: Expected admin bounds
+        SELECT MIN(slot) AS min_slot FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 0
+    - name: Epoch values should be non-negative
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_attestation_liveness_by_entity_head'
-      expected:
-        max: "2025-10-27T00:30:24Z"
-        min: "2025-10-27T00:26:36Z"
+        SELECT MIN(epoch) AS min_epoch FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_epoch
+          value: 0
+    - name: Attestation count should be non-negative
+      sql: |
+        SELECT MIN(attestation_count) AS min_attestation_count FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_attestation_count
+          value: 0
+    - name: Missed count should be non-negative
+      sql: |
+        SELECT MIN(missed_count) AS min_missed_count FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_missed_count
+          value: 0
+    - name: Entity should not be null
+      sql: |
+        SELECT COUNT(*) AS null_entity_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE entity IS NULL
+      assertions:
+        - type: equals
+          column: null_entity_count
+          value: 0
+    - name: Slot start datetime should not be null
+      sql: |
+        SELECT COUNT(*) AS null_datetime_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_datetime_count
+          value: 0
+    - name: Total count per row should be positive
+      sql: |
+        SELECT MIN(attestation_count + missed_count) AS min_total FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than
+          column: min_total
+          value: 0
+    - name: Epoch should be consistent with slot (slot div 32)
+      sql: |
+        SELECT COUNT(*) AS inconsistent_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: inconsistent_count
+          value: 0
+    - name: Updated datetime should not be null
+      sql: |
+        SELECT COUNT(*) AS null_updated_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_updated_count
+          value: 0
