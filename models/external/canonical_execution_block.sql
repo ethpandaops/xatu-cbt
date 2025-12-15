@@ -26,3 +26,6 @@ WHERE
       {{- end -}}
     {{- end }}
     AND block_number >= {{ $bn }}
+    {{- if .cache.is_incremental_scan }}
+      AND block_number <= {{ $bn }} + {{ default "10000" .env.EXTERNAL_MODEL_SCAN_SIZE_BLOCK }}
+    {{- end }}

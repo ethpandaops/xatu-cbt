@@ -11,36 +11,36 @@ import (
 func BuildListFctExecutionStateSizeWeeklyQuery(req *ListFctExecutionStateSizeWeeklyRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate that at least one primary key is provided
 	// Primary keys can come from base table or projections
-	if req.Week == nil {
-		return SQLQuery{}, fmt.Errorf("primary key field week is required")
+	if req.WeekStartDate == nil {
+		return SQLQuery{}, fmt.Errorf("primary key field week_start_date is required")
 	}
 
 	// Build query using QueryBuilder
 	qb := NewQueryBuilder()
 
 	// Add primary key filter
-	switch filter := req.Week.Filter.(type) {
+	switch filter := req.WeekStartDate.Filter.(type) {
 	case *StringFilter_Eq:
-		qb.AddCondition("week", "=", filter.Eq)
+		qb.AddCondition("week_start_date", "=", filter.Eq)
 	case *StringFilter_Ne:
-		qb.AddCondition("week", "!=", filter.Ne)
+		qb.AddCondition("week_start_date", "!=", filter.Ne)
 	case *StringFilter_Contains:
-		qb.AddLikeCondition("week", "%" + filter.Contains + "%")
+		qb.AddLikeCondition("week_start_date", "%" + filter.Contains + "%")
 	case *StringFilter_StartsWith:
-		qb.AddLikeCondition("week", filter.StartsWith + "%")
+		qb.AddLikeCondition("week_start_date", filter.StartsWith + "%")
 	case *StringFilter_EndsWith:
-		qb.AddLikeCondition("week", "%" + filter.EndsWith)
+		qb.AddLikeCondition("week_start_date", "%" + filter.EndsWith)
 	case *StringFilter_Like:
-		qb.AddLikeCondition("week", filter.Like)
+		qb.AddLikeCondition("week_start_date", filter.Like)
 	case *StringFilter_NotLike:
-		qb.AddNotLikeCondition("week", filter.NotLike)
+		qb.AddNotLikeCondition("week_start_date", filter.NotLike)
 	case *StringFilter_In:
 		if len(filter.In.Values) > 0 {
-			qb.AddInCondition("week", StringSliceToInterface(filter.In.Values))
+			qb.AddInCondition("week_start_date", StringSliceToInterface(filter.In.Values))
 		}
 	case *StringFilter_NotIn:
 		if len(filter.NotIn.Values) > 0 {
-			qb.AddNotInCondition("week", StringSliceToInterface(filter.NotIn.Values))
+			qb.AddNotInCondition("week_start_date", StringSliceToInterface(filter.NotIn.Values))
 		}
 	default:
 		// Unsupported filter type
@@ -439,7 +439,7 @@ func BuildListFctExecutionStateSizeWeeklyQuery(req *ListFctExecutionStateSizeWee
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "week", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+		validFields := []string{"updated_date_time", "week_start_date", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -447,11 +447,11 @@ func BuildListFctExecutionStateSizeWeeklyQuery(req *ListFctExecutionStateSizeWee
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY week"
+		orderByClause = " ORDER BY week_start_date"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`week`) AS `week`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`week_start_date`) AS `week_start_date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	return BuildParameterizedQuery("fct_execution_state_size_weekly", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -459,19 +459,19 @@ func BuildListFctExecutionStateSizeWeeklyQuery(req *ListFctExecutionStateSizeWee
 // BuildGetFctExecutionStateSizeWeeklyQuery constructs a parameterized SQL query from a GetFctExecutionStateSizeWeeklyRequest
 func BuildGetFctExecutionStateSizeWeeklyQuery(req *GetFctExecutionStateSizeWeeklyRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
-	if req.Week == "" {
-		return SQLQuery{}, fmt.Errorf("primary key field week is required")
+	if req.WeekStartDate == "" {
+		return SQLQuery{}, fmt.Errorf("primary key field week_start_date is required")
 	}
 
 	// Build query with primary key condition
 	qb := NewQueryBuilder()
-	qb.AddCondition("week", "=", req.Week)
+	qb.AddCondition("week_start_date", "=", req.WeekStartDate)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY week"
+	orderByClause := " ORDER BY week_start_date"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`week`) AS `week`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`week_start_date`) AS `week_start_date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_execution_state_size_weekly", columns, qb, orderByClause, 1, 0, options...)

@@ -144,20 +144,30 @@ func (m *DatabaseManager) PrepareNetworkDatabase(ctx context.Context, _ string) 
 
 	start := time.Now()
 
-	databases := []string{"default", "tmp", "admin", "dbt"}
-
-	for _, db := range databases {
-		createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s", db, config.XatuClusterName)
-
-		queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
-		if _, err := m.xatuConn.ExecContext(queryCtx, createSQL); err != nil {
-			cancel()
-			return fmt.Errorf("creating %s database: %w", db, err)
-		}
-		cancel()
-	}
-
+	// Check if already prepared FIRST to avoid slow ON CLUSTER DDL
 	alreadyPrepared := !m.forceRebuild && m.isXatuClusterPrepared(ctx)
+
+	if !alreadyPrepared {
+		// Only create databases if not already prepared
+		databases := []string{"default", "tmp", "admin", "dbt"}
+
+		for _, db := range databases {
+			logCtx.WithField("database", db).Debug("creating database")
+
+			createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s", db, config.XatuClusterName)
+
+			queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+			if _, err := m.xatuConn.ExecContext(queryCtx, createSQL); err != nil {
+				cancel()
+
+				return fmt.Errorf("creating %s database: %w", db, err)
+			}
+
+			cancel()
+
+			logCtx.WithField("database", db).Debug("database created")
+		}
+	}
 
 	if alreadyPrepared { //nolint:nestif // Database preparation logic
 		logCtx.Info("cluster already prepared")
@@ -187,6 +197,151 @@ func (m *DatabaseManager) PrepareNetworkDatabase(ctx context.Context, _ string) 
 		"total_duration": time.Since(start),
 		"skipped":        alreadyPrepared,
 	}).Info("xatu database ready")
+
+	return nil
+}
+
+// CreateCBTTemplate creates the CBT template database with migrations (run once at startup).
+// Per-test databases will be cloned from this template to avoid re-running migrations.
+func (m *DatabaseManager) CreateCBTTemplate(ctx context.Context, migrationDir string) error {
+	templateDB := config.CBTTemplateDatabase
+
+	logCtx := m.log.WithFields(logrus.Fields{
+		"cluster":  "xatu-cbt",
+		"database": templateDB,
+	})
+
+	// Check if template already exists and has migrations
+	if !m.forceRebuild && m.isCBTTemplateReady(ctx) {
+		logCtx.Info("CBT template already prepared, skipping migrations")
+		return nil
+	}
+
+	logCtx.Info("preparing CBT template database")
+	start := time.Now()
+
+	// Create template database
+	createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s", templateDB, config.CBTClusterName)
+
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel()
+
+	if _, err := m.cbtConn.ExecContext(queryCtx, createSQL); err != nil {
+		return fmt.Errorf("creating CBT template database: %w", err)
+	}
+
+	// Clear tables if force rebuild
+	if m.forceRebuild {
+		if err := m.clearCBTTemplateTables(ctx); err != nil {
+			m.log.WithError(err).Warn("failed to clear CBT template tables (non-fatal)")
+		}
+	}
+
+	logCtx.Info("running migrations")
+
+	migrationStart := time.Now()
+	if err := m.runMigrations(ctx, m.cbtConn, templateDB, migrationDir, ""); err != nil {
+		return fmt.Errorf("running CBT template migrations: %w", err)
+	}
+
+	logCtx.WithFields(logrus.Fields{
+		"duration": time.Since(migrationStart),
+	}).Info("migrations applied")
+
+	logCtx.WithFields(logrus.Fields{
+		"total_duration": time.Since(start),
+	}).Info("CBT template database ready")
+
+	return nil
+}
+
+// isCBTTemplateReady checks if CBT template database exists with migrations applied.
+func (m *DatabaseManager) isCBTTemplateReady(ctx context.Context) bool {
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel()
+
+	var count int
+	checkSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+		`SELECT COUNT(*)
+		FROM system.tables
+		WHERE database = 'default'
+		AND name = '%s%s'`,
+		config.SchemaMigrationsPrefix, config.CBTTemplateDatabase)
+	err := m.cbtConn.QueryRowContext(queryCtx, checkSQL).Scan(&count)
+
+	if err != nil || count == 0 {
+		return false
+	}
+
+	queryCtx2, cancel2 := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel2()
+
+	var migrationCount int
+	countSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+		`SELECT COUNT(*)
+		FROM default.%s%s`,
+		config.SchemaMigrationsPrefix, config.CBTTemplateDatabase)
+	err = m.cbtConn.QueryRowContext(queryCtx2, countSQL).Scan(&migrationCount)
+
+	return err == nil && migrationCount > 0
+}
+
+// clearCBTTemplateTables drops all tables in CBT template database for force rebuild.
+func (m *DatabaseManager) clearCBTTemplateTables(ctx context.Context) error {
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel()
+
+	rows, err := m.cbtConn.QueryContext(queryCtx,
+		fmt.Sprintf("SELECT name, engine FROM system.tables WHERE database = '%s'", config.CBTTemplateDatabase))
+	if err != nil {
+		return fmt.Errorf("querying template tables: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	objects := make([]struct {
+		name   string
+		engine string
+	}, 0, 10)
+	for rows.Next() {
+		var obj struct {
+			name   string
+			engine string
+		}
+		if err := rows.Scan(&obj.name, &obj.engine); err != nil {
+			return fmt.Errorf("scanning table info: %w", err)
+		}
+		objects = append(objects, obj)
+	}
+
+	for _, obj := range objects {
+		var dropSQL string
+		if obj.engine == "MaterializedView" {
+			dropSQL = fmt.Sprintf("DROP VIEW IF EXISTS `%s`.`%s` ON CLUSTER %s SYNC",
+				config.CBTTemplateDatabase, obj.name, config.CBTClusterName)
+		} else {
+			dropSQL = fmt.Sprintf("DROP TABLE IF EXISTS `%s`.`%s` ON CLUSTER %s SYNC",
+				config.CBTTemplateDatabase, obj.name, config.CBTClusterName)
+		}
+
+		queryCtx2, cancel2 := context.WithTimeout(ctx, m.config.QueryTimeout)
+		if _, err := m.cbtConn.ExecContext(queryCtx2, dropSQL); err != nil {
+			cancel2()
+			m.log.WithError(err).WithField("object", obj.name).Warn("failed to drop template object (non-fatal)")
+			continue
+		}
+		cancel2()
+	}
+
+	// Also drop migrations table
+	dropMigrationsSQL := fmt.Sprintf("DROP TABLE IF EXISTS `default`.`%s%s`",
+		config.SchemaMigrationsPrefix, config.CBTTemplateDatabase)
+
+	queryCtx3, cancel3 := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel3()
+
+	if _, err := m.cbtConn.ExecContext(queryCtx3, dropMigrationsSQL); err != nil {
+		m.log.WithError(err).Warn("failed to drop template migrations table (non-fatal)")
+	}
 
 	return nil
 }
@@ -354,18 +509,406 @@ func (m *DatabaseManager) DropDatabase(ctx context.Context, dbName string) error
 	return nil
 }
 
-// LoadParquetData loads parquet files into default database in xatu cluster.
-func (m *DatabaseManager) LoadParquetData(ctx context.Context, _ string, dataFiles map[string]string) error {
-	logCtx := m.log.WithField("cluster", "xatu")
+// CloneExternalDatabase clones the xatu template database (default) to a per-test database.
+// This clones schemas only (empty tables), not data.
+// For ReplicatedMergeTree tables, it modifies the ZooKeeper paths to be unique per-test.
+// CloneExternalDatabase clones specific tables from the xatu template to a per-test database.
+// If tableNames is empty, clones all tables (legacy behavior).
+func (m *DatabaseManager) CloneExternalDatabase(ctx context.Context, testID string, tableNames []string) (string, error) {
+	extDBName := config.ExternalDBPrefix + testID
+
+	logCtx := m.log.WithFields(logrus.Fields{
+		"cluster":  "xatu",
+		"database": extDBName,
+		"tables":   len(tableNames),
+	})
 
 	start := time.Now()
 
-	logCtx.Info("truncating tables")
-	for tableName := range dataFiles {
-		if err := m.truncateExternalTable(ctx, logCtx, tableName); err != nil {
-			m.log.WithError(err).WithField("table", tableName).Warn("failed to truncate table (non-fatal)")
-		}
+	// Create the database
+	createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s",
+		extDBName, config.XatuClusterName)
+
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	if _, err := m.xatuConn.ExecContext(queryCtx, createSQL); err != nil {
+		cancel()
+		return "", fmt.Errorf("creating external database: %w", err)
 	}
+	cancel()
+
+	// Build list of tables to clone (only specified tables, empty = no tables)
+	// Clone BOTH _local (ReplicatedMergeTree) AND distributed tables for each model
+	// Assertions query distributed tables which read from _local tables
+	tables := make([]tableInfo, 0, len(tableNames)*2)
+
+	for _, name := range tableNames {
+		tables = append(tables,
+			tableInfo{name: name + "_local"}, // ReplicatedMergeTree table
+			tableInfo{name: name},            // Distributed table
+		)
+	}
+
+	// If no tables to clone, just return the empty database
+	if len(tables) == 0 {
+		logCtx.WithFields(logrus.Fields{
+			"tables":   0,
+			"duration": time.Since(start),
+		}).Info("external database cloned (empty)")
+
+		return extDBName, nil
+	}
+
+	// Clone tables in parallel with worker pool for speed
+	const cloneWorkers = 20
+
+	var (
+		cloneWg   sync.WaitGroup
+		cloneSem  = make(chan struct{}, cloneWorkers)
+		cloneErrs = make(chan error, len(tables))
+	)
+
+	for _, table := range tables {
+		cloneWg.Add(1)
+
+		go func(t tableInfo) {
+			defer cloneWg.Done()
+
+			// Acquire semaphore
+			cloneSem <- struct{}{}
+			defer func() { <-cloneSem }()
+
+			if cloneErr := m.cloneTableWithUniqueReplicaPath(ctx, m.xatuConn,
+				config.DefaultDatabase, extDBName, t.name, config.XatuClusterName); cloneErr != nil {
+				cloneErrs <- fmt.Errorf("cloning table %s: %w", t.name, cloneErr)
+			}
+		}(table)
+	}
+
+	cloneWg.Wait()
+	close(cloneErrs)
+
+	// Check for errors
+	for cloneErr := range cloneErrs {
+		_ = m.DropExternalDatabase(ctx, extDBName)
+
+		return "", cloneErr
+	}
+
+	logCtx.WithFields(logrus.Fields{
+		"tables":   len(tables),
+		"duration": time.Since(start),
+	}).Info("external database cloned")
+
+	return extDBName, nil
+}
+
+// cloneTableWithUniqueReplicaPath clones a table, modifying ReplicatedMergeTree paths to be unique.
+func (m *DatabaseManager) cloneTableWithUniqueReplicaPath(
+	ctx context.Context,
+	conn *sql.DB,
+	sourceDB, targetDB, tableName, clusterName string,
+) error {
+	// Get the CREATE TABLE statement
+	showSQL := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", sourceDB, tableName)
+
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel()
+
+	var createStmt string
+	if err := conn.QueryRowContext(queryCtx, showSQL).Scan(&createStmt); err != nil {
+		return fmt.Errorf("getting CREATE TABLE statement: %w", err)
+	}
+
+	// Modify the statement:
+	// 1. Replace database name in the CREATE TABLE line
+	// 2. Replace ZooKeeper paths in ReplicatedMergeTree to include target database
+	modifiedStmt := m.modifyCreateTableForClone(createStmt, sourceDB, targetDB, tableName, clusterName)
+
+	execCtx, execCancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer execCancel()
+
+	if _, err := conn.ExecContext(execCtx, modifiedStmt); err != nil {
+		return fmt.Errorf("executing modified CREATE TABLE: %w", err)
+	}
+
+	return nil
+}
+
+// modifyCreateTableForClone modifies a CREATE TABLE/VIEW statement for cloning to a new database.
+// It updates the table name and modifies ReplicatedMergeTree ZooKeeper paths.
+func (m *DatabaseManager) modifyCreateTableForClone(
+	createStmt, sourceDB, targetDB, tableName, clusterName string,
+) string {
+	result := createStmt
+
+	// Handle different CREATE statement types
+	// Tables: CREATE TABLE default.table_name
+	// Views: CREATE VIEW default.view_name
+	// Materialized Views: CREATE MATERIALIZED VIEW default.mv_name
+
+	// Replace TABLE references
+	oldTableRef := fmt.Sprintf("CREATE TABLE %s.%s", sourceDB, tableName)
+	newTableRef := fmt.Sprintf("CREATE TABLE IF NOT EXISTS `%s`.`%s` ON CLUSTER %s",
+		targetDB, tableName, clusterName)
+	result = strings.Replace(result, oldTableRef, newTableRef, 1)
+
+	// Also handle backtick-quoted version for TABLE
+	oldTableRefQuoted := fmt.Sprintf("CREATE TABLE `%s`.`%s`", sourceDB, tableName)
+	result = strings.Replace(result, oldTableRefQuoted, newTableRef, 1)
+
+	// Replace MATERIALIZED VIEW references
+	oldMVRef := fmt.Sprintf("CREATE MATERIALIZED VIEW %s.%s", sourceDB, tableName)
+	newMVRef := fmt.Sprintf("CREATE MATERIALIZED VIEW IF NOT EXISTS `%s`.`%s` ON CLUSTER %s",
+		targetDB, tableName, clusterName)
+	result = strings.Replace(result, oldMVRef, newMVRef, 1)
+
+	// Backtick-quoted MATERIALIZED VIEW
+	oldMVRefQuoted := fmt.Sprintf("CREATE MATERIALIZED VIEW `%s`.`%s`", sourceDB, tableName)
+	result = strings.Replace(result, oldMVRefQuoted, newMVRef, 1)
+
+	// Replace VIEW references (non-materialized)
+	oldViewRef := fmt.Sprintf("CREATE VIEW %s.%s", sourceDB, tableName)
+	newViewRef := fmt.Sprintf("CREATE VIEW IF NOT EXISTS `%s`.`%s` ON CLUSTER %s",
+		targetDB, tableName, clusterName)
+	result = strings.Replace(result, oldViewRef, newViewRef, 1)
+
+	// Backtick-quoted VIEW
+	oldViewRefQuoted := fmt.Sprintf("CREATE VIEW `%s`.`%s`", sourceDB, tableName)
+	result = strings.Replace(result, oldViewRefQuoted, newViewRef, 1)
+
+	// For Materialized Views with TO clause (e.g., CREATE MATERIALIZED VIEW ... TO default.target_table)
+	// We need to update the TO target as well
+	oldToRef := fmt.Sprintf(" TO %s.", sourceDB)
+	newToRef := fmt.Sprintf(" TO `%s`.", targetDB)
+	result = strings.ReplaceAll(result, oldToRef, newToRef)
+
+	oldToRefQuoted := fmt.Sprintf(" TO `%s`.", sourceDB)
+	result = strings.ReplaceAll(result, oldToRefQuoted, newToRef)
+
+	// Modify ZooKeeper paths in ReplicatedMergeTree engine
+	// There are multiple path formats used:
+	// Format 1: /{cluster}/default/tables/{table_name}/{shard}
+	// Format 2: /{cluster}/tables/{shard}/default/{table_name}
+	// Format 3: /{cluster}/tmp/tables/{table_name}/{shard} (hardcoded 'tmp' paths)
+	// We need to replace the database reference with the target database name
+
+	// Format 1: /default/tables/
+	oldPath1 := fmt.Sprintf("/%s/tables/", sourceDB)
+	newPath1 := fmt.Sprintf("/%s/tables/", targetDB)
+	result = strings.ReplaceAll(result, oldPath1, newPath1)
+
+	// Format 2: /{shard}/default/ (in tables/{shard}/default/table_name paths)
+	oldPath2 := fmt.Sprintf("/{shard}/%s/", sourceDB)
+	newPath2 := fmt.Sprintf("/{shard}/%s/", targetDB)
+	result = strings.ReplaceAll(result, oldPath2, newPath2)
+
+	// Format 3: /tmp/tables/ (hardcoded paths that don't use database name)
+	// Replace with target database to make it unique per-test
+	result = strings.ReplaceAll(result, "/tmp/tables/", fmt.Sprintf("/%s/tables/", targetDB))
+
+	// Also update Distributed engine references to point to the new database
+	// Distributed engines reference: Distributed('{cluster}', 'default', 'table_local', ...)
+	oldDistRef := fmt.Sprintf("'%s'", sourceDB)
+	newDistRef := fmt.Sprintf("'%s'", targetDB)
+	result = strings.ReplaceAll(result, oldDistRef, newDistRef)
+
+	return result
+}
+
+// CloneCBTDatabase clones specific tables from the CBT template to a per-test database.
+// If tableNames is empty, clones all tables (legacy behavior).
+func (m *DatabaseManager) CloneCBTDatabase(ctx context.Context, testID string, tableNames []string) (string, error) {
+	cbtDBName := config.CBTDBPrefix + testID
+
+	logCtx := m.log.WithFields(logrus.Fields{
+		"cluster":  "xatu-cbt",
+		"database": cbtDBName,
+		"tables":   len(tableNames),
+	})
+
+	start := time.Now()
+
+	// Create the database
+	createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s",
+		cbtDBName, config.CBTClusterName)
+
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	if _, err := m.cbtConn.ExecContext(queryCtx, createSQL); err != nil {
+		cancel()
+		return "", fmt.Errorf("creating cbt database: %w", err)
+	}
+	cancel()
+
+	// Build list of tables to clone (transformation tables + admin tables)
+	// For CBT, we need BOTH the local table AND the distributed table for each model.
+	// CBT queries the distributed table which reads from the local table.
+	tables := make([]tableInfo, 0, len(tableNames)*2+10) // *2 for local+distributed, +10 for admin
+
+	for _, name := range tableNames {
+		// Clone both the local table and the distributed table
+		tables = append(tables,
+			tableInfo{name: name + "_local"}, // e.g., fct_block_head_local
+			tableInfo{name: name},            // e.g., fct_block_head (distributed)
+		)
+	}
+
+	// Always include admin_* tables - CBT engine needs these for tracking bounds
+	adminTables, err := m.listAdminTables(ctx, m.cbtConn, config.CBTTemplateDatabase)
+	if err != nil {
+		return "", fmt.Errorf("listing admin tables: %w", err)
+	}
+
+	tables = append(tables, adminTables...)
+
+	// Clone tables in parallel with worker pool for speed
+	const cloneWorkers = 20
+
+	var (
+		cloneWg   sync.WaitGroup
+		cloneSem  = make(chan struct{}, cloneWorkers)
+		cloneErrs = make(chan error, len(tables))
+	)
+
+	for _, table := range tables {
+		cloneWg.Add(1)
+
+		go func(t tableInfo) {
+			defer cloneWg.Done()
+
+			// Acquire semaphore
+			cloneSem <- struct{}{}
+			defer func() { <-cloneSem }()
+
+			if cloneErr := m.cloneTableWithUniqueReplicaPath(ctx, m.cbtConn,
+				config.CBTTemplateDatabase, cbtDBName, t.name, config.CBTClusterName); cloneErr != nil {
+				cloneErrs <- fmt.Errorf("cloning table %s: %w", t.name, cloneErr)
+			}
+		}(table)
+	}
+
+	cloneWg.Wait()
+	close(cloneErrs)
+
+	// Check for errors
+	for cloneErr := range cloneErrs {
+		_ = m.DropCBTDatabase(ctx, cbtDBName)
+
+		return "", cloneErr
+	}
+
+	logCtx.WithFields(logrus.Fields{
+		"tables":   len(tables),
+		"duration": time.Since(start),
+	}).Info("cbt database cloned")
+
+	return cbtDBName, nil
+}
+
+// DropExternalDatabase removes a per-test external database from xatu cluster.
+func (m *DatabaseManager) DropExternalDatabase(ctx context.Context, dbName string) error {
+	logCtx := m.log.WithFields(logrus.Fields{
+		"cluster":  "xatu",
+		"database": dbName,
+	})
+
+	dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER %s SYNC",
+		dbName, config.XatuClusterName)
+
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel()
+
+	if _, err := m.xatuConn.ExecContext(queryCtx, dropSQL); err != nil {
+		return fmt.Errorf("dropping external database: %w", err)
+	}
+
+	logCtx.Info("external database dropped")
+
+	return nil
+}
+
+// DropCBTDatabase removes a per-test CBT database from the CBT cluster.
+func (m *DatabaseManager) DropCBTDatabase(ctx context.Context, dbName string) error {
+	logCtx := m.log.WithFields(logrus.Fields{
+		"cluster":  "xatu-cbt",
+		"database": dbName,
+	})
+
+	dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER %s SYNC",
+		dbName, config.CBTClusterName)
+
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel()
+
+	if _, err := m.cbtConn.ExecContext(queryCtx, dropSQL); err != nil {
+		return fmt.Errorf("dropping CBT database: %w", err)
+	}
+
+	// Also drop migrations table if it exists
+	migrationTable := fmt.Sprintf("%s%s", config.SchemaMigrationsPrefix, dbName)
+	dropMigrationsSQL := fmt.Sprintf("DROP TABLE IF EXISTS `default`.`%s`", migrationTable)
+
+	queryCtx2, cancel2 := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel2()
+
+	if _, err := m.cbtConn.ExecContext(queryCtx2, dropMigrationsSQL); err != nil {
+		logCtx.WithError(err).WithField("table", migrationTable).Warn("failed to drop migrations table (non-fatal)")
+	}
+
+	logCtx.Info("CBT database dropped")
+
+	return nil
+}
+
+// tableInfo holds basic table metadata.
+type tableInfo struct {
+	name   string
+	engine string
+}
+
+// listAdminTables returns all admin_* tables from a database.
+// These tables are used by CBT engine for tracking bounds and state.
+func (m *DatabaseManager) listAdminTables(ctx context.Context, conn *sql.DB, database string) ([]tableInfo, error) {
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel()
+
+	//nolint:gosec // database name is controlled internally, not user input
+	query := fmt.Sprintf(
+		"SELECT name, engine FROM system.tables WHERE database = '%s' "+
+			"AND name LIKE 'admin_%%'",
+		database)
+
+	rows, err := conn.QueryContext(queryCtx, query)
+	if err != nil {
+		return nil, fmt.Errorf("querying admin tables: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	tables := make([]tableInfo, 0, 10)
+
+	for rows.Next() {
+		var t tableInfo
+		if err := rows.Scan(&t.name, &t.engine); err != nil {
+			return nil, fmt.Errorf("scanning admin table info: %w", err)
+		}
+
+		tables = append(tables, t)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating admin tables: %w", err)
+	}
+
+	return tables, nil
+}
+
+// LoadParquetData loads parquet files into the specified database in xatu cluster.
+func (m *DatabaseManager) LoadParquetData(ctx context.Context, database string, dataFiles map[string]string) error {
+	logCtx := m.log.WithFields(logrus.Fields{
+		"cluster":  "xatu",
+		"database": database,
+	})
+
+	start := time.Now()
 
 	type job struct {
 		tableName string
@@ -378,15 +921,15 @@ func (m *DatabaseManager) LoadParquetData(ctx context.Context, _ string, dataFil
 
 	for i := 0; i < m.config.MaxParquetLoadWorkers; i++ {
 		wg.Add(1)
-		go func() {
+		go func(db string) {
 			defer wg.Done()
 			for j := range jobs {
-				if err := m.loadParquetFile(ctx, logCtx, j.tableName, j.filePath); err != nil {
+				if err := m.loadParquetFile(ctx, db, j.tableName, j.filePath); err != nil {
 					errChan <- fmt.Errorf("loading %s: %w", j.tableName, err)
 					return
 				}
 			}
-		}()
+		}(database)
 	}
 
 	for tableName, filePath := range dataFiles {
@@ -410,16 +953,22 @@ func (m *DatabaseManager) LoadParquetData(ctx context.Context, _ string, dataFil
 }
 
 // loadParquetFile loads a single parquet file into a table
-func (m *DatabaseManager) loadParquetFile(ctx context.Context, log *logrus.Entry, tableName, filePath string) error {
-	log.WithFields(logrus.Fields{
-		"table": tableName,
-		"file":  filePath,
-	}).Debug("loading parquet file")
-
+func (m *DatabaseManager) loadParquetFile(ctx context.Context, database, tableName, filePath string) error {
 	localTableName := tableName + "_local"
+	// Use streaming settings to avoid loading entire parquet into memory:
+	// - max_insert_block_size: flush every 10k rows (smaller batches)
+	// - min_insert_block_size_bytes: flush when buffer hits 10MB
+	// - input_format_parquet_max_block_size: read parquet in 8k row chunks
+	// - max_memory_usage: limit query to 2GB
 	insertSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers and file path
-		"INSERT INTO `default`.`%s` SELECT * FROM file('%s', Parquet)",
-		localTableName, filePath,
+		`INSERT INTO "%s"."%s"
+		 SELECT * FROM file('%s', Parquet)
+		 SETTINGS
+		   max_insert_block_size = 10000,
+		   min_insert_block_size_bytes = 10485760,
+		   input_format_parquet_max_block_size = 8192,
+		   max_memory_usage = 2000000000`,
+		database, localTableName, filePath,
 	)
 
 	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
@@ -427,23 +976,6 @@ func (m *DatabaseManager) loadParquetFile(ctx context.Context, log *logrus.Entry
 
 	if _, err := m.xatuConn.ExecContext(queryCtx, insertSQL); err != nil {
 		return fmt.Errorf("inserting from parquet: %w", err)
-	}
-
-	return nil
-}
-
-// truncateExternalTable truncates an external model table
-func (m *DatabaseManager) truncateExternalTable(ctx context.Context, log *logrus.Entry, tableName string) error {
-	localTableName := tableName + "_local"
-	truncateSQL := fmt.Sprintf("TRUNCATE TABLE `default`.`%s` ON CLUSTER %s SYNC", localTableName, config.XatuClusterName)
-
-	log.WithField("table", localTableName).Debug("truncating table")
-
-	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
-	defer cancel()
-
-	if _, err := m.xatuConn.ExecContext(queryCtx, truncateSQL); err != nil {
-		return fmt.Errorf("truncating table: %w", err)
 	}
 
 	return nil
