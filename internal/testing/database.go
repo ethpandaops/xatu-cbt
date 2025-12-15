@@ -924,7 +924,7 @@ func (m *DatabaseManager) LoadParquetData(ctx context.Context, database string, 
 		go func(db string) {
 			defer wg.Done()
 			for j := range jobs {
-				if err := m.loadParquetFile(ctx, logCtx, db, j.tableName, j.filePath); err != nil {
+				if err := m.loadParquetFile(ctx, db, j.tableName, j.filePath); err != nil {
 					errChan <- fmt.Errorf("loading %s: %w", j.tableName, err)
 					return
 				}
@@ -953,7 +953,7 @@ func (m *DatabaseManager) LoadParquetData(ctx context.Context, database string, 
 }
 
 // loadParquetFile loads a single parquet file into a table
-func (m *DatabaseManager) loadParquetFile(ctx context.Context, log *logrus.Entry, database, tableName, filePath string) error {
+func (m *DatabaseManager) loadParquetFile(ctx context.Context, database, tableName, filePath string) error {
 	localTableName := tableName + "_local"
 	// Use streaming settings to avoid loading entire parquet into memory:
 	// - max_insert_block_size: flush every 10k rows (smaller batches)
