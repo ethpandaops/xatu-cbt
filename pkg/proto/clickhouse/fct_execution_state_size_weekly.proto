@@ -13,8 +13,8 @@ option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 message FctExecutionStateSizeWeekly {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
-  // First day of the week (Monday)
-  string week = 12;
+  // Start of the week period (Monday)
+  string week_start_date = 12;
   // Total accounts at end of week
   uint64 accounts = 13;
   // Account bytes at end of week
@@ -41,8 +41,8 @@ message FctExecutionStateSizeWeekly {
 
 // Request for listing fct_execution_state_size_weekly records
 message ListFctExecutionStateSizeWeeklyRequest {
-  // Filter by week - First day of the week (Monday) (PRIMARY KEY - required)
-  StringFilter week = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  // Filter by week_start_date - Start of the week period (Monday) (PRIMARY KEY - required)
+  StringFilter week_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by updated_date_time - Timestamp when the record was last updated (optional)
   UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
@@ -93,8 +93,8 @@ message ListFctExecutionStateSizeWeeklyResponse {
 
 // Request for getting a single fct_execution_state_size_weekly record by primary key
 message GetFctExecutionStateSizeWeeklyRequest {
-  // First day of the week (Monday)
-  string week = 1; // Primary key (required)
+  // Start of the week period (Monday)
+  string week_start_date = 1; // Primary key (required)
 }
 
 // Response for getting a single fct_execution_state_size_weekly record
@@ -110,10 +110,10 @@ service FctExecutionStateSizeWeeklyService {
       get: "/api/v1/fct_execution_state_size_weekly"
     };
   }
-  // Get record | Retrieve a single record by week
+  // Get record | Retrieve a single record by week_start_date
   rpc Get(GetFctExecutionStateSizeWeeklyRequest) returns (GetFctExecutionStateSizeWeeklyResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_execution_state_size_weekly/{week}"
+      get: "/api/v1/fct_execution_state_size_weekly/{week_start_date}"
     };
   }
 }

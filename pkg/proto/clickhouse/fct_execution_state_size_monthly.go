@@ -11,36 +11,36 @@ import (
 func BuildListFctExecutionStateSizeMonthlyQuery(req *ListFctExecutionStateSizeMonthlyRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate that at least one primary key is provided
 	// Primary keys can come from base table or projections
-	if req.Month == nil {
-		return SQLQuery{}, fmt.Errorf("primary key field month is required")
+	if req.MonthStartDate == nil {
+		return SQLQuery{}, fmt.Errorf("primary key field month_start_date is required")
 	}
 
 	// Build query using QueryBuilder
 	qb := NewQueryBuilder()
 
 	// Add primary key filter
-	switch filter := req.Month.Filter.(type) {
+	switch filter := req.MonthStartDate.Filter.(type) {
 	case *StringFilter_Eq:
-		qb.AddCondition("month", "=", filter.Eq)
+		qb.AddCondition("month_start_date", "=", filter.Eq)
 	case *StringFilter_Ne:
-		qb.AddCondition("month", "!=", filter.Ne)
+		qb.AddCondition("month_start_date", "!=", filter.Ne)
 	case *StringFilter_Contains:
-		qb.AddLikeCondition("month", "%" + filter.Contains + "%")
+		qb.AddLikeCondition("month_start_date", "%" + filter.Contains + "%")
 	case *StringFilter_StartsWith:
-		qb.AddLikeCondition("month", filter.StartsWith + "%")
+		qb.AddLikeCondition("month_start_date", filter.StartsWith + "%")
 	case *StringFilter_EndsWith:
-		qb.AddLikeCondition("month", "%" + filter.EndsWith)
+		qb.AddLikeCondition("month_start_date", "%" + filter.EndsWith)
 	case *StringFilter_Like:
-		qb.AddLikeCondition("month", filter.Like)
+		qb.AddLikeCondition("month_start_date", filter.Like)
 	case *StringFilter_NotLike:
-		qb.AddNotLikeCondition("month", filter.NotLike)
+		qb.AddNotLikeCondition("month_start_date", filter.NotLike)
 	case *StringFilter_In:
 		if len(filter.In.Values) > 0 {
-			qb.AddInCondition("month", StringSliceToInterface(filter.In.Values))
+			qb.AddInCondition("month_start_date", StringSliceToInterface(filter.In.Values))
 		}
 	case *StringFilter_NotIn:
 		if len(filter.NotIn.Values) > 0 {
-			qb.AddNotInCondition("month", StringSliceToInterface(filter.NotIn.Values))
+			qb.AddNotInCondition("month_start_date", StringSliceToInterface(filter.NotIn.Values))
 		}
 	default:
 		// Unsupported filter type
@@ -439,7 +439,7 @@ func BuildListFctExecutionStateSizeMonthlyQuery(req *ListFctExecutionStateSizeMo
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "month", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+		validFields := []string{"updated_date_time", "month_start_date", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -447,11 +447,11 @@ func BuildListFctExecutionStateSizeMonthlyQuery(req *ListFctExecutionStateSizeMo
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY month"
+		orderByClause = " ORDER BY month_start_date"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`month`) AS `month`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`month_start_date`) AS `month_start_date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	return BuildParameterizedQuery("fct_execution_state_size_monthly", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -459,19 +459,19 @@ func BuildListFctExecutionStateSizeMonthlyQuery(req *ListFctExecutionStateSizeMo
 // BuildGetFctExecutionStateSizeMonthlyQuery constructs a parameterized SQL query from a GetFctExecutionStateSizeMonthlyRequest
 func BuildGetFctExecutionStateSizeMonthlyQuery(req *GetFctExecutionStateSizeMonthlyRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
-	if req.Month == "" {
-		return SQLQuery{}, fmt.Errorf("primary key field month is required")
+	if req.MonthStartDate == "" {
+		return SQLQuery{}, fmt.Errorf("primary key field month_start_date is required")
 	}
 
 	// Build query with primary key condition
 	qb := NewQueryBuilder()
-	qb.AddCondition("month", "=", req.Month)
+	qb.AddCondition("month_start_date", "=", req.MonthStartDate)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY month"
+	orderByClause := " ORDER BY month_start_date"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`month`) AS `month`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`month_start_date`) AS `month_start_date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_execution_state_size_monthly", columns, qb, orderByClause, 1, 0, options...)

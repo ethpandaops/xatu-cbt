@@ -11,36 +11,36 @@ import (
 func BuildListFctExecutionStateSizeDailyQuery(req *ListFctExecutionStateSizeDailyRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate that at least one primary key is provided
 	// Primary keys can come from base table or projections
-	if req.Date == nil {
-		return SQLQuery{}, fmt.Errorf("primary key field date is required")
+	if req.DayStartDate == nil {
+		return SQLQuery{}, fmt.Errorf("primary key field day_start_date is required")
 	}
 
 	// Build query using QueryBuilder
 	qb := NewQueryBuilder()
 
 	// Add primary key filter
-	switch filter := req.Date.Filter.(type) {
+	switch filter := req.DayStartDate.Filter.(type) {
 	case *StringFilter_Eq:
-		qb.AddCondition("date", "=", filter.Eq)
+		qb.AddCondition("day_start_date", "=", filter.Eq)
 	case *StringFilter_Ne:
-		qb.AddCondition("date", "!=", filter.Ne)
+		qb.AddCondition("day_start_date", "!=", filter.Ne)
 	case *StringFilter_Contains:
-		qb.AddLikeCondition("date", "%" + filter.Contains + "%")
+		qb.AddLikeCondition("day_start_date", "%" + filter.Contains + "%")
 	case *StringFilter_StartsWith:
-		qb.AddLikeCondition("date", filter.StartsWith + "%")
+		qb.AddLikeCondition("day_start_date", filter.StartsWith + "%")
 	case *StringFilter_EndsWith:
-		qb.AddLikeCondition("date", "%" + filter.EndsWith)
+		qb.AddLikeCondition("day_start_date", "%" + filter.EndsWith)
 	case *StringFilter_Like:
-		qb.AddLikeCondition("date", filter.Like)
+		qb.AddLikeCondition("day_start_date", filter.Like)
 	case *StringFilter_NotLike:
-		qb.AddNotLikeCondition("date", filter.NotLike)
+		qb.AddNotLikeCondition("day_start_date", filter.NotLike)
 	case *StringFilter_In:
 		if len(filter.In.Values) > 0 {
-			qb.AddInCondition("date", StringSliceToInterface(filter.In.Values))
+			qb.AddInCondition("day_start_date", StringSliceToInterface(filter.In.Values))
 		}
 	case *StringFilter_NotIn:
 		if len(filter.NotIn.Values) > 0 {
-			qb.AddNotInCondition("date", StringSliceToInterface(filter.NotIn.Values))
+			qb.AddNotInCondition("day_start_date", StringSliceToInterface(filter.NotIn.Values))
 		}
 	default:
 		// Unsupported filter type
@@ -439,7 +439,7 @@ func BuildListFctExecutionStateSizeDailyQuery(req *ListFctExecutionStateSizeDail
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "date", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+		validFields := []string{"updated_date_time", "day_start_date", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -447,11 +447,11 @@ func BuildListFctExecutionStateSizeDailyQuery(req *ListFctExecutionStateSizeDail
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY date"
+		orderByClause = " ORDER BY day_start_date"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`date`) AS `date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	return BuildParameterizedQuery("fct_execution_state_size_daily", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -459,19 +459,19 @@ func BuildListFctExecutionStateSizeDailyQuery(req *ListFctExecutionStateSizeDail
 // BuildGetFctExecutionStateSizeDailyQuery constructs a parameterized SQL query from a GetFctExecutionStateSizeDailyRequest
 func BuildGetFctExecutionStateSizeDailyQuery(req *GetFctExecutionStateSizeDailyRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
-	if req.Date == "" {
-		return SQLQuery{}, fmt.Errorf("primary key field date is required")
+	if req.DayStartDate == "" {
+		return SQLQuery{}, fmt.Errorf("primary key field day_start_date is required")
 	}
 
 	// Build query with primary key condition
 	qb := NewQueryBuilder()
-	qb.AddCondition("date", "=", req.Date)
+	qb.AddCondition("day_start_date", "=", req.DayStartDate)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY date"
+	orderByClause := " ORDER BY day_start_date"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`date`) AS `date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "accounts", "account_bytes", "account_trienodes", "account_trienode_bytes", "contract_codes", "contract_code_bytes", "storages", "storage_bytes", "storage_trienodes", "storage_trienode_bytes", "total_bytes"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_execution_state_size_daily", columns, qb, orderByClause, 1, 0, options...)
