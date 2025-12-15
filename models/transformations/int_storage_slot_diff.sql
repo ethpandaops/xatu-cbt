@@ -3,12 +3,12 @@ table: int_storage_slot_diff
 type: incremental
 interval:
   type: block
-  max: 1
+  max: 100000
 fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 60m"
+  forwardfill: "@every 1s"
 tags:
   - execution
   - storage
@@ -42,23 +42,3 @@ WHERE NOT (effective_bytes_from = 0 AND effective_bytes_to = 0)
 SETTINGS
     max_bytes_before_external_group_by = 10000000000,
     distributed_aggregation_memory_efficient = 1;
-
--- Update diff_latest_state helper table
-INSERT INTO `{{ .self.database }}`.int_storage_slot_diff_latest_state
-SELECT
-    updated_date_time,
-    address,
-    slot_key,
-    latest_block_number as block_number,
-    effective_bytes_to
-FROM (
-    SELECT
-        max(updated_date_time) as updated_date_time,
-        address,
-        slot_key,
-        argMax(block_number, block_number) as latest_block_number,
-        argMax(effective_bytes_to, block_number) as effective_bytes_to
-    FROM `{{ .self.database }}`.`{{ .self.table }}`
-    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    GROUP BY address, slot_key
-);

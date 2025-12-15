@@ -3,12 +3,12 @@ table: int_storage_slot_next_touch
 type: incremental
 interval:
   type: block
-  max: 1
+  max: 10000
 fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 60m"
+  forwardfill: "@every 1s"
 tags:
   - execution
   - storage
@@ -39,6 +39,17 @@ touches_aggregated AS (
     )
     GROUP BY address, slot_key
 ),
+-- Get latest state for slots touched in this batch using IN + argMax (7x faster than FINAL)
+latest_state AS (
+    SELECT
+        address,
+        slot_key,
+        argMax(block_number, updated_date_time) as block_number,
+        argMax(next_touch_block, updated_date_time) as next_touch_block
+    FROM `{{ .self.database }}`.helper_storage_slot_next_touch_latest_state
+    WHERE (address, slot_key) IN (SELECT address, slot_key FROM touches_aggregated)
+    GROUP BY address, slot_key
+),
 -- Previous tail rows that need next_touch_block updated
 -- Only match tails that are BEFORE the first block in current batch to avoid self-reference
 -- when a batch is re-processed (the current tail would point to itself otherwise)
@@ -48,7 +59,7 @@ prev_tail_rows AS (
         ls.address,
         ls.slot_key,
         a.first_block
-    FROM `{{ .self.database }}`.int_storage_slot_latest_state ls FINAL
+    FROM latest_state ls
     INNER JOIN touches_aggregated a ON ls.address = a.address AND ls.slot_key = a.slot_key
     WHERE ls.next_touch_block IS NULL
         AND ls.block_number < a.first_block
@@ -94,7 +105,7 @@ SETTINGS
     join_algorithm = 'parallel_hash';
 
 -- Update latest_state helper table with new tail rows
-INSERT INTO `{{ .self.database }}`.int_storage_slot_latest_state
+INSERT INTO `{{ .self.database }}`.helper_storage_slot_next_touch_latest_state
 WITH
 touches_aggregated AS (
     SELECT

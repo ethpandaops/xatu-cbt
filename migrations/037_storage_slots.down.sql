@@ -1,10 +1,6 @@
--- int_storage_slot_diff_latest_state
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_diff_latest_state ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_diff_latest_state_local ON CLUSTER '{cluster}';
-
--- int_storage_slot_latest_state
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_latest_state ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_latest_state_local ON CLUSTER '{cluster}';
+-- helper_storage_slot_next_touch_latest_state
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.helper_storage_slot_next_touch_latest_state ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.helper_storage_slot_next_touch_latest_state_local ON CLUSTER '{cluster}';
 
 -- int_storage_slot_reactivation_by_6m
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m ON CLUSTER '{cluster}';
