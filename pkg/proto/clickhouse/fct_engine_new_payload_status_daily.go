@@ -84,13 +84,31 @@ func BuildListFctEngineNewPayloadStatusDailyQuery(req *ListFctEngineNewPayloadSt
 		}
 	}
 
-	// Add filter for column: is_reference_node
-	if req.IsReferenceNode != nil {
-		switch filter := req.IsReferenceNode.Filter.(type) {
-		case *BoolFilter_Eq:
-			qb.AddCondition("is_reference_node", "=", filter.Eq)
-		case *BoolFilter_Ne:
-			qb.AddCondition("is_reference_node", "!=", filter.Ne)
+	// Add filter for column: node_class
+	if req.NodeClass != nil {
+		switch filter := req.NodeClass.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("node_class", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("node_class", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("node_class", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("node_class", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("node_class", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("node_class", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("node_class", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("node_class", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("node_class", StringSliceToInterface(filter.NotIn.Values))
+			}
 		default:
 			// Unsupported filter type
 		}
@@ -453,7 +471,7 @@ func BuildListFctEngineNewPayloadStatusDailyQuery(req *ListFctEngineNewPayloadSt
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "day_start_date", "is_reference_node", "slot_count", "observation_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "valid_pct", "avg_duration_ms", "avg_p50_duration_ms", "avg_p95_duration_ms", "max_duration_ms"}
+		validFields := []string{"updated_date_time", "day_start_date", "node_class", "slot_count", "observation_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "valid_pct", "avg_duration_ms", "avg_p50_duration_ms", "avg_p95_duration_ms", "max_duration_ms"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -461,11 +479,11 @@ func BuildListFctEngineNewPayloadStatusDailyQuery(req *ListFctEngineNewPayloadSt
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY day_start_date" + ", is_reference_node"
+		orderByClause = " ORDER BY day_start_date" + ", node_class"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "is_reference_node", "slot_count", "observation_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "valid_pct", "avg_duration_ms", "avg_p50_duration_ms", "avg_p95_duration_ms", "max_duration_ms"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "node_class", "slot_count", "observation_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "valid_pct", "avg_duration_ms", "avg_p50_duration_ms", "avg_p95_duration_ms", "max_duration_ms"}
 
 	return BuildParameterizedQuery("fct_engine_new_payload_status_daily", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -482,10 +500,10 @@ func BuildGetFctEngineNewPayloadStatusDailyQuery(req *GetFctEngineNewPayloadStat
 	qb.AddCondition("day_start_date", "=", req.DayStartDate)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY day_start_date, is_reference_node"
+	orderByClause := " ORDER BY day_start_date, node_class"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "is_reference_node", "slot_count", "observation_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "valid_pct", "avg_duration_ms", "avg_p50_duration_ms", "avg_p95_duration_ms", "max_duration_ms"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "node_class", "slot_count", "observation_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "valid_pct", "avg_duration_ms", "avg_p50_duration_ms", "avg_p95_duration_ms", "max_duration_ms"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_engine_new_payload_status_daily", columns, qb, orderByClause, 1, 0, options...)

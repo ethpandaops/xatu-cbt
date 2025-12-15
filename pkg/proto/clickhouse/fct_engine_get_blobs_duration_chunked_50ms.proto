@@ -23,8 +23,8 @@ message FctEngineGetBlobsDurationChunked50ms {
   uint32 epoch_start_date_time = 15;
   // Root of the beacon block (hex encoded with 0x prefix)
   string block_root = 16;
-  // Whether this observation is from a reference node (controlled fleet with 7870 in name)
-  bool is_reference_node = 17;
+  // Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)
+  string node_class = 17;
   // Duration bucket in 50ms chunks (0, 50, 100, 150, ...)
   int64 chunk_duration_ms = 18;
   // Number of observations in this duration chunk
@@ -47,8 +47,8 @@ message ListFctEngineGetBlobsDurationChunked50msRequest {
   // Filter by block_root - Root of the beacon block (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
   StringFilter block_root = 2 [(google.api.field_behavior) = OPTIONAL];
 
-  // Filter by is_reference_node - Whether this observation is from a reference node (controlled fleet with 7870 in name) (ORDER BY column 3 - optional)
-  BoolFilter is_reference_node = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by node_class - Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes) (ORDER BY column 3 - optional)
+  StringFilter node_class = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Filter by chunk_duration_ms - Duration bucket in 50ms chunks (0, 50, 100, 150, ...) (ORDER BY column 4 - optional)
   Int64Filter chunk_duration_ms = 4 [(google.api.field_behavior) = OPTIONAL];

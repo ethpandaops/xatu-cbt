@@ -220,13 +220,31 @@ func BuildListFctEngineGetBlobsDurationChunked50MsQuery(req *ListFctEngineGetBlo
 		}
 	}
 
-	// Add filter for column: is_reference_node
-	if req.IsReferenceNode != nil {
-		switch filter := req.IsReferenceNode.Filter.(type) {
-		case *BoolFilter_Eq:
-			qb.AddCondition("is_reference_node", "=", filter.Eq)
-		case *BoolFilter_Ne:
-			qb.AddCondition("is_reference_node", "!=", filter.Ne)
+	// Add filter for column: node_class
+	if req.NodeClass != nil {
+		switch filter := req.NodeClass.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("node_class", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("node_class", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("node_class", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("node_class", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("node_class", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("node_class", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("node_class", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("node_class", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("node_class", StringSliceToInterface(filter.NotIn.Values))
+			}
 		default:
 			// Unsupported filter type
 		}
@@ -437,7 +455,7 @@ func BuildListFctEngineGetBlobsDurationChunked50MsQuery(req *ListFctEngineGetBlo
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "is_reference_node", "chunk_duration_ms", "observation_count", "success_count", "partial_count", "empty_count", "error_count"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "node_class", "chunk_duration_ms", "observation_count", "success_count", "partial_count", "empty_count", "error_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -445,11 +463,11 @@ func BuildListFctEngineGetBlobsDurationChunked50MsQuery(req *ListFctEngineGetBlo
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", block_root" + ", is_reference_node" + ", chunk_duration_ms"
+		orderByClause = " ORDER BY slot_start_date_time" + ", block_root" + ", node_class" + ", chunk_duration_ms"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "is_reference_node", "chunk_duration_ms", "observation_count", "success_count", "partial_count", "empty_count", "error_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "node_class", "chunk_duration_ms", "observation_count", "success_count", "partial_count", "empty_count", "error_count"}
 
 	return BuildParameterizedQuery("fct_engine_get_blobs_duration_chunked_50ms", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -466,10 +484,10 @@ func BuildGetFctEngineGetBlobsDurationChunked50MsQuery(req *GetFctEngineGetBlobs
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, block_root, is_reference_node, chunk_duration_ms"
+	orderByClause := " ORDER BY slot_start_date_time, block_root, node_class, chunk_duration_ms"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "is_reference_node", "chunk_duration_ms", "observation_count", "success_count", "partial_count", "empty_count", "error_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "node_class", "chunk_duration_ms", "observation_count", "success_count", "partial_count", "empty_count", "error_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_engine_get_blobs_duration_chunked_50ms", columns, qb, orderByClause, 1, 0, options...)

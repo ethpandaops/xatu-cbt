@@ -1,7 +1,7 @@
 CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_status_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
-    `is_reference_node` Bool COMMENT 'Whether this observation is from a reference node (controlled fleet with 7870 in name)' CODEC(ZSTD(1)),
+    `node_class` LowCardinality(String) COMMENT 'Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)' CODEC(ZSTD(1)),
     `slot_count` UInt32 COMMENT 'Number of slots in this day aggregation' CODEC(ZSTD(1)),
     `observation_count` UInt64 COMMENT 'Total number of observations in this day' CODEC(ZSTD(1)),
     `valid_count` UInt64 COMMENT 'Number of observations with VALID status' CODEC(ZSTD(1)),
@@ -19,7 +19,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_status_daily_local ON CLUS
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toYYYYMM(day_start_date)
-ORDER BY (day_start_date, is_reference_node)
+ORDER BY (day_start_date, node_class)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Daily aggregated engine_newPayload status distribution and duration statistics';
 
@@ -29,5 +29,5 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_engine_new_payload_status_daily_local,
-    cityHash64(day_start_date, is_reference_node)
+    cityHash64(day_start_date, node_class)
 );

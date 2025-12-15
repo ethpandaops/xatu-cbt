@@ -5,9 +5,8 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_local ON CLUSTE
     `epoch` UInt32 COMMENT 'Epoch number derived from the slot' CODEC(DoubleDelta, ZSTD(1)),
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
     `block_root` FixedString(66) COMMENT 'Root of the beacon block (hex encoded with 0x prefix)' CODEC(ZSTD(1)),
-    `meta_client_implementation` LowCardinality(String) COMMENT 'Consensus client implementation (e.g., lighthouse, prysm, teku)',
     `meta_execution_implementation` LowCardinality(String) COMMENT 'Execution client implementation (e.g., Geth, Nethermind, Besu, Reth)',
-    `is_reference_node` Bool COMMENT 'Whether this observation is from a reference node (controlled fleet with 7870 in name)' CODEC(ZSTD(1)),
+    `node_class` LowCardinality(String) COMMENT 'Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)' CODEC(ZSTD(1)),
     `observation_count` UInt32 COMMENT 'Number of observations for this EL client' CODEC(ZSTD(1)),
     `unique_node_count` UInt32 COMMENT 'Number of unique nodes with this EL client' CODEC(ZSTD(1)),
     `max_requested_count` UInt32 COMMENT 'Maximum number of versioned hashes requested' CODEC(ZSTD(1)),
@@ -28,7 +27,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_local ON CLUSTE
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
-ORDER BY (slot_start_date_time, block_root, meta_client_implementation, meta_execution_implementation, is_reference_node)
+ORDER BY (slot_start_date_time, block_root, meta_execution_implementation, node_class)
 COMMENT 'engine_getBlobs observations aggregated by execution client for EL comparison';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client ON CLUSTER '{cluster}'
@@ -37,5 +36,5 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_engine_get_blobs_by_el_client_local,
-    cityHash64(slot_start_date_time, block_root, meta_client_implementation, meta_execution_implementation, is_reference_node)
+    cityHash64(slot_start_date_time, block_root, meta_execution_implementation, node_class)
 );

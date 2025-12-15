@@ -430,13 +430,31 @@ func BuildListFctEngineNewPayloadBySlotQuery(req *ListFctEngineNewPayloadBySlotR
 		}
 	}
 
-	// Add filter for column: is_reference_node
-	if req.IsReferenceNode != nil {
-		switch filter := req.IsReferenceNode.Filter.(type) {
-		case *BoolFilter_Eq:
-			qb.AddCondition("is_reference_node", "=", filter.Eq)
-		case *BoolFilter_Ne:
-			qb.AddCondition("is_reference_node", "!=", filter.Ne)
+	// Add filter for column: node_class
+	if req.NodeClass != nil {
+		switch filter := req.NodeClass.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("node_class", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("node_class", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("node_class", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("node_class", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("node_class", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("node_class", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("node_class", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("node_class", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("node_class", StringSliceToInterface(filter.NotIn.Values))
+			}
 		default:
 			// Unsupported filter type
 		}
@@ -949,7 +967,7 @@ func BuildListFctEngineNewPayloadBySlotQuery(req *ListFctEngineNewPayloadBySlotR
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "block_hash", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "is_reference_node", "observation_count", "unique_node_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "error_count", "valid_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "block_hash", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "node_class", "observation_count", "unique_node_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "error_count", "valid_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -957,11 +975,11 @@ func BuildListFctEngineNewPayloadBySlotQuery(req *ListFctEngineNewPayloadBySlotR
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", block_hash" + ", is_reference_node"
+		orderByClause = " ORDER BY slot_start_date_time" + ", block_hash" + ", node_class"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "is_reference_node", "observation_count", "unique_node_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "error_count", "valid_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "node_class", "observation_count", "unique_node_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "error_count", "valid_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
 
 	return BuildParameterizedQuery("fct_engine_new_payload_by_slot", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -978,10 +996,10 @@ func BuildGetFctEngineNewPayloadBySlotQuery(req *GetFctEngineNewPayloadBySlotReq
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, block_hash, is_reference_node"
+	orderByClause := " ORDER BY slot_start_date_time, block_hash, node_class"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "is_reference_node", "observation_count", "unique_node_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "error_count", "valid_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "node_class", "observation_count", "unique_node_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "error_count", "valid_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_engine_new_payload_by_slot", columns, qb, orderByClause, 1, 0, options...)

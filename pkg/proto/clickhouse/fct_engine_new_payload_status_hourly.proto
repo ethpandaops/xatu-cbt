@@ -16,8 +16,8 @@ message FctEngineNewPayloadStatusHourly {
   uint32 updated_date_time = 11;
   // Start of the hour period
   uint32 hour_start_date_time = 12;
-  // Whether this observation is from a reference node (controlled fleet with 7870 in name)
-  bool is_reference_node = 13;
+  // Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)
+  string node_class = 13;
   // Number of slots in this hour aggregation
   uint32 slot_count = 14;
   // Total number of observations in this hour
@@ -49,8 +49,8 @@ message ListFctEngineNewPayloadStatusHourlyRequest {
   // Filter by hour_start_date_time - Start of the hour period (PRIMARY KEY - required)
   UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
-  // Filter by is_reference_node - Whether this observation is from a reference node (controlled fleet with 7870 in name) (ORDER BY column 2 - optional)
-  BoolFilter is_reference_node = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by node_class - Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes) (ORDER BY column 2 - optional)
+  StringFilter node_class = 2 [(google.api.field_behavior) = OPTIONAL];
 
   // Filter by updated_date_time - Timestamp when the record was last updated (optional)
   UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
