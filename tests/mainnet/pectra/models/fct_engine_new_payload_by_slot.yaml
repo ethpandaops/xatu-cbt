@@ -1,0 +1,76 @@
+model: fct_engine_new_payload_by_slot
+network: mainnet
+spec: pectra
+external_data:
+    consensus_engine_api_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_by_slot_consensus_engine_api_new_payload.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Observation count should always be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL WHERE observation_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Valid percentage should be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL WHERE valid_pct < 0 OR valid_pct > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Status counts should sum to observation count
+      sql: "SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL \nWHERE (valid_count + invalid_count + syncing_count + accepted_count + invalid_block_hash_count + error_count) != observation_count\n"
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Unique node count should not exceed observation count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL WHERE unique_node_count > observation_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Min duration should not exceed max duration
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL WHERE min_duration_ms > max_duration_ms
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Median duration should be between min and max duration
+      sql: "SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL \nWHERE median_duration_ms < min_duration_ms OR median_duration_ms > max_duration_ms\n"
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: P95 duration should not exceed P99 duration
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL WHERE p95_duration_ms > p99_duration_ms
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Block hash should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL WHERE block_hash IS NULL OR block_hash = ''
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0

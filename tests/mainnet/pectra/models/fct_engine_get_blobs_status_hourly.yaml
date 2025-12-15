@@ -1,0 +1,69 @@
+model: fct_engine_get_blobs_status_hourly
+network: mainnet
+spec: pectra
+external_data:
+    consensus_engine_api_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_status_hourly_consensus_engine_api_get_blobs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Observation count should be greater than or equal to slot count
+      sql: "SELECT \n  countIf(observation_count < slot_count) AS invalid_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Status counts should sum to observation count
+      sql: "SELECT \n  countIf(success_count + partial_count + empty_count + unsupported_count + error_count != observation_count) AS mismatched_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      assertions:
+        - type: equals
+          column: mismatched_count
+          value: 0
+    - name: Success percentage should be between 0 and 100
+      sql: "SELECT \n  countIf(success_pct < 0 OR success_pct > 100) AS invalid_pct_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      assertions:
+        - type: equals
+          column: invalid_pct_count
+          value: 0
+    - name: All count columns should be non-negative
+      sql: "SELECT \n  countIf(slot_count < 0 OR observation_count < 0 OR success_count < 0 OR partial_count < 0 OR empty_count < 0 OR unsupported_count < 0 OR error_count < 0) AS negative_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      assertions:
+        - type: equals
+          column: negative_count
+          value: 0
+    - name: Duration metrics should be non-negative
+      sql: "SELECT \n  countIf(avg_duration_ms < 0 OR avg_p50_duration_ms < 0 OR avg_p95_duration_ms < 0 OR max_duration_ms < 0) AS invalid_duration_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      assertions:
+        - type: equals
+          column: invalid_duration_count
+          value: 0
+    - name: Max duration should be greater than or equal to average duration
+      sql: "SELECT \n  countIf(max_duration_ms < avg_duration_ms) AS invalid_max_duration_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      assertions:
+        - type: equals
+          column: invalid_max_duration_count
+          value: 0
+    - name: Hour start date time should not be null
+      sql: "SELECT \n  countIf(hour_start_date_time IS NULL) AS null_hour_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      assertions:
+        - type: equals
+          column: null_hour_count
+          value: 0
+    - name: Data should be within expected lookback window
+      sql: "SELECT \n  countIf(hour_start_date_time < now() - INTERVAL 20 DAY) AS stale_data_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      assertions:
+        - type: equals
+          column: stale_data_count
+          value: 0
+    - name: P95 duration should be greater than or equal to P50 duration
+      sql: "SELECT \n  countIf(avg_p95_duration_ms < avg_p50_duration_ms) AS invalid_percentile_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      assertions:
+        - type: equals
+          column: invalid_percentile_count
+          value: 0
