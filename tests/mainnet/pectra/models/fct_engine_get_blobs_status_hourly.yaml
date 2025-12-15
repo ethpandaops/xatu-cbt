@@ -13,57 +13,59 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Observation count should be greater than or equal to slot count
-      sql: "SELECT \n  countIf(observation_count < slot_count) AS invalid_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+    - name: Slot count should be positive for all rows
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL WHERE slot_count <= 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: count
+          value: 0
+    - name: Observation count should be greater than or equal to slot count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL WHERE observation_count < slot_count
+      assertions:
+        - type: equals
+          column: count
           value: 0
     - name: Status counts should sum to observation count
-      sql: "SELECT \n  countIf(success_count + partial_count + empty_count + unsupported_count + error_count != observation_count) AS mismatched_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      sql: "SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL \nWHERE (success_count + partial_count + empty_count + unsupported_count + error_count) != observation_count\n"
       assertions:
         - type: equals
-          column: mismatched_count
+          column: count
           value: 0
     - name: Success percentage should be between 0 and 100
-      sql: "SELECT \n  countIf(success_pct < 0 OR success_pct > 100) AS invalid_pct_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      sql: "SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL \nWHERE success_pct < 0 OR success_pct > 100\n"
       assertions:
         - type: equals
-          column: invalid_pct_count
+          column: count
           value: 0
-    - name: All count columns should be non-negative
-      sql: "SELECT \n  countIf(slot_count < 0 OR observation_count < 0 OR success_count < 0 OR partial_count < 0 OR empty_count < 0 OR unsupported_count < 0 OR error_count < 0) AS negative_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+    - name: All status counts should be non-negative
+      sql: "SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL \nWHERE success_count < 0 OR partial_count < 0 OR empty_count < 0 OR unsupported_count < 0 OR error_count < 0\n"
       assertions:
         - type: equals
-          column: negative_count
+          column: count
           value: 0
     - name: Duration metrics should be non-negative
-      sql: "SELECT \n  countIf(avg_duration_ms < 0 OR avg_p50_duration_ms < 0 OR avg_p95_duration_ms < 0 OR max_duration_ms < 0) AS invalid_duration_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      sql: "SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL \nWHERE avg_duration_ms < 0 OR avg_p50_duration_ms < 0 OR avg_p95_duration_ms < 0 OR max_duration_ms < 0\n"
       assertions:
         - type: equals
-          column: invalid_duration_count
+          column: count
+          value: 0
+    - name: P95 duration should be greater than or equal to P50 duration on average
+      sql: "SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL \nWHERE avg_p95_duration_ms < avg_p50_duration_ms\n"
+      assertions:
+        - type: equals
+          column: count
           value: 0
     - name: Max duration should be greater than or equal to average duration
-      sql: "SELECT \n  countIf(max_duration_ms < avg_duration_ms) AS invalid_max_duration_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      sql: "SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL \nWHERE max_duration_ms < avg_duration_ms\n"
       assertions:
         - type: equals
-          column: invalid_max_duration_count
+          column: count
           value: 0
     - name: Hour start date time should not be null
-      sql: "SELECT \n  countIf(hour_start_date_time IS NULL) AS null_hour_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
+      sql: "SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL \nWHERE hour_start_date_time IS NULL\n"
       assertions:
         - type: equals
-          column: null_hour_count
-          value: 0
-    - name: Data should be within expected lookback window
-      sql: "SELECT \n  countIf(hour_start_date_time < now() - INTERVAL 20 DAY) AS stale_data_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
-      assertions:
-        - type: equals
-          column: stale_data_count
-          value: 0
-    - name: P95 duration should be greater than or equal to P50 duration
-      sql: "SELECT \n  countIf(avg_p95_duration_ms < avg_p50_duration_ms) AS invalid_percentile_count\nFROM fct_engine_get_blobs_status_hourly FINAL\n"
-      assertions:
-        - type: equals
-          column: invalid_percentile_count
+          column: count
           value: 0

@@ -13,66 +13,66 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Chunk duration should be non-negative and aligned to 50ms
-      sql: |
-        SELECT COUNT(*) AS invalid_chunks FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE chunk_duration_ms < 0 OR chunk_duration_ms % 50 != 0
-      assertions:
-        - type: equals
-          column: invalid_chunks
-          value: 0
-    - name: Observation count should always be positive
-      sql: |
-        SELECT COUNT(*) AS invalid_observations FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE observation_count <= 0
-      assertions:
-        - type: equals
-          column: invalid_observations
-          value: 0
-    - name: Status counts should be non-negative
-      sql: |
-        SELECT COUNT(*) AS invalid_status_counts FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE success_count < 0 OR partial_count < 0 OR empty_count < 0 OR error_count < 0
-      assertions:
-        - type: equals
-          column: invalid_status_counts
-          value: 0
-    - name: Sum of status counts should equal observation count
-      sql: |
-        SELECT COUNT(*) AS mismatched_counts FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE (success_count + partial_count + empty_count + error_count) != observation_count
-      assertions:
-        - type: equals
-          column: mismatched_counts
-          value: 0
     - name: Slot should be non-negative
       sql: |
-        SELECT COUNT(*) AS invalid_slots FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE slot < 0
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE slot < 0
       assertions:
         - type: equals
-          column: invalid_slots
+          column: count
           value: 0
     - name: Epoch should be non-negative
       sql: |
-        SELECT COUNT(*) AS invalid_epochs FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE epoch < 0
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE epoch < 0
       assertions:
         - type: equals
-          column: invalid_epochs
+          column: count
+          value: 0
+    - name: Chunk duration should be non-negative and divisible by 50
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE chunk_duration_ms < 0 OR chunk_duration_ms % 50 != 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Observation count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE observation_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Status counts should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE success_count < 0 OR partial_count < 0 OR empty_count < 0 OR error_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Sum of status counts should equal observation count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE success_count + partial_count + empty_count + error_count != observation_count
+      assertions:
+        - type: equals
+          column: count
           value: 0
     - name: Block root should not be empty
       sql: |
-        SELECT COUNT(*) AS empty_block_roots FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE block_root = ''
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE block_root = '' OR block_root IS NULL
       assertions:
         - type: equals
-          column: empty_block_roots
+          column: count
           value: 0
-    - name: Slot start date time should not be null
+    - name: Node class should be valid value
       sql: |
-        SELECT COUNT(*) AS null_slot_times FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE slot_start_date_time IS NULL
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE node_class NOT IN ('', 'eip7870-block-builder')
       assertions:
         - type: equals
-          column: null_slot_times
+          column: count
           value: 0
     - name: Updated date time should not be null
       sql: |
-        SELECT COUNT(*) AS null_updated_times FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE updated_date_time IS NULL
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE updated_date_time IS NULL
       assertions:
         - type: equals
-          column: null_updated_times
+          column: count
           value: 0

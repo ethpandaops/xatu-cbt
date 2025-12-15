@@ -13,66 +13,66 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Observation count should always be positive
+    - name: Observation count should be positive for all rows
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE observation_count <= 0
+        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE observation_count <= 0
       assertions:
         - type: equals
-          column: count
+          column: invalid_count
           value: 0
     - name: Unique node count should not exceed observation count
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE unique_node_count > observation_count
+        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE unique_node_count > observation_count
       assertions:
         - type: equals
-          column: count
+          column: invalid_count
           value: 0
     - name: Status counts should sum to observation count
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE (valid_count + invalid_count + syncing_count + accepted_count + invalid_block_hash_count) != observation_count
+        SELECT COUNT(*) AS cnt FROM fct_engine_new_payload_by_el_client FINAL WHERE (valid_count + invalid_count + syncing_count + accepted_count + invalid_block_hash_count) != observation_count
       assertions:
         - type: equals
-          column: count
+          column: cnt
           value: 0
     - name: Valid percentage should be between 0 and 100
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE valid_pct < 0 OR valid_pct > 100
+        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE valid_pct < 0 OR valid_pct > 100
       assertions:
         - type: equals
-          column: count
+          column: invalid_count
           value: 0
     - name: Min duration should not exceed max duration
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE min_duration_ms > max_duration_ms
+        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE min_duration_ms > max_duration_ms
       assertions:
         - type: equals
-          column: count
+          column: invalid_count
           value: 0
-    - name: Median duration should be between min and max
+    - name: Median duration should be between min and max duration
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE median_duration_ms < min_duration_ms OR median_duration_ms > max_duration_ms
+        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE median_duration_ms < min_duration_ms OR median_duration_ms > max_duration_ms
       assertions:
         - type: equals
-          column: count
+          column: invalid_count
           value: 0
-    - name: P95 duration should be between median and max
+    - name: P95 duration should be between median and max duration
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE p95_duration_ms < median_duration_ms OR p95_duration_ms > max_duration_ms
+        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE p95_duration_ms < median_duration_ms OR p95_duration_ms > max_duration_ms
       assertions:
         - type: equals
-          column: count
+          column: invalid_count
           value: 0
     - name: Gas used should not exceed gas limit
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE gas_used > gas_limit
+        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE gas_used > gas_limit
       assertions:
         - type: equals
-          column: count
+          column: invalid_count
           value: 0
-    - name: Slot should be non-negative
+    - name: All duration values should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE slot < 0
+        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE min_duration_ms < 0 OR avg_duration_ms < 0 OR median_duration_ms < 0 OR max_duration_ms < 0 OR p95_duration_ms < 0
       assertions:
         - type: equals
-          column: count
+          column: invalid_count
           value: 0

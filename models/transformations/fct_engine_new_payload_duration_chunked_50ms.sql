@@ -27,7 +27,7 @@ WITH payloads AS (
         block_hash,
         duration_ms,
         status,
-        positionCaseInsensitive(meta_client_name, '7870') > 0 AS is_reference_node
+        CASE WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class
     FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
@@ -41,13 +41,13 @@ payloads_chunked AS (
         epoch,
         epoch_start_date_time,
         block_hash,
-        is_reference_node,
+        node_class,
         floor(duration_ms / 50) * 50 AS chunk_duration_ms,
         COUNT(*) as observation_count,
         countIf(status = 'VALID') AS valid_count,
         countIf(status = 'INVALID' OR status = 'INVALID_BLOCK_HASH') AS invalid_count
     FROM payloads
-    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_hash, is_reference_node, chunk_duration_ms
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_hash, node_class, chunk_duration_ms
 )
 
 SELECT
@@ -57,7 +57,7 @@ SELECT
     epoch,
     epoch_start_date_time,
     block_hash,
-    is_reference_node,
+    node_class,
     toInt64(chunk_duration_ms) AS chunk_duration_ms,
     observation_count,
     valid_count,

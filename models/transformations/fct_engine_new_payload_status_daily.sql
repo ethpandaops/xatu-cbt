@@ -13,7 +13,7 @@ INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
     day_start_date,
-    is_reference_node,
+    node_class,
     slot_count,
     observation_count,
     -- Status distribution
@@ -31,7 +31,7 @@ SELECT
 FROM (
     SELECT
         toDate(slot_start_date_time) AS day_start_date,
-        is_reference_node,
+        node_class,
         count(*) AS slot_count,
         sum(observation_count) AS observation_count,
         sum(valid_count) AS valid_count,
@@ -45,7 +45,7 @@ FROM (
         max(max_duration_ms) AS max_duration_ms
     FROM {{ index .dep "{{transformation}}" "fct_engine_new_payload_by_slot" "helpers" "from" }} FINAL
     WHERE toDate(slot_start_date_time) >= now() - INTERVAL {{ default "90" .env.ENGINE_API_DAILY_LOOKBACK_DAYS }} DAY
-    GROUP BY toDate(slot_start_date_time), is_reference_node
+    GROUP BY toDate(slot_start_date_time), node_class
 );
 
 DELETE FROM `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`

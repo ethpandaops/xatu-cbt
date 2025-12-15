@@ -27,7 +27,7 @@ WITH blobs AS (
         block_root,
         duration_ms,
         status,
-        positionCaseInsensitive(meta_client_name, '7870') > 0 AS is_reference_node
+        CASE WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class
     FROM {{ index .dep "{{external}}" "consensus_engine_api_get_blobs" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
@@ -41,7 +41,7 @@ blobs_chunked AS (
         epoch,
         epoch_start_date_time,
         block_root,
-        is_reference_node,
+        node_class,
         floor(duration_ms / 50) * 50 AS chunk_duration_ms,
         COUNT(*) as observation_count,
         countIf(status = 'SUCCESS') AS success_count,
@@ -49,7 +49,7 @@ blobs_chunked AS (
         countIf(status = 'EMPTY') AS empty_count,
         countIf(status = 'ERROR' OR status = 'UNSUPPORTED') AS error_count
     FROM blobs
-    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root, is_reference_node, chunk_duration_ms
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root, node_class, chunk_duration_ms
 )
 
 SELECT
@@ -59,7 +59,7 @@ SELECT
     epoch,
     epoch_start_date_time,
     block_root,
-    is_reference_node,
+    node_class,
     toInt64(chunk_duration_ms) AS chunk_duration_ms,
     observation_count,
     success_count,

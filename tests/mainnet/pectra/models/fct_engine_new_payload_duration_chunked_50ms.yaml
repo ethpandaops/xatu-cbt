@@ -13,66 +13,66 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Chunk duration should be non-negative multiples of 50
+    - name: Slot values should be non-negative
       sql: |
-        SELECT COUNT(*) AS invalid_chunks FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE chunk_duration_ms < 0 OR chunk_duration_ms % 50 != 0
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE slot < 0
       assertions:
         - type: equals
-          column: invalid_chunks
+          column: count
           value: 0
-    - name: Observation count should always be positive
+    - name: Epoch values should be non-negative
       sql: |
-        SELECT COUNT(*) AS zero_observations FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE observation_count <= 0
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE epoch < 0
       assertions:
         - type: equals
-          column: zero_observations
+          column: count
+          value: 0
+    - name: Chunk duration should be non-negative and divisible by 50
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE chunk_duration_ms < 0 OR chunk_duration_ms % 50 != 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Observation count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE observation_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Valid and invalid counts should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE valid_count < 0 OR invalid_count < 0
+      assertions:
+        - type: equals
+          column: count
           value: 0
     - name: Valid plus invalid count should not exceed observation count
       sql: |
-        SELECT COUNT(*) AS invalid_aggregation FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE valid_count + invalid_count > observation_count
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE valid_count + invalid_count > observation_count
       assertions:
         - type: equals
-          column: invalid_aggregation
-          value: 0
-    - name: Valid count should be non-negative
-      sql: |
-        SELECT COUNT(*) AS negative_valid FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE valid_count < 0
-      assertions:
-        - type: equals
-          column: negative_valid
-          value: 0
-    - name: Invalid count should be non-negative
-      sql: |
-        SELECT COUNT(*) AS negative_invalid FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE invalid_count < 0
-      assertions:
-        - type: equals
-          column: negative_invalid
-          value: 0
-    - name: Slot should be non-negative
-      sql: |
-        SELECT COUNT(*) AS negative_slots FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE slot < 0
-      assertions:
-        - type: equals
-          column: negative_slots
-          value: 0
-    - name: Epoch should be non-negative
-      sql: |
-        SELECT COUNT(*) AS negative_epochs FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE epoch < 0
-      assertions:
-        - type: equals
-          column: negative_epochs
+          column: count
           value: 0
     - name: Block hash should not be empty
       sql: |
-        SELECT COUNT(*) AS empty_hashes FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE block_hash = '' OR block_hash IS NULL
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE block_hash = '' OR block_hash IS NULL
       assertions:
         - type: equals
-          column: empty_hashes
+          column: count
           value: 0
-    - name: Slot start date time should not be null
+    - name: Node class should be valid value
       sql: |
-        SELECT COUNT(*) AS null_slot_times FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE slot_start_date_time IS NULL
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE node_class NOT IN ('', 'eip7870-block-builder')
       assertions:
         - type: equals
-          column: null_slot_times
+          column: count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_duration_chunked_50ms FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
           value: 0

@@ -23,7 +23,7 @@ SELECT
     argMin(epoch, duration_ms) AS epoch,
     argMin(epoch_start_date_time, duration_ms) AS epoch_start_date_time,
     block_root,
-    positionCaseInsensitive(meta_client_name, '7870') > 0 AS is_reference_node,
+    CASE WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class,
     -- Observation counts
     COUNT(*) AS observation_count,
     COUNT(DISTINCT meta_client_name) AS unique_node_count,
@@ -50,4 +50,4 @@ SELECT
 FROM {{ index .dep "{{external}}" "consensus_engine_api_get_blobs" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     AND meta_network_name = '{{ .env.NETWORK }}'
-GROUP BY slot_start_date_time, block_root, is_reference_node
+GROUP BY slot_start_date_time, block_root, node_class
