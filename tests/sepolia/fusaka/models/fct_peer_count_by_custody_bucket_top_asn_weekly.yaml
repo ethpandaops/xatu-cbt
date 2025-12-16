@@ -1,0 +1,17 @@
+model: fct_peer_count_by_custody_bucket_top_asn_weekly
+network: sepolia
+spec: fusaka
+external_data:
+    libp2p_handle_metadata:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_peer_count_by_custody_bucket_top_asn_weekly_libp2p_handle_metadata.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_peer_count_by_custody_bucket_top_asn_weekly_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: SELECT COUNT(*) AS count FROM fct_peer_count_by_custody_bucket_top_asn_weekly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
