@@ -2,15 +2,20 @@ package cmd
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	_ "github.com/ClickHouse/clickhouse-go/v2" // ClickHouse driver
+	"github.com/ethpandaops/xatu-cbt/internal/actions"
 	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/ethpandaops/xatu-cbt/internal/infra"
 	"github.com/ethpandaops/xatu-cbt/internal/testing"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/source/file" // file source driver
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -26,6 +31,7 @@ var (
 	infraVerbose        bool
 	infraClickhouseURL  string
 	infraRedisURL       string
+	infraRunMigrations  bool
 
 	errInvalidXatuMode = errors.New("invalid xatu-mode")
 	errXatuURLRequired = errors.New("xatu-url is required when xatu-source is external")
@@ -117,6 +123,7 @@ func init() {
 	infraStatusCmd.Flags().BoolVar(&infraVerbose, "verbose", false, "Show detailed container and database information")
 	infraStartCmd.Flags().String("xatu-source", xatuModeLocal, "Xatu data source: 'local' (start local cluster) or 'external' (connect to remote)")
 	infraStartCmd.Flags().String("xatu-url", "", "External Xatu ClickHouse URL (required for --xatu-source=external). Format: [http|https://][username:password@]host:port")
+	infraStartCmd.Flags().BoolVar(&infraRunMigrations, "run-migrations", false, "Run migrations for both Xatu and CBT clusters after starting infrastructure")
 }
 
 // createInfraManagers creates and returns Docker and ClickHouse managers with the shared configuration.
@@ -240,6 +247,13 @@ func runInfraStart(cmd *cobra.Command, _ []string) error {
 	fmt.Println("\n✓ Platform infrastructure started successfully")
 	if xatuSource == xatuModeExternal {
 		fmt.Println("  Note: Local Xatu cluster NOT started (external source)")
+	}
+
+	// Run migrations if requested
+	if infraRunMigrations {
+		if migErr := handleInfraMigrations(ctx, log, xatuSource); migErr != nil {
+			return migErr
+		}
 	}
 
 	services, err := dockerManager.GetAllServices(ctx)
@@ -377,6 +391,129 @@ func runInfraReset(_ *cobra.Command, _ []string) error {
 
 	fmt.Println("\n✓ Platform infrastructure reset successfully")
 	fmt.Println("\nAll volumes removed. Run 'xatu-cbt infra start' to begin fresh.")
+
+	return nil
+}
+
+// handleInfraMigrations orchestrates migrations for infrastructure startup.
+func handleInfraMigrations(ctx context.Context, log logrus.FieldLogger, xatuSource string) error {
+	fmt.Println("\n🔄 Running migrations...")
+
+	xatuRepoPath, repoErr := getXatuRepoPathForMigrations(log, xatuSource)
+	if repoErr != nil {
+		return repoErr
+	}
+
+	if migErr := runInfraMigrations(ctx, log, xatuSource, xatuRepoPath); migErr != nil {
+		return fmt.Errorf("running migrations: %w", migErr)
+	}
+
+	fmt.Println("✅ Migrations completed successfully")
+
+	return nil
+}
+
+// getXatuRepoPathForMigrations returns the xatu repo path if in local mode.
+func getXatuRepoPathForMigrations(log logrus.FieldLogger, xatuSource string) (string, error) {
+	if xatuSource != xatuModeLocal {
+		return "", nil
+	}
+
+	wd, wdErr := os.Getwd()
+	if wdErr != nil {
+		return "", fmt.Errorf("getting working directory: %w", wdErr)
+	}
+
+	repoPath, repoErr := ensureXatuRepo(log, wd, config.XatuRepoURL, config.XatuDefaultRef)
+	if repoErr != nil {
+		return "", fmt.Errorf("ensuring xatu repository for migrations: %w", repoErr)
+	}
+
+	return repoPath, nil
+}
+
+// runInfraMigrations runs migrations for both Xatu and CBT clusters.
+func runInfraMigrations(ctx context.Context, log logrus.FieldLogger, xatuSource, xatuRepoPath string) error {
+	// Run Xatu migrations (only for local mode)
+	if xatuSource == xatuModeLocal && xatuRepoPath != "" {
+		fmt.Println("  → Running Xatu cluster migrations...")
+
+		xatuMigrationDir := fmt.Sprintf("%s/%s", xatuRepoPath, config.XatuMigrationsPath)
+
+		if err := runXatuMigrations(ctx, log, xatuMigrationDir); err != nil {
+			return fmt.Errorf("xatu migrations: %w", err)
+		}
+
+		fmt.Println("  ✓ Xatu cluster migrations complete")
+	}
+
+	// Run CBT migrations
+	fmt.Println("  → Running CBT cluster migrations...")
+
+	if err := actions.Setup(false, true); err != nil {
+		return fmt.Errorf("cbt migrations: %w", err)
+	}
+
+	fmt.Println("  ✓ CBT cluster migrations complete")
+
+	return nil
+}
+
+// runXatuMigrations runs migrations against the Xatu ClickHouse cluster.
+func runXatuMigrations(ctx context.Context, log logrus.FieldLogger, migrationDir string) error {
+	xatuConnStr := config.GetXatuClickHouseURL()
+
+	// Open connection to Xatu cluster
+	conn, openErr := sql.Open("clickhouse", xatuConnStr)
+	if openErr != nil {
+		return fmt.Errorf("opening xatu clickhouse connection: %w", openErr)
+	}
+	defer func() { _ = conn.Close() }()
+
+	if pingErr := conn.PingContext(ctx); pingErr != nil {
+		return fmt.Errorf("pinging xatu clickhouse: %w", pingErr)
+	}
+
+	// Create required databases
+	if dbErr := createXatuDatabases(ctx, conn); dbErr != nil {
+		return dbErr
+	}
+
+	log.WithField("migration_dir", migrationDir).Debug("running xatu migrations")
+
+	// Run migrations using golang-migrate
+	m, migErr := migrate.New(
+		fmt.Sprintf("file://%s", migrationDir),
+		fmt.Sprintf("%s?database=default&x-multi-statement=true&x-cluster-name=%s&x-migrations-table-engine=ReplicatedMergeTree",
+			xatuConnStr, config.XatuClusterName),
+	)
+	if migErr != nil {
+		return fmt.Errorf("creating migration instance: %w", migErr)
+	}
+	defer func() {
+		if _, closeErr := m.Close(); closeErr != nil {
+			log.WithError(closeErr).Debug("failed to close migration instance")
+		}
+	}()
+
+	if upErr := m.Up(); upErr != nil && !errors.Is(upErr, migrate.ErrNoChange) {
+		return fmt.Errorf("running migrations: %w", upErr)
+	}
+
+	return nil
+}
+
+// createXatuDatabases creates the required databases in the Xatu cluster.
+func createXatuDatabases(ctx context.Context, conn *sql.DB) error {
+	databases := []string{"default", "tmp", "admin", "dbt"}
+
+	for _, db := range databases {
+		createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s", db, config.XatuClusterName)
+
+		if _, execErr := conn.ExecContext(ctx, createSQL); execErr != nil {
+			return fmt.Errorf("creating %s database: %w", db, execErr)
+		}
+	}
 
 	return nil
 }
