@@ -43,12 +43,13 @@ old_block_range AS (
     WHERE block_date_time >= (SELECT min_time - INTERVAL 6 MONTH - INTERVAL 1 DAY FROM current_bounds)
         AND block_date_time <= (SELECT max_time - INTERVAL 6 MONTH + INTERVAL 1 DAY FROM current_bounds)
 ),
--- Block metadata for current bounds
-current_bounds_blocks AS (
+-- Block candidates for finding expiry blocks
+-- Extended range before current bounds to find true global first expiry block
+expiry_block_candidates AS (
     SELECT block_number, block_date_time
-    FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
-    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        AND meta_network_name = '{{ .env.NETWORK }}'
+    FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
+    WHERE block_date_time >= (SELECT min_time - INTERVAL 1 DAY FROM current_bounds)
+        AND block_date_time <= (SELECT max_time FROM current_bounds)
 ),
 -- Get all touches from 6-month-ago window
 old_touches AS (
@@ -124,16 +125,17 @@ candidate_expiries AS (
     WHERE d.diff_block <= t.touch_block
         AND d.effective_bytes > 0
 ),
--- Map touch_time to first valid expiry block in bounds (touch must be 6-6.03 months old)
+-- Map touch_time to the GLOBAL first block where it becomes 6 months old
+-- Only include if that block falls within current bounds (deterministic per touch)
 first_expiry_block_map AS (
     SELECT
         c.touch_time,
         min(b.block_number) as first_expiry_block
     FROM (SELECT DISTINCT touch_time FROM candidate_expiries) c
-    INNER JOIN current_bounds_blocks b
-        ON c.touch_time <= b.block_date_time - INTERVAL 6 MONTH
-        AND c.touch_time > b.block_date_time - INTERVAL 6 MONTH - INTERVAL 1 DAY
+    INNER JOIN expiry_block_candidates b
+        ON b.block_date_time >= c.touch_time + INTERVAL 6 MONTH
     GROUP BY c.touch_time
+    HAVING first_expiry_block BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
