@@ -430,6 +430,36 @@ func BuildListFctEngineNewPayloadBySlotQuery(req *ListFctEngineNewPayloadBySlotR
 		}
 	}
 
+	// Add filter for column: status
+	if req.Status != nil {
+		switch filter := req.Status.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("status", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("status", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("status", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("status", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("status", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("status", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("status", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("status", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("status", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: node_class
 	if req.NodeClass != nil {
 		switch filter := req.NodeClass.Filter.(type) {
@@ -519,188 +549,6 @@ func BuildListFctEngineNewPayloadBySlotQuery(req *ListFctEngineNewPayloadBySlotR
 			// Unsupported filter type
 		}
 	}
-
-	// Add filter for column: valid_count
-	if req.ValidCount != nil {
-		switch filter := req.ValidCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("valid_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("valid_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("valid_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("valid_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("valid_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("valid_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("valid_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("valid_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("valid_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: invalid_count
-	if req.InvalidCount != nil {
-		switch filter := req.InvalidCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("invalid_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("invalid_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("invalid_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("invalid_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("invalid_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("invalid_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("invalid_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("invalid_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("invalid_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: syncing_count
-	if req.SyncingCount != nil {
-		switch filter := req.SyncingCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("syncing_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("syncing_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("syncing_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("syncing_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("syncing_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("syncing_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("syncing_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("syncing_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("syncing_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: accepted_count
-	if req.AcceptedCount != nil {
-		switch filter := req.AcceptedCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("accepted_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("accepted_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("accepted_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("accepted_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("accepted_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("accepted_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("accepted_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("accepted_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("accepted_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: invalid_block_hash_count
-	if req.InvalidBlockHashCount != nil {
-		switch filter := req.InvalidBlockHashCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("invalid_block_hash_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("invalid_block_hash_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("invalid_block_hash_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("invalid_block_hash_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("invalid_block_hash_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("invalid_block_hash_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("invalid_block_hash_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("invalid_block_hash_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("invalid_block_hash_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: error_count
-	if req.ErrorCount != nil {
-		switch filter := req.ErrorCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("error_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("error_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("error_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("error_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("error_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("error_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("error_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("error_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("error_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: valid_pct
 
 	// Add filter for column: avg_duration_ms
 	if req.AvgDurationMs != nil {
@@ -967,7 +815,7 @@ func BuildListFctEngineNewPayloadBySlotQuery(req *ListFctEngineNewPayloadBySlotR
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "block_hash", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "node_class", "observation_count", "unique_node_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "error_count", "valid_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "block_hash", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "status", "node_class", "observation_count", "unique_node_count", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -975,11 +823,11 @@ func BuildListFctEngineNewPayloadBySlotQuery(req *ListFctEngineNewPayloadBySlotR
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", block_hash" + ", node_class"
+		orderByClause = " ORDER BY slot_start_date_time" + ", block_hash" + ", status" + ", node_class"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "node_class", "observation_count", "unique_node_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "error_count", "valid_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "status", "node_class", "observation_count", "unique_node_count", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
 
 	return BuildParameterizedQuery("fct_engine_new_payload_by_slot", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -996,10 +844,10 @@ func BuildGetFctEngineNewPayloadBySlotQuery(req *GetFctEngineNewPayloadBySlotReq
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, block_hash, node_class"
+	orderByClause := " ORDER BY slot_start_date_time, block_hash, status, node_class"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "node_class", "observation_count", "unique_node_count", "valid_count", "invalid_count", "syncing_count", "accepted_count", "invalid_block_hash_count", "error_count", "valid_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "status", "node_class", "observation_count", "unique_node_count", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "p99_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_engine_new_payload_by_slot", columns, qb, orderByClause, 1, 0, options...)

@@ -25,6 +25,8 @@ SELECT
     argMin(epoch_start_date_time, duration_ms) AS epoch_start_date_time,
     block_root,
     meta_execution_implementation,
+    meta_execution_version,
+    status,
     CASE WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class,
     -- Observation counts
     COUNT(*) AS observation_count,
@@ -32,13 +34,6 @@ SELECT
     -- Request/Response
     MAX(requested_count) AS max_requested_count,
     round(AVG(returned_count), 2) AS avg_returned_count,
-    -- Status distribution
-    countIf(status = 'SUCCESS') AS success_count,
-    countIf(status = 'PARTIAL') AS partial_count,
-    countIf(status = 'EMPTY') AS empty_count,
-    countIf(status = 'UNSUPPORTED') AS unsupported_count,
-    countIf(status = 'ERROR') AS error_count,
-    round(countIf(status = 'SUCCESS') * 100.0 / COUNT(*), 2) AS success_pct,
     -- Duration statistics
     round(AVG(duration_ms)) AS avg_duration_ms,
     round(quantile(0.5)(duration_ms)) AS median_duration_ms,
@@ -48,4 +43,4 @@ SELECT
 FROM {{ index .dep "{{external}}" "consensus_engine_api_get_blobs" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     AND meta_network_name = '{{ .env.NETWORK }}'
-GROUP BY slot_start_date_time, block_root, meta_execution_implementation, node_class
+GROUP BY slot_start_date_time, block_root, meta_execution_implementation, meta_execution_version, status, node_class

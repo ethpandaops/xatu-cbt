@@ -27,16 +27,9 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Success percentage should be between 0 and 100
+    - name: Status column should not be empty
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE success_pct < 0 OR success_pct > 100
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Status counts should sum to observation count
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE success_count + partial_count + empty_count + unsupported_count + error_count != observation_count
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE status = ''
       assertions:
         - type: equals
           column: count
