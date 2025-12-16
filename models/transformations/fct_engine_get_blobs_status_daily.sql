@@ -74,10 +74,10 @@ FROM (
         sumIf(slots_in_days.observation_count, status = 'EMPTY') AS empty_count,
         sumIf(slots_in_days.observation_count, status = 'UNSUPPORTED') AS unsupported_count,
         sumIf(slots_in_days.observation_count, status = 'ERROR') AS error_count,
-        round(avgIf(slots_in_days.avg_duration_ms, status = 'SUCCESS')) AS avg_duration_ms,
-        round(avgIf(slots_in_days.median_duration_ms, status = 'SUCCESS')) AS avg_p50_duration_ms,
-        round(avgIf(slots_in_days.p95_duration_ms, status = 'SUCCESS')) AS avg_p95_duration_ms,
-        maxIf(slots_in_days.max_duration_ms, status = 'SUCCESS') AS max_duration_ms
+        ifNotFinite(round(avgIf(slots_in_days.avg_duration_ms, status = 'SUCCESS')), 0) AS avg_duration_ms,
+        ifNotFinite(round(avgIf(slots_in_days.median_duration_ms, status = 'SUCCESS')), 0) AS avg_p50_duration_ms,
+        ifNotFinite(round(avgIf(slots_in_days.p95_duration_ms, status = 'SUCCESS')), 0) AS avg_p95_duration_ms,
+        ifNotFinite(maxIf(slots_in_days.max_duration_ms, status = 'SUCCESS'), 0) AS max_duration_ms
     FROM slots_in_days
     GROUP BY toDate(slot_start_date_time), node_class
 )

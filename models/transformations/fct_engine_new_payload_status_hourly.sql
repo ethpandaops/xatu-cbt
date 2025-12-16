@@ -74,10 +74,10 @@ FROM (
         sumIf(slots_in_hours.observation_count, status = 'SYNCING') AS syncing_count,
         sumIf(slots_in_hours.observation_count, status = 'ACCEPTED') AS accepted_count,
         sumIf(slots_in_hours.observation_count, status = 'INVALID_BLOCK_HASH') AS invalid_block_hash_count,
-        round(avgIf(slots_in_hours.avg_duration_ms, status = 'VALID')) AS avg_duration_ms,
-        round(avgIf(slots_in_hours.median_duration_ms, status = 'VALID')) AS avg_p50_duration_ms,
-        round(avgIf(slots_in_hours.p95_duration_ms, status = 'VALID')) AS avg_p95_duration_ms,
-        maxIf(slots_in_hours.max_duration_ms, status = 'VALID') AS max_duration_ms
+        ifNotFinite(round(avgIf(slots_in_hours.avg_duration_ms, status = 'VALID')), 0) AS avg_duration_ms,
+        ifNotFinite(round(avgIf(slots_in_hours.median_duration_ms, status = 'VALID')), 0) AS avg_p50_duration_ms,
+        ifNotFinite(round(avgIf(slots_in_hours.p95_duration_ms, status = 'VALID')), 0) AS avg_p95_duration_ms,
+        ifNotFinite(maxIf(slots_in_hours.max_duration_ms, status = 'VALID'), 0) AS max_duration_ms
     FROM slots_in_hours
     GROUP BY toStartOfHour(slot_start_date_time), node_class
 )
