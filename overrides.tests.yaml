@@ -134,3 +134,9 @@ models:
     ethseer_validator_entity:
       config:
         lag: 0
+    consensus_engine_api_get_blobs:
+      config:
+        lag: 0
+    consensus_engine_api_new_payload:
+      config:
+        lag: 0

@@ -1,0 +1,98 @@
+model: fct_engine_new_payload_status_hourly
+network: mainnet
+spec: pectra
+external_data:
+    consensus_engine_api_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_by_slot_consensus_engine_api_new_payload.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Hour start date time should be valid
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+        WHERE hour_start_date_time < '2020-01-01 00:00:00'
+           OR hour_start_date_time > now()
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot count should be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+        WHERE slot_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Observation count should be positive and at least equal to slot count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+        WHERE observation_count <= 0 OR observation_count < slot_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Status counts should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+        WHERE valid_count < 0
+           OR invalid_count < 0
+           OR syncing_count < 0
+           OR accepted_count < 0
+           OR invalid_block_hash_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Status counts should sum to observation count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+        WHERE (valid_count + invalid_count + syncing_count + accepted_count + invalid_block_hash_count) != observation_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Valid percentage should be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+        WHERE valid_pct < 0 OR valid_pct > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Duration statistics should be non-negative when present
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+        WHERE (avg_duration_ms IS NOT NULL AND avg_duration_ms < 0)
+           OR (avg_p50_duration_ms IS NOT NULL AND avg_p50_duration_ms < 0)
+           OR (avg_p95_duration_ms IS NOT NULL AND avg_p95_duration_ms < 0)
+           OR (max_duration_ms IS NOT NULL AND max_duration_ms < 0)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: P95 duration should be greater than or equal to P50 duration when both present
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+        WHERE avg_p50_duration_ms IS NOT NULL
+          AND avg_p95_duration_ms IS NOT NULL
+          AND avg_p95_duration_ms < avg_p50_duration_ms
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Updated date time should be recent
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_status_hourly FINAL
+        WHERE updated_date_time < '2020-01-01 00:00:00'
+           OR updated_date_time > now() + INTERVAL 1 DAY
+      assertions:
+        - type: equals
+          column: count
+          value: 0

@@ -1,0 +1,78 @@
+model: fct_engine_get_blobs_duration_chunked_50ms
+network: mainnet
+spec: pectra
+external_data:
+    consensus_engine_api_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_duration_chunked_50ms_consensus_engine_api_get_blobs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Epoch should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Chunk duration should be non-negative and divisible by 50
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE chunk_duration_ms < 0 OR chunk_duration_ms % 50 != 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Observation count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE observation_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Status counts should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE success_count < 0 OR partial_count < 0 OR empty_count < 0 OR error_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Sum of status counts should equal observation count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE success_count + partial_count + empty_count + error_count != observation_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Block root should not be empty
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Node class should be valid value
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE node_class NOT IN ('', 'eip7870-block-builder')
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_duration_chunked_50ms FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0

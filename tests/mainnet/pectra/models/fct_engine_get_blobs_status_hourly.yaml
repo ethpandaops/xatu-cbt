@@ -1,0 +1,88 @@
+model: fct_engine_get_blobs_status_hourly
+network: mainnet
+spec: pectra
+external_data:
+    consensus_engine_api_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_by_slot_consensus_engine_api_get_blobs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Hour start should be at hour boundary
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+        WHERE toStartOfHour(hour_start_date_time) != hour_start_date_time
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot count should be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+        WHERE slot_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Observation count should be greater than or equal to slot count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+        WHERE observation_count < slot_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Status counts should sum to observation count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+        WHERE (success_count + partial_count + empty_count + unsupported_count + error_count) != observation_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Success percentage should be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+        WHERE success_pct < 0 OR success_pct > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Duration percentiles should be ordered correctly when present
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+        WHERE avg_p50_duration_ms > 0 AND avg_p95_duration_ms > 0 AND max_duration_ms > 0
+          AND (avg_p50_duration_ms > avg_p95_duration_ms OR avg_p95_duration_ms > max_duration_ms)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Duration values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+        WHERE avg_duration_ms < 0 OR avg_p50_duration_ms < 0 OR avg_p95_duration_ms < 0 OR max_duration_ms < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Node class should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+        WHERE node_class IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Updated date time should not be in the future
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_status_hourly FINAL
+        WHERE updated_date_time > now()
+      assertions:
+        - type: equals
+          column: count
+          value: 0
