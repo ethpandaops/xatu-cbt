@@ -30,38 +30,6 @@ ENGINE = Distributed(
     cityHash64(`hour_start_date_time`)
 );
 
--- Weekly absolute values (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_weekly_local ON CLUSTER '{cluster}' (
-    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `week_start_date` Date COMMENT 'Start of the week period (Monday)' CODEC(DoubleDelta, ZSTD(1)),
-    `accounts` UInt64 COMMENT 'Total accounts at end of week' CODEC(ZSTD(1)),
-    `account_bytes` UInt64 COMMENT 'Account bytes at end of week' CODEC(ZSTD(1)),
-    `account_trienodes` UInt64 COMMENT 'Account trie nodes at end of week' CODEC(ZSTD(1)),
-    `account_trienode_bytes` UInt64 COMMENT 'Account trie node bytes at end of week' CODEC(ZSTD(1)),
-    `contract_codes` UInt64 COMMENT 'Contract codes at end of week' CODEC(ZSTD(1)),
-    `contract_code_bytes` UInt64 COMMENT 'Contract code bytes at end of week' CODEC(ZSTD(1)),
-    `storages` UInt64 COMMENT 'Storage slots at end of week' CODEC(ZSTD(1)),
-    `storage_bytes` UInt64 COMMENT 'Storage bytes at end of week' CODEC(ZSTD(1)),
-    `storage_trienodes` UInt64 COMMENT 'Storage trie nodes at end of week' CODEC(ZSTD(1)),
-    `storage_trienode_bytes` UInt64 COMMENT 'Storage trie node bytes at end of week' CODEC(ZSTD(1)),
-    `total_bytes` UInt64 COMMENT 'Total state size in bytes' CODEC(ZSTD(1))
-) ENGINE = ReplicatedReplacingMergeTree(
-    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
-    '{replica}',
-    `updated_date_time`
-) PARTITION BY toYYYYMM(week_start_date)
-ORDER BY (`week_start_date`)
-COMMENT 'Execution layer state size metrics aggregated by week';
-
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_weekly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_state_size_weekly_local
-ENGINE = Distributed(
-    '{cluster}',
-    '${NETWORK_NAME}',
-    fct_execution_state_size_weekly_local,
-    cityHash64(`week_start_date`)
-);
-
 -- Daily absolute values (incremental)
 CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
@@ -92,36 +60,4 @@ ENGINE = Distributed(
     '${NETWORK_NAME}',
     fct_execution_state_size_daily_local,
     cityHash64(`day_start_date`)
-);
-
--- Monthly absolute values (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_monthly_local ON CLUSTER '{cluster}' (
-    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `month_start_date` Date COMMENT 'Start of the month period' CODEC(DoubleDelta, ZSTD(1)),
-    `accounts` UInt64 COMMENT 'Total accounts at end of month' CODEC(ZSTD(1)),
-    `account_bytes` UInt64 COMMENT 'Account bytes at end of month' CODEC(ZSTD(1)),
-    `account_trienodes` UInt64 COMMENT 'Account trie nodes at end of month' CODEC(ZSTD(1)),
-    `account_trienode_bytes` UInt64 COMMENT 'Account trie node bytes at end of month' CODEC(ZSTD(1)),
-    `contract_codes` UInt64 COMMENT 'Contract codes at end of month' CODEC(ZSTD(1)),
-    `contract_code_bytes` UInt64 COMMENT 'Contract code bytes at end of month' CODEC(ZSTD(1)),
-    `storages` UInt64 COMMENT 'Storage slots at end of month' CODEC(ZSTD(1)),
-    `storage_bytes` UInt64 COMMENT 'Storage bytes at end of month' CODEC(ZSTD(1)),
-    `storage_trienodes` UInt64 COMMENT 'Storage trie nodes at end of month' CODEC(ZSTD(1)),
-    `storage_trienode_bytes` UInt64 COMMENT 'Storage trie node bytes at end of month' CODEC(ZSTD(1)),
-    `total_bytes` UInt64 COMMENT 'Total state size in bytes' CODEC(ZSTD(1))
-) ENGINE = ReplicatedReplacingMergeTree(
-    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
-    '{replica}',
-    `updated_date_time`
-) PARTITION BY toYear(month_start_date)
-ORDER BY (`month_start_date`)
-COMMENT 'Execution layer state size metrics aggregated by month';
-
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_monthly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_state_size_monthly_local
-ENGINE = Distributed(
-    '{cluster}',
-    '${NETWORK_NAME}',
-    fct_execution_state_size_monthly_local,
-    cityHash64(`month_start_date`)
 );
