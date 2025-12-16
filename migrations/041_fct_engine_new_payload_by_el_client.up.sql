@@ -7,6 +7,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client_local ON CLUS
     `block_root` FixedString(66) COMMENT 'Root of the beacon block (hex encoded with 0x prefix)' CODEC(ZSTD(1)),
     `block_hash` FixedString(66) COMMENT 'Execution block hash (hex encoded with 0x prefix)' CODEC(ZSTD(1)),
     `meta_execution_implementation` LowCardinality(String) COMMENT 'Execution client implementation (e.g., Geth, Nethermind, Besu, Reth)',
+    `meta_execution_version` LowCardinality(String) COMMENT 'Execution client version string',
     `status` LowCardinality(String) COMMENT 'Engine API response status (VALID, INVALID, SYNCING, ACCEPTED, INVALID_BLOCK_HASH, ERROR)' CODEC(ZSTD(1)),
     `node_class` LowCardinality(String) COMMENT 'Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)' CODEC(ZSTD(1)),
     `gas_used` UInt64 COMMENT 'Total gas used by all transactions in the block' CODEC(ZSTD(1)),
@@ -25,7 +26,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client_local ON CLUS
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
-ORDER BY (slot_start_date_time, block_hash, meta_execution_implementation, status, node_class)
+ORDER BY (slot_start_date_time, block_hash, meta_execution_implementation, meta_execution_version, status, node_class)
 COMMENT 'engine_newPayload observations aggregated by execution client and status for EL comparison';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client ON CLUSTER '{cluster}'
@@ -34,5 +35,5 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_engine_new_payload_by_el_client_local,
-    cityHash64(slot_start_date_time, block_hash, meta_execution_implementation, status, node_class)
+    cityHash64(slot_start_date_time, block_hash, meta_execution_implementation, meta_execution_version, status, node_class)
 );
