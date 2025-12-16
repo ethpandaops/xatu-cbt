@@ -30,18 +30,11 @@ SELECT
     argMin(gas_limit, duration_ms) AS gas_limit,
     argMin(tx_count, duration_ms) AS tx_count,
     argMin(blob_count, duration_ms) AS blob_count,
+    status,
     CASE WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class,
     -- Observation counts
     COUNT(*) AS observation_count,
     COUNT(DISTINCT meta_client_name) AS unique_node_count,
-    -- Status distribution
-    countIf(status = 'VALID') AS valid_count,
-    countIf(status = 'INVALID') AS invalid_count,
-    countIf(status = 'SYNCING') AS syncing_count,
-    countIf(status = 'ACCEPTED') AS accepted_count,
-    countIf(status = 'INVALID_BLOCK_HASH') AS invalid_block_hash_count,
-    countIf(status = 'ERROR') AS error_count,
-    round(countIf(status = 'VALID') * 100.0 / COUNT(*), 2) AS valid_pct,
     -- Duration statistics
     round(AVG(duration_ms)) AS avg_duration_ms,
     round(quantile(0.5)(duration_ms)) AS median_duration_ms,
@@ -55,4 +48,4 @@ SELECT
 FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     AND meta_network_name = '{{ .env.NETWORK }}'
-GROUP BY slot_start_date_time, block_hash, node_class
+GROUP BY slot_start_date_time, block_hash, status, node_class

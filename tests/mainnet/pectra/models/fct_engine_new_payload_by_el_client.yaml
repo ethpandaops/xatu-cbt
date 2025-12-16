@@ -27,19 +27,12 @@ assertions:
         - type: equals
           column: invalid_count
           value: 0
-    - name: Status counts should sum to observation count
+    - name: Status column should not be empty
       sql: |
-        SELECT COUNT(*) AS cnt FROM fct_engine_new_payload_by_el_client FINAL WHERE (valid_count + invalid_count + syncing_count + accepted_count + invalid_block_hash_count) != observation_count
+        SELECT COUNT(*) AS empty_status_rows FROM fct_engine_new_payload_by_el_client FINAL WHERE status = ''
       assertions:
         - type: equals
-          column: cnt
-          value: 0
-    - name: Valid percentage should be between 0 and 100
-      sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE valid_pct < 0 OR valid_pct > 100
-      assertions:
-        - type: equals
-          column: invalid_count
+          column: empty_status_rows
           value: 0
     - name: Min duration should not exceed max duration
       sql: |
