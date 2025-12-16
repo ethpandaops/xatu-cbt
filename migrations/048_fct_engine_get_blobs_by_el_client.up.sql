@@ -6,6 +6,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_local ON CLUSTE
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
     `block_root` FixedString(66) COMMENT 'Root of the beacon block (hex encoded with 0x prefix)' CODEC(ZSTD(1)),
     `meta_execution_implementation` LowCardinality(String) COMMENT 'Execution client implementation (e.g., Geth, Nethermind, Besu, Reth)',
+    `meta_execution_version` LowCardinality(String) COMMENT 'Execution client version string',
     `status` LowCardinality(String) COMMENT 'Engine API response status (SUCCESS, PARTIAL, EMPTY, UNSUPPORTED, ERROR)' CODEC(ZSTD(1)),
     `node_class` LowCardinality(String) COMMENT 'Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)' CODEC(ZSTD(1)),
     `observation_count` UInt32 COMMENT 'Number of observations for this EL client/status' CODEC(ZSTD(1)),
@@ -22,7 +23,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_local ON CLUSTE
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
-ORDER BY (slot_start_date_time, block_root, meta_execution_implementation, status, node_class)
+ORDER BY (slot_start_date_time, block_root, meta_execution_implementation, meta_execution_version, status, node_class)
 COMMENT 'engine_getBlobs observations aggregated by execution client and status for EL comparison';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client ON CLUSTER '{cluster}'
@@ -31,5 +32,5 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_engine_get_blobs_by_el_client_local,
-    cityHash64(slot_start_date_time, block_root, meta_execution_implementation, status, node_class)
+    cityHash64(slot_start_date_time, block_root, meta_execution_implementation, meta_execution_version, status, node_class)
 );

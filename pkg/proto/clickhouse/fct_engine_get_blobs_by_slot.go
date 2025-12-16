@@ -220,6 +220,36 @@ func BuildListFctEngineGetBlobsBySlotQuery(req *ListFctEngineGetBlobsBySlotReque
 		}
 	}
 
+	// Add filter for column: status
+	if req.Status != nil {
+		switch filter := req.Status.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("status", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("status", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("status", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("status", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("status", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("status", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("status", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("status", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("status", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: node_class
 	if req.NodeClass != nil {
 		switch filter := req.NodeClass.Filter.(type) {
@@ -341,158 +371,6 @@ func BuildListFctEngineGetBlobsBySlotQuery(req *ListFctEngineGetBlobsBySlotReque
 	}
 
 	// Add filter for column: avg_returned_count
-
-	// Add filter for column: success_count
-	if req.SuccessCount != nil {
-		switch filter := req.SuccessCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("success_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("success_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("success_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("success_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("success_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("success_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("success_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("success_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("success_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: partial_count
-	if req.PartialCount != nil {
-		switch filter := req.PartialCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("partial_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("partial_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("partial_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("partial_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("partial_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("partial_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("partial_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("partial_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("partial_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: empty_count
-	if req.EmptyCount != nil {
-		switch filter := req.EmptyCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("empty_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("empty_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("empty_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("empty_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("empty_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("empty_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("empty_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("empty_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("empty_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: unsupported_count
-	if req.UnsupportedCount != nil {
-		switch filter := req.UnsupportedCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("unsupported_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("unsupported_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("unsupported_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("unsupported_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("unsupported_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("unsupported_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("unsupported_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("unsupported_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("unsupported_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: error_count
-	if req.ErrorCount != nil {
-		switch filter := req.ErrorCount.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("error_count", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("error_count", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("error_count", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("error_count", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("error_count", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("error_count", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("error_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("error_count", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("error_count", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: success_pct
 
 	// Add filter for column: full_return_pct
 
@@ -731,7 +609,7 @@ func BuildListFctEngineGetBlobsBySlotQuery(req *ListFctEngineGetBlobsBySlotReque
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "node_class", "observation_count", "unique_node_count", "max_requested_count", "avg_returned_count", "success_count", "partial_count", "empty_count", "unsupported_count", "error_count", "success_pct", "full_return_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "status", "node_class", "observation_count", "unique_node_count", "max_requested_count", "avg_returned_count", "full_return_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -739,11 +617,11 @@ func BuildListFctEngineGetBlobsBySlotQuery(req *ListFctEngineGetBlobsBySlotReque
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", block_root" + ", node_class"
+		orderByClause = " ORDER BY slot_start_date_time" + ", block_root" + ", status" + ", node_class"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "node_class", "observation_count", "unique_node_count", "max_requested_count", "avg_returned_count", "success_count", "partial_count", "empty_count", "unsupported_count", "error_count", "success_pct", "full_return_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "status", "node_class", "observation_count", "unique_node_count", "max_requested_count", "avg_returned_count", "full_return_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
 
 	return BuildParameterizedQuery("fct_engine_get_blobs_by_slot", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -760,10 +638,10 @@ func BuildGetFctEngineGetBlobsBySlotQuery(req *GetFctEngineGetBlobsBySlotRequest
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, block_root, node_class"
+	orderByClause := " ORDER BY slot_start_date_time, block_root, status, node_class"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "node_class", "observation_count", "unique_node_count", "max_requested_count", "avg_returned_count", "success_count", "partial_count", "empty_count", "unsupported_count", "error_count", "success_pct", "full_return_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "status", "node_class", "observation_count", "unique_node_count", "max_requested_count", "avg_returned_count", "full_return_pct", "avg_duration_ms", "median_duration_ms", "min_duration_ms", "max_duration_ms", "p95_duration_ms", "unique_cl_implementation_count", "unique_el_implementation_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_engine_get_blobs_by_slot", columns, qb, orderByClause, 1, 0, options...)
