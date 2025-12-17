@@ -34,10 +34,11 @@ chunk_deltas AS (
 prev_state AS (
     SELECT
         address,
-        active_slots,
-        effective_bytes
-    FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
+        argMax(active_slots, updated_date_time) as active_slots,
+        argMax(effective_bytes, updated_date_time) as effective_bytes
+    FROM `{{ .self.database }}`.`{{ .self.table }}`
     WHERE address IN (SELECT address FROM chunk_deltas)
+    GROUP BY address
 )
 SELECT
     now() as updated_date_time,
