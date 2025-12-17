@@ -47,7 +47,7 @@ run: build
 
 # Build the binary
 .PHONY: build
-build: docker-check
+build: #docker-check
 	$(GOBUILD) -o $(BINARY_PATH) $(MAIN_PATH)
 
 # Clean build artifacts
@@ -86,7 +86,12 @@ proto:
 	fi; \
 	echo "Using network: $$NETWORK"; \
 	echo "Setting up ClickHouse infrastructure first..."; \
-	go run $(MAIN_PATH) infra start; \
+	if [ "$$XATU_SOURCE" = "external" ] && [ -n "$$XATU_URL" ]; then \
+		echo "Using external xatu source: $$XATU_URL"; \
+		go run $(MAIN_PATH) infra start --xatu-source external --xatu-url "$$XATU_URL"; \
+	else \
+		go run $(MAIN_PATH) infra start; \
+	fi; \
 	echo "Setting up network database..."; \
 	go run $(MAIN_PATH) network setup -f
 	@echo "Pulling clickhouse-proto-gen image..."
