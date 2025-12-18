@@ -3,12 +3,12 @@ table: int_storage_slot_reactivation_18m
 type: incremental
 interval:
   type: block
-  max: 100000
+  max: 1000
 fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 5s"
+  forwardfill: "@every 1m"
 tags:
   - execution
   - storage
