@@ -1,0 +1,216 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Individual engine_newPayload observations enriched with block size and status from fct_block
+
+message IntEngineNewPayload {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // When the sentry received the event
+  int64 event_date_time = 12;
+  // When the engine_newPayload call was initiated
+  int64 requested_date_time = 13;
+  // How long the engine_newPayload call took in milliseconds
+  uint64 duration_ms = 14;
+  // Slot number of the beacon block containing the payload
+  uint32 slot = 15;
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 16;
+  // Epoch number derived from the slot
+  uint32 epoch = 17;
+  // The wall clock time when the epoch started
+  uint32 epoch_start_date_time = 18;
+  // Root of the beacon block (hex encoded with 0x prefix)
+  string block_root = 19;
+  // Execution block hash (hex encoded with 0x prefix)
+  string block_hash = 20;
+  // Execution block number
+  uint64 block_number = 21;
+  // Root of the parent beacon block (hex encoded with 0x prefix)
+  string parent_block_root = 22;
+  // Parent execution block hash (hex encoded with 0x prefix)
+  string parent_hash = 23;
+  // Validator index of the block proposer
+  uint32 proposer_index = 24;
+  // Total gas used by all transactions in the block
+  uint64 gas_used = 25;
+  // Gas limit of the block
+  uint64 gas_limit = 26;
+  // Number of transactions in the block
+  uint32 tx_count = 27;
+  // Number of blobs in the block
+  uint32 blob_count = 28;
+  // Engine API response status (VALID, INVALID, SYNCING, ACCEPTED, INVALID_BLOCK_HASH, ERROR)
+  string status = 29;
+  // Error message when validation fails
+  google.protobuf.StringValue validation_error = 30;
+  // Latest valid hash when status is INVALID (hex encoded with 0x prefix)
+  google.protobuf.StringValue latest_valid_hash = 31;
+  // Version of the engine_newPayload method (e.g., V3, V4)
+  string method_version = 32;
+  // The total bytes of the beacon block payload
+  google.protobuf.UInt32Value block_total_bytes = 33;
+  // The total bytes of the beacon block payload when compressed using snappy
+  google.protobuf.UInt32Value block_total_bytes_compressed = 34;
+  // The version of the beacon block (phase0, altair, bellatrix, capella, deneb)
+  string block_version = 35;
+  // Block status: canonical, orphaned, or unknown if not yet determined
+  string block_status = 36;
+  // Full execution client version string from web3_clientVersion RPC
+  string meta_execution_version = 37;
+  // Execution client implementation name (e.g., Geth, Nethermind, Besu, Reth)
+  string meta_execution_implementation = 38;
+  // Name of the client that generated the event
+  string meta_client_name = 39;
+  // Implementation of the client that generated the event
+  string meta_client_implementation = 40;
+  // Version of the client that generated the event
+  string meta_client_version = 41;
+  // City of the client that generated the event
+  string meta_client_geo_city = 42;
+  // Country of the client that generated the event
+  string meta_client_geo_country = 43;
+  // Country code of the client that generated the event
+  string meta_client_geo_country_code = 44;
+  // Continent code of the client that generated the event
+  string meta_client_geo_continent_code = 45;
+  // Latitude of the client that generated the event
+  google.protobuf.DoubleValue meta_client_geo_latitude = 46;
+  // Longitude of the client that generated the event
+  google.protobuf.DoubleValue meta_client_geo_longitude = 47;
+  // Autonomous system number of the client that generated the event
+  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 48;
+  // Autonomous system organization of the client that generated the event
+  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 49;
+}
+
+// Request for listing int_engine_new_payload records
+message ListIntEngineNewPayloadRequest {
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: duration_ms, slot)
+  UInt32Filter slot_start_date_time = 1;
+
+  // Filter by block_hash - Execution block hash (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
+  StringFilter block_hash = 2;
+
+  // Filter by meta_client_name - Name of the client that generated the event (ORDER BY column 3 - optional)
+  StringFilter meta_client_name = 3;
+
+  // Filter by event_date_time - When the sentry received the event (ORDER BY column 4 - optional)
+  Int64Filter event_date_time = 4;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 5;
+  // Filter by requested_date_time - When the engine_newPayload call was initiated (optional)
+  Int64Filter requested_date_time = 6;
+  // Filter by duration_ms - How long the engine_newPayload call took in milliseconds (PROJECTION: p_by_duration_ms - alternative to slot_start_date_time)
+  UInt64Filter duration_ms = 7;
+  // Filter by slot - Slot number of the beacon block containing the payload (PROJECTION: p_by_slot - alternative to slot_start_date_time)
+  UInt32Filter slot = 8;
+  // Filter by epoch - Epoch number derived from the slot (optional)
+  UInt32Filter epoch = 9;
+  // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
+  UInt32Filter epoch_start_date_time = 10;
+  // Filter by block_root - Root of the beacon block (hex encoded with 0x prefix) (optional)
+  StringFilter block_root = 11;
+  // Filter by block_number - Execution block number (optional)
+  UInt64Filter block_number = 12;
+  // Filter by parent_block_root - Root of the parent beacon block (hex encoded with 0x prefix) (optional)
+  StringFilter parent_block_root = 13;
+  // Filter by parent_hash - Parent execution block hash (hex encoded with 0x prefix) (optional)
+  StringFilter parent_hash = 14;
+  // Filter by proposer_index - Validator index of the block proposer (optional)
+  UInt32Filter proposer_index = 15;
+  // Filter by gas_used - Total gas used by all transactions in the block (optional)
+  UInt64Filter gas_used = 16;
+  // Filter by gas_limit - Gas limit of the block (optional)
+  UInt64Filter gas_limit = 17;
+  // Filter by tx_count - Number of transactions in the block (optional)
+  UInt32Filter tx_count = 18;
+  // Filter by blob_count - Number of blobs in the block (optional)
+  UInt32Filter blob_count = 19;
+  // Filter by status - Engine API response status (VALID, INVALID, SYNCING, ACCEPTED, INVALID_BLOCK_HASH, ERROR) (optional)
+  StringFilter status = 20;
+  // Filter by validation_error - Error message when validation fails (optional)
+  NullableStringFilter validation_error = 21;
+  // Filter by latest_valid_hash - Latest valid hash when status is INVALID (hex encoded with 0x prefix) (optional)
+  NullableStringFilter latest_valid_hash = 22;
+  // Filter by method_version - Version of the engine_newPayload method (e.g., V3, V4) (optional)
+  StringFilter method_version = 23;
+  // Filter by block_total_bytes - The total bytes of the beacon block payload (optional)
+  NullableUInt32Filter block_total_bytes = 24;
+  // Filter by block_total_bytes_compressed - The total bytes of the beacon block payload when compressed using snappy (optional)
+  NullableUInt32Filter block_total_bytes_compressed = 25;
+  // Filter by block_version - The version of the beacon block (phase0, altair, bellatrix, capella, deneb) (optional)
+  StringFilter block_version = 26;
+  // Filter by block_status - Block status: canonical, orphaned, or unknown if not yet determined (optional)
+  StringFilter block_status = 27;
+  // Filter by meta_execution_version - Full execution client version string from web3_clientVersion RPC (optional)
+  StringFilter meta_execution_version = 28;
+  // Filter by meta_execution_implementation - Execution client implementation name (e.g., Geth, Nethermind, Besu, Reth) (optional)
+  StringFilter meta_execution_implementation = 29;
+  // Filter by meta_client_implementation - Implementation of the client that generated the event (optional)
+  StringFilter meta_client_implementation = 30;
+  // Filter by meta_client_version - Version of the client that generated the event (optional)
+  StringFilter meta_client_version = 31;
+  // Filter by meta_client_geo_city - City of the client that generated the event (optional)
+  StringFilter meta_client_geo_city = 32;
+  // Filter by meta_client_geo_country - Country of the client that generated the event (optional)
+  StringFilter meta_client_geo_country = 33;
+  // Filter by meta_client_geo_country_code - Country code of the client that generated the event (optional)
+  StringFilter meta_client_geo_country_code = 34;
+  // Filter by meta_client_geo_continent_code - Continent code of the client that generated the event (optional)
+  StringFilter meta_client_geo_continent_code = 35;
+  // Filter by meta_client_geo_latitude - Latitude of the client that generated the event (optional)
+  google.protobuf.DoubleValue meta_client_geo_latitude = 36;
+  // Filter by meta_client_geo_longitude - Longitude of the client that generated the event (optional)
+  google.protobuf.DoubleValue meta_client_geo_longitude = 37;
+  // Filter by meta_client_geo_autonomous_system_number - Autonomous system number of the client that generated the event (optional)
+  NullableUInt32Filter meta_client_geo_autonomous_system_number = 38;
+  // Filter by meta_client_geo_autonomous_system_organization - Autonomous system organization of the client that generated the event (optional)
+  NullableStringFilter meta_client_geo_autonomous_system_organization = 39;
+
+  // The maximum number of int_engine_new_payload to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 40;
+  // A page token, received from a previous `ListIntEngineNewPayload` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 41;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 42;
+}
+
+// Response for listing int_engine_new_payload records
+message ListIntEngineNewPayloadResponse {
+  // The list of int_engine_new_payload.
+  repeated IntEngineNewPayload int_engine_new_payload = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_engine_new_payload record by primary key
+message GetIntEngineNewPayloadRequest {
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single int_engine_new_payload record
+message GetIntEngineNewPayloadResponse {
+  IntEngineNewPayload item = 1;
+}
+
+// Query int_engine_new_payload data
+service IntEngineNewPayloadService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntEngineNewPayloadRequest) returns (ListIntEngineNewPayloadResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntEngineNewPayloadRequest) returns (GetIntEngineNewPayloadResponse);
+}
