@@ -61,32 +61,34 @@ message IntEngineNewPayload {
   string block_version = 35;
   // Block status: canonical, orphaned, or unknown if not yet determined
   string block_status = 36;
+  // Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)
+  string node_class = 37;
   // Full execution client version string from web3_clientVersion RPC
-  string meta_execution_version = 37;
+  string meta_execution_version = 38;
   // Execution client implementation name (e.g., Geth, Nethermind, Besu, Reth)
-  string meta_execution_implementation = 38;
+  string meta_execution_implementation = 39;
   // Name of the client that generated the event
-  string meta_client_name = 39;
+  string meta_client_name = 40;
   // Implementation of the client that generated the event
-  string meta_client_implementation = 40;
+  string meta_client_implementation = 41;
   // Version of the client that generated the event
-  string meta_client_version = 41;
+  string meta_client_version = 42;
   // City of the client that generated the event
-  string meta_client_geo_city = 42;
+  string meta_client_geo_city = 43;
   // Country of the client that generated the event
-  string meta_client_geo_country = 43;
+  string meta_client_geo_country = 44;
   // Country code of the client that generated the event
-  string meta_client_geo_country_code = 44;
+  string meta_client_geo_country_code = 45;
   // Continent code of the client that generated the event
-  string meta_client_geo_continent_code = 45;
+  string meta_client_geo_continent_code = 46;
   // Latitude of the client that generated the event
-  google.protobuf.DoubleValue meta_client_geo_latitude = 46;
+  google.protobuf.DoubleValue meta_client_geo_latitude = 47;
   // Longitude of the client that generated the event
-  google.protobuf.DoubleValue meta_client_geo_longitude = 47;
+  google.protobuf.DoubleValue meta_client_geo_longitude = 48;
   // Autonomous system number of the client that generated the event
-  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 48;
+  google.protobuf.UInt32Value meta_client_geo_autonomous_system_number = 49;
   // Autonomous system organization of the client that generated the event
-  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 49;
+  google.protobuf.StringValue meta_client_geo_autonomous_system_organization = 50;
 }
 
 // Request for listing int_engine_new_payload records
@@ -149,42 +151,44 @@ message ListIntEngineNewPayloadRequest {
   StringFilter block_version = 26;
   // Filter by block_status - Block status: canonical, orphaned, or unknown if not yet determined (optional)
   StringFilter block_status = 27;
+  // Filter by node_class - Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes) (optional)
+  StringFilter node_class = 28;
   // Filter by meta_execution_version - Full execution client version string from web3_clientVersion RPC (optional)
-  StringFilter meta_execution_version = 28;
+  StringFilter meta_execution_version = 29;
   // Filter by meta_execution_implementation - Execution client implementation name (e.g., Geth, Nethermind, Besu, Reth) (optional)
-  StringFilter meta_execution_implementation = 29;
+  StringFilter meta_execution_implementation = 30;
   // Filter by meta_client_implementation - Implementation of the client that generated the event (optional)
-  StringFilter meta_client_implementation = 30;
+  StringFilter meta_client_implementation = 31;
   // Filter by meta_client_version - Version of the client that generated the event (optional)
-  StringFilter meta_client_version = 31;
+  StringFilter meta_client_version = 32;
   // Filter by meta_client_geo_city - City of the client that generated the event (optional)
-  StringFilter meta_client_geo_city = 32;
+  StringFilter meta_client_geo_city = 33;
   // Filter by meta_client_geo_country - Country of the client that generated the event (optional)
-  StringFilter meta_client_geo_country = 33;
+  StringFilter meta_client_geo_country = 34;
   // Filter by meta_client_geo_country_code - Country code of the client that generated the event (optional)
-  StringFilter meta_client_geo_country_code = 34;
+  StringFilter meta_client_geo_country_code = 35;
   // Filter by meta_client_geo_continent_code - Continent code of the client that generated the event (optional)
-  StringFilter meta_client_geo_continent_code = 35;
+  StringFilter meta_client_geo_continent_code = 36;
   // Filter by meta_client_geo_latitude - Latitude of the client that generated the event (optional)
-  google.protobuf.DoubleValue meta_client_geo_latitude = 36;
+  google.protobuf.DoubleValue meta_client_geo_latitude = 37;
   // Filter by meta_client_geo_longitude - Longitude of the client that generated the event (optional)
-  google.protobuf.DoubleValue meta_client_geo_longitude = 37;
+  google.protobuf.DoubleValue meta_client_geo_longitude = 38;
   // Filter by meta_client_geo_autonomous_system_number - Autonomous system number of the client that generated the event (optional)
-  NullableUInt32Filter meta_client_geo_autonomous_system_number = 38;
+  NullableUInt32Filter meta_client_geo_autonomous_system_number = 39;
   // Filter by meta_client_geo_autonomous_system_organization - Autonomous system organization of the client that generated the event (optional)
-  NullableStringFilter meta_client_geo_autonomous_system_organization = 39;
+  NullableStringFilter meta_client_geo_autonomous_system_organization = 40;
 
   // The maximum number of int_engine_new_payload to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 40;
+  int32 page_size = 41;
   // A page token, received from a previous `ListIntEngineNewPayload` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 41;
+  string page_token = 42;
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 42;
+  string order_by = 43;
 }
 
 // Response for listing int_engine_new_payload records
