@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Peer custody bucket distribution aggregated by top ASN organizations and week
+
+message FctPeerCountByCustodyBucketTopAsnWeekly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the week period (Monday)
+  string week_start_date = 12;
+  // Autonomous System Organization name (top 20 by peer count, others grouped as Other)
+  string asn_organization = 13;
+  // Custody group count bucket (1-4, 5-8, 9-16, 17-32, 33-64, 65-127, 128)
+  string custody_bucket = 14;
+  // Number of epochs in this week
+  uint32 epoch_count = 15;
+  // Number of distinct peers in this ASN and custody bucket in this week
+  uint32 peer_count = 16;
+}
+
+// Request for listing fct_peer_count_by_custody_bucket_top_asn_weekly records
+message ListFctPeerCountByCustodyBucketTopAsnWeeklyRequest {
+  // Filter by week_start_date - Start of the week period (Monday) (PRIMARY KEY - required)
+  StringFilter week_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by asn_organization - Autonomous System Organization name (top 20 by peer count, others grouped as Other) (ORDER BY column 2 - optional)
+  StringFilter asn_organization = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by custody_bucket - Custody group count bucket (1-4, 5-8, 9-16, 17-32, 33-64, 65-127, 128) (ORDER BY column 3 - optional)
+  StringFilter custody_bucket = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch_count - Number of epochs in this week (optional)
+  UInt32Filter epoch_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by peer_count - Number of distinct peers in this ASN and custody bucket in this week (optional)
+  UInt32Filter peer_count = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_peer_count_by_custody_bucket_top_asn_weekly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 7 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPeerCountByCustodyBucketTopAsnWeekly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 8 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 9 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_peer_count_by_custody_bucket_top_asn_weekly records
+message ListFctPeerCountByCustodyBucketTopAsnWeeklyResponse {
+  // The list of fct_peer_count_by_custody_bucket_top_asn_weekly.
+  repeated FctPeerCountByCustodyBucketTopAsnWeekly fct_peer_count_by_custody_bucket_top_asn_weekly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_peer_count_by_custody_bucket_top_asn_weekly record by primary key
+message GetFctPeerCountByCustodyBucketTopAsnWeeklyRequest {
+  // Start of the week period (Monday)
+  string week_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_peer_count_by_custody_bucket_top_asn_weekly record
+message GetFctPeerCountByCustodyBucketTopAsnWeeklyResponse {
+  FctPeerCountByCustodyBucketTopAsnWeekly item = 1;
+}
+
+// Query fct_peer_count_by_custody_bucket_top_asn_weekly data
+service FctPeerCountByCustodyBucketTopAsnWeeklyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctPeerCountByCustodyBucketTopAsnWeeklyRequest) returns (ListFctPeerCountByCustodyBucketTopAsnWeeklyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_count_by_custody_bucket_top_asn_weekly"
+    };
+  }
+  // Get record | Retrieve a single record by week_start_date
+  rpc Get(GetFctPeerCountByCustodyBucketTopAsnWeeklyRequest) returns (GetFctPeerCountByCustodyBucketTopAsnWeeklyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_count_by_custody_bucket_top_asn_weekly/{week_start_date}"
+    };
+  }
+}

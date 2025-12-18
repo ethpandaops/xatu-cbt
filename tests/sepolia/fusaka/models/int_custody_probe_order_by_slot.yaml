@@ -1,0 +1,26 @@
+model: int_custody_probe_order_by_slot
+network: sepolia
+spec: fusaka
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/int_custody_probe_order_by_slot_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    blob_submitter:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/int_custody_probe_order_by_slot_blob_submitter.parquet
+        network_column: meta_network_name
+    execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/int_custody_probe_order_by_slot_execution_transaction.parquet
+        network_column: meta_network_name
+    libp2p_rpc_data_column_custody_probe:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/int_custody_probe_order_by_slot_libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/int_custody_probe_order_by_slot_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: SELECT COUNT(*) AS count FROM int_custody_probe_order_by_slot FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
