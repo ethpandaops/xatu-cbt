@@ -3,7 +3,7 @@ table: int_storage_slot_next_touch
 type: incremental
 interval:
   type: block
-  max: 10000
+  max: 100000
 fill:
   direction: "tail"
   allow_gap_skipping: false
@@ -26,7 +26,7 @@ touches_aggregated AS (
     SELECT
         address,
         slot_key,
-        groupUniqArray(block_number) as blocks,
+        arraySort(groupUniqArray(block_number)) as blocks,
         min(block_number) as first_block
     FROM (
         SELECT block_number, address, slot_key
@@ -111,7 +111,7 @@ touches_aggregated AS (
     SELECT
         address,
         slot_key,
-        groupUniqArray(block_number) as blocks
+        arraySort(groupUniqArray(block_number)) as blocks
     FROM (
         SELECT block_number, address, slot_key
         FROM {{ index .dep "{{transformation}}" "int_storage_slot_diff" "helpers" "from" }}
