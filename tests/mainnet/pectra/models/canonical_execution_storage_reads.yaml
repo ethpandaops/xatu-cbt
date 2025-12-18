@@ -3,14 +3,45 @@ network: mainnet
 spec: pectra
 external_data:
     canonical_execution_storage_reads:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_reads.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_reads.parquet
         network_column: meta_network_name
 assertions:
-    - name: total count
+    - name: total count and bounds
       sql: |
         SELECT
-          COUNT(*) AS count
+          COUNT(*) AS count,
+          MIN(block_number) AS min_block,
+          MAX(block_number) AS max_block,
+          uniq(contract_address) AS unique_addresses
         FROM
           cluster('{remote_cluster}', default.canonical_execution_storage_reads) FINAL
       expected:
-        count: 35145
+        count: 44
+        min_block: "49018"
+        max_block: "6372586"
+        unique_addresses: "10"
+    - name: Case 1 reads exist (simple expiry-reactivation)
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_storage_reads) FINAL
+        WHERE contract_address = '0x793ae8c1b1a160bfc07bfb0d04f85eab1a71f4f2'
+          AND slot = '0x0000000000000000000000000000000000000000000000000000000000000000'
+      expected:
+        count: 5
+    - name: Case 6 reactivation read exists (longest expiry ~2.5 years)
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_storage_reads) FINAL
+        WHERE contract_address = '0x329219be8810602a59b76df9ed7d52dc3afc3e8b'
+          AND slot = '0x0000000000000000000000000000000000000000000000000000000000000000'
+          AND block_number = 6365361
+      expected:
+        count: 1
+    - name: Case 11 reads exist (complete 3-cycle)
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_storage_reads) FINAL
+        WHERE contract_address = '0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb'
+          AND slot = '0x0000000000000000000000000000000000000000000000000000000000000002'
+      expected:
+        count: 12

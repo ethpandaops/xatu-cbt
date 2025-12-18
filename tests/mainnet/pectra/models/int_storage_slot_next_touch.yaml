@@ -1,0 +1,84 @@
+model: int_storage_slot_next_touch
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(block_number) AS min_block,
+          MAX(block_number) AS max_block
+        FROM
+          int_storage_slot_next_touch FINAL
+      expected:
+        count: 44
+        min_block: "49018"
+        max_block: "6372586"
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          MAX(position + interval) AS max,
+          MIN(position) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'int_storage_slot_next_touch'
+      expected:
+        max: "6372586"
+        min: "49018"
+    - name: Case 1 touches have correct next_touch_block chain
+      sql: |
+        SELECT
+          block_number,
+          next_touch_block
+        FROM int_storage_slot_next_touch FINAL
+        WHERE address = '0x793ae8c1b1a160bfc07bfb0d04f85eab1a71f4f2'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000000'
+        ORDER BY block_number
+        FORMAT JSONEachRow
+      expected_rows:
+        - block_number: "63809"
+          next_touch_block: "76588"
+        - block_number: "76588"
+          next_touch_block: "1059558"
+        - block_number: "1059558"
+          next_touch_block: "1109283"
+        - block_number: "1109283"
+          next_touch_block: "2143395"
+        - block_number: "2143395"
+          next_touch_block: null
+    - name: Case 11 complete 3-cycle has 14 touches
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_next_touch FINAL
+        WHERE address = '0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000002'
+      expected:
+        count: 14
+    - name: Case 11 last touch has null next_touch_block
+      sql: |
+        SELECT block_number, next_touch_block
+        FROM int_storage_slot_next_touch FINAL
+        WHERE address = '0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000002'
+        ORDER BY block_number DESC
+        LIMIT 1
+      expected:
+        block_number: "6372586"
+        next_touch_block: null
+    - name: Case 12 genesis-era slots have correct next_touch_block (null - never touched again)
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_next_touch FINAL
+        WHERE address = '0x630ea66c8c5dc205d45a978573fa86df5af1fe7a'
+          AND block_number = 49018
+          AND next_touch_block IS NULL
+      expected:
+        count: 3

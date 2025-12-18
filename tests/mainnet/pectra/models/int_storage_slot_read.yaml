@@ -1,10 +1,7 @@
-model: int_address_storage_slot_first_access
+model: int_storage_slot_read
 network: mainnet
 spec: pectra
 external_data:
-    canonical_execution_storage_diffs:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_diffs.parquet
-        network_column: meta_network_name
     canonical_execution_storage_reads:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_reads.parquet
         network_column: meta_network_name
@@ -16,9 +13,9 @@ assertions:
           MIN(block_number) AS min_block,
           MAX(block_number) AS max_block
         FROM
-          int_address_storage_slot_first_access FINAL
+          int_storage_slot_read FINAL
       expected:
-        count: 17
+        count: 44
         min_block: "49018"
         max_block: "6372586"
     - name: Expected admin bounds
@@ -29,23 +26,32 @@ assertions:
         FROM
           admin_cbt_incremental FINAL
         WHERE
-          table = 'int_address_storage_slot_first_access'
+          table = 'int_storage_slot_read'
       expected:
         max: "6372586"
         min: "49018"
-    - name: Case 1 first access is at block 63809
+    - name: Case 1 reads exist (5 touches across expiry-reactivation cycle)
       sql: |
-        SELECT block_number
-        FROM int_address_storage_slot_first_access FINAL
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_read FINAL
         WHERE address = '0x793ae8c1b1a160bfc07bfb0d04f85eab1a71f4f2'
           AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000000'
       expected:
-        block_number: "63809"
-    - name: Case 12 genesis-era first access at block 49018
+        count: 5
+    - name: Case 6 reactivation read exists (block 6365361)
       sql: |
         SELECT COUNT(*) AS count
-        FROM int_address_storage_slot_first_access FINAL
-        WHERE address = '0x630ea66c8c5dc205d45a978573fa86df5af1fe7a'
-          AND block_number = 49018
+        FROM int_storage_slot_read FINAL
+        WHERE address = '0x329219be8810602a59b76df9ed7d52dc3afc3e8b'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000000'
+          AND block_number = 6365361
       expected:
-        count: 3
+        count: 1
+    - name: Case 11 reads exist (complete 3-cycle with 14 touches)
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_read FINAL
+        WHERE address = '0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000002'
+      expected:
+        count: 14

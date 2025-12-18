@@ -3,14 +3,32 @@ network: mainnet
 spec: pectra
 external_data:
     canonical_execution_block:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: total count
+    - name: total count and bounds
       sql: |
         SELECT
-          COUNT(*) AS count
+          COUNT(*) AS count,
+          MIN(block_number) AS min_block,
+          MAX(block_number) AS max_block
         FROM
           cluster('{remote_cluster}', default.canonical_execution_block) FINAL
       expected:
-        count: 20
+        count: 42
+        min_block: "49018"
+        max_block: "6372586"
+    - name: Case 1 block exists (simple expiry-reactivation)
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_block) FINAL
+        WHERE block_number = 63809
+      expected:
+        count: 1
+    - name: Case 12 genesis-era block exists
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_block) FINAL
+        WHERE block_number = 49018
+      expected:
+        count: 1

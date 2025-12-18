@@ -3,14 +3,52 @@ network: mainnet
 spec: pectra
 external_data:
     canonical_execution_storage_diffs:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_diffs.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_diffs.parquet
         network_column: meta_network_name
 assertions:
-    - name: total count
+    - name: total count and bounds
       sql: |
         SELECT
-          COUNT(*) AS count
+          COUNT(*) AS count,
+          MIN(block_number) AS min_block,
+          MAX(block_number) AS max_block,
+          uniq(address) AS unique_addresses
         FROM
           cluster('{remote_cluster}', default.canonical_execution_storage_diffs) FINAL
       expected:
-        count: 12011
+        count: 38
+        min_block: "49018"
+        max_block: "5178368"
+        unique_addresses: "10"
+    - name: Case 1 diffs exist (simple expiry-reactivation)
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_storage_diffs) FINAL
+        WHERE address = '0x793ae8c1b1a160bfc07bfb0d04f85eab1a71f4f2'
+          AND slot = '0x0000000000000000000000000000000000000000000000000000000000000000'
+      expected:
+        count: 2
+    - name: Case 2 diffs exist (cleared and recreated)
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_storage_diffs) FINAL
+        WHERE address = '0x888666ca69e0f178ded6d75b5726cee99a87d698'
+          AND slot = '0xf5fa518bd9ef45a19f0eb529e4a900e5af17852b097fc69f632ec0d4fb198e4a'
+      expected:
+        count: 8
+    - name: Case 10 full 32-byte slot diff exists
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_storage_diffs) FINAL
+        WHERE address = '0x4eea5019ef91a8c8bfa80a1eea04bdda526316c4'
+          AND slot = '0x0000000000000000000000000000000000000000000000000000000000000000'
+      expected:
+        count: 2
+    - name: Case 12 genesis-era diffs exist
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_storage_diffs) FINAL
+        WHERE address = '0x630ea66c8c5dc205d45a978573fa86df5af1fe7a'
+          AND block_number = 49018
+      expected:
+        count: 6

@@ -3,17 +3,21 @@ network: mainnet
 spec: pectra
 external_data:
     canonical_execution_block:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected size
+    - name: Expected bounds and size
       sql: |
         SELECT
-          COUNT(*) AS count
+          COUNT(*) AS count,
+          MIN(block_number) AS min_block,
+          MAX(block_number) AS max_block
         FROM
           int_execution_block_by_date FINAL
       expected:
-        count: 20
+        count: 42
+        min_block: "49018"
+        max_block: "6372586"
     - name: Expected admin bounds
       sql: |
         SELECT
@@ -24,5 +28,15 @@ assertions:
         WHERE
           table = 'int_execution_block_by_date'
       expected:
-        max: "22923437"
-        min: "22923418"
+        max: "6372586"
+        min: "49018"
+    - name: Case 12 genesis-era block timestamp exists
+      sql: |
+        SELECT
+          block_number,
+          toDate(block_date_time) AS block_date
+        FROM int_execution_block_by_date FINAL
+        WHERE block_number = 49018
+      expected:
+        block_number: "49018"
+        block_date: "2015-08-07"

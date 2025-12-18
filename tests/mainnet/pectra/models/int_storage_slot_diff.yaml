@@ -1,12 +1,9 @@
-model: int_address_storage_slot_first_access
+model: int_storage_slot_diff
 network: mainnet
 spec: pectra
 external_data:
     canonical_execution_storage_diffs:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_diffs.parquet
-        network_column: meta_network_name
-    canonical_execution_storage_reads:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_reads.parquet
         network_column: meta_network_name
 assertions:
     - name: Expected bounds and size
@@ -16,11 +13,11 @@ assertions:
           MIN(block_number) AS min_block,
           MAX(block_number) AS max_block
         FROM
-          int_address_storage_slot_first_access FINAL
+          int_storage_slot_diff FINAL
       expected:
-        count: 17
+        count: 19
         min_block: "49018"
-        max_block: "6372586"
+        max_block: "5178368"
     - name: Expected admin bounds
       sql: |
         SELECT
@@ -29,22 +26,34 @@ assertions:
         FROM
           admin_cbt_incremental FINAL
         WHERE
-          table = 'int_address_storage_slot_first_access'
+          table = 'int_storage_slot_diff'
       expected:
-        max: "6372586"
+        max: "5178368"
         min: "49018"
-    - name: Case 1 first access is at block 63809
+    - name: Case 1 diff exists with correct effective_bytes (7 bytes)
       sql: |
-        SELECT block_number
-        FROM int_address_storage_slot_first_access FINAL
+        SELECT
+          COUNT(*) AS count,
+          MIN(effective_bytes_to) AS effective_bytes
+        FROM int_storage_slot_diff FINAL
         WHERE address = '0x793ae8c1b1a160bfc07bfb0d04f85eab1a71f4f2'
           AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000000'
       expected:
-        block_number: "63809"
-    - name: Case 12 genesis-era first access at block 49018
+        count: 1
+        effective_bytes: "7"
+    - name: Case 10 full 32-byte slot exists
+      sql: |
+        SELECT effective_bytes_to AS effective_bytes
+        FROM int_storage_slot_diff FINAL
+        WHERE address = '0x4eea5019ef91a8c8bfa80a1eea04bdda526316c4'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000000'
+          AND block_number = 3873480
+      expected:
+        effective_bytes: "32"
+    - name: Case 12 genesis-era slots exist (3 slots)
       sql: |
         SELECT COUNT(*) AS count
-        FROM int_address_storage_slot_first_access FINAL
+        FROM int_storage_slot_diff FINAL
         WHERE address = '0x630ea66c8c5dc205d45a978573fa86df5af1fe7a'
           AND block_number = 49018
       expected:
