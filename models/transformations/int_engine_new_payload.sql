@@ -101,6 +101,7 @@ SELECT
     bm.block_total_bytes_compressed AS block_total_bytes_compressed,
     COALESCE(bm.block_version, '') AS block_version,
     COALESCE(bm.block_status, 'unknown') AS block_status,
+    CASE WHEN positionCaseInsensitive(rp.meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class,
     rp.meta_execution_version AS meta_execution_version,
     rp.meta_execution_implementation AS meta_execution_implementation,
     rp.meta_client_name AS meta_client_name,

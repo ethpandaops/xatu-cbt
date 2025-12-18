@@ -39,6 +39,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload_local ON CLUSTER '{cluster
     `block_version` LowCardinality(String) COMMENT 'The version of the beacon block (phase0, altair, bellatrix, capella, deneb)' CODEC(ZSTD(1)),
     `block_status` LowCardinality(String) COMMENT 'Block status: canonical, orphaned, or unknown if not yet determined' CODEC(ZSTD(1)),
 
+    -- Node classification (derived)
+    `node_class` LowCardinality(String) COMMENT 'Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)' CODEC(ZSTD(1)),
+
     -- Client metadata (from raw)
     `meta_execution_version` LowCardinality(String) COMMENT 'Full execution client version string from web3_clientVersion RPC' CODEC(ZSTD(1)),
     `meta_execution_implementation` LowCardinality(String) COMMENT 'Execution client implementation name (e.g., Geth, Nethermind, Besu, Reth)' CODEC(ZSTD(1)),
