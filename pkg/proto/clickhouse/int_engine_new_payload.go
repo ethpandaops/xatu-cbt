@@ -860,6 +860,36 @@ func BuildListIntEngineNewPayloadQuery(req *ListIntEngineNewPayloadRequest, opti
 		}
 	}
 
+	// Add filter for column: node_class
+	if req.NodeClass != nil {
+		switch filter := req.NodeClass.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("node_class", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("node_class", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("node_class", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("node_class", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("node_class", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("node_class", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("node_class", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("node_class", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("node_class", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: meta_execution_version
 	if req.MetaExecutionVersion != nil {
 		switch filter := req.MetaExecutionVersion.Filter.(type) {
@@ -1227,7 +1257,7 @@ func BuildListIntEngineNewPayloadQuery(req *ListIntEngineNewPayloadRequest, opti
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "event_date_time", "requested_date_time", "duration_ms", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "block_hash", "block_number", "parent_block_root", "parent_hash", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "status", "validation_error", "latest_valid_hash", "method_version", "block_total_bytes", "block_total_bytes_compressed", "block_version", "block_status", "meta_execution_version", "meta_execution_implementation", "meta_client_name", "meta_client_implementation", "meta_client_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_latitude", "meta_client_geo_longitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization"}
+		validFields := []string{"updated_date_time", "event_date_time", "requested_date_time", "duration_ms", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "block_hash", "block_number", "parent_block_root", "parent_hash", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "status", "validation_error", "latest_valid_hash", "method_version", "block_total_bytes", "block_total_bytes_compressed", "block_version", "block_status", "node_class", "meta_execution_version", "meta_execution_implementation", "meta_client_name", "meta_client_implementation", "meta_client_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_latitude", "meta_client_geo_longitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -1239,7 +1269,7 @@ func BuildListIntEngineNewPayloadQuery(req *ListIntEngineNewPayloadRequest, opti
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp64Micro(`event_date_time`) AS `event_date_time`", "toUnixTimestamp64Micro(`requested_date_time`) AS `requested_date_time`", "duration_ms", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "NULLIF(`parent_block_root`, repeat('\x00', 66)) AS `parent_block_root`", "NULLIF(`parent_hash`, repeat('\x00', 66)) AS `parent_hash`", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "status", "validation_error", "NULLIF(`latest_valid_hash`, repeat('\x00', 66)) AS `latest_valid_hash`", "method_version", "block_total_bytes", "block_total_bytes_compressed", "block_version", "block_status", "meta_execution_version", "meta_execution_implementation", "meta_client_name", "meta_client_implementation", "meta_client_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_latitude", "meta_client_geo_longitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp64Micro(`event_date_time`) AS `event_date_time`", "toUnixTimestamp64Micro(`requested_date_time`) AS `requested_date_time`", "duration_ms", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "NULLIF(`parent_block_root`, repeat('\x00', 66)) AS `parent_block_root`", "NULLIF(`parent_hash`, repeat('\x00', 66)) AS `parent_hash`", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "status", "validation_error", "NULLIF(`latest_valid_hash`, repeat('\x00', 66)) AS `latest_valid_hash`", "method_version", "block_total_bytes", "block_total_bytes_compressed", "block_version", "block_status", "node_class", "meta_execution_version", "meta_execution_implementation", "meta_client_name", "meta_client_implementation", "meta_client_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_latitude", "meta_client_geo_longitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization"}
 
 	return BuildParameterizedQuery("int_engine_new_payload", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -1259,7 +1289,7 @@ func BuildGetIntEngineNewPayloadQuery(req *GetIntEngineNewPayloadRequest, option
 	orderByClause := " ORDER BY slot_start_date_time, block_hash, meta_client_name, event_date_time"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp64Micro(`event_date_time`) AS `event_date_time`", "toUnixTimestamp64Micro(`requested_date_time`) AS `requested_date_time`", "duration_ms", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "NULLIF(`parent_block_root`, repeat('\x00', 66)) AS `parent_block_root`", "NULLIF(`parent_hash`, repeat('\x00', 66)) AS `parent_hash`", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "status", "validation_error", "NULLIF(`latest_valid_hash`, repeat('\x00', 66)) AS `latest_valid_hash`", "method_version", "block_total_bytes", "block_total_bytes_compressed", "block_version", "block_status", "meta_execution_version", "meta_execution_implementation", "meta_client_name", "meta_client_implementation", "meta_client_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_latitude", "meta_client_geo_longitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp64Micro(`event_date_time`) AS `event_date_time`", "toUnixTimestamp64Micro(`requested_date_time`) AS `requested_date_time`", "duration_ms", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_root`, repeat('\x00', 66)) AS `block_root`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "block_number", "NULLIF(`parent_block_root`, repeat('\x00', 66)) AS `parent_block_root`", "NULLIF(`parent_hash`, repeat('\x00', 66)) AS `parent_hash`", "proposer_index", "gas_used", "gas_limit", "tx_count", "blob_count", "status", "validation_error", "NULLIF(`latest_valid_hash`, repeat('\x00', 66)) AS `latest_valid_hash`", "method_version", "block_total_bytes", "block_total_bytes_compressed", "block_version", "block_status", "node_class", "meta_execution_version", "meta_execution_implementation", "meta_client_name", "meta_client_implementation", "meta_client_version", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_latitude", "meta_client_geo_longitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization"}
 
 	// Return single record
 	return BuildParameterizedQuery("int_engine_new_payload", columns, qb, orderByClause, 1, 0, options...)
