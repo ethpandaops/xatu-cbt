@@ -64,9 +64,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload_local ON CLUSTER '{cluster
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY (slot_start_date_time, block_hash, meta_client_name, event_date_time)
 SETTINGS
-    deduplicate_merge_projection_mode = 'rebuild',
-    min_age_to_force_merge_seconds = 384,
-    min_age_to_force_merge_on_partition_only = false
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Individual engine_newPayload observations enriched with block size from fct_block_head';
 
 CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload ON CLUSTER '{cluster}'
