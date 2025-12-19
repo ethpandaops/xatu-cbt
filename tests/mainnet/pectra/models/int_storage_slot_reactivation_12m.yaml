@@ -1,0 +1,24 @@
+model: int_storage_slot_reactivation_12m
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_block.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected admin bounds exist
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'int_storage_slot_reactivation_12m'
+      expected:
+        count: 1

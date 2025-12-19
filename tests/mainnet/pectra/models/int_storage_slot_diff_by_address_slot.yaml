@@ -1,0 +1,44 @@
+model: int_storage_slot_diff_by_address_slot
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(block_number) AS min_block,
+          MAX(block_number) AS max_block
+        FROM
+          int_storage_slot_diff_by_address_slot FINAL
+      expected:
+        count: 19
+        min_block: "49018"
+        max_block: "5178368"
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          MAX(position + interval) AS max,
+          MIN(position) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'int_storage_slot_diff_by_address_slot'
+      expected:
+        max: "5178368"
+        min: "49018"
+    - name: Data matches int_storage_slot_diff
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_diff_by_address_slot FINAL a
+        INNER JOIN int_storage_slot_diff FINAL b
+          ON a.block_number = b.block_number
+          AND a.address = b.address
+          AND a.slot_key = b.slot_key
+          AND a.effective_bytes_from = b.effective_bytes_from
+          AND a.effective_bytes_to = b.effective_bytes_to
+      expected:
+        count: 19

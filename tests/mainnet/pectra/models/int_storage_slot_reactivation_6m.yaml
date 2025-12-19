@@ -1,0 +1,37 @@
+model: int_storage_slot_reactivation_6m
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_block.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected admin bounds exist
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'int_storage_slot_reactivation_6m'
+      expected:
+        count: 1
+    - name: Case 1 6m reactivation exists
+      sql: |
+        SELECT
+          block_number,
+          touch_block,
+          effective_bytes
+        FROM int_storage_slot_reactivation_6m FINAL
+        WHERE address = '0x793ae8c1b1a160bfc07bfb0d04f85eab1a71f4f2'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000000'
+      expected:
+        block_number: "1059558"
+        touch_block: "76588"
+        effective_bytes: "7"

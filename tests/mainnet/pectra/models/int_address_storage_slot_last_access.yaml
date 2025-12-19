@@ -3,24 +3,24 @@ network: mainnet
 spec: pectra
 external_data:
     canonical_execution_storage_diffs:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_diffs.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_diffs.parquet
         network_column: meta_network_name
     canonical_execution_storage_reads:
-        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_reads.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_reads.parquet
         network_column: meta_network_name
 assertions:
     - name: Expected bounds and size
       sql: |
         SELECT
           COUNT(*) AS count,
-          MIN(block_number) AS min,
-          MAX(block_number) AS max
+          MIN(block_number) AS min_block,
+          MAX(block_number) AS max_block
         FROM
           int_address_storage_slot_last_access FINAL
       expected:
-        count: 16746
-        max: "22923437"
-        min: "22923418"
+        count: 17
+        min_block: "49018"
+        max_block: "6372586"
     - name: Expected admin bounds
       sql: |
         SELECT
@@ -31,5 +31,21 @@ assertions:
         WHERE
           table = 'int_address_storage_slot_last_access'
       expected:
-        max: "22923437"
-        min: "22923418"
+        max: "6372586"
+        min: "49018"
+    - name: Case 1 last access is at block 2143395
+      sql: |
+        SELECT block_number
+        FROM int_address_storage_slot_last_access FINAL
+        WHERE address = '0x793ae8c1b1a160bfc07bfb0d04f85eab1a71f4f2'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000000'
+      expected:
+        block_number: "2143395"
+    - name: Case 11 last access is at block 6372586 (3rd reactivation)
+      sql: |
+        SELECT block_number
+        FROM int_address_storage_slot_last_access FINAL
+        WHERE address = '0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000002'
+      expected:
+        block_number: "6372586"

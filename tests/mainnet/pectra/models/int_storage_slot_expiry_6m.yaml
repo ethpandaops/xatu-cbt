@@ -1,0 +1,47 @@
+model: int_storage_slot_expiry_6m
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_block.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected admin bounds exist
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'int_storage_slot_expiry_6m'
+      expected:
+        count: 1
+    - name: Case 1 6m expiry exists
+      sql: |
+        SELECT
+          block_number,
+          touch_block,
+          effective_bytes
+        FROM int_storage_slot_expiry_6m FINAL
+        WHERE address = '0x793ae8c1b1a160bfc07bfb0d04f85eab1a71f4f2'
+          AND slot_key = '0x0000000000000000000000000000000000000000000000000000000000000000'
+          AND block_number = 995079
+      expected:
+        block_number: "995079"
+        touch_block: "76588"
+        effective_bytes: "7"
+    - name: Case 7 no 6m expiry (reactivated at 1m)
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM int_storage_slot_expiry_6m FINAL
+        WHERE address = '0x86fa049857e0209aa7d9e616f7eb3b3b78ecfdb0'
+          AND slot_key = '0x9ff87960f26fb9e2553cb67c4d27896d4c8dc8fe6f403d1cc6ba9b6fe71a8d7d'
+      expected:
+        count: 0
