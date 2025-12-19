@@ -46,4 +46,5 @@ SELECT
 FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     AND meta_network_name = '{{ .env.NETWORK }}'
+    AND meta_execution_implementation != ''
 GROUP BY slot_start_date_time, block_hash, meta_execution_implementation, meta_execution_version, status, node_class
