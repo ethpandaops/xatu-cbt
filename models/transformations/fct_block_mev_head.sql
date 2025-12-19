@@ -40,6 +40,7 @@ proposer_payloads_raw AS (
     proposer_fee_recipient,
     gas_limit,
     gas_used,
+    value,
     num_tx AS transaction_count,
     relay_name
   FROM {{ index .dep "{{external}}" "mev_relay_proposer_payload_delivered" "helpers" "from" }} FINAL
@@ -49,8 +50,7 @@ proposer_payloads_raw AS (
 bid_traces_raw AS (
   SELECT
     block_hash,
-    min(timestamp_ms) AS min_timestamp_ms,
-    max(value) AS max_value
+    min(timestamp_ms) AS min_timestamp_ms
   FROM {{ index .dep "{{external}}" "mev_relay_bid_trace" "helpers" "from" }} FINAL
   WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     AND meta_network_name = '{{ .env.NETWORK }}'
@@ -64,6 +64,7 @@ blocks_with_payloads AS (
     p.proposer_fee_recipient,
     p.gas_limit,
     p.gas_used,
+    p.value,
     p.transaction_count,
     p.relay_name
   FROM blocks b
@@ -85,7 +86,8 @@ payload_aggregated AS (
     any(gas_limit) AS gas_limit,
     any(gas_used) AS gas_used,
     any(transaction_count) AS transaction_count,
-    groupArray(DISTINCT relay_name) AS relay_names
+    groupArray(DISTINCT relay_name) AS relay_names,
+    max(value) AS value
   FROM blocks_with_payloads
   GROUP BY block_hash, slot, slot_start_date_time, epoch, epoch_start_date_time, block_root, parent_hash, block_number
 )
@@ -112,8 +114,8 @@ SELECT
   pa.gas_limit,
   pa.gas_used,
   CASE
-    WHEN bt.max_value != 0
-    THEN bt.max_value
+    WHEN pa.value != 0
+    THEN pa.value
     ELSE NULL
   END AS value,
   pa.transaction_count
