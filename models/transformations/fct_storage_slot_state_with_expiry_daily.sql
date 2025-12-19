@@ -1,5 +1,5 @@
 ---
-table: fct_storage_slot_state_daily
+table: fct_storage_slot_state_with_expiry_daily
 type: incremental
 interval:
   type: block
@@ -14,7 +14,7 @@ tags:
   - execution
   - storage
 dependencies:
-  - "{{transformation}}.fct_storage_slot_state"
+  - "{{transformation}}.fct_storage_slot_state_with_expiry"
   - "{{transformation}}.int_execution_block_by_date"
 ---
 -- This query expands the block range to complete day boundaries to handle partial
@@ -44,21 +44,24 @@ WITH
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
     day_start_date,
+    expiry_policy,
     active_slots,
     effective_bytes
 FROM (
     SELECT
         toDate(block_date_time) AS day_start_date,
+        expiry_policy,
         argMax(active_slots, block_number) AS active_slots,
         argMax(effective_bytes, block_number) AS effective_bytes
     FROM (
         SELECT
             s.block_number,
+            s.expiry_policy,
             s.active_slots,
             s.effective_bytes,
             b.block_date_time
-        FROM {{ index .dep "{{transformation}}" "fct_storage_slot_state" "helpers" "from" }} AS s FINAL
+        FROM {{ index .dep "{{transformation}}" "fct_storage_slot_state_with_expiry" "helpers" "from" }} AS s FINAL
         GLOBAL INNER JOIN blocks_in_days AS b ON s.block_number = b.block_number
     )
-    GROUP BY day_start_date
+    GROUP BY expiry_policy, day_start_date
 )

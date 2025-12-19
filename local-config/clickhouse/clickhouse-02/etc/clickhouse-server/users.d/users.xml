@@ -2,7 +2,7 @@
 <clickhouse replace="true">
     <profiles>
         <default>
-            <max_memory_usage>10000000000</max_memory_usage>
+            <max_memory_usage>20000000000</max_memory_usage>
             <use_uncompressed_cache>0</use_uncompressed_cache>
             <load_balancing>in_order</load_balancing>
             <log_queries>1</log_queries>
@@ -12,7 +12,7 @@
             <insert_distributed_sync>1</insert_distributed_sync>
         </default>
         <readonly>
-            <max_memory_usage>10000000000</max_memory_usage>
+            <max_memory_usage>20000000000</max_memory_usage>
             <use_uncompressed_cache>0</use_uncompressed_cache>
             <load_balancing>in_order</load_balancing>
             <readonly>2</readonly>
