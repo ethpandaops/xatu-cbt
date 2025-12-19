@@ -124,9 +124,10 @@ enriched AS (
 )
 
 -- Step 4: Aggregate using argMax to deduplicate by ORDER BY key
+-- GROUP BY columns (slot_start_date_time, block_hash, meta_client_name, event_date_time) are selected directly
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
-    argMax(event_date_time, source_updated_date_time) AS event_date_time,
+    event_date_time,
     argMax(requested_date_time, source_updated_date_time) AS requested_date_time,
     argMax(duration_ms, source_updated_date_time) AS duration_ms,
     argMax(slot, source_updated_date_time) AS slot,
