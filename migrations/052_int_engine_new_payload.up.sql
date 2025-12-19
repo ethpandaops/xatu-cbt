@@ -33,11 +33,10 @@ CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload_local ON CLUSTER '{cluster
     `latest_valid_hash` Nullable(FixedString(66)) COMMENT 'Latest valid hash when status is INVALID (hex encoded with 0x prefix)' CODEC(ZSTD(1)),
     `method_version` LowCardinality(String) COMMENT 'Version of the engine_newPayload method (e.g., V3, V4)' CODEC(ZSTD(1)),
 
-    -- From fct_block (ENRICHMENT)
+    -- From fct_block_head (ENRICHMENT)
     `block_total_bytes` Nullable(UInt32) COMMENT 'The total bytes of the beacon block payload' CODEC(ZSTD(1)),
     `block_total_bytes_compressed` Nullable(UInt32) COMMENT 'The total bytes of the beacon block payload when compressed using snappy' CODEC(ZSTD(1)),
     `block_version` LowCardinality(String) COMMENT 'The version of the beacon block (phase0, altair, bellatrix, capella, deneb)' CODEC(ZSTD(1)),
-    `block_status` LowCardinality(String) COMMENT 'Block status: canonical, orphaned, or unknown if not yet determined' CODEC(ZSTD(1)),
 
     -- Node classification (derived)
     `node_class` LowCardinality(String) COMMENT 'Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)' CODEC(ZSTD(1)),
@@ -68,7 +67,7 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild',
     min_age_to_force_merge_seconds = 384,
     min_age_to_force_merge_on_partition_only = false
-COMMENT 'Individual engine_newPayload observations enriched with block size and status from fct_block';
+COMMENT 'Individual engine_newPayload observations enriched with block size from fct_block_head';
 
 CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload ON CLUSTER '{cluster}'
 AS `${NETWORK_NAME}`.int_engine_new_payload_local

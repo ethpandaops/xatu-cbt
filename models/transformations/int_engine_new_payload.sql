@@ -13,7 +13,7 @@ tags:
   - engine
 dependencies:
   - "{{external}}.consensus_engine_api_new_payload"
-  - "{{transformation}}.fct_block"
+  - "{{transformation}}.fct_block_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -61,16 +61,15 @@ raw_payloads AS (
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
--- Step 2: Get block metadata (size, version, status) from fct_block
+-- Step 2: Get block metadata (size, version) from fct_block_head
 block_metadata AS (
     SELECT
         slot_start_date_time,
         block_root,
         argMax(block_total_bytes, updated_date_time) AS block_total_bytes,
         argMax(block_total_bytes_compressed, updated_date_time) AS block_total_bytes_compressed,
-        argMax(block_version, updated_date_time) AS block_version,
-        argMax(status, updated_date_time) AS block_status
-    FROM {{ index .dep "{{transformation}}" "fct_block" "helpers" "from" }}
+        argMax(block_version, updated_date_time) AS block_version
+    FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }}
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     GROUP BY slot_start_date_time, block_root
 ),
@@ -103,7 +102,6 @@ enriched AS (
         bm.block_total_bytes,
         bm.block_total_bytes_compressed,
         COALESCE(bm.block_version, '') AS block_version,
-        COALESCE(bm.block_status, 'unknown') AS block_status,
         rp.meta_execution_version,
         rp.meta_execution_implementation,
         rp.meta_client_name,
@@ -151,7 +149,6 @@ SELECT
     argMax(block_total_bytes, source_updated_date_time) AS block_total_bytes,
     argMax(block_total_bytes_compressed, source_updated_date_time) AS block_total_bytes_compressed,
     argMax(block_version, source_updated_date_time) AS block_version,
-    argMax(block_status, source_updated_date_time) AS block_status,
     CASE WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class,
     argMax(meta_execution_version, source_updated_date_time) AS meta_execution_version,
     argMax(meta_execution_implementation, source_updated_date_time) AS meta_execution_implementation,
