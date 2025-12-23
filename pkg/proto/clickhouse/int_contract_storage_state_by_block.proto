@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Cumulative contract storage state per block - tracks active slots, effective bytes, and active contracts with per-block deltas
+
+message IntContractStorageStateByBlock {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The block number
+  uint32 block_number = 12;
+  // Change in active slots for this block (positive=activated, negative=deactivated)
+  int32 slots_delta = 13;
+  // Change in effective bytes for this block
+  int64 bytes_delta = 14;
+  // Change in active contracts for this block (positive=activated, negative=deactivated)
+  int32 contracts_delta = 15;
+  // Cumulative count of active storage slots at this block
+  int64 active_slots = 16;
+  // Cumulative sum of effective bytes across all active slots at this block
+  int64 effective_bytes = 17;
+  // Cumulative count of contracts with at least one active slot at this block
+  int64 active_contracts = 18;
+}
+
+// Request for listing int_contract_storage_state_by_block records
+message ListIntContractStorageStateByBlockRequest {
+  // Filter by block_number - The block number (PRIMARY KEY - required)
+  UInt32Filter block_number = 1;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2;
+  // Filter by slots_delta - Change in active slots for this block (positive=activated, negative=deactivated) (optional)
+  Int32Filter slots_delta = 3;
+  // Filter by bytes_delta - Change in effective bytes for this block (optional)
+  Int64Filter bytes_delta = 4;
+  // Filter by contracts_delta - Change in active contracts for this block (positive=activated, negative=deactivated) (optional)
+  Int32Filter contracts_delta = 5;
+  // Filter by active_slots - Cumulative count of active storage slots at this block (optional)
+  Int64Filter active_slots = 6;
+  // Filter by effective_bytes - Cumulative sum of effective bytes across all active slots at this block (optional)
+  Int64Filter effective_bytes = 7;
+  // Filter by active_contracts - Cumulative count of contracts with at least one active slot at this block (optional)
+  Int64Filter active_contracts = 8;
+
+  // The maximum number of int_contract_storage_state_by_block to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 9;
+  // A page token, received from a previous `ListIntContractStorageStateByBlock` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 10;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 11;
+}
+
+// Response for listing int_contract_storage_state_by_block records
+message ListIntContractStorageStateByBlockResponse {
+  // The list of int_contract_storage_state_by_block.
+  repeated IntContractStorageStateByBlock int_contract_storage_state_by_block = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_contract_storage_state_by_block record by primary key
+message GetIntContractStorageStateByBlockRequest {
+  // The block number
+  uint32 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single int_contract_storage_state_by_block record
+message GetIntContractStorageStateByBlockResponse {
+  IntContractStorageStateByBlock item = 1;
+}
+
+// Query int_contract_storage_state_by_block data
+service IntContractStorageStateByBlockService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntContractStorageStateByBlockRequest) returns (ListIntContractStorageStateByBlockResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntContractStorageStateByBlockRequest) returns (GetIntContractStorageStateByBlockResponse);
+}
