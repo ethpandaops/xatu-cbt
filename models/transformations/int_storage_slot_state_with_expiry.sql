@@ -127,24 +127,15 @@ expiry_reactivation_addresses AS (
     SELECT DISTINCT address FROM expiry_reactivation_keys
 ),
 -- Previous base state for addresses that have expiry/reactivation but no base activity in this range
--- Use INNER JOIN instead of GLOBAL IN (ClickHouse analyzer doesn't support CTE refs in GLOBAL IN)
 prev_base_state AS (
     SELECT
-        address,
-        prev_base_active_slots,
-        prev_base_effective_bytes
-    FROM (
-        SELECT
-            s.address,
-            s.block_number,
-            s.active_slots as prev_base_active_slots,
-            s.effective_bytes as prev_base_effective_bytes,
-            row_number() OVER (PARTITION BY s.address ORDER BY s.block_number DESC) as rn
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} s FINAL
-        INNER JOIN expiry_reactivation_addresses k ON s.address = k.address
-        WHERE s.block_number < {{ .bounds.start }}
-    )
-    WHERE rn = 1
+        s.address,
+        argMax(s.active_slots, s.block_number) as prev_base_active_slots,
+        argMax(s.effective_bytes, s.block_number) as prev_base_effective_bytes
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} s FINAL
+    INNER JOIN expiry_reactivation_addresses k ON s.address = k.address
+    WHERE s.block_number < {{ .bounds.start }}
+    GROUP BY s.address
 ),
 -- Combined: all (block, address, policy) pairs that need processing
 -- Source 1: Base activity cross-joined with all policies
@@ -192,21 +183,13 @@ with_deltas AS (
 -- Previous cumulative net state per address per policy from self
 prev_cumulative_state AS (
     SELECT
-        ps_address,
-        ps_expiry_policy,
-        cumulative_net_slots as prev_cumulative_net_slots,
-        cumulative_net_bytes as prev_cumulative_net_bytes
-    FROM (
-        SELECT
-            address as ps_address,
-            expiry_policy as ps_expiry_policy,
-            cumulative_net_slots,
-            cumulative_net_bytes,
-            row_number() OVER (PARTITION BY address, expiry_policy ORDER BY block_number DESC) as rn
-        FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
-        WHERE block_number < {{ .bounds.start }}
-    )
-    WHERE rn = 1
+        address as ps_address,
+        expiry_policy as ps_expiry_policy,
+        argMax(cumulative_net_slots, block_number) as prev_cumulative_net_slots,
+        argMax(cumulative_net_bytes, block_number) as prev_cumulative_net_bytes
+    FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
+    WHERE block_number < {{ .bounds.start }}
+    GROUP BY address, expiry_policy
 ),
 -- Join with prev_cumulative_state
 joined AS (
