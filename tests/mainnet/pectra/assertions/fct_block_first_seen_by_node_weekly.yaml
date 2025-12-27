@@ -1,0 +1,24 @@
+- name: "Expected bounds and size"
+  sql: |
+    SELECT
+      COUNT(*) AS count,
+      MIN(week_start_date_time) AS min,
+      MAX(week_start_date_time) AS max
+    FROM
+      fct_block_first_seen_by_node_weekly FINAL
+  expected:
+    count: 119
+    min: "2025-07-13T00:00:00Z"
+    max: "2025-07-13T00:00:00Z"
+- name: "Expected admin bounds"
+  sql: |
+    SELECT
+      fromUnixTimestamp(MAX(position + interval)) AS max,
+      fromUnixTimestamp(MIN(position)) AS min
+    FROM
+      admin_cbt_incremental FINAL
+    WHERE
+      table = 'fct_block_first_seen_by_node_weekly'
+  expected:
+    max: "2025-07-15T08:38:11Z"
+    min: "2025-07-15T08:34:23Z"
