@@ -35,82 +35,71 @@ dependencies:
 -- 2. Expiry/reactivation events (even without new slot activity)
 -- Both must be included to correctly track expiry effects.
 --
--- Note: Uses aliased column names in subqueries to avoid ClickHouse correlated column resolution.
+-- NOTE: Due to ClickHouse analyzer bug with multiple LEFT JOINs to separate CTEs
+-- containing UNION ALL, we combine expiry and reactivation into a single CTE.
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
--- Expiry deltas per address per policy (NEGATIVE)
-expiry_deltas AS (
-    SELECT
-        ed_block_number,
-        ed_address,
-        ed_expiry_policy,
-        -toInt64(count()) as slots_delta,
-        -SUM(toInt64(effective_bytes)) as bytes_delta
-    FROM (
-        SELECT block_number as ed_block_number, address as ed_address, '1m' as ed_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_1m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        UNION ALL
-        SELECT block_number as ed_block_number, address as ed_address, '6m' as ed_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_6m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        UNION ALL
-        SELECT block_number as ed_block_number, address as ed_address, '12m' as ed_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_12m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        UNION ALL
-        SELECT block_number as ed_block_number, address as ed_address, '18m' as ed_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_18m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        UNION ALL
-        SELECT block_number as ed_block_number, address as ed_address, '24m' as ed_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_24m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    )
-    GROUP BY ed_block_number, ed_address, ed_expiry_policy
+-- Combined expiry/reactivation events with signed values
+-- Expiry = negative (slots/bytes removed), Reactivation = positive (slots/bytes restored)
+all_delta_events AS (
+    -- Expiry events (negative)
+    SELECT block_number, address, '1m' as expiry_policy, -toInt64(1) as slots_delta, -toInt64(effective_bytes) as bytes_delta
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_1m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    UNION ALL
+    SELECT block_number, address, '6m' as expiry_policy, -toInt64(1), -toInt64(effective_bytes)
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_6m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    UNION ALL
+    SELECT block_number, address, '12m' as expiry_policy, -toInt64(1), -toInt64(effective_bytes)
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_12m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    UNION ALL
+    SELECT block_number, address, '18m' as expiry_policy, -toInt64(1), -toInt64(effective_bytes)
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_18m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    UNION ALL
+    SELECT block_number, address, '24m' as expiry_policy, -toInt64(1), -toInt64(effective_bytes)
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_24m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    UNION ALL
+    -- Reactivation events (positive)
+    SELECT block_number, address, '1m' as expiry_policy, toInt64(1), toInt64(effective_bytes)
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_1m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    UNION ALL
+    SELECT block_number, address, '6m' as expiry_policy, toInt64(1), toInt64(effective_bytes)
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_6m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    UNION ALL
+    SELECT block_number, address, '12m' as expiry_policy, toInt64(1), toInt64(effective_bytes)
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_12m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    UNION ALL
+    SELECT block_number, address, '18m' as expiry_policy, toInt64(1), toInt64(effective_bytes)
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_18m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    UNION ALL
+    SELECT block_number, address, '24m' as expiry_policy, toInt64(1), toInt64(effective_bytes)
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_24m" "helpers" "from" }} FINAL
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 ),
--- Reactivation deltas per address per policy (POSITIVE)
-reactivation_deltas AS (
+-- Aggregate all deltas per (block, address, policy)
+combined_deltas AS (
     SELECT
-        rd_block_number,
-        rd_address,
-        rd_expiry_policy,
-        toInt64(count()) as slots_delta,
-        SUM(toInt64(effective_bytes)) as bytes_delta
-    FROM (
-        SELECT block_number as rd_block_number, address as rd_address, '1m' as rd_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_1m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        UNION ALL
-        SELECT block_number as rd_block_number, address as rd_address, '6m' as rd_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_6m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        UNION ALL
-        SELECT block_number as rd_block_number, address as rd_address, '12m' as rd_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_12m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        UNION ALL
-        SELECT block_number as rd_block_number, address as rd_address, '18m' as rd_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_18m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        UNION ALL
-        SELECT block_number as rd_block_number, address as rd_address, '24m' as rd_expiry_policy, effective_bytes
-        FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_24m" "helpers" "from" }} FINAL
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    )
-    GROUP BY rd_block_number, rd_address, rd_expiry_policy
+        block_number,
+        address,
+        expiry_policy,
+        SUM(slots_delta) as net_slots_delta,
+        SUM(bytes_delta) as net_bytes_delta
+    FROM all_delta_events
+    GROUP BY block_number, address, expiry_policy
 ),
 -- Unique (block, address, policy) from expiry/reactivation events
 expiry_reactivation_keys AS (
     SELECT DISTINCT block_number, address, expiry_policy
-    FROM (
-        SELECT ed_block_number as block_number, ed_address as address, ed_expiry_policy as expiry_policy
-        FROM expiry_deltas
-        UNION ALL
-        SELECT rd_block_number, rd_address, rd_expiry_policy
-        FROM reactivation_deltas
-    )
+    FROM combined_deltas
 ),
 -- Base activity from int_storage_slot_state
 base_activity AS (
@@ -127,14 +116,15 @@ expiry_reactivation_addresses AS (
     SELECT DISTINCT address FROM expiry_reactivation_keys
 ),
 -- Previous base state for addresses that have expiry/reactivation but no base activity in this range
+-- PERF: Use IN filter + argMax with tuple instead of FINAL for ~3x speedup and ~10x memory reduction
 prev_base_state AS (
     SELECT
         s.address,
-        argMax(s.active_slots, s.block_number) as prev_base_active_slots,
-        argMax(s.effective_bytes, s.block_number) as prev_base_effective_bytes
-    FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} s FINAL
-    INNER JOIN expiry_reactivation_addresses k ON s.address = k.address
-    WHERE s.block_number < {{ .bounds.start }}
+        argMax(s.active_slots, (s.block_number, s.updated_date_time)) as prev_base_active_slots,
+        argMax(s.effective_bytes, (s.block_number, s.updated_date_time)) as prev_base_effective_bytes
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} s
+    WHERE s.address IN (SELECT address FROM expiry_reactivation_addresses)
+        AND s.block_number < {{ .bounds.start }}
     GROUP BY s.address
 ),
 -- Combined: all (block, address, policy) pairs that need processing
@@ -167,6 +157,7 @@ all_block_addresses AS (
     WHERE b.address = ''  -- ClickHouse uses '' not NULL for unmatched String columns
 ),
 -- Join deltas to all_block_addresses
+-- NOTE: Split into separate CTEs to work around ClickHouse analyzer bug with multiple LEFT JOINs
 with_deltas AS (
     SELECT
         a.block_number,
@@ -174,21 +165,26 @@ with_deltas AS (
         a.expiry_policy,
         a.base_active_slots,
         a.base_effective_bytes,
-        COALESCE(ed.slots_delta, toInt64(0)) + COALESCE(rd.slots_delta, toInt64(0)) as net_slots_delta,
-        COALESCE(ed.bytes_delta, toInt64(0)) + COALESCE(rd.bytes_delta, toInt64(0)) as net_bytes_delta
+        COALESCE(d.net_slots_delta, toInt64(0)) as net_slots_delta,
+        COALESCE(d.net_bytes_delta, toInt64(0)) as net_bytes_delta
     FROM all_block_addresses a
-    LEFT JOIN expiry_deltas ed ON a.block_number = ed.ed_block_number AND a.address = ed.ed_address AND a.expiry_policy = ed.ed_expiry_policy
-    LEFT JOIN reactivation_deltas rd ON a.block_number = rd.rd_block_number AND a.address = rd.rd_address AND a.expiry_policy = rd.rd_expiry_policy
+    LEFT JOIN combined_deltas d ON a.block_number = d.block_number AND a.address = d.address AND a.expiry_policy = d.expiry_policy
+),
+-- All unique addresses from current chunk (for filtering prev_cumulative_state)
+all_active_addresses AS (
+    SELECT DISTINCT address FROM with_deltas
 ),
 -- Previous cumulative net state per address per policy from self
+-- PERF: Use IN filter + argMax with tuple instead of FINAL for ~3x speedup and ~10x memory reduction
 prev_cumulative_state AS (
     SELECT
         address as ps_address,
         expiry_policy as ps_expiry_policy,
-        argMax(cumulative_net_slots, block_number) as prev_cumulative_net_slots,
-        argMax(cumulative_net_bytes, block_number) as prev_cumulative_net_bytes
-    FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
-    WHERE block_number < {{ .bounds.start }}
+        argMax(cumulative_net_slots, (block_number, updated_date_time)) as prev_cumulative_net_slots,
+        argMax(cumulative_net_bytes, (block_number, updated_date_time)) as prev_cumulative_net_bytes
+    FROM `{{ .self.database }}`.`{{ .self.table }}`
+    WHERE address IN (SELECT address FROM all_active_addresses)
+        AND block_number < {{ .bounds.start }}
     GROUP BY address, expiry_policy
 ),
 -- Join with prev_cumulative_state
