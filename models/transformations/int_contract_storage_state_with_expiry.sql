@@ -225,11 +225,18 @@ SELECT
         prev_cumulative_net_bytes
         + SUM(net_bytes_delta) OVER (PARTITION BY address, expiry_policy ORDER BY block_number ROWS UNBOUNDED PRECEDING)
     ) as effective_bytes,
-    -- prev_active_slots = prev_base + prev_cumulative_net
+    -- prev_active_slots = prev_base + cumulative_net_slots up to PREVIOUS row
     -- prev_base = base_active_slots - base_slots_delta (since base_active_slots is cumulative up to current block)
-    (base_active_slots - base_slots_delta) + prev_cumulative_net_slots as prev_active_slots,
-    -- prev_effective_bytes = prev_base_bytes + prev_cumulative_net_bytes
-    -- prev_base_bytes = base_effective_bytes - base_bytes_delta
-    (base_effective_bytes - base_bytes_delta) + prev_cumulative_net_bytes as prev_effective_bytes
+    -- NOTE: Must use windowed sum up to previous row, not batch-start prev_cumulative_net_slots,
+    -- otherwise rows after an expiry/reactivation in the same batch will have stale cumulative values
+    (base_active_slots - base_slots_delta) + (
+        prev_cumulative_net_slots
+        + COALESCE(SUM(net_slots_delta) OVER (PARTITION BY address, expiry_policy ORDER BY block_number ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0)
+    ) as prev_active_slots,
+    -- prev_effective_bytes = prev_base_bytes + cumulative_net_bytes up to PREVIOUS row
+    (base_effective_bytes - base_bytes_delta) + (
+        prev_cumulative_net_bytes
+        + COALESCE(SUM(net_bytes_delta) OVER (PARTITION BY address, expiry_policy ORDER BY block_number ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0)
+    ) as prev_effective_bytes
 FROM joined
 ORDER BY expiry_policy, block_number, address;
