@@ -412,7 +412,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_local ON CLUSTE
     '{replica}',
     `updated_date_time`
 ) PARTITION BY tuple()
-ORDER BY (coalesce(`expiry_policy`, ''), `rank`)
+ORDER BY (`rank`, ifNull(`expiry_policy`, ''))
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Top 100 contracts by active storage slot count with expiry policies applied';
 
@@ -422,7 +422,7 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_storage_slot_top_100_by_slots_local,
-    cityHash64(coalesce(`expiry_policy`, ''), `rank`)
+    cityHash64(`rank`)
 );
 
 -- ============================================================================
@@ -447,7 +447,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_local ON CLUSTE
     '{replica}',
     `updated_date_time`
 ) PARTITION BY tuple()
-ORDER BY (coalesce(`expiry_policy`, ''), `rank`)
+ORDER BY (`rank`, ifNull(`expiry_policy`, ''))
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Top 100 contracts by effective storage bytes with expiry policies applied';
 
@@ -457,7 +457,7 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_storage_slot_top_100_by_bytes_local,
-    cityHash64(coalesce(`expiry_policy`, ''), `rank`)
+    cityHash64(`rank`)
 );
 
 -- ============================================================================

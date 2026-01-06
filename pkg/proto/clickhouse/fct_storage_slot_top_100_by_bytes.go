@@ -84,6 +84,40 @@ func BuildListFctStorageSlotTop100ByBytesQuery(req *ListFctStorageSlotTop100ByBy
 		}
 	}
 
+	// Add filter for column: expiry_policy
+	if req.ExpiryPolicy != nil {
+		switch filter := req.ExpiryPolicy.Filter.(type) {
+		case *NullableStringFilter_Eq:
+			qb.AddCondition("expiry_policy", "=", filter.Eq)
+		case *NullableStringFilter_Ne:
+			qb.AddCondition("expiry_policy", "!=", filter.Ne)
+		case *NullableStringFilter_Contains:
+			qb.AddLikeCondition("expiry_policy", "%" + filter.Contains + "%")
+		case *NullableStringFilter_StartsWith:
+			qb.AddLikeCondition("expiry_policy", filter.StartsWith + "%")
+		case *NullableStringFilter_EndsWith:
+			qb.AddLikeCondition("expiry_policy", "%" + filter.EndsWith)
+		case *NullableStringFilter_Like:
+			qb.AddLikeCondition("expiry_policy", filter.Like)
+		case *NullableStringFilter_NotLike:
+			qb.AddNotLikeCondition("expiry_policy", filter.NotLike)
+		case *NullableStringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("expiry_policy", StringSliceToInterface(filter.In.Values))
+			}
+		case *NullableStringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("expiry_policy", StringSliceToInterface(filter.NotIn.Values))
+			}
+		case *NullableStringFilter_IsNull:
+			qb.AddIsNullCondition("expiry_policy")
+		case *NullableStringFilter_IsNotNull:
+			qb.AddIsNotNullCondition("expiry_policy")
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: contract_address
 	if req.ContractAddress != nil {
 		switch filter := req.ContractAddress.Filter.(type) {
@@ -369,7 +403,7 @@ func BuildListFctStorageSlotTop100ByBytesQuery(req *ListFctStorageSlotTop100ByBy
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category"}
+		validFields := []string{"updated_date_time", "expiry_policy", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -377,11 +411,11 @@ func BuildListFctStorageSlotTop100ByBytesQuery(req *ListFctStorageSlotTop100ByBy
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY rank"
+		orderByClause = " ORDER BY rank" + ", ifNull(expiry_policy" + ", ''"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "expiry_policy", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category"}
 
 	return BuildParameterizedQuery("fct_storage_slot_top_100_by_bytes", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -398,10 +432,10 @@ func BuildGetFctStorageSlotTop100ByBytesQuery(req *GetFctStorageSlotTop100ByByte
 	qb.AddCondition("rank", "=", req.Rank)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY rank"
+	orderByClause := " ORDER BY rank, ifNull(expiry_policy, ''"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "expiry_policy", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_storage_slot_top_100_by_bytes", columns, qb, orderByClause, 1, 0, options...)
