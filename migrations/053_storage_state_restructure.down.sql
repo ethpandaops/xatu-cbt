@@ -324,14 +324,6 @@ DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_contract_storage_next_touch_local ON 
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.dim_contract_owner ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.dim_contract_owner_local ON CLUSTER '{cluster}';
 
--- fct_storage_slot_top_100_by_bytes_with_expiry
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_with_expiry ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_with_expiry_local ON CLUSTER '{cluster}';
-
--- fct_storage_slot_top_100_by_slots_with_expiry
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_with_expiry ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_with_expiry_local ON CLUSTER '{cluster}';
-
 -- fct_storage_slot_top_100_by_bytes
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_local ON CLUSTER '{cluster}';
