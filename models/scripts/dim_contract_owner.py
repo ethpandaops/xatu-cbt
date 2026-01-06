@@ -70,11 +70,7 @@ def get_current_top_100_addresses(ch_url, target_db):
     FROM (
         SELECT contract_address FROM `{target_db}`.fct_storage_slot_top_100_by_slots FINAL
         UNION DISTINCT
-        SELECT contract_address FROM `{target_db}`.fct_storage_slot_top_100_by_slots_with_expiry FINAL
-        UNION DISTINCT
         SELECT contract_address FROM `{target_db}`.fct_storage_slot_top_100_by_bytes FINAL
-        UNION DISTINCT
-        SELECT contract_address FROM `{target_db}`.fct_storage_slot_top_100_by_bytes_with_expiry FINAL
     )
     FORMAT JSONCompact
     """

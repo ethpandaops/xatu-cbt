@@ -8,6 +8,4 @@ tags:
 exec: "python3 ${MODELS_SCRIPTS_PATH:-/models/scripts}/dim_contract_owner.py"
 dependencies:
   - "{{transformation}}.fct_storage_slot_top_100_by_slots"
-  - "{{transformation}}.fct_storage_slot_top_100_by_slots_with_expiry"
   - "{{transformation}}.fct_storage_slot_top_100_by_bytes"
-  - "{{transformation}}.fct_storage_slot_top_100_by_bytes_with_expiry"
