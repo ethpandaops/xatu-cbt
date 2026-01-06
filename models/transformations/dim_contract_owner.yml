@@ -1,6 +1,6 @@
 table: dim_contract_owner
 type: scheduled
-schedule: "@every 6hr"
+schedule: "@every 6h"
 tags:
   - storage
   - contract
