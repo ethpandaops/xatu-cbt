@@ -392,11 +392,13 @@ ENGINE = Distributed(
 
 -- ============================================================================
 -- fct_storage_slot_top_100_by_slots
--- Top 100 contracts by active storage slot count
+-- Top 100 contracts by active storage slot count with expiry policies
+-- Rank is based on raw state (NULL expiry_policy), with expiry values shown
 -- ============================================================================
 CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `rank` UInt32 COMMENT 'Rank by active slots (1=highest)' CODEC(DoubleDelta, ZSTD(1)),
+    `expiry_policy` Nullable(String) COMMENT 'Expiry policy identifier: NULL (raw), 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
+    `rank` UInt32 COMMENT 'Rank by active slots (1=highest), based on raw state' CODEC(DoubleDelta, ZSTD(1)),
     `contract_address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `active_slots` Int64 COMMENT 'Number of active storage slots for this contract' CODEC(ZSTD(1)),
     `effective_bytes` Int64 COMMENT 'Effective bytes of storage for this contract' CODEC(ZSTD(1)),
@@ -410,9 +412,9 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_local ON CLUSTE
     '{replica}',
     `updated_date_time`
 ) PARTITION BY tuple()
-ORDER BY (`rank`)
+ORDER BY (coalesce(`expiry_policy`, ''), `rank`)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Top 100 contracts by active storage slot count';
+COMMENT 'Top 100 contracts by active storage slot count with expiry policies applied';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots ON CLUSTER '{cluster}'
 AS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_local
@@ -420,16 +422,18 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_storage_slot_top_100_by_slots_local,
-    cityHash64(`rank`)
+    cityHash64(coalesce(`expiry_policy`, ''), `rank`)
 );
 
 -- ============================================================================
 -- fct_storage_slot_top_100_by_bytes
--- Top 100 contracts by effective bytes
+-- Top 100 contracts by effective bytes with expiry policies
+-- Rank is based on raw state (NULL expiry_policy), with expiry values shown
 -- ============================================================================
 CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `rank` UInt32 COMMENT 'Rank by effective bytes (1=highest)' CODEC(DoubleDelta, ZSTD(1)),
+    `expiry_policy` Nullable(String) COMMENT 'Expiry policy identifier: NULL (raw), 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
+    `rank` UInt32 COMMENT 'Rank by effective bytes (1=highest), based on raw state' CODEC(DoubleDelta, ZSTD(1)),
     `contract_address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `effective_bytes` Int64 COMMENT 'Effective bytes of storage for this contract' CODEC(ZSTD(1)),
     `active_slots` Int64 COMMENT 'Number of active storage slots for this contract' CODEC(ZSTD(1)),
@@ -443,9 +447,9 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_local ON CLUSTE
     '{replica}',
     `updated_date_time`
 ) PARTITION BY tuple()
-ORDER BY (`rank`)
+ORDER BY (coalesce(`expiry_policy`, ''), `rank`)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Top 100 contracts by effective storage bytes';
+COMMENT 'Top 100 contracts by effective storage bytes with expiry policies applied';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes ON CLUSTER '{cluster}'
 AS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_local
@@ -453,75 +457,7 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     fct_storage_slot_top_100_by_bytes_local,
-    cityHash64(`rank`)
-);
-
--- ============================================================================
--- fct_storage_slot_top_100_by_slots_with_expiry
--- Top 100 contracts by active storage slot count per expiry policy
--- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_with_expiry_local ON CLUSTER '{cluster}' (
-    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
-    `rank` UInt32 COMMENT 'Rank by active slots within expiry policy (1=highest)' CODEC(DoubleDelta, ZSTD(1)),
-    `contract_address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
-    `active_slots` Int64 COMMENT 'Number of active storage slots for this contract (with expiry applied)' CODEC(ZSTD(1)),
-    `effective_bytes` Int64 COMMENT 'Effective bytes of storage for this contract (with expiry applied)' CODEC(ZSTD(1)),
-    `owner_key` Nullable(String) COMMENT 'Owner key identifier' CODEC(ZSTD(1)),
-    `account_owner` Nullable(String) COMMENT 'Account owner of the contract' CODEC(ZSTD(1)),
-    `contract_name` Nullable(String) COMMENT 'Name of the contract' CODEC(ZSTD(1)),
-    `factory_contract` Nullable(String) COMMENT 'Factory contract or deployer address' CODEC(ZSTD(1)),
-    `usage_category` Nullable(String) COMMENT 'Usage category (e.g., stablecoin, dex, trading)' CODEC(ZSTD(1))
-) ENGINE = ReplicatedReplacingMergeTree(
-    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
-    '{replica}',
-    `updated_date_time`
-) PARTITION BY tuple()
-ORDER BY (`expiry_policy`, `rank`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Top 100 contracts by active storage slot count per expiry policy';
-
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_with_expiry ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_with_expiry_local
-ENGINE = Distributed(
-    '{cluster}',
-    '${NETWORK_NAME}',
-    fct_storage_slot_top_100_by_slots_with_expiry_local,
-    cityHash64(`expiry_policy`, `rank`)
-);
-
--- ============================================================================
--- fct_storage_slot_top_100_by_bytes_with_expiry
--- Top 100 contracts by effective bytes per expiry policy
--- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_with_expiry_local ON CLUSTER '{cluster}' (
-    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
-    `rank` UInt32 COMMENT 'Rank by effective bytes within expiry policy (1=highest)' CODEC(DoubleDelta, ZSTD(1)),
-    `contract_address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
-    `effective_bytes` Int64 COMMENT 'Effective bytes of storage for this contract (with expiry applied)' CODEC(ZSTD(1)),
-    `active_slots` Int64 COMMENT 'Number of active storage slots for this contract (with expiry applied)' CODEC(ZSTD(1)),
-    `owner_key` Nullable(String) COMMENT 'Owner key identifier' CODEC(ZSTD(1)),
-    `account_owner` Nullable(String) COMMENT 'Account owner of the contract' CODEC(ZSTD(1)),
-    `contract_name` Nullable(String) COMMENT 'Name of the contract' CODEC(ZSTD(1)),
-    `factory_contract` Nullable(String) COMMENT 'Factory contract or deployer address' CODEC(ZSTD(1)),
-    `usage_category` Nullable(String) COMMENT 'Usage category (e.g., stablecoin, dex, trading)' CODEC(ZSTD(1))
-) ENGINE = ReplicatedReplacingMergeTree(
-    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
-    '{replica}',
-    `updated_date_time`
-) PARTITION BY tuple()
-ORDER BY (`expiry_policy`, `rank`)
-SETTINGS deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Top 100 contracts by effective storage bytes per expiry policy';
-
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_with_expiry ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_with_expiry_local
-ENGINE = Distributed(
-    '{cluster}',
-    '${NETWORK_NAME}',
-    fct_storage_slot_top_100_by_bytes_with_expiry_local,
-    cityHash64(`expiry_policy`, `rank`)
+    cityHash64(coalesce(`expiry_policy`, ''), `rank`)
 );
 
 -- ============================================================================
