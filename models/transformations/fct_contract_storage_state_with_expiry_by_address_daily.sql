@@ -41,6 +41,11 @@ WITH
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
+    ),
+    -- Compute expanded block range for partition pruning on the main table
+    block_range AS (
+        SELECT min(block_number) AS min_block, max(block_number) AS max_block
+        FROM blocks_in_days
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -65,7 +70,9 @@ FROM (
             s.effective_bytes,
             b.block_date_time
         FROM {{ index .dep "{{transformation}}" "int_contract_storage_state_with_expiry_by_address" "helpers" "from" }} AS s FINAL
-        GLOBAL INNER JOIN blocks_in_days AS b ON s.block_number = b.block_number
+        INNER JOIN blocks_in_days AS b ON s.block_number = b.block_number
+        WHERE s.block_number >= (SELECT min_block FROM block_range)
+          AND s.block_number <= (SELECT max_block FROM block_range)
     )
     GROUP BY address, expiry_policy, day_start_date
 )
