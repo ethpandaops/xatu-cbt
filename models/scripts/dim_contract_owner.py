@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
 Contract Owner Data Collection
-Collects contract ownership metadata from growthepie and Dune Analytics for contracts
-appearing in the top 100 storage slot tables.
+Collects contract ownership metadata from growthepie, eth-labels, and Dune Analytics
+for contracts appearing in the top 100 storage slot tables.
 
 This script:
-1. Fetches growthepie data and inserts new records not already in dim_contract_owner
-2. Queries unique contract addresses from all 4 top 100 storage slot tables
-3. Checks which addresses are already in dim_contract_owner
-4. Queries Dune Analytics API for ownership data on new addresses only
-5. Inserts results into dim_contract_owner (accumulates over time)
+1. Fetches existing records from dim_contract_owner
+2. Fetches data from growthepie API and merges into records
+3. Fetches data from eth-labels API and merges into records
+4. Fetches data from Dune Analytics API (if API key set) and merges into records
+5. Inserts merged records with labels and sources arrays
 """
 
 import os
@@ -83,24 +83,39 @@ def get_current_top_100_addresses(ch_url, target_db):
     return addresses
 
 
-def get_existing_addresses(ch_url, target_db, target_table):
-    """Get addresses already in dim_contract_owner"""
+def get_existing_records(ch_url, target_db, target_table):
+    """Get all existing records from dim_contract_owner as a dict keyed by address"""
     query = f"""
-    SELECT DISTINCT contract_address
+    SELECT
+        contract_address,
+        owner_key,
+        account_owner,
+        contract_name,
+        factory_contract,
+        labels,
+        sources
     FROM `{target_db}`.`{target_table}` FINAL
     FORMAT JSONCompact
     """
 
     try:
         result = execute_clickhouse_query(ch_url, query)
-        addresses = set()
+        records = {}
         if result and 'data' in result:
             for row in result['data']:
-                addresses.add(row[0].lower())
-        return addresses
+                address = row[0].lower()
+                records[address] = {
+                    'owner_key': row[1],
+                    'account_owner': row[2],
+                    'contract_name': row[3],
+                    'factory_contract': row[4],
+                    'labels': row[5] if row[5] else [],
+                    'sources': row[6] if row[6] else [],
+                }
+        return records
     except Exception as e:
-        print(f"Warning: Could not query existing addresses: {e}", file=sys.stderr)
-        return set()
+        print(f"Warning: Could not query existing records: {e}", file=sys.stderr)
+        return {}
 
 
 def map_network_to_blockchain(network):
@@ -113,6 +128,21 @@ def map_network_to_blockchain(network):
         'holesky': 'holesky',
     }
     return mapping.get(network.lower(), 'ethereum')
+
+
+def get_network_chain_id(network):
+    """Map network name to eth-labels chainId"""
+    mapping = {
+        'mainnet': 1,
+        'ethereum': 1,
+        'optimism': 10,
+        'base': 8453,
+        'arbitrum': 42161,
+        'gnosis': 100,
+        'bsc': 56,
+        'celo': 42220,
+    }
+    return mapping.get(network.lower())
 
 
 def fetch_growthepie_data(blockchain):
@@ -141,10 +171,10 @@ def fetch_growthepie_data(blockchain):
 
         if idx_address is None or idx_origin_key is None:
             print("  Warning: Required columns not found in growthepie data", file=sys.stderr)
-            return []
+            return {}
 
         # Filter by blockchain and extract relevant fields
-        results = []
+        results = {}
         for row in rows:
             origin_key = row[idx_origin_key] if idx_origin_key is not None else None
             if origin_key != blockchain:
@@ -154,27 +184,88 @@ def fetch_growthepie_data(blockchain):
             if not address:
                 continue
 
-            results.append({
-                'address': address.lower(),
+            address = address.lower()
+            usage_category = row[idx_usage_category] if idx_usage_category is not None else None
+
+            results[address] = {
                 'owner_key': row[idx_owner_project] if idx_owner_project is not None else None,
                 'account_owner': row[idx_owner_project_clear] if idx_owner_project_clear is not None else None,
                 'contract_name': row[idx_name] if idx_name is not None else None,
                 'factory_contract': row[idx_deployer_address] if idx_deployer_address is not None else None,
-                'usage_category': row[idx_usage_category] if idx_usage_category is not None else None,
-            })
+                'labels': [usage_category] if usage_category else [],
+                'sources': ['growthepie'],
+            }
 
         print(f"  Found {len(results)} records for {blockchain}")
         return results
 
     except Exception as e:
         print(f"Warning: Failed to fetch growthepie data: {e}", file=sys.stderr)
-        return []
+        return {}
+
+
+def fetch_eth_labels_data(addresses, chain_id):
+    """Fetch labels from eth-labels API (one address at a time)"""
+    if not chain_id:
+        return {}
+
+    results = {}
+    total = len(addresses)
+    processed = 0
+
+    for addr in addresses:
+        try:
+            url = f"https://eth-labels-production.up.railway.app/accounts?chainId={chain_id}&address={addr}"
+            req = urllib.request.Request(url)
+            req.add_header("Accept", "application/json")
+            response = urllib.request.urlopen(req, timeout=30)
+            data = json.loads(response.read().decode('utf-8'))
+
+            if data and isinstance(data, list) and len(data) > 0:
+                # Aggregate all labels for this address
+                labels = []
+                contract_name = None
+                for item in data:
+                    label = item.get('label')
+                    if label and label not in labels:
+                        labels.append(label)
+                    if not contract_name:
+                        contract_name = item.get('nameTag')
+
+                if labels:
+                    results[addr.lower()] = {
+                        'owner_key': None,
+                        'account_owner': None,
+                        'contract_name': contract_name,
+                        'factory_contract': None,
+                        'labels': labels,
+                        'sources': ['eth-labels'],
+                    }
+
+            processed += 1
+            if processed % 50 == 0:
+                print(f"    Processed {processed}/{total} addresses...")
+
+            # Rate limiting - small delay between requests
+            time.sleep(0.1)
+
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                # Address not found in eth-labels, skip
+                pass
+            else:
+                print(f"Warning: eth-labels API error for {addr}: {e}", file=sys.stderr)
+        except Exception as e:
+            print(f"Warning: Failed to fetch eth-labels for {addr}: {e}", file=sys.stderr)
+
+    print(f"  Found {len(results)} records from eth-labels")
+    return results
 
 
 def query_dune_api(api_key, addresses, blockchain):
     """Query Dune Analytics API for contract ownership data"""
     if not addresses:
-        return []
+        return {}
 
     # Format addresses for SQL IN clause (Dune expects 0x prefix)
     formatted_addresses = ", ".join([f"0x{addr[2:]}" if addr.startswith('0x') else f"0x{addr}" for addr in addresses])
@@ -212,13 +303,13 @@ def query_dune_api(api_key, addresses, blockchain):
 
         if not execution_id:
             print(f"Warning: No execution_id in response: {result}", file=sys.stderr)
-            return []
+            return {}
 
         print(f"  Dune query submitted, execution_id: {execution_id}")
 
     except Exception as e:
         print(f"Warning: Failed to submit Dune query: {e}", file=sys.stderr)
-        return []
+        return {}
 
     # Step 2: Poll for completion
     status_url = f"https://api.dune.com/api/v1/execution/{execution_id}/status"
@@ -237,7 +328,7 @@ def query_dune_api(api_key, addresses, blockchain):
                 break
             elif state in ['QUERY_STATE_FAILED', 'QUERY_STATE_CANCELLED']:
                 print(f"Warning: Dune query failed with state: {state}", file=sys.stderr)
-                return []
+                return {}
 
             time.sleep(5)
             attempt += 1
@@ -249,7 +340,7 @@ def query_dune_api(api_key, addresses, blockchain):
 
     if attempt >= max_attempts:
         print("Warning: Dune query timed out", file=sys.stderr)
-        return []
+        return {}
 
     # Step 3: Fetch results
     results_url = f"https://api.dune.com/api/v1/execution/{execution_id}/results"
@@ -261,25 +352,86 @@ def query_dune_api(api_key, addresses, blockchain):
 
         rows = results.get('result', {}).get('rows', [])
         print(f"  Dune returned {len(rows)} owner records")
-        return rows
+
+        # Convert to dict keyed by address
+        result_dict = {}
+        for row in rows:
+            address = str(row.get('address', ''))
+            if address.startswith('\\x'):
+                address = '0x' + address[2:]
+            address = address.lower()
+
+            result_dict[address] = {
+                'owner_key': row.get('owner_key'),
+                'account_owner': row.get('custody_owner'),
+                'contract_name': row.get('contract_name'),
+                'factory_contract': row.get('factory_contract'),
+                'labels': [],  # Dune doesn't provide labels
+                'sources': ['dune'],
+            }
+
+        return result_dict
 
     except Exception as e:
         print(f"Warning: Failed to fetch Dune results: {e}", file=sys.stderr)
-        return []
+        return {}
 
 
-def insert_records(ch_url, target_db, target_table, records, source, task_start):
-    """Insert records into dim_contract_owner"""
+def merge_records(existing, new_records, source_name=None):
+    """Merge new records into existing, combining arrays and coalescing fields"""
+    for addr, new_data in new_records.items():
+        addr = addr.lower()
+        if addr in existing:
+            # Merge sources
+            existing_sources = existing[addr].get('sources', [])
+            new_sources = new_data.get('sources', [])
+            if source_name and source_name not in existing_sources:
+                existing_sources.append(source_name)
+            for src in new_sources:
+                if src not in existing_sources:
+                    existing_sources.append(src)
+            existing[addr]['sources'] = sorted(existing_sources)
+
+            # Merge labels
+            existing_labels = existing[addr].get('labels', [])
+            new_labels = new_data.get('labels', [])
+            for lbl in new_labels:
+                if lbl and lbl not in existing_labels:
+                    existing_labels.append(lbl)
+            existing[addr]['labels'] = sorted(existing_labels)
+
+            # Coalesce nullable fields (prefer non-null, keep existing if already set)
+            for field in ['owner_key', 'account_owner', 'contract_name', 'factory_contract']:
+                if not existing[addr].get(field) and new_data.get(field):
+                    existing[addr][field] = new_data[field]
+        else:
+            existing[addr] = {
+                'owner_key': new_data.get('owner_key'),
+                'account_owner': new_data.get('account_owner'),
+                'contract_name': new_data.get('contract_name'),
+                'factory_contract': new_data.get('factory_contract'),
+                'labels': sorted(new_data.get('labels', [])),
+                'sources': sorted(new_data.get('sources', [])),
+            }
+
+    return existing
+
+
+def format_array_literal(arr):
+    """Format a Python list as a ClickHouse array literal"""
+    if not arr:
+        return '[]'
+    escaped = [str(v).replace("'", "''") for v in arr if v]
+    return "['" + "', '".join(escaped) + "']"
+
+
+def insert_records(ch_url, target_db, target_table, records, task_start):
+    """Insert records into dim_contract_owner with array columns"""
     if not records:
         return 0
 
     values = []
-    for row in records:
-        # Get address and normalize to lowercase with 0x prefix
-        address = str(row.get('address', ''))
-        if address.startswith('\\x'):
-            address = '0x' + address[2:]
-        address = address.lower()
+    for address, row in records.items():
         address_escaped = address.replace("'", "''")
 
         # Helper to escape nullable string fields
@@ -288,6 +440,9 @@ def insert_records(ch_url, target_db, target_table, records, source, task_start)
                 return 'NULL'
             return "'" + str(val).replace("'", "''") + "'"
 
+        labels_literal = format_array_literal(row.get('labels', []))
+        sources_literal = format_array_literal(row.get('sources', []))
+
         values.append(f"""(
             fromUnixTimestamp({task_start}),
             '{address_escaped}',
@@ -295,8 +450,8 @@ def insert_records(ch_url, target_db, target_table, records, source, task_start)
             {escape_nullable(row.get('account_owner'))},
             {escape_nullable(row.get('contract_name'))},
             {escape_nullable(row.get('factory_contract'))},
-            {escape_nullable(row.get('usage_category'))},
-            '{source}'
+            {labels_literal},
+            {sources_literal}
         )""")
 
     # Batch insert
@@ -308,7 +463,7 @@ def insert_records(ch_url, target_db, target_table, records, source, task_start)
             insert_query = f"""
             INSERT INTO `{target_db}`.`{target_table}`
             (updated_date_time, contract_address, owner_key, account_owner,
-             contract_name, factory_contract, usage_category, source)
+             contract_name, factory_contract, labels, sources)
             VALUES {','.join(chunk)}
             """
             execute_clickhouse_query(ch_url, insert_query)
@@ -346,112 +501,99 @@ def main():
             return 1
 
         blockchain = map_network_to_blockchain(network)
+        chain_id = get_network_chain_id(network)
 
         # =====================================================================
-        # Step 1: Fetch and insert growthepie data
+        # Step 1: Get existing records and top 100 addresses
+        # =====================================================================
+        print(f"\n=== Fetching Existing Data ===")
+
+        print("Fetching contract addresses from top 100 tables...")
+        top_100_addresses = get_current_top_100_addresses(ch_url, target_db)
+        print(f"  Found {len(top_100_addresses)} unique addresses in top 100 tables")
+
+        print("Fetching existing records from dim_contract_owner...")
+        all_records = get_existing_records(ch_url, target_db, target_table)
+        print(f"  Found {len(all_records)} existing records")
+
+        # =====================================================================
+        # Step 2: Fetch and merge growthepie data
         # =====================================================================
         print(f"\n=== Growthepie Data Collection ===")
         print(f"Fetching growthepie data for {blockchain}...")
 
         growthepie_records = fetch_growthepie_data(blockchain)
-
         if growthepie_records:
-            # Get existing addresses
-            print("Checking existing addresses in dim_contract_owner...")
-            existing_addresses = get_existing_addresses(ch_url, target_db, target_table)
-            print(f"  Found {len(existing_addresses)} existing addresses")
+            all_records = merge_records(all_records, growthepie_records)
+            print(f"  Merged growthepie data, total records: {len(all_records)}")
 
-            # Filter to new addresses only
-            new_growthepie_records = [
-                r for r in growthepie_records
-                if r['address'].lower() not in existing_addresses
-            ]
-            print(f"  New addresses from growthepie: {len(new_growthepie_records)}")
-
-            if new_growthepie_records:
-                print(f"Inserting {len(new_growthepie_records)} growthepie records...")
-                inserted = insert_records(
-                    ch_url, target_db, target_table,
-                    new_growthepie_records, 'growthepie', task_start
-                )
-                print(f"  Successfully inserted {inserted} growthepie records")
+        # =====================================================================
+        # Step 3: Fetch and merge eth-labels data
+        # =====================================================================
+        print(f"\n=== eth-labels Data Collection ===")
+        if chain_id:
+            print(f"Fetching eth-labels data for chainId {chain_id}...")
+            # Only query addresses we care about (top 100 + existing)
+            addresses_to_query = top_100_addresses | set(all_records.keys())
+            eth_labels_records = fetch_eth_labels_data(list(addresses_to_query), chain_id)
+            if eth_labels_records:
+                all_records = merge_records(all_records, eth_labels_records)
+                print(f"  Merged eth-labels data, total records: {len(all_records)}")
         else:
-            print("  No growthepie records found")
+            print(f"  Skipping: chainId not supported for network '{network}'")
 
         # =====================================================================
-        # Step 2: Fetch and insert Dune data for top 100 addresses
+        # Step 4: Fetch and merge Dune data
         # =====================================================================
-        if not dune_api_key:
-            print(f"\n=== Dune Data Collection ===")
-            print("  Skipping: DUNE_API_KEY not set")
-            print("\nContract owner data collection completed successfully")
-            return 0
-
         print(f"\n=== Dune Data Collection ===")
+        if not dune_api_key:
+            print("  Skipping: DUNE_API_KEY not set")
+        else:
+            # Query Dune for top 100 addresses that don't have dune as a source yet
+            addresses_needing_dune = [
+                addr for addr in top_100_addresses
+                if addr not in all_records or 'dune' not in all_records[addr].get('sources', [])
+            ]
 
-        # Get current top 100 addresses
-        print("Fetching contract addresses from top 100 tables...")
-        current_addresses = get_current_top_100_addresses(ch_url, target_db)
-        print(f"  Found {len(current_addresses)} unique addresses in top 100 tables")
+            if addresses_needing_dune:
+                print(f"Querying Dune Analytics for {len(addresses_needing_dune)} addresses on {blockchain}...")
 
-        if not current_addresses:
-            print("No addresses found in top 100 tables. Exiting.")
+                # Batch addresses to avoid query size limits
+                batch_size = 100
+                for i in range(0, len(addresses_needing_dune), batch_size):
+                    batch = addresses_needing_dune[i:i + batch_size]
+                    print(f"  Processing batch {i // batch_size + 1}/{(len(addresses_needing_dune) + batch_size - 1) // batch_size}...")
+                    dune_records = query_dune_api(dune_api_key, batch, blockchain)
+
+                    if dune_records:
+                        all_records = merge_records(all_records, dune_records)
+
+                    # Rate limiting between batches
+                    if i + batch_size < len(addresses_needing_dune):
+                        time.sleep(2)
+
+                print(f"  Merged Dune data, total records: {len(all_records)}")
+            else:
+                print("  No new addresses need Dune lookup")
+
+        # =====================================================================
+        # Step 5: Insert all records
+        # =====================================================================
+        print(f"\n=== Inserting Records ===")
+
+        # Filter to only records that have at least one source
+        records_to_insert = {
+            addr: data for addr, data in all_records.items()
+            if data.get('sources')
+        }
+
+        if not records_to_insert:
+            print("No records to insert.")
             return 0
 
-        # Get existing addresses (refresh after growthepie inserts)
-        print("Checking existing addresses in dim_contract_owner...")
-        existing_addresses = get_existing_addresses(ch_url, target_db, target_table)
-        print(f"  Found {len(existing_addresses)} existing addresses")
-
-        # Compute new addresses
-        new_addresses = current_addresses - existing_addresses
-        print(f"  New addresses to lookup in Dune: {len(new_addresses)}")
-
-        if not new_addresses:
-            print("\nNo new addresses to process. Exiting successfully.")
-            return 0
-
-        # Query Dune API
-        print(f"\nQuerying Dune Analytics for {len(new_addresses)} addresses on {blockchain}...")
-
-        # Batch addresses to avoid query size limits
-        batch_size = 100
-        all_results = []
-        address_list = list(new_addresses)
-
-        for i in range(0, len(address_list), batch_size):
-            batch = address_list[i:i + batch_size]
-            print(f"  Processing batch {i // batch_size + 1}/{(len(address_list) + batch_size - 1) // batch_size}...")
-            results = query_dune_api(dune_api_key, batch, blockchain)
-
-            # Map Dune fields to our schema
-            for row in results:
-                all_results.append({
-                    'address': row.get('address', ''),
-                    'owner_key': row.get('owner_key'),
-                    'account_owner': row.get('custody_owner'),  # custody_owner -> account_owner
-                    'contract_name': row.get('contract_name'),
-                    'factory_contract': row.get('factory_contract'),
-                    'usage_category': None,  # Not available from Dune
-                })
-
-            # Rate limiting between batches
-            if i + batch_size < len(address_list):
-                time.sleep(2)
-
-        print(f"\nTotal owner records from Dune: {len(all_results)}")
-
-        if not all_results:
-            print("No owner data found in Dune for the new addresses. Exiting.")
-            return 0
-
-        # Insert Dune data
-        print(f"\nInserting {len(all_results)} Dune records into ClickHouse...")
-        inserted = insert_records(
-            ch_url, target_db, target_table,
-            all_results, 'dune', task_start
-        )
-        print(f"  Successfully inserted {inserted} Dune records")
+        print(f"Inserting {len(records_to_insert)} records into ClickHouse...")
+        inserted = insert_records(ch_url, target_db, target_table, records_to_insert, task_start)
+        print(f"  Successfully inserted {inserted} records")
 
         print("\nContract owner data collection completed successfully")
         return 0

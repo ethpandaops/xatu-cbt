@@ -55,7 +55,7 @@ SELECT
     dim.account_owner,
     dim.contract_name,
     dim.factory_contract,
-    dim.usage_category
+    dim.labels
 FROM top_100_raw AS state
 LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
     ON state.contract_address = dim.contract_address
@@ -72,7 +72,7 @@ SELECT
     dim.account_owner,
     dim.contract_name,
     dim.factory_contract,
-    dim.usage_category
+    dim.labels
 FROM top_100_raw AS r
 INNER JOIN expiry_state AS e ON r.contract_address = e.address
 LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
