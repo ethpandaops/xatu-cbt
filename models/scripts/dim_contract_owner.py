@@ -20,6 +20,7 @@ import urllib.parse
 import json
 import base64
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 
@@ -204,16 +205,15 @@ def fetch_growthepie_data(blockchain):
         return {}
 
 
-def fetch_eth_labels_data(addresses, chain_id):
-    """Fetch labels from eth-labels API (one address at a time)"""
-    if not chain_id:
+def fetch_eth_labels_data(addresses, chain_id, max_workers=100):
+    """Fetch labels from eth-labels API with concurrent requests"""
+    if not chain_id or not addresses:
         return {}
 
-    results = {}
-    total = len(addresses)
-    processed = 0
+    print(f"  Querying eth-labels for {len(addresses)} addresses (max {max_workers} concurrent)...")
 
-    for addr in addresses:
+    def fetch_single(addr):
+        """Fetch labels for a single address"""
         try:
             url = f"https://eth-labels-production.up.railway.app/accounts?chainId={chain_id}&address={addr}"
             req = urllib.request.Request(url)
@@ -222,7 +222,6 @@ def fetch_eth_labels_data(addresses, chain_id):
             data = json.loads(response.read().decode('utf-8'))
 
             if data and isinstance(data, list) and len(data) > 0:
-                # Aggregate all labels for this address
                 labels = []
                 contract_name = None
                 for item in data:
@@ -233,7 +232,7 @@ def fetch_eth_labels_data(addresses, chain_id):
                         contract_name = item.get('nameTag')
 
                 if labels:
-                    results[addr.lower()] = {
+                    return addr.lower(), {
                         'owner_key': None,
                         'account_owner': None,
                         'contract_name': contract_name,
@@ -241,22 +240,29 @@ def fetch_eth_labels_data(addresses, chain_id):
                         'labels': labels,
                         'sources': ['eth-labels'],
                     }
-
-            processed += 1
-            if processed % 50 == 0:
-                print(f"    Processed {processed}/{total} addresses...")
-
-            # Rate limiting - small delay between requests
-            time.sleep(0.1)
+            return addr.lower(), None
 
         except urllib.error.HTTPError as e:
-            if e.code == 404:
-                # Address not found in eth-labels, skip
-                pass
-            else:
+            if e.code != 404:
                 print(f"Warning: eth-labels API error for {addr}: {e}", file=sys.stderr)
+            return addr.lower(), None
         except Exception as e:
             print(f"Warning: Failed to fetch eth-labels for {addr}: {e}", file=sys.stderr)
+            return addr.lower(), None
+
+    results = {}
+    completed = 0
+    total = len(addresses)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(fetch_single, addr): addr for addr in addresses}
+        for future in as_completed(futures):
+            addr, data = future.result()
+            if data:
+                results[addr] = data
+            completed += 1
+            if completed % 50 == 0 or completed == total:
+                print(f"    Processed {completed}/{total} addresses...")
 
     print(f"  Found {len(results)} records from eth-labels")
     return results
@@ -532,13 +538,20 @@ def main():
         # =====================================================================
         print(f"\n=== eth-labels Data Collection ===")
         if chain_id:
-            print(f"Fetching eth-labels data for chainId {chain_id}...")
-            # Only query addresses we care about (top 100 + existing)
-            addresses_to_query = top_100_addresses | set(all_records.keys())
-            eth_labels_records = fetch_eth_labels_data(list(addresses_to_query), chain_id)
-            if eth_labels_records:
-                all_records = merge_records(all_records, eth_labels_records)
-                print(f"  Merged eth-labels data, total records: {len(all_records)}")
+            # Only query top 100 addresses that don't already have eth-labels as a source
+            addresses_needing_eth_labels = [
+                addr for addr in top_100_addresses
+                if addr not in all_records or 'eth-labels' not in all_records[addr].get('sources', [])
+            ]
+
+            if addresses_needing_eth_labels:
+                print(f"Fetching eth-labels data for {len(addresses_needing_eth_labels)} new addresses...")
+                eth_labels_records = fetch_eth_labels_data(addresses_needing_eth_labels, chain_id)
+                if eth_labels_records:
+                    all_records = merge_records(all_records, eth_labels_records)
+                    print(f"  Merged eth-labels data, total records: {len(all_records)}")
+            else:
+                print("  No new addresses need eth-labels lookup")
         else:
             print(f"  Skipping: chainId not supported for network '{network}'")
 
