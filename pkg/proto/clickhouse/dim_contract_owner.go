@@ -220,65 +220,65 @@ func BuildListDimContractOwnerQuery(req *ListDimContractOwnerRequest, options ..
 		}
 	}
 
-	// Add filter for column: usage_category
-	if req.UsageCategory != nil {
-		switch filter := req.UsageCategory.Filter.(type) {
-		case *NullableStringFilter_Eq:
-			qb.AddCondition("usage_category", "=", filter.Eq)
-		case *NullableStringFilter_Ne:
-			qb.AddCondition("usage_category", "!=", filter.Ne)
-		case *NullableStringFilter_Contains:
-			qb.AddLikeCondition("usage_category", "%" + filter.Contains + "%")
-		case *NullableStringFilter_StartsWith:
-			qb.AddLikeCondition("usage_category", filter.StartsWith + "%")
-		case *NullableStringFilter_EndsWith:
-			qb.AddLikeCondition("usage_category", "%" + filter.EndsWith)
-		case *NullableStringFilter_Like:
-			qb.AddLikeCondition("usage_category", filter.Like)
-		case *NullableStringFilter_NotLike:
-			qb.AddNotLikeCondition("usage_category", filter.NotLike)
-		case *NullableStringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("usage_category", StringSliceToInterface(filter.In.Values))
+	// Add filter for column: labels
+	if req.Labels != nil {
+		switch filter := req.Labels.Filter.(type) {
+		case *ArrayStringFilter_Has:
+			qb.AddArrayHasCondition("labels", filter.Has)
+		case *ArrayStringFilter_HasAll:
+			if len(filter.HasAll.Values) > 0 {
+				qb.AddArrayHasAllCondition("labels", StringSliceToInterface(filter.HasAll.Values))
 			}
-		case *NullableStringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("usage_category", StringSliceToInterface(filter.NotIn.Values))
+		case *ArrayStringFilter_HasAny:
+			if len(filter.HasAny.Values) > 0 {
+				qb.AddArrayHasAnyCondition("labels", StringSliceToInterface(filter.HasAny.Values))
 			}
-		case *NullableStringFilter_IsNull:
-			qb.AddIsNullCondition("usage_category")
-		case *NullableStringFilter_IsNotNull:
-			qb.AddIsNotNullCondition("usage_category")
+		case *ArrayStringFilter_LengthEq:
+			qb.AddArrayLengthCondition("labels", "=", filter.LengthEq)
+		case *ArrayStringFilter_LengthGt:
+			qb.AddArrayLengthCondition("labels", ">", filter.LengthGt)
+		case *ArrayStringFilter_LengthGte:
+			qb.AddArrayLengthCondition("labels", ">=", filter.LengthGte)
+		case *ArrayStringFilter_LengthLt:
+			qb.AddArrayLengthCondition("labels", "<", filter.LengthLt)
+		case *ArrayStringFilter_LengthLte:
+			qb.AddArrayLengthCondition("labels", "<=", filter.LengthLte)
+		case *ArrayStringFilter_IsEmpty:
+			qb.AddArrayIsEmptyCondition("labels")
+		case *ArrayStringFilter_IsNotEmpty:
+			qb.AddArrayIsNotEmptyCondition("labels")
 		default:
 			// Unsupported filter type
 		}
 	}
 
-	// Add filter for column: source
-	if req.Source != nil {
-		switch filter := req.Source.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("source", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("source", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("source", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("source", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("source", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("source", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("source", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("source", StringSliceToInterface(filter.In.Values))
+	// Add filter for column: sources
+	if req.Sources != nil {
+		switch filter := req.Sources.Filter.(type) {
+		case *ArrayStringFilter_Has:
+			qb.AddArrayHasCondition("sources", filter.Has)
+		case *ArrayStringFilter_HasAll:
+			if len(filter.HasAll.Values) > 0 {
+				qb.AddArrayHasAllCondition("sources", StringSliceToInterface(filter.HasAll.Values))
 			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("source", StringSliceToInterface(filter.NotIn.Values))
+		case *ArrayStringFilter_HasAny:
+			if len(filter.HasAny.Values) > 0 {
+				qb.AddArrayHasAnyCondition("sources", StringSliceToInterface(filter.HasAny.Values))
 			}
+		case *ArrayStringFilter_LengthEq:
+			qb.AddArrayLengthCondition("sources", "=", filter.LengthEq)
+		case *ArrayStringFilter_LengthGt:
+			qb.AddArrayLengthCondition("sources", ">", filter.LengthGt)
+		case *ArrayStringFilter_LengthGte:
+			qb.AddArrayLengthCondition("sources", ">=", filter.LengthGte)
+		case *ArrayStringFilter_LengthLt:
+			qb.AddArrayLengthCondition("sources", "<", filter.LengthLt)
+		case *ArrayStringFilter_LengthLte:
+			qb.AddArrayLengthCondition("sources", "<=", filter.LengthLte)
+		case *ArrayStringFilter_IsEmpty:
+			qb.AddArrayIsEmptyCondition("sources")
+		case *ArrayStringFilter_IsNotEmpty:
+			qb.AddArrayIsNotEmptyCondition("sources")
 		default:
 			// Unsupported filter type
 		}
@@ -309,7 +309,7 @@ func BuildListDimContractOwnerQuery(req *ListDimContractOwnerRequest, options ..
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "contract_address", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category", "source"}
+		validFields := []string{"updated_date_time", "contract_address", "owner_key", "account_owner", "contract_name", "factory_contract", "labels", "sources"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -321,7 +321,7 @@ func BuildListDimContractOwnerQuery(req *ListDimContractOwnerRequest, options ..
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "contract_address", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category", "source"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "contract_address", "owner_key", "account_owner", "contract_name", "factory_contract", "labels", "sources"}
 
 	return BuildParameterizedQuery("dim_contract_owner", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -341,7 +341,7 @@ func BuildGetDimContractOwnerQuery(req *GetDimContractOwnerRequest, options ...Q
 	orderByClause := " ORDER BY contract_address"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "contract_address", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category", "source"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "contract_address", "owner_key", "account_owner", "contract_name", "factory_contract", "labels", "sources"}
 
 	// Return single record
 	return BuildParameterizedQuery("dim_contract_owner", columns, qb, orderByClause, 1, 0, options...)

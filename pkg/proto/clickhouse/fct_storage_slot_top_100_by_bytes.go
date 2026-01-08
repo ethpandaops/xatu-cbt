@@ -344,35 +344,33 @@ func BuildListFctStorageSlotTop100ByBytesQuery(req *ListFctStorageSlotTop100ByBy
 		}
 	}
 
-	// Add filter for column: usage_category
-	if req.UsageCategory != nil {
-		switch filter := req.UsageCategory.Filter.(type) {
-		case *NullableStringFilter_Eq:
-			qb.AddCondition("usage_category", "=", filter.Eq)
-		case *NullableStringFilter_Ne:
-			qb.AddCondition("usage_category", "!=", filter.Ne)
-		case *NullableStringFilter_Contains:
-			qb.AddLikeCondition("usage_category", "%" + filter.Contains + "%")
-		case *NullableStringFilter_StartsWith:
-			qb.AddLikeCondition("usage_category", filter.StartsWith + "%")
-		case *NullableStringFilter_EndsWith:
-			qb.AddLikeCondition("usage_category", "%" + filter.EndsWith)
-		case *NullableStringFilter_Like:
-			qb.AddLikeCondition("usage_category", filter.Like)
-		case *NullableStringFilter_NotLike:
-			qb.AddNotLikeCondition("usage_category", filter.NotLike)
-		case *NullableStringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("usage_category", StringSliceToInterface(filter.In.Values))
+	// Add filter for column: labels
+	if req.Labels != nil {
+		switch filter := req.Labels.Filter.(type) {
+		case *ArrayStringFilter_Has:
+			qb.AddArrayHasCondition("labels", filter.Has)
+		case *ArrayStringFilter_HasAll:
+			if len(filter.HasAll.Values) > 0 {
+				qb.AddArrayHasAllCondition("labels", StringSliceToInterface(filter.HasAll.Values))
 			}
-		case *NullableStringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("usage_category", StringSliceToInterface(filter.NotIn.Values))
+		case *ArrayStringFilter_HasAny:
+			if len(filter.HasAny.Values) > 0 {
+				qb.AddArrayHasAnyCondition("labels", StringSliceToInterface(filter.HasAny.Values))
 			}
-		case *NullableStringFilter_IsNull:
-			qb.AddIsNullCondition("usage_category")
-		case *NullableStringFilter_IsNotNull:
-			qb.AddIsNotNullCondition("usage_category")
+		case *ArrayStringFilter_LengthEq:
+			qb.AddArrayLengthCondition("labels", "=", filter.LengthEq)
+		case *ArrayStringFilter_LengthGt:
+			qb.AddArrayLengthCondition("labels", ">", filter.LengthGt)
+		case *ArrayStringFilter_LengthGte:
+			qb.AddArrayLengthCondition("labels", ">=", filter.LengthGte)
+		case *ArrayStringFilter_LengthLt:
+			qb.AddArrayLengthCondition("labels", "<", filter.LengthLt)
+		case *ArrayStringFilter_LengthLte:
+			qb.AddArrayLengthCondition("labels", "<=", filter.LengthLte)
+		case *ArrayStringFilter_IsEmpty:
+			qb.AddArrayIsEmptyCondition("labels")
+		case *ArrayStringFilter_IsNotEmpty:
+			qb.AddArrayIsNotEmptyCondition("labels")
 		default:
 			// Unsupported filter type
 		}
@@ -403,7 +401,7 @@ func BuildListFctStorageSlotTop100ByBytesQuery(req *ListFctStorageSlotTop100ByBy
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "expiry_policy", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category"}
+		validFields := []string{"updated_date_time", "expiry_policy", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "labels"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -415,7 +413,7 @@ func BuildListFctStorageSlotTop100ByBytesQuery(req *ListFctStorageSlotTop100ByBy
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "expiry_policy", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "expiry_policy", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "labels"}
 
 	return BuildParameterizedQuery("fct_storage_slot_top_100_by_bytes", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -435,7 +433,7 @@ func BuildGetFctStorageSlotTop100ByBytesQuery(req *GetFctStorageSlotTop100ByByte
 	orderByClause := " ORDER BY rank, ifNull(expiry_policy, ''"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "expiry_policy", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "usage_category"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "expiry_policy", "rank", "contract_address", "effective_bytes", "active_slots", "owner_key", "account_owner", "contract_name", "factory_contract", "labels"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_storage_slot_top_100_by_bytes", columns, qb, orderByClause, 1, 0, options...)

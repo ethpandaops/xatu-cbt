@@ -32,8 +32,8 @@ message FctStorageSlotTop100ByBytes {
   google.protobuf.StringValue contract_name = 19;
   // Factory contract or deployer address
   google.protobuf.StringValue factory_contract = 20;
-  // Usage category (e.g., stablecoin, dex, trading)
-  google.protobuf.StringValue usage_category = 21;
+  // Labels/categories (e.g., stablecoin, dex, circle)
+  repeated string labels = 21;
 }
 
 // Request for listing fct_storage_slot_top_100_by_bytes records
@@ -59,8 +59,8 @@ message ListFctStorageSlotTop100ByBytesRequest {
   NullableStringFilter contract_name = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by factory_contract - Factory contract or deployer address (optional)
   NullableStringFilter factory_contract = 10 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by usage_category - Usage category (e.g., stablecoin, dex, trading) (optional)
-  NullableStringFilter usage_category = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by labels - Labels/categories (e.g., stablecoin, dex, circle) (optional)
+  ArrayStringFilter labels = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_storage_slot_top_100_by_bytes to return.
   // If unspecified, at most 100 items will be returned.

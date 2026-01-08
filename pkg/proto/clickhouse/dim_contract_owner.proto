@@ -6,7 +6,7 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Contract owner information from Dune Analytics and growthepie for top storage slot contracts
+// Contract owner information from Dune Analytics, growthepie, and eth-labels for top storage slot contracts
 
 message DimContractOwner {
   // Timestamp when the record was last updated
@@ -21,10 +21,10 @@ message DimContractOwner {
   google.protobuf.StringValue contract_name = 15;
   // Factory contract or deployer address
   google.protobuf.StringValue factory_contract = 16;
-  // Usage category (e.g., stablecoin, dex, trading)
-  google.protobuf.StringValue usage_category = 17;
-  // Source of the label data (dune or growthepie)
-  string source = 18;
+  // Labels/categories (e.g., stablecoin, dex, circle)
+  repeated string labels = 17;
+  // Sources of the label data (e.g., growthepie, dune, eth-labels)
+  repeated string sources = 18;
 }
 
 // Request for listing dim_contract_owner records
@@ -42,10 +42,10 @@ message ListDimContractOwnerRequest {
   NullableStringFilter contract_name = 5;
   // Filter by factory_contract - Factory contract or deployer address (optional)
   NullableStringFilter factory_contract = 6;
-  // Filter by usage_category - Usage category (e.g., stablecoin, dex, trading) (optional)
-  NullableStringFilter usage_category = 7;
-  // Filter by source - Source of the label data (dune or growthepie) (optional)
-  StringFilter source = 8;
+  // Filter by labels - Labels/categories (e.g., stablecoin, dex, circle) (optional)
+  ArrayStringFilter labels = 7;
+  // Filter by sources - Sources of the label data (e.g., growthepie, dune, eth-labels) (optional)
+  ArrayStringFilter sources = 8;
 
   // The maximum number of dim_contract_owner to return.
   // If unspecified, at most 100 items will be returned.
