@@ -27,7 +27,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_transaction_opcode_gas_local ON CLUSTER '{clu
     '{replica}',
     `updated_date_time`
 )
-PARTITION BY intDiv(block_number, 100000)
+PARTITION BY intDiv(block_number, 201600) -- ~1 month of blocks
 ORDER BY (block_number, transaction_hash, opcode, meta_network_name)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
