@@ -22,14 +22,20 @@ type RepoManager struct {
 	workDir string
 	repoURL string
 	ref     string
+	shallow bool // Use shallow clone (--depth 1) for faster cloning
 	log     logrus.FieldLogger
 }
 
 // NewRepoManager creates a new xatu repository manager.
+// Uses shallow clones (--depth 1) only when using the default ref for faster cloning.
+// Custom refs get full clones to allow easier branch switching.
 func NewRepoManager(log logrus.FieldLogger, workDir, repoURL, ref string) *RepoManager {
 	if repoURL == "" {
 		repoURL = defaultXatuRepoURL
 	}
+
+	// Use shallow clone only for default ref (faster for typical usage)
+	shallow := ref == "" || ref == defaultXatuRef
 
 	if ref == "" {
 		ref = defaultXatuRef
@@ -39,6 +45,7 @@ func NewRepoManager(log logrus.FieldLogger, workDir, repoURL, ref string) *RepoM
 		workDir: workDir,
 		repoURL: repoURL,
 		ref:     ref,
+		shallow: shallow,
 		log:     log.WithField("component", "xatu_repo"),
 	}
 }
@@ -71,10 +78,6 @@ func (r *RepoManager) EnsureRepo() (string, error) {
 		return "", fmt.Errorf("cloning repository: %w", err)
 	}
 
-	if err := r.gitCheckout(repoPath); err != nil {
-		return "", fmt.Errorf("checking out ref %s: %w", r.ref, err)
-	}
-
 	r.log.Info("xatu repository ready")
 
 	return repoPath, nil
@@ -82,7 +85,13 @@ func (r *RepoManager) EnsureRepo() (string, error) {
 
 // gitClone clones the repository.
 func (r *RepoManager) gitClone(dest string) error {
-	cmd := exec.Command("git", "clone", "--depth", "1", "--branch", r.ref, r.repoURL, dest) //nolint:gosec // G204: Git command with controlled repository URL and ref
+	args := []string{"clone"}
+	if r.shallow {
+		args = append(args, "--depth", "1")
+	}
+	args = append(args, "--branch", r.ref, r.repoURL, dest)
+
+	cmd := exec.Command("git", args...) //nolint:gosec // G204: Git command with controlled repository URL and ref
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -103,9 +112,15 @@ func (r *RepoManager) gitClone(dest string) error {
 	return nil
 }
 
-// gitFetch fetches latest changes (shallow fetch of specific ref).
+// gitFetch fetches latest changes for the specific ref.
 func (r *RepoManager) gitFetch(repoPath string) error {
-	cmd := exec.Command("git", "fetch", "origin", "--depth", "1", r.ref) //nolint:gosec // G204: Git command with controlled ref
+	args := []string{"fetch", "origin"}
+	if r.shallow {
+		args = append(args, "--depth", "1")
+	}
+	args = append(args, r.ref)
+
+	cmd := exec.Command("git", args...) //nolint:gosec // G204: Git command with controlled ref
 	cmd.Dir = repoPath
 
 	var stdout, stderr bytes.Buffer
@@ -128,8 +143,10 @@ func (r *RepoManager) gitFetch(repoPath string) error {
 }
 
 // gitCheckout checks out the desired ref.
+// Uses -B to create/reset the branch to FETCH_HEAD (what was just fetched).
+// Uses -f to force checkout, overwriting any conflicting untracked files.
 func (r *RepoManager) gitCheckout(repoPath string) error {
-	cmd := exec.Command("git", "checkout", r.ref) //nolint:gosec // G204: Git command with controlled ref
+	cmd := exec.Command("git", "checkout", "-f", "-B", r.ref, "FETCH_HEAD") //nolint:gosec // G204: Git command with controlled ref
 	cmd.Dir = repoPath
 
 	var stdout, stderr bytes.Buffer
