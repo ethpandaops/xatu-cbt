@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Aggregated opcode-level gas usage per transaction. Source: canonical_execution_transaction_structlog
+
+message IntTransactionOpcodeGas {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The block number containing the transaction
+  uint64 block_number = 12;
+  // The transaction hash (hex encoded with 0x prefix)
+  string transaction_hash = 13;
+  // The index of the transaction within the block
+  uint32 transaction_index = 14;
+  // The EVM opcode name (e.g., SLOAD, ADD, CALL)
+  string opcode = 15;
+  // Number of times this opcode was executed in the transaction
+  uint64 count = 16;
+  // Total gas consumed by this opcode in the transaction
+  uint64 total_gas = 17;
+  // Minimum call stack depth for this opcode
+  uint64 min_depth = 18;
+  // Maximum call stack depth for this opcode
+  uint64 max_depth = 19;
+  // Number of times this opcode resulted in an error
+  uint64 error_count = 20;
+  // The name of the network
+  string meta_network_name = 21;
+}
+
+// Request for listing int_transaction_opcode_gas records
+message ListIntTransactionOpcodeGasRequest {
+  // Filter by block_number - The block number containing the transaction (PRIMARY KEY - required unless using alternatives: opcode, transaction_hash)
+  UInt64Filter block_number = 1;
+
+  // Filter by transaction_hash - The transaction hash (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
+  StringFilter transaction_hash = 2;
+
+  // Filter by opcode - The EVM opcode name (e.g., SLOAD, ADD, CALL) (ORDER BY column 3 - optional)
+  StringFilter opcode = 3;
+
+  // Filter by meta_network_name - The name of the network (ORDER BY column 4 - optional)
+  StringFilter meta_network_name = 4;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 5;
+  // Filter by transaction_index - The index of the transaction within the block (optional)
+  UInt32Filter transaction_index = 6;
+  // Filter by count - Number of times this opcode was executed in the transaction (optional)
+  UInt64Filter count = 7;
+  // Filter by total_gas - Total gas consumed by this opcode in the transaction (optional)
+  UInt64Filter total_gas = 8;
+  // Filter by min_depth - Minimum call stack depth for this opcode (optional)
+  UInt64Filter min_depth = 9;
+  // Filter by max_depth - Maximum call stack depth for this opcode (optional)
+  UInt64Filter max_depth = 10;
+  // Filter by error_count - Number of times this opcode resulted in an error (optional)
+  UInt64Filter error_count = 11;
+
+  // The maximum number of int_transaction_opcode_gas to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 12;
+  // A page token, received from a previous `ListIntTransactionOpcodeGas` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 13;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 14;
+}
+
+// Response for listing int_transaction_opcode_gas records
+message ListIntTransactionOpcodeGasResponse {
+  // The list of int_transaction_opcode_gas.
+  repeated IntTransactionOpcodeGas int_transaction_opcode_gas = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_transaction_opcode_gas record by primary key
+message GetIntTransactionOpcodeGasRequest {
+  // The block number containing the transaction
+  uint64 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single int_transaction_opcode_gas record
+message GetIntTransactionOpcodeGasResponse {
+  IntTransactionOpcodeGas item = 1;
+}
+
+// Query int_transaction_opcode_gas data
+service IntTransactionOpcodeGasService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntTransactionOpcodeGasRequest) returns (ListIntTransactionOpcodeGasResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntTransactionOpcodeGasRequest) returns (GetIntTransactionOpcodeGasResponse);
+}
