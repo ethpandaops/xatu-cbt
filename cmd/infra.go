@@ -32,6 +32,7 @@ var (
 	infraClickhouseURL  string
 	infraRedisURL       string
 	infraRunMigrations  bool
+	infraXatuRef        string
 
 	errInvalidXatuMode = errors.New("invalid xatu-mode")
 	errXatuURLRequired = errors.New("xatu-url is required when xatu-source is external")
@@ -124,6 +125,7 @@ func init() {
 	infraStartCmd.Flags().String("xatu-source", xatuModeLocal, "Xatu data source: 'local' (start local cluster) or 'external' (connect to remote)")
 	infraStartCmd.Flags().String("xatu-url", "", "External Xatu ClickHouse URL (required for --xatu-source=external). Format: [http|https://][username:password@]host:port")
 	infraStartCmd.Flags().BoolVar(&infraRunMigrations, "run-migrations", false, "Run migrations for both Xatu and CBT clusters after starting infrastructure")
+	infraStartCmd.Flags().StringVar(&infraXatuRef, "xatu-ref", config.XatuDefaultRef, "Xatu repository ref (branch/tag/commit)")
 }
 
 // createInfraManagers creates and returns Docker and ClickHouse managers with the shared configuration.
@@ -226,7 +228,7 @@ func runInfraStart(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("getting working directory: %w", wdErr)
 		}
 
-		xatuRepoPath, repoErr := ensureXatuRepo(log, wd, config.XatuRepoURL, config.XatuDefaultRef)
+		xatuRepoPath, repoErr := ensureXatuRepo(log, wd, config.XatuRepoURL, infraXatuRef)
 		if repoErr != nil {
 			return fmt.Errorf("ensuring xatu repository: %w", repoErr)
 		}
@@ -424,7 +426,7 @@ func getXatuRepoPathForMigrations(log logrus.FieldLogger, xatuSource string) (st
 		return "", fmt.Errorf("getting working directory: %w", wdErr)
 	}
 
-	repoPath, repoErr := ensureXatuRepo(log, wd, config.XatuRepoURL, config.XatuDefaultRef)
+	repoPath, repoErr := ensureXatuRepo(log, wd, config.XatuRepoURL, infraXatuRef)
 	if repoErr != nil {
 		return "", fmt.Errorf("ensuring xatu repository for migrations: %w", repoErr)
 	}
