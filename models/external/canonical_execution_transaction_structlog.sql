@@ -1,17 +1,17 @@
 ---
-table: canonical_execution_transaction
+table: canonical_execution_transaction_structlog
 cache:
-  incremental_scan_interval: 1m
-  full_scan_interval: 24h
+  incremental_scan_interval: 5s
+  full_scan_interval: 10s
 interval:
   type: block
-lag: 384
+lag: 0
 ---
 SELECT
   {{ if .cache.is_incremental_scan }}
-    '{{ .cache.previous_min }}' as min,
+  '{{ .cache.previous_min }}' as min,
   {{ else }}
-    min(block_number) as min,
+  min(block_number) as min,
   {{ end }}
     max(block_number) as max
 FROM {{ .self.helpers.from }}
