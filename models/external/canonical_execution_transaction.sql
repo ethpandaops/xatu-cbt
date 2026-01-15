@@ -1,5 +1,5 @@
 ---
-table: canonical_execution_transaction_structlog
+table: canonical_execution_transaction
 cache:
   incremental_scan_interval: 1m
   full_scan_interval: 24h
