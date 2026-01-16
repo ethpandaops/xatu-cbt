@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+message FctExecutionGasLimitSignallingDaily {
+  uint32 updated_date_time = 11;
+  string day_start_date = 12;
+  map<string, uint32> gas_limit_band_counts = 13;
+}
+
+// Request for listing fct_execution_gas_limit_signalling_daily records
+message ListFctExecutionGasLimitSignallingDailyRequest {
+  // Filter by day_start_date (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_limit_band_counts (optional)
+  MapStringUInt32Filter gas_limit_band_counts = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_execution_gas_limit_signalling_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 4 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctExecutionGasLimitSignallingDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 5 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_execution_gas_limit_signalling_daily records
+message ListFctExecutionGasLimitSignallingDailyResponse {
+  // The list of fct_execution_gas_limit_signalling_daily.
+  repeated FctExecutionGasLimitSignallingDaily fct_execution_gas_limit_signalling_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_execution_gas_limit_signalling_daily record by primary key
+message GetFctExecutionGasLimitSignallingDailyRequest {
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_execution_gas_limit_signalling_daily record
+message GetFctExecutionGasLimitSignallingDailyResponse {
+  FctExecutionGasLimitSignallingDaily item = 1;
+}
+
+// Query fct_execution_gas_limit_signalling_daily data
+service FctExecutionGasLimitSignallingDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctExecutionGasLimitSignallingDailyRequest) returns (ListFctExecutionGasLimitSignallingDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_gas_limit_signalling_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctExecutionGasLimitSignallingDailyRequest) returns (GetFctExecutionGasLimitSignallingDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_gas_limit_signalling_daily/{day_start_date}"
+    };
+  }
+}

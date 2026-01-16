@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily aggregated execution layer gas used statistics with percentiles, Bollinger bands, and moving averages
+
+message FctExecutionGasUsedDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Number of blocks in this day
+  uint32 block_count = 13;
+  // Total gas used in this day
+  uint64 total_gas_used = 14;
+  // Cumulative gas used since genesis
+  uint64 cumulative_gas_used = 15;
+  // Average gas used per block
+  uint64 avg_gas_used = 16;
+  // Minimum gas used in a block
+  uint64 min_gas_used = 17;
+  // Maximum gas used in a block
+  uint64 max_gas_used = 18;
+  // 5th percentile gas used
+  uint64 p05_gas_used = 19;
+  // 50th percentile (median) gas used
+  uint64 p50_gas_used = 20;
+  // 95th percentile gas used
+  uint64 p95_gas_used = 21;
+  // Standard deviation of gas used
+  uint64 stddev_gas_used = 22;
+  // Upper Bollinger band (avg + 2*stddev)
+  uint64 upper_band_gas_used = 23;
+  // Lower Bollinger band (avg - 2*stddev), can be negative during high volatility
+  int64 lower_band_gas_used = 24;
+  // Moving average gas used (7-day window)
+  uint64 moving_avg_gas_used = 25;
+}
+
+// Request for listing fct_execution_gas_used_daily records
+message ListFctExecutionGasUsedDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Number of blocks in this day (optional)
+  UInt32Filter block_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_gas_used - Total gas used in this day (optional)
+  UInt64Filter total_gas_used = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by cumulative_gas_used - Cumulative gas used since genesis (optional)
+  UInt64Filter cumulative_gas_used = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_gas_used - Average gas used per block (optional)
+  UInt64Filter avg_gas_used = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_gas_used - Minimum gas used in a block (optional)
+  UInt64Filter min_gas_used = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_gas_used - Maximum gas used in a block (optional)
+  UInt64Filter max_gas_used = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p05_gas_used - 5th percentile gas used (optional)
+  UInt64Filter p05_gas_used = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_gas_used - 50th percentile (median) gas used (optional)
+  UInt64Filter p50_gas_used = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p95_gas_used - 95th percentile gas used (optional)
+  UInt64Filter p95_gas_used = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by stddev_gas_used - Standard deviation of gas used (optional)
+  UInt64Filter stddev_gas_used = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by upper_band_gas_used - Upper Bollinger band (avg + 2*stddev) (optional)
+  UInt64Filter upper_band_gas_used = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by lower_band_gas_used - Lower Bollinger band (avg - 2*stddev), can be negative during high volatility (optional)
+  Int64Filter lower_band_gas_used = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by moving_avg_gas_used - Moving average gas used (7-day window) (optional)
+  UInt64Filter moving_avg_gas_used = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_execution_gas_used_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 16 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctExecutionGasUsedDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 17 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 18 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_execution_gas_used_daily records
+message ListFctExecutionGasUsedDailyResponse {
+  // The list of fct_execution_gas_used_daily.
+  repeated FctExecutionGasUsedDaily fct_execution_gas_used_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_execution_gas_used_daily record by primary key
+message GetFctExecutionGasUsedDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_execution_gas_used_daily record
+message GetFctExecutionGasUsedDailyResponse {
+  FctExecutionGasUsedDaily item = 1;
+}
+
+// Query fct_execution_gas_used_daily data
+service FctExecutionGasUsedDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctExecutionGasUsedDailyRequest) returns (ListFctExecutionGasUsedDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_gas_used_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctExecutionGasUsedDailyRequest) returns (GetFctExecutionGasUsedDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_gas_used_daily/{day_start_date}"
+    };
+  }
+}

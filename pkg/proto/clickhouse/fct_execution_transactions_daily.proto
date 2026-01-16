@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily aggregated execution layer transaction counts with cumulative totals and per-block statistics
+
+message FctExecutionTransactionsDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Number of blocks in this day
+  uint32 block_count = 13;
+  // Total transactions in this day
+  uint64 total_transactions = 14;
+  // Cumulative transaction count since genesis
+  uint64 cumulative_transactions = 15;
+  // Average transactions per block
+  float avg_txn_per_block = 16;
+  // Minimum transactions in a block
+  uint32 min_txn_per_block = 17;
+  // Maximum transactions in a block
+  uint32 max_txn_per_block = 18;
+  // 50th percentile (median) transactions per block
+  uint32 p50_txn_per_block = 19;
+  // 95th percentile transactions per block
+  uint32 p95_txn_per_block = 20;
+  // 5th percentile transactions per block
+  uint32 p05_txn_per_block = 21;
+  // Standard deviation of transactions per block
+  float stddev_txn_per_block = 22;
+  // Upper Bollinger band (avg + 2*stddev)
+  float upper_band_txn_per_block = 23;
+  // Lower Bollinger band (avg - 2*stddev)
+  float lower_band_txn_per_block = 24;
+  // Moving average transactions per block (7-day window)
+  float moving_avg_txn_per_block = 25;
+}
+
+// Request for listing fct_execution_transactions_daily records
+message ListFctExecutionTransactionsDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Number of blocks in this day (optional)
+  UInt32Filter block_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_transactions - Total transactions in this day (optional)
+  UInt64Filter total_transactions = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by cumulative_transactions - Cumulative transaction count since genesis (optional)
+  UInt64Filter cumulative_transactions = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_txn_per_block - Average transactions per block (optional)
+  google.protobuf.FloatValue avg_txn_per_block = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_txn_per_block - Minimum transactions in a block (optional)
+  UInt32Filter min_txn_per_block = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_txn_per_block - Maximum transactions in a block (optional)
+  UInt32Filter max_txn_per_block = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_txn_per_block - 50th percentile (median) transactions per block (optional)
+  UInt32Filter p50_txn_per_block = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p95_txn_per_block - 95th percentile transactions per block (optional)
+  UInt32Filter p95_txn_per_block = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p05_txn_per_block - 5th percentile transactions per block (optional)
+  UInt32Filter p05_txn_per_block = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by stddev_txn_per_block - Standard deviation of transactions per block (optional)
+  google.protobuf.FloatValue stddev_txn_per_block = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by upper_band_txn_per_block - Upper Bollinger band (avg + 2*stddev) (optional)
+  google.protobuf.FloatValue upper_band_txn_per_block = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by lower_band_txn_per_block - Lower Bollinger band (avg - 2*stddev) (optional)
+  google.protobuf.FloatValue lower_band_txn_per_block = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by moving_avg_txn_per_block - Moving average transactions per block (7-day window) (optional)
+  google.protobuf.FloatValue moving_avg_txn_per_block = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_execution_transactions_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 16 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctExecutionTransactionsDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 17 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 18 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_execution_transactions_daily records
+message ListFctExecutionTransactionsDailyResponse {
+  // The list of fct_execution_transactions_daily.
+  repeated FctExecutionTransactionsDaily fct_execution_transactions_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_execution_transactions_daily record by primary key
+message GetFctExecutionTransactionsDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_execution_transactions_daily record
+message GetFctExecutionTransactionsDailyResponse {
+  FctExecutionTransactionsDaily item = 1;
+}
+
+// Query fct_execution_transactions_daily data
+service FctExecutionTransactionsDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctExecutionTransactionsDailyRequest) returns (ListFctExecutionTransactionsDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_transactions_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctExecutionTransactionsDailyRequest) returns (GetFctExecutionTransactionsDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_transactions_daily/{day_start_date}"
+    };
+  }
+}
