@@ -8,7 +8,7 @@ fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 5s"
+  forwardfill: "@every 5m"
 tags:
   - hourly
   - execution
@@ -21,50 +21,54 @@ dependencies:
 -- Output is a single row per hour with a Map of gas_limit_band -> validator_count.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
-    hour_bounds AS (
+    -- Generate target hours from bounds
+    target_hours AS (
+        SELECT toStartOfHour(fromUnixTimestamp({{ .bounds.start }})) + INTERVAL number HOUR AS target_hour
+        FROM numbers(toUInt32(dateDiff('hour',
+            toStartOfHour(fromUnixTimestamp({{ .bounds.start }})),
+            toStartOfHour(fromUnixTimestamp({{ .bounds.end }}))
+        )) + 1)
+    ),
+    -- Pre-aggregate to daily max per validator (single table scan, no FINAL needed)
+    -- Daily aggregation is sufficient since gas_limit is stable per validator
+    validator_daily_max AS (
         SELECT
-            toStartOfHour(min(event_date_time)) AS min_hour,
-            toStartOfHour(max(event_date_time)) AS max_hour
-        FROM {{ index .dep "{{external}}" "mev_relay_validator_registration" "helpers" "from" }} FINAL
-        WHERE event_date_time >= fromUnixTimestamp({{ .bounds.start }})
-          AND event_date_time < fromUnixTimestamp({{ .bounds.end }})
+            toDate(event_date_time) AS event_day,
+            validator_index,
+            max(gas_limit) AS max_gas_limit
+        FROM {{ index .dep "{{external}}" "mev_relay_validator_registration" "helpers" "from" }}
+        WHERE event_date_time >= fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 7 DAY
+          AND event_date_time < fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 DAY
+        GROUP BY event_day, validator_index
     ),
-    hours AS (
-        SELECT arrayJoin(
-            arrayMap(x -> (SELECT min_hour FROM hour_bounds) + INTERVAL x HOUR,
-                     range(toUInt32(dateDiff('hour',
-                         (SELECT min_hour FROM hour_bounds),
-                         (SELECT max_hour FROM hour_bounds)))))
-        ) AS hour
-    ),
-    -- For each hour, get each validator's max gas_limit from last 7 days
-    rolling_7d_validator_gas AS (
+    -- For each target hour, get validators with data in the 7-day window ending at that hour
+    -- A daily record contributes to an hour if: event_day is within [target_hour - 7 days, target_hour]
+    rolling_validator_gas AS (
         SELECT
-            h.hour,
-            r.validator_index,
-            max(r.gas_limit) AS max_gas_limit
-        FROM hours h
-        INNER JOIN {{ index .dep "{{external}}" "mev_relay_validator_registration" "helpers" "from" }} r FINAL
-            ON r.event_date_time >= h.hour - INTERVAL 7 DAY
-           AND r.event_date_time < h.hour + INTERVAL 1 HOUR
-        WHERE r.event_date_time >= fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 7 DAY
-          AND r.event_date_time < fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 HOUR
-        GROUP BY h.hour, r.validator_index
+            h.target_hour,
+            v.validator_index,
+            max(v.max_gas_limit) AS max_gas_limit
+        FROM target_hours h
+        INNER JOIN validator_daily_max v
+            ON v.event_day >= toDate(h.target_hour - INTERVAL 7 DAY)
+           AND v.event_day <= toDate(h.target_hour)
+        GROUP BY h.target_hour, v.validator_index
     ),
+    -- Group into gas limit bands (1M increments)
     hourly_bands AS (
         SELECT
-            hour,
+            target_hour,
             toString(toUInt64(ceil(max_gas_limit / 1000000) * 1000000)) AS gas_limit_band,
             toUInt32(count()) AS validator_count
-        FROM rolling_7d_validator_gas
-        GROUP BY hour, gas_limit_band
+        FROM rolling_validator_gas
+        GROUP BY target_hour, gas_limit_band
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
-    hour AS hour_start_date_time,
+    target_hour AS hour_start_date_time,
     mapFromArrays(
         groupArray(gas_limit_band),
         groupArray(validator_count)
     ) AS gas_limit_band_counts
 FROM hourly_bands
-GROUP BY hour
+GROUP BY target_hour

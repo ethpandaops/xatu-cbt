@@ -3,12 +3,12 @@ table: fct_execution_gas_used_hourly
 type: incremental
 interval:
   type: block
-  max: 10000
+  max: 100000
 fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 5s"
+  forwardfill: "@every 5m"
 tags:
   - hourly
   - execution

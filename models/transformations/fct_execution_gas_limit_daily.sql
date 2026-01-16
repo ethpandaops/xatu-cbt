@@ -3,12 +3,12 @@ table: fct_execution_gas_limit_daily
 type: incremental
 interval:
   type: block
-  max: 10000
+  max: 100000
 fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 5s"
+  forwardfill: "@every 1h"
 tags:
   - daily
   - execution
