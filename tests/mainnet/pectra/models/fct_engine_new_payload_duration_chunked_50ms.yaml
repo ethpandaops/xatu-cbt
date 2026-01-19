@@ -2,12 +2,6 @@ model: fct_engine_new_payload_duration_chunked_50ms
 network: mainnet
 spec: pectra
 external_data:
-    beacon_api_eth_v2_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_duration_chunked_50ms_beacon_api_eth_v2_beacon_block.parquet
-        network_column: meta_network_name
-    canonical_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_duration_chunked_50ms_canonical_beacon_block.parquet
-        network_column: meta_network_name
     execution_engine_new_payload:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_duration_chunked_50ms_execution_engine_new_payload.parquet
         network_column: meta_network_name

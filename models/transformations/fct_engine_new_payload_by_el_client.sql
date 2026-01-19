@@ -14,34 +14,30 @@ tags:
   - el_client
 dependencies:
   - "{{external}}.execution_engine_new_payload"
-  - "{{external}}.beacon_api_eth_v2_beacon_block"
-  - "{{external}}.canonical_beacon_block"
+  - "{{transformation}}.fct_block_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
-slot_context AS (
-    SELECT slot, slot_start_date_time, epoch, epoch_start_date_time, block_root,
-           execution_payload_block_hash AS block_hash
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v2_beacon_block" "helpers" "from" }} FINAL
+block_context AS (
+    SELECT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        block_root,
+        execution_payload_block_hash
+    FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
-        AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
-    UNION ALL
-    SELECT slot, slot_start_date_time, epoch, epoch_start_date_time, block_root,
-           execution_payload_block_hash AS block_hash
-    FROM {{ index .dep "{{external}}" "canonical_beacon_block" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
         AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
 ),
 enriched AS (
     SELECT
-        COALESCE(sc.slot, 0) AS slot,
-        COALESCE(sc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
-        COALESCE(sc.epoch, 0) AS epoch,
-        COALESCE(sc.epoch_start_date_time, toDateTime(0)) AS epoch_start_date_time,
-        COALESCE(sc.block_root, '') AS block_root,
+        COALESCE(bc.slot, 0) AS slot,
+        COALESCE(bc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
+        COALESCE(bc.epoch, 0) AS epoch,
+        COALESCE(bc.epoch_start_date_time, toDateTime(0)) AS epoch_start_date_time,
+        COALESCE(bc.block_root, '') AS block_root,
         ep.block_hash,
         ep.meta_execution_implementation,
         ep.meta_execution_version,
@@ -53,7 +49,7 @@ enriched AS (
         ep.blob_count,
         ep.duration_ms
     FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL AS ep
-    LEFT JOIN slot_context sc ON ep.block_hash = sc.block_hash
+    LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
     WHERE ep.meta_network_name = '{{ .env.NETWORK }}'
         AND ep.meta_execution_implementation != ''
         AND ep.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE

@@ -14,8 +14,7 @@ tags:
   - el_client
 dependencies:
   - "{{external}}.execution_engine_new_payload"
-  - "{{external}}.beacon_api_eth_v2_beacon_block"
-  - "{{external}}.canonical_beacon_block"
+  - "{{transformation}}.fct_block_head"
 ---
 -- Hourly aggregation of engine_newPayload by execution client.
 -- Computes TRUE percentiles (p50, p95) across all observations in each hour per client,
@@ -28,36 +27,19 @@ dependencies:
 -- complete data. The ReplacingMergeTree will merge duplicates keeping the latest row.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
--- Get slot context from BOTH beacon_api (real-time) AND canonical (complete historical)
-slot_context AS (
+-- Get slot context from fct_block_head
+block_context AS (
     SELECT
         slot_start_date_time,
-        execution_payload_block_hash AS block_hash
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v2_beacon_block" "helpers" "from" }} FINAL
+        execution_payload_block_hash
+    FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
         AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
-    UNION ALL
-    SELECT
-        slot_start_date_time,
-        execution_payload_block_hash AS block_hash
-    FROM {{ index .dep "{{external}}" "canonical_beacon_block" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
-        AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
-),
--- Deduplicate slot context
-unique_slot_context AS (
-    SELECT
-        block_hash,
-        argMax(slot_start_date_time, slot_start_date_time) AS slot_start_date_time
-    FROM slot_context
-    GROUP BY block_hash
 ),
 -- Join execution engine data with slot context
 enriched AS (
     SELECT
-        COALESCE(sc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
+        COALESCE(bc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
         ep.block_hash,
         ep.duration_ms,
         ep.status,
@@ -73,7 +55,7 @@ enriched AS (
             ELSE ''
         END AS node_class
     FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL AS ep
-    LEFT JOIN unique_slot_context sc ON ep.block_hash = sc.block_hash
+    LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
     WHERE ep.meta_network_name = '{{ .env.NETWORK }}'
         AND ep.meta_execution_implementation != ''
         AND ep.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
