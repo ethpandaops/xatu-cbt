@@ -111,22 +111,6 @@ base_activity AS (
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 ),
--- Unique addresses from expiry/reactivation events (for filtering prev_base_state)
-expiry_reactivation_addresses AS (
-    SELECT DISTINCT address FROM expiry_reactivation_keys
-),
--- Previous base state for addresses that have expiry/reactivation but no base activity in this range
--- PERF: Use IN filter + argMax with tuple instead of FINAL for ~3x speedup and ~10x memory reduction
-prev_base_state AS (
-    SELECT
-        s.address,
-        argMax(s.active_slots, (s.block_number, s.updated_date_time)) as prev_base_active_slots,
-        argMax(s.effective_bytes, (s.block_number, s.updated_date_time)) as prev_base_effective_bytes
-    FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} s
-    WHERE s.address IN (SELECT address FROM expiry_reactivation_addresses)
-        AND s.block_number < {{ .bounds.start }}
-    GROUP BY s.address
-),
 -- Combined: all (block, address, policy) pairs that need processing
 -- Source 1: Base activity cross-joined with all policies
 -- Source 2: Expiry/reactivation events (even without base activity)
@@ -144,15 +128,20 @@ all_block_addresses AS (
     UNION ALL
 
     -- Expiry/reactivation only (no base activity in this block)
-    -- Use previous base state
+    -- Use ASOF JOIN to find the correct base state at each expiry block
+    -- This fixes the bug where a single prev_base_state was used for all expiry blocks,
+    -- ignoring base state changes within the processing batch
     SELECT
         e.block_number,
         e.address,
         e.expiry_policy,
-        COALESCE(p.prev_base_active_slots, toInt64(0)) as base_active_slots,
-        COALESCE(p.prev_base_effective_bytes, toInt64(0)) as base_effective_bytes
+        COALESCE(s.active_slots, toInt64(0)) as base_active_slots,
+        COALESCE(s.effective_bytes, toInt64(0)) as base_effective_bytes
     FROM expiry_reactivation_keys e
-    LEFT JOIN prev_base_state p ON e.address = p.address
+    ASOF LEFT JOIN (
+        SELECT block_number, address, active_slots, effective_bytes
+        FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} FINAL
+    ) s ON e.address = s.address AND e.block_number >= s.block_number
     LEFT JOIN base_activity b ON e.block_number = b.block_number AND e.address = b.address
     WHERE b.address = ''  -- ClickHouse uses '' not NULL for unmatched String columns
 ),
