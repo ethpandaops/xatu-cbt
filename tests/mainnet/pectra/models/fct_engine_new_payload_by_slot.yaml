@@ -13,8 +13,79 @@ external_data:
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
-      sql: SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_slot FINAL
       assertions:
         - type: greater_than
           column: count
+          value: 0
+    - name: Observation count should be at least 1 for each row
+      sql: |
+        SELECT MIN(observation_count) AS min_observation_count FROM fct_engine_new_payload_by_slot FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_observation_count
+          value: 1
+    - name: Status column should not be empty
+      sql: |
+        SELECT COUNT(*) AS empty_status_rows
+        FROM fct_engine_new_payload_by_slot FINAL
+        WHERE status = ''
+      assertions:
+        - type: equals
+          column: empty_status_rows
+          value: 0
+    - name: Duration statistics should be logically consistent (min <= median <= max)
+      sql: |
+        SELECT COUNT(*) AS inconsistent_duration_rows
+        FROM fct_engine_new_payload_by_slot FINAL
+        WHERE min_duration_ms > median_duration_ms OR median_duration_ms > max_duration_ms
+      assertions:
+        - type: equals
+          column: inconsistent_duration_rows
+          value: 0
+    - name: Unique node count should not exceed observation count
+      sql: |
+        SELECT COUNT(*) AS invalid_node_count_rows
+        FROM fct_engine_new_payload_by_slot FINAL
+        WHERE unique_node_count > observation_count
+      assertions:
+        - type: equals
+          column: invalid_node_count_rows
+          value: 0
+    - name: All duration values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS negative_duration_rows
+        FROM fct_engine_new_payload_by_slot FINAL
+        WHERE min_duration_ms < 0 OR avg_duration_ms < 0 OR median_duration_ms < 0 OR max_duration_ms < 0 OR p95_duration_ms < 0 OR p99_duration_ms < 0
+      assertions:
+        - type: equals
+          column: negative_duration_rows
+          value: 0
+    - name: Slot should not be null
+      sql: |
+        SELECT COUNT(*) AS null_slot_rows
+        FROM fct_engine_new_payload_by_slot FINAL
+        WHERE slot IS NULL
+      assertions:
+        - type: equals
+          column: null_slot_rows
+          value: 0
+    - name: Block hash should not be empty
+      sql: |
+        SELECT COUNT(*) AS empty_block_hash_rows
+        FROM fct_engine_new_payload_by_slot FINAL
+        WHERE block_hash = ''
+      assertions:
+        - type: equals
+          column: empty_block_hash_rows
+          value: 0
+    - name: P95 duration should be between median and p99
+      sql: |
+        SELECT COUNT(*) AS invalid_percentile_rows
+        FROM fct_engine_new_payload_by_slot FINAL
+        WHERE p95_duration_ms < median_duration_ms OR p95_duration_ms > p99_duration_ms
+      assertions:
+        - type: equals
+          column: invalid_percentile_rows
           value: 0
