@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+message FctExecutionGasLimitSignallingHourly {
+  uint32 updated_date_time = 11;
+  uint32 hour_start_date_time = 12;
+  map<string, uint32> gas_limit_band_counts = 13;
+}
+
+// Request for listing fct_execution_gas_limit_signalling_hourly records
+message ListFctExecutionGasLimitSignallingHourlyRequest {
+  // Filter by hour_start_date_time (PRIMARY KEY - required)
+  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_limit_band_counts (optional)
+  MapStringUInt32Filter gas_limit_band_counts = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_execution_gas_limit_signalling_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 4 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctExecutionGasLimitSignallingHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 5 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_execution_gas_limit_signalling_hourly records
+message ListFctExecutionGasLimitSignallingHourlyResponse {
+  // The list of fct_execution_gas_limit_signalling_hourly.
+  repeated FctExecutionGasLimitSignallingHourly fct_execution_gas_limit_signalling_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_execution_gas_limit_signalling_hourly record by primary key
+message GetFctExecutionGasLimitSignallingHourlyRequest {
+  uint32 hour_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_execution_gas_limit_signalling_hourly record
+message GetFctExecutionGasLimitSignallingHourlyResponse {
+  FctExecutionGasLimitSignallingHourly item = 1;
+}
+
+// Query fct_execution_gas_limit_signalling_hourly data
+service FctExecutionGasLimitSignallingHourlyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctExecutionGasLimitSignallingHourlyRequest) returns (ListFctExecutionGasLimitSignallingHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_gas_limit_signalling_hourly"
+    };
+  }
+  // Get record | Retrieve a single record by hour_start_date_time
+  rpc Get(GetFctExecutionGasLimitSignallingHourlyRequest) returns (GetFctExecutionGasLimitSignallingHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_gas_limit_signalling_hourly/{hour_start_date_time}"
+    };
+  }
+}
