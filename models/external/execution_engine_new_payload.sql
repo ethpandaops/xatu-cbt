@@ -4,7 +4,7 @@ cache:
   incremental_scan_interval: 5s
   full_scan_interval: 24h
 interval:
-  type: datetime
+  type: slot
 lag: 12
 ---
 SELECT

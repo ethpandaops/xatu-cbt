@@ -1,0 +1,167 @@
+model: fct_engine_new_payload_by_el_client_hourly
+network: mainnet
+spec: pectra
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_by_el_client_hourly_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    execution_engine_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_by_el_client_hourly_execution_engine_new_payload.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: All count columns should be non-negative
+      sql: |
+        SELECT
+          countIf(slot_count < 0) AS negative_slot_count,
+          countIf(observation_count < 0) AS negative_observation_count,
+          countIf(unique_node_count < 0) AS negative_unique_node_count,
+          countIf(valid_count < 0) AS negative_valid_count,
+          countIf(invalid_count < 0) AS negative_invalid_count,
+          countIf(syncing_count < 0) AS negative_syncing_count,
+          countIf(accepted_count < 0) AS negative_accepted_count
+        FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: equals
+          column: negative_slot_count
+          value: 0
+        - type: equals
+          column: negative_observation_count
+          value: 0
+        - type: equals
+          column: negative_unique_node_count
+          value: 0
+        - type: equals
+          column: negative_valid_count
+          value: 0
+        - type: equals
+          column: negative_invalid_count
+          value: 0
+        - type: equals
+          column: negative_syncing_count
+          value: 0
+        - type: equals
+          column: negative_accepted_count
+          value: 0
+    - name: Observation count should be greater than or equal to slot count
+      sql: |
+        SELECT countIf(observation_count < slot_count) AS invalid_rows
+        FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: equals
+          column: invalid_rows
+          value: 0
+    - name: Duration percentiles should maintain correct ordering (min <= p50 <= p95 <= max)
+      sql: |
+        SELECT
+          countIf(min_duration_ms > p50_duration_ms AND valid_count > 0) AS min_exceeds_p50,
+          countIf(p50_duration_ms > p95_duration_ms AND valid_count > 0) AS p50_exceeds_p95,
+          countIf(p95_duration_ms > max_duration_ms AND valid_count > 0) AS p95_exceeds_max
+        FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: equals
+          column: min_exceeds_p50
+          value: 0
+        - type: equals
+          column: p50_exceeds_p95
+          value: 0
+        - type: equals
+          column: p95_exceeds_max
+          value: 0
+    - name: Duration metrics should be non-negative
+      sql: |
+        SELECT
+          countIf(avg_duration_ms < 0) AS negative_avg,
+          countIf(p50_duration_ms < 0) AS negative_p50,
+          countIf(p95_duration_ms < 0) AS negative_p95,
+          countIf(min_duration_ms < 0) AS negative_min,
+          countIf(max_duration_ms < 0) AS negative_max
+        FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: equals
+          column: negative_avg
+          value: 0
+        - type: equals
+          column: negative_p50
+          value: 0
+        - type: equals
+          column: negative_p95
+          value: 0
+        - type: equals
+          column: negative_min
+          value: 0
+        - type: equals
+          column: negative_max
+          value: 0
+    - name: Status counts should not exceed observation count
+      sql: |
+        SELECT countIf(valid_count + invalid_count + syncing_count + accepted_count > observation_count) AS invalid_status_sum
+        FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: equals
+          column: invalid_status_sum
+          value: 0
+    - name: Required columns should not be null
+      sql: |
+        SELECT
+          countIf(hour_start_date_time IS NULL) AS null_hour,
+          countIf(meta_execution_implementation IS NULL) AS null_impl,
+          countIf(meta_execution_version IS NULL) AS null_version,
+          countIf(updated_date_time IS NULL) AS null_updated
+        FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: equals
+          column: null_hour
+          value: 0
+        - type: equals
+          column: null_impl
+          value: 0
+        - type: equals
+          column: null_version
+          value: 0
+        - type: equals
+          column: null_updated
+          value: 0
+    - name: Block complexity metrics should be non-negative
+      sql: |
+        SELECT
+          countIf(avg_gas_used < 0) AS negative_gas_used,
+          countIf(avg_gas_limit < 0) AS negative_gas_limit,
+          countIf(avg_tx_count < 0) AS negative_tx_count,
+          countIf(avg_blob_count < 0) AS negative_blob_count
+        FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: equals
+          column: negative_gas_used
+          value: 0
+        - type: equals
+          column: negative_gas_limit
+          value: 0
+        - type: equals
+          column: negative_tx_count
+          value: 0
+        - type: equals
+          column: negative_blob_count
+          value: 0
+    - name: Unique node count should be at least 1 for all rows
+      sql: |
+        SELECT countIf(unique_node_count < 1) AS invalid_node_count
+        FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: equals
+          column: invalid_node_count
+          value: 0
+    - name: Hour start should be aligned to hour boundaries
+      sql: |
+        SELECT countIf(toStartOfHour(hour_start_date_time) != hour_start_date_time) AS misaligned_hours
+        FROM fct_engine_new_payload_by_el_client_hourly FINAL
+      assertions:
+        - type: equals
+          column: misaligned_hours
+          value: 0

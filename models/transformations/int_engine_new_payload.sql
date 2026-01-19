@@ -44,10 +44,49 @@ block_context AS (
 ),
 
 -- Get raw engine_newPayload observations from the execution layer snooper
+-- Fetch external data separately to avoid cross-cluster join pushdown issues
+engine_payloads AS (
+    SELECT
+        updated_date_time AS source_updated_date_time,
+        event_date_time,
+        requested_date_time,
+        duration_ms,
+        block_hash,
+        block_number,
+        parent_hash,
+        gas_used,
+        gas_limit,
+        tx_count,
+        blob_count,
+        status,
+        validation_error,
+        latest_valid_hash,
+        method_version,
+        meta_execution_version,
+        meta_execution_implementation,
+        meta_client_name,
+        meta_client_implementation,
+        meta_client_version,
+        meta_client_geo_city,
+        meta_client_geo_country,
+        meta_client_geo_country_code,
+        meta_client_geo_continent_code,
+        meta_client_geo_latitude,
+        meta_client_geo_longitude,
+        meta_client_geo_autonomous_system_number,
+        meta_client_geo_autonomous_system_organization
+    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+        -- Filter execution events by the slot time window (with some buffer for timing differences)
+        AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+),
+
+-- Join external data with block context locally
 -- LEFT JOIN to block_context - preserve all snooper observations even if CL context not yet available
 enriched AS (
     SELECT
-        ep.updated_date_time AS source_updated_date_time,
+        ep.source_updated_date_time,
         ep.event_date_time,
         ep.requested_date_time,
         ep.duration_ms,
@@ -85,12 +124,8 @@ enriched AS (
         ep.meta_client_geo_longitude,
         ep.meta_client_geo_autonomous_system_number,
         ep.meta_client_geo_autonomous_system_organization
-    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL AS ep
+    FROM engine_payloads ep
     LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
-    WHERE ep.meta_network_name = '{{ .env.NETWORK }}'
-        -- Filter execution events by the slot time window (with some buffer for timing differences)
-        AND ep.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
-            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
 )
 
 -- Aggregate using argMax to deduplicate by ORDER BY key

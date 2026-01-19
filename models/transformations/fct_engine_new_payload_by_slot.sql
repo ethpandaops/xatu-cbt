@@ -35,7 +35,26 @@ block_context AS (
         AND execution_payload_block_hash IS NOT NULL
         AND execution_payload_block_hash != ''
 ),
--- Join execution engine data with slot context
+-- Fetch external data separately to avoid cross-cluster join pushdown issues
+engine_payloads AS (
+    SELECT
+        block_hash,
+        block_number,
+        gas_used,
+        gas_limit,
+        tx_count,
+        blob_count,
+        duration_ms,
+        status,
+        meta_client_name,
+        meta_client_implementation,
+        meta_execution_implementation
+    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+        AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+),
+-- Join execution engine data with slot context locally
 enriched AS (
     SELECT
         COALESCE(bc.slot, 0) AS slot,
@@ -55,11 +74,8 @@ enriched AS (
         ep.meta_client_name,
         ep.meta_client_implementation,
         ep.meta_execution_implementation
-    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL AS ep
+    FROM engine_payloads ep
     LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
-    WHERE ep.meta_network_name = '{{ .env.NETWORK }}'
-        AND ep.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
-            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,

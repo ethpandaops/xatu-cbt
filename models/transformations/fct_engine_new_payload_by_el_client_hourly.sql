@@ -38,7 +38,26 @@ block_context AS (
         AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 5 MINUTE
         AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
 ),
--- Join execution engine data with slot context
+-- Fetch external data separately to avoid cross-cluster join pushdown issues
+engine_payloads AS (
+    SELECT
+        block_hash,
+        duration_ms,
+        status,
+        gas_used,
+        gas_limit,
+        tx_count,
+        blob_count,
+        meta_execution_implementation,
+        meta_execution_version,
+        meta_client_name
+    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+        AND meta_execution_implementation != ''
+        AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+),
+-- Join execution engine data with slot context locally
 enriched AS (
     SELECT
         COALESCE(bc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
@@ -56,12 +75,8 @@ enriched AS (
             WHEN positionCaseInsensitive(ep.meta_client_name, '7870') > 0 THEN 'eip7870-block-builder'
             ELSE ''
         END AS node_class
-    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL AS ep
+    FROM engine_payloads ep
     LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
-    WHERE ep.meta_network_name = '{{ .env.NETWORK }}'
-        AND ep.meta_execution_implementation != ''
-        AND ep.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
-            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
 ),
 -- Find the hour boundaries from the enriched data
 hour_bounds AS (
