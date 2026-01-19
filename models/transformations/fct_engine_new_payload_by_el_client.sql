@@ -28,7 +28,9 @@ block_context AS (
         block_root,
         execution_payload_block_hash
     FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    -- Use wider window to ensure we catch all blocks that might match engine events
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 5 MINUTE
+        AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 5 MINUTE
         AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
 ),
 enriched AS (
