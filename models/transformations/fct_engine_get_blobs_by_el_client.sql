@@ -13,10 +13,59 @@ tags:
   - get_blobs
   - el_client
 dependencies:
-  - "{{external}}.consensus_engine_api_get_blobs"
+  - "{{external}}.execution_engine_get_blobs"
+  - "{{external}}.beacon_api_eth_v1_events_blob_sidecar"
+  - "{{external}}.canonical_beacon_blob_sidecar"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
+WITH
+versioned_hash_context AS (
+    SELECT versioned_hash, slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_blob_sidecar" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    UNION ALL
+    SELECT versioned_hash, slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
+    FROM {{ index .dep "{{external}}" "canonical_beacon_blob_sidecar" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+),
+unique_vh_context AS (
+    SELECT versioned_hash,
+           argMax(slot, slot_start_date_time) AS slot,
+           argMax(slot_start_date_time, slot_start_date_time) AS slot_start_date_time,
+           argMax(epoch, slot_start_date_time) AS epoch,
+           argMax(epoch_start_date_time, slot_start_date_time) AS epoch_start_date_time,
+           argMax(block_root, slot_start_date_time) AS block_root
+    FROM versioned_hash_context GROUP BY versioned_hash
+),
+expanded AS (
+    SELECT gb.*, vh AS exp_vh
+    FROM {{ index .dep "{{external}}" "execution_engine_get_blobs" "helpers" "from" }} FINAL AS gb
+    ARRAY JOIN gb.versioned_hashes AS vh
+    WHERE gb.meta_network_name = '{{ .env.NETWORK }}'
+        AND gb.meta_execution_implementation != ''
+        AND gb.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+),
+enriched AS (
+    SELECT
+        COALESCE(vc.slot, 0) AS slot,
+        COALESCE(vc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
+        COALESCE(vc.epoch, 0) AS epoch,
+        COALESCE(vc.epoch_start_date_time, toDateTime(0)) AS epoch_start_date_time,
+        COALESCE(vc.block_root, '') AS block_root,
+        e.meta_execution_implementation,
+        e.meta_execution_version,
+        e.status,
+        e.meta_client_name,
+        e.requested_count,
+        e.returned_count,
+        e.duration_ms
+    FROM expanded e
+    LEFT JOIN unique_vh_context vc ON e.exp_vh = vc.versioned_hash
+)
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
     argMin(slot, duration_ms) AS slot,
@@ -40,8 +89,6 @@ SELECT
     MIN(duration_ms) AS min_duration_ms,
     MAX(duration_ms) AS max_duration_ms,
     round(quantile(0.95)(duration_ms)) AS p95_duration_ms
-FROM {{ index .dep "{{external}}" "consensus_engine_api_get_blobs" "helpers" "from" }} FINAL
-WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-    AND meta_network_name = '{{ .env.NETWORK }}'
-    AND meta_execution_implementation != ''
+FROM enriched
+WHERE slot_start_date_time != toDateTime(0)
 GROUP BY slot_start_date_time, block_root, meta_execution_implementation, meta_execution_version, status, node_class

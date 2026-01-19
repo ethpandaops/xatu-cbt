@@ -12,56 +12,98 @@ tags:
   - block
   - engine
 dependencies:
-  - "{{external}}.consensus_engine_api_new_payload"
+  - "{{external}}.execution_engine_new_payload"
+  - "{{external}}.beacon_api_eth_v2_beacon_block"
+  - "{{external}}.canonical_beacon_block"
   - "{{transformation}}.fct_block_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
--- Step 1: Get raw engine_newPayload observations with source updated_date_time
-raw_payloads AS (
+-- Step 1: Get slot context from BOTH beacon_api (real-time) AND canonical (complete historical)
+-- This provides the CL context (slot, epoch, block_root, proposer_index) that execution_engine lacks
+slot_context AS (
+    -- Real-time source: beacon_api_eth_v2_beacon_block (captures blocks as seen, no finality wait)
     SELECT
-        updated_date_time AS source_updated_date_time,
-        event_date_time,
-        requested_date_time,
-        duration_ms,
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
         block_root,
-        block_hash,
-        block_number,
-        parent_block_root,
-        parent_hash,
+        parent_root AS parent_block_root,
         proposer_index,
-        gas_used,
-        gas_limit,
-        tx_count,
-        blob_count,
-        status,
-        validation_error,
-        latest_valid_hash,
-        method_version,
-        meta_execution_version,
-        meta_execution_implementation,
-        meta_client_name,
-        meta_client_implementation,
-        meta_client_version,
-        meta_client_geo_city,
-        meta_client_geo_country,
-        meta_client_geo_country_code,
-        meta_client_geo_continent_code,
-        meta_client_geo_latitude,
-        meta_client_geo_longitude,
-        meta_client_geo_autonomous_system_number,
-        meta_client_geo_autonomous_system_organization
-    FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
+        execution_payload_block_hash AS block_hash
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v2_beacon_block" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND execution_payload_block_hash IS NOT NULL
+        AND execution_payload_block_hash != ''
+    UNION ALL
+    -- Historical source: canonical_beacon_block (finalized, complete coverage)
+    SELECT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        block_root,
+        parent_root AS parent_block_root,
+        proposer_index,
+        execution_payload_block_hash AS block_hash
+    FROM {{ index .dep "{{external}}" "canonical_beacon_block" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+        AND execution_payload_block_hash IS NOT NULL
+        AND execution_payload_block_hash != ''
 ),
 
--- Step 2: Get block metadata (size, version) from fct_block_head
+-- Step 2: Get raw engine_newPayload observations from the execution layer snooper
+-- LEFT JOIN to slot_context - preserve all snooper observations even if CL context not yet available
+raw_payloads AS (
+    SELECT
+        ep.updated_date_time AS source_updated_date_time,
+        ep.event_date_time,
+        ep.requested_date_time,
+        ep.duration_ms,
+        COALESCE(sc.slot, 0) AS slot,
+        COALESCE(sc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
+        COALESCE(sc.epoch, 0) AS epoch,
+        COALESCE(sc.epoch_start_date_time, toDateTime(0)) AS epoch_start_date_time,
+        COALESCE(sc.block_root, '') AS block_root,
+        ep.block_hash,
+        ep.block_number,
+        COALESCE(sc.parent_block_root, '') AS parent_block_root,
+        ep.parent_hash,
+        COALESCE(sc.proposer_index, 0) AS proposer_index,
+        ep.gas_used,
+        ep.gas_limit,
+        ep.tx_count,
+        ep.blob_count,
+        ep.status,
+        ep.validation_error,
+        ep.latest_valid_hash,
+        ep.method_version,
+        ep.meta_execution_version,
+        ep.meta_execution_implementation,
+        ep.meta_client_name,
+        ep.meta_client_implementation,
+        ep.meta_client_version,
+        ep.meta_client_geo_city,
+        ep.meta_client_geo_country,
+        ep.meta_client_geo_country_code,
+        ep.meta_client_geo_continent_code,
+        ep.meta_client_geo_latitude,
+        ep.meta_client_geo_longitude,
+        ep.meta_client_geo_autonomous_system_number,
+        ep.meta_client_geo_autonomous_system_organization
+    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL AS ep
+    LEFT JOIN slot_context sc ON ep.block_hash = sc.block_hash
+    WHERE ep.meta_network_name = '{{ .env.NETWORK }}'
+        -- Filter execution events by the slot time window (with some buffer for timing differences)
+        AND ep.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+),
+
+-- Step 3: Get block metadata (size, version) from fct_block_head
 block_metadata AS (
     SELECT
         slot_start_date_time,
@@ -74,7 +116,7 @@ block_metadata AS (
     GROUP BY slot_start_date_time, block_root
 ),
 
--- Step 3: Join raw payloads with block metadata
+-- Step 4: Join raw payloads with block metadata
 enriched AS (
     SELECT
         rp.source_updated_date_time,
@@ -121,7 +163,7 @@ enriched AS (
         AND rp.block_root = bm.block_root
 )
 
--- Step 4: Aggregate using argMax to deduplicate by ORDER BY key
+-- Step 5: Aggregate using argMax to deduplicate by ORDER BY key
 -- GROUP BY columns (slot_start_date_time, block_hash, meta_client_name, event_date_time) are selected directly
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -164,11 +206,7 @@ SELECT
     argMax(meta_client_geo_autonomous_system_number, source_updated_date_time) AS meta_client_geo_autonomous_system_number,
     argMax(meta_client_geo_autonomous_system_organization, source_updated_date_time) AS meta_client_geo_autonomous_system_organization
 FROM enriched
--- Optional filters (uncomment as needed):
--- Only store observations where engine_newPayload took longer than 500ms:
--- WHERE duration_ms > 500
--- Only store VALID responses (successfully validated blocks):
--- WHERE status = 'VALID'
--- Combine both filters (slow + valid only):
--- WHERE duration_ms > 500 AND status = 'VALID'
+-- Filter out records without slot context (orphaned blocks or timing issues)
+-- These will be picked up in subsequent backfill runs when the CL context becomes available
+WHERE slot_start_date_time != toDateTime(0)
 GROUP BY slot_start_date_time, block_hash, meta_client_name, event_date_time

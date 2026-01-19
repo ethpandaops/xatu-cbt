@@ -13,10 +13,52 @@ tags:
   - new_payload
   - el_client
 dependencies:
-  - "{{external}}.consensus_engine_api_new_payload"
+  - "{{external}}.execution_engine_new_payload"
+  - "{{external}}.beacon_api_eth_v2_beacon_block"
+  - "{{external}}.canonical_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
+WITH
+slot_context AS (
+    SELECT slot, slot_start_date_time, epoch, epoch_start_date_time, block_root,
+           execution_payload_block_hash AS block_hash
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v2_beacon_block" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+        AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
+    UNION ALL
+    SELECT slot, slot_start_date_time, epoch, epoch_start_date_time, block_root,
+           execution_payload_block_hash AS block_hash
+    FROM {{ index .dep "{{external}}" "canonical_beacon_block" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+        AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
+),
+enriched AS (
+    SELECT
+        COALESCE(sc.slot, 0) AS slot,
+        COALESCE(sc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
+        COALESCE(sc.epoch, 0) AS epoch,
+        COALESCE(sc.epoch_start_date_time, toDateTime(0)) AS epoch_start_date_time,
+        COALESCE(sc.block_root, '') AS block_root,
+        ep.block_hash,
+        ep.meta_execution_implementation,
+        ep.meta_execution_version,
+        ep.status,
+        ep.meta_client_name,
+        ep.gas_used,
+        ep.gas_limit,
+        ep.tx_count,
+        ep.blob_count,
+        ep.duration_ms
+    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL AS ep
+    LEFT JOIN slot_context sc ON ep.block_hash = sc.block_hash
+    WHERE ep.meta_network_name = '{{ .env.NETWORK }}'
+        AND ep.meta_execution_implementation != ''
+        AND ep.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+)
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
     argMin(slot, duration_ms) AS slot,
@@ -43,8 +85,6 @@ SELECT
     MIN(duration_ms) AS min_duration_ms,
     MAX(duration_ms) AS max_duration_ms,
     round(quantile(0.95)(duration_ms)) AS p95_duration_ms
-FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
-WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-    AND meta_network_name = '{{ .env.NETWORK }}'
-    AND meta_execution_implementation != ''
+FROM enriched
+WHERE slot_start_date_time != toDateTime(0)
 GROUP BY slot_start_date_time, block_hash, meta_execution_implementation, meta_execution_version, status, node_class

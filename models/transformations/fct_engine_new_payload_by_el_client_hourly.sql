@@ -13,7 +13,9 @@ tags:
   - new_payload
   - el_client
 dependencies:
-  - "{{external}}.consensus_engine_api_new_payload"
+  - "{{external}}.execution_engine_new_payload"
+  - "{{external}}.beacon_api_eth_v2_beacon_block"
+  - "{{external}}.canonical_beacon_block"
 ---
 -- Hourly aggregation of engine_newPayload by execution client.
 -- Computes TRUE percentiles (p50, p95) across all observations in each hour per client,
@@ -26,39 +28,73 @@ dependencies:
 -- complete data. The ReplacingMergeTree will merge duplicates keeping the latest row.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
-    -- Find the hour boundaries from the data within the current bounds
-    hour_bounds AS (
-        SELECT
-            toStartOfHour(min(slot_start_date_time)) AS min_hour,
-            toStartOfHour(max(slot_start_date_time)) AS max_hour
-        FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-          AND meta_network_name = '{{ .env.NETWORK }}'
-    ),
-    -- Find ALL events that fall within those hour boundaries (expanding to complete hours)
-    events_in_hours AS (
-        SELECT
-            slot_start_date_time,
-            block_hash,
-            duration_ms,
-            status,
-            gas_used,
-            gas_limit,
-            tx_count,
-            blob_count,
-            meta_execution_implementation,
-            meta_execution_version,
-            meta_client_name,
-            CASE
-                WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder'
-                ELSE ''
-            END AS node_class
-        FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
-          AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
-          AND meta_network_name = '{{ .env.NETWORK }}'
-          AND meta_execution_implementation != ''
-    )
+-- Get slot context from BOTH beacon_api (real-time) AND canonical (complete historical)
+slot_context AS (
+    SELECT
+        slot_start_date_time,
+        execution_payload_block_hash AS block_hash
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v2_beacon_block" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+        AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
+    UNION ALL
+    SELECT
+        slot_start_date_time,
+        execution_payload_block_hash AS block_hash
+    FROM {{ index .dep "{{external}}" "canonical_beacon_block" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+        AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
+),
+-- Deduplicate slot context
+unique_slot_context AS (
+    SELECT
+        block_hash,
+        argMax(slot_start_date_time, slot_start_date_time) AS slot_start_date_time
+    FROM slot_context
+    GROUP BY block_hash
+),
+-- Join execution engine data with slot context
+enriched AS (
+    SELECT
+        COALESCE(sc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
+        ep.block_hash,
+        ep.duration_ms,
+        ep.status,
+        ep.gas_used,
+        ep.gas_limit,
+        ep.tx_count,
+        ep.blob_count,
+        ep.meta_execution_implementation,
+        ep.meta_execution_version,
+        ep.meta_client_name,
+        CASE
+            WHEN positionCaseInsensitive(ep.meta_client_name, '7870') > 0 THEN 'eip7870-block-builder'
+            ELSE ''
+        END AS node_class
+    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL AS ep
+    LEFT JOIN unique_slot_context sc ON ep.block_hash = sc.block_hash
+    WHERE ep.meta_network_name = '{{ .env.NETWORK }}'
+        AND ep.meta_execution_implementation != ''
+        AND ep.event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+),
+-- Find the hour boundaries from the enriched data
+hour_bounds AS (
+    SELECT
+        toStartOfHour(min(slot_start_date_time)) AS min_hour,
+        toStartOfHour(max(slot_start_date_time)) AS max_hour
+    FROM enriched
+    WHERE slot_start_date_time != toDateTime(0)
+),
+-- Filter to complete hour boundaries
+events_in_hours AS (
+    SELECT *
+    FROM enriched
+    WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
+      AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
+      AND slot_start_date_time != toDateTime(0)
+)
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
     toStartOfHour(slot_start_date_time) AS hour_start_date_time,
