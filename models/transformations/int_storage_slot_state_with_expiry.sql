@@ -101,6 +101,12 @@ expiry_reactivation_keys AS (
     SELECT DISTINCT block_number, address, expiry_policy
     FROM combined_deltas
 ),
+-- Unique addresses from expiry/reactivation events (for ASOF JOIN optimization)
+-- PERF: Pre-filter addresses to avoid full table scan in ASOF JOIN (~69x speedup)
+unique_expiry_addresses AS (
+    SELECT DISTINCT address
+    FROM expiry_reactivation_keys
+),
 -- Base activity from int_storage_slot_state
 base_activity AS (
     SELECT
@@ -131,6 +137,7 @@ all_block_addresses AS (
     -- Use ASOF JOIN to find the correct base state at each expiry block
     -- This fixes the bug where a single prev_base_state was used for all expiry blocks,
     -- ignoring base state changes within the processing batch
+    -- PERF: Add IN filter + upper bound to avoid full table scan (~69x speedup, 17x less data)
     SELECT
         e.block_number,
         e.address,
@@ -141,6 +148,8 @@ all_block_addresses AS (
     ASOF LEFT JOIN (
         SELECT block_number, address, active_slots, effective_bytes
         FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} FINAL
+        WHERE address IN (SELECT address FROM unique_expiry_addresses)
+          AND block_number <= {{ .bounds.end }}
     ) s ON e.address = s.address AND e.block_number >= s.block_number
     LEFT JOIN base_activity b ON e.block_number = b.block_number AND e.address = b.address
     WHERE b.address = ''  -- ClickHouse uses '' not NULL for unmatched String columns
