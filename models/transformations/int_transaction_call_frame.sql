@@ -16,6 +16,7 @@ tags:
   - gas
 dependencies:
   - "{{external}}.canonical_execution_transaction_structlog"
+  - "{{external}}.canonical_execution_traces"
 ---
 -- Aggregates structlog opcodes into per-call-frame records for transaction call tree analysis.
 -- Each row represents one call frame within a transaction, with aggregated metrics.
@@ -163,10 +164,11 @@ SELECT
   toUInt32(length(fm.call_frame_path) - 1) as depth,
   -- Target address comes from the CALL opcode that created this frame (NULL for root)
   ic.call_to_address as target_address,
-  -- Target name from dim_contract_owner lookup (NULL if not found)
-  dc.contract_name as target_name,
   -- Call type is the opcode that started this frame (empty for root)
   coalesce(ic.call_type, '') as call_type,
+  -- Function selector from traces.action_input (first 4 bytes = 10 chars including 0x prefix)
+  -- traces.internal_index = call_frame_id + 1 (traces are 1-indexed, call_frame_id is 0-indexed)
+  substring(tr.action_input, 1, 10) as function_selector,
   fm.opcode_count,
   fm.error_count,
   -- Gas consumed by this frame only (excludes children)
@@ -201,8 +203,13 @@ LEFT JOIN children_gas cg
   ON fm.block_number = cg.block_number
   AND fm.transaction_hash = cg.transaction_hash
   AND fm.call_frame_id = cg.parent_call_frame_id
-LEFT JOIN `{{ .self.database }}`.dim_contract_owner dc FINAL
-  ON lower(ic.call_to_address) = dc.contract_address
+-- Join traces to get action_input for function selectors (all frames including root)
+-- traces.internal_index is 1-indexed, call_frame_id is 0-indexed
+LEFT JOIN {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }} tr
+  ON fm.block_number = tr.block_number
+  AND fm.transaction_hash = tr.transaction_hash
+  AND tr.internal_index = fm.call_frame_id + 1
+  AND tr.meta_network_name = '{{ .env.NETWORK }}'
 SETTINGS
   max_bytes_before_external_group_by = 10000000000,
   distributed_aggregation_memory_efficient = 1;

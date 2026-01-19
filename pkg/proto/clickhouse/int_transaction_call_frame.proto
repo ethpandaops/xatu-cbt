@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Aggregated call frame activity per transaction for call tree analysis
+
+message IntTransactionCallFrame {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The block number containing this transaction
+  uint64 block_number = 12;
+  // The transaction hash (hex encoded with 0x prefix)
+  string transaction_hash = 13;
+  // Position of the transaction within the block
+  uint32 transaction_index = 14;
+  // Sequential frame ID within the transaction (0 = root)
+  uint32 call_frame_id = 15;
+  // Parent frame ID (NULL for root frame)
+  google.protobuf.UInt32Value parent_call_frame_id = 16;
+  // Call depth (0 = root transaction execution)
+  uint32 depth = 17;
+  // Contract address being called (hex encoded with 0x prefix)
+  google.protobuf.StringValue target_address = 18;
+  // Type of call opcode (CALL, DELEGATECALL, STATICCALL, CALLCODE, CREATE, CREATE2)
+  string call_type = 19;
+  // Function selector (first 4 bytes of call input, hex encoded with 0x prefix). Populated for all frames from traces.
+  google.protobuf.StringValue function_selector = 20;
+  // Number of opcodes executed in this frame
+  uint64 opcode_count = 21;
+  // Number of opcodes that resulted in errors
+  uint64 error_count = 22;
+  // Gas consumed by this frame only, excludes child frames. sum(gas) = EVM execution gas. This is "self" gas in flame graphs.
+  uint64 gas = 23;
+  // Gas consumed by this frame + all descendants. Root frame value = total EVM execution gas.
+  uint64 gas_cumulative = 24;
+  // Total accumulated refund. Only populated for root frame (refund applied once at tx end).
+  google.protobuf.UInt64Value gas_refund = 25;
+  // Intrinsic tx cost (21000 + calldata). Only populated for root frame (call_frame_id=0).
+  google.protobuf.UInt64Value intrinsic_gas = 26;
+}
+
+// Request for listing int_transaction_call_frame records
+message ListIntTransactionCallFrameRequest {
+  // Filter by block_number - The block number containing this transaction (PRIMARY KEY - required unless using alternatives: transaction_hash)
+  UInt64Filter block_number = 1;
+
+  // Filter by transaction_hash - The transaction hash (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
+  StringFilter transaction_hash = 2;
+
+  // Filter by call_frame_id - Sequential frame ID within the transaction (0 = root) (ORDER BY column 3 - optional)
+  UInt32Filter call_frame_id = 3;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4;
+  // Filter by transaction_index - Position of the transaction within the block (optional)
+  UInt32Filter transaction_index = 5;
+  // Filter by parent_call_frame_id - Parent frame ID (NULL for root frame) (optional)
+  NullableUInt32Filter parent_call_frame_id = 6;
+  // Filter by depth - Call depth (0 = root transaction execution) (optional)
+  UInt32Filter depth = 7;
+  // Filter by target_address - Contract address being called (hex encoded with 0x prefix) (optional)
+  NullableStringFilter target_address = 8;
+  // Filter by call_type - Type of call opcode (CALL, DELEGATECALL, STATICCALL, CALLCODE, CREATE, CREATE2) (optional)
+  StringFilter call_type = 9;
+  // Filter by function_selector - Function selector (first 4 bytes of call input, hex encoded with 0x prefix). Populated for all frames from traces. (optional)
+  NullableStringFilter function_selector = 10;
+  // Filter by opcode_count - Number of opcodes executed in this frame (optional)
+  UInt64Filter opcode_count = 11;
+  // Filter by error_count - Number of opcodes that resulted in errors (optional)
+  UInt64Filter error_count = 12;
+  // Filter by gas - Gas consumed by this frame only, excludes child frames. sum(gas) = EVM execution gas. This is "self" gas in flame graphs. (optional)
+  UInt64Filter gas = 13;
+  // Filter by gas_cumulative - Gas consumed by this frame + all descendants. Root frame value = total EVM execution gas. (optional)
+  UInt64Filter gas_cumulative = 14;
+  // Filter by gas_refund - Total accumulated refund. Only populated for root frame (refund applied once at tx end). (optional)
+  NullableUInt64Filter gas_refund = 15;
+  // Filter by intrinsic_gas - Intrinsic tx cost (21000 + calldata). Only populated for root frame (call_frame_id=0). (optional)
+  NullableUInt64Filter intrinsic_gas = 16;
+
+  // The maximum number of int_transaction_call_frame to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 17;
+  // A page token, received from a previous `ListIntTransactionCallFrame` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 18;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 19;
+}
+
+// Response for listing int_transaction_call_frame records
+message ListIntTransactionCallFrameResponse {
+  // The list of int_transaction_call_frame.
+  repeated IntTransactionCallFrame int_transaction_call_frame = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_transaction_call_frame record by primary key
+message GetIntTransactionCallFrameRequest {
+  // The block number containing this transaction
+  uint64 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single int_transaction_call_frame record
+message GetIntTransactionCallFrameResponse {
+  IntTransactionCallFrame item = 1;
+}
+
+// Query int_transaction_call_frame data
+service IntTransactionCallFrameService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntTransactionCallFrameRequest) returns (ListIntTransactionCallFrameResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntTransactionCallFrameRequest) returns (GetIntTransactionCallFrameResponse);
+}

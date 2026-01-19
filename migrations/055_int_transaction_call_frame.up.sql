@@ -14,8 +14,8 @@ CREATE TABLE `${NETWORK_NAME}`.int_transaction_call_frame_local ON CLUSTER '{clu
 
   -- Call information
   `target_address` Nullable(String) COMMENT 'Contract address being called (hex encoded with 0x prefix)' CODEC(ZSTD(1)),
-  `target_name` Nullable(String) COMMENT 'Human-readable name of target contract (from dim_contract)' CODEC(ZSTD(1)),
   `call_type` LowCardinality(String) COMMENT 'Type of call opcode (CALL, DELEGATECALL, STATICCALL, CALLCODE, CREATE, CREATE2)' CODEC(ZSTD(1)),
+  `function_selector` Nullable(String) COMMENT 'Function selector (first 4 bytes of call input, hex encoded with 0x prefix). Populated for all frames from traces.' CODEC(ZSTD(1)),
 
   -- Aggregated metrics
   `opcode_count` UInt64 COMMENT 'Number of opcodes executed in this frame' CODEC(ZSTD(1)),
