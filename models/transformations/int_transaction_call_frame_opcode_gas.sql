@@ -57,6 +57,7 @@ WITH opcode_aggregates AS (
     FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND operation != ''  -- Exclude synthetic EOA rows (no opcodes executed)
     GROUP BY
         block_number,
         transaction_hash,

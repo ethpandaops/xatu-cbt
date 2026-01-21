@@ -214,3 +214,54 @@ ENGINE = Distributed(
     dim_function_signature_local,
     cityHash64(selector)
 );
+
+-- =============================================================================
+-- fct_block_opcode_gas
+-- =============================================================================
+
+-- Local table for block-level opcode gas aggregation
+-- Aggregates opcode gas data from int_transaction_opcode_gas to block level
+CREATE TABLE `${NETWORK_NAME}`.fct_block_opcode_gas_local ON CLUSTER '{cluster}' (
+    -- Metadata
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Block identifier
+    `block_number` UInt64 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Opcode aggregation
+    `opcode` LowCardinality(String) COMMENT 'The EVM opcode name (e.g., SLOAD, ADD, CALL)',
+    `count` UInt64 COMMENT 'Total execution count of this opcode across all transactions in the block' CODEC(ZSTD(1)),
+    `gas` UInt64 COMMENT 'Total gas consumed by this opcode across all transactions in the block' CODEC(ZSTD(1)),
+
+    -- Error tracking
+    `error_count` UInt64 COMMENT 'Number of times this opcode resulted in an error across all transactions' CODEC(ZSTD(1)),
+
+    -- Network
+    `meta_network_name` LowCardinality(String) COMMENT 'The name of the network'
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+)
+PARTITION BY intDiv(block_number, 201600) -- ~1 month of blocks
+ORDER BY (block_number, opcode, meta_network_name)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild'
+COMMENT 'Aggregated opcode-level gas usage per block. Derived from int_transaction_opcode_gas.';
+
+-- Distributed table
+CREATE TABLE `${NETWORK_NAME}`.fct_block_opcode_gas ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_block_opcode_gas_local
+ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_block_opcode_gas_local,
+    cityHash64(block_number)
+);
+
+-- Projection for opcode-first queries (e.g., "how much gas did SLOAD use across blocks?")
+ALTER TABLE `${NETWORK_NAME}`.fct_block_opcode_gas_local ON CLUSTER '{cluster}'
+ADD PROJECTION p_by_opcode (
+    SELECT *
+    ORDER BY (opcode, block_number)
+);
