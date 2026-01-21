@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Contract-level expiry state base table - tracks deltas and cumulative adjustments per address per policy
+
+message IntContractStorageStateWithExpiry {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The block number
+  uint32 block_number = 12;
+  // The contract address
+  string address = 13;
+  // Expiry policy identifier: 1m, 6m, 12m, 18m, 24m
+  string expiry_policy = 14;
+  // Net slot adjustment this block (negative=expiry, positive=reactivation)
+  int32 net_slots_delta = 15;
+  // Net bytes adjustment this block (negative=expiry, positive=reactivation)
+  int64 net_bytes_delta = 16;
+  // Cumulative net slot adjustment up to this block
+  int64 cumulative_net_slots = 17;
+  // Cumulative net bytes adjustment up to this block
+  int64 cumulative_net_bytes = 18;
+  // Number of active storage slots in this contract (with expiry applied)
+  int64 active_slots = 19;
+  // Effective bytes for this contract (with expiry applied)
+  int64 effective_bytes = 20;
+  // Previous block active_slots for this address (for transition detection)
+  int64 prev_active_slots = 21;
+  // Previous block effective_bytes for this address (for delta calculation)
+  int64 prev_effective_bytes = 22;
+}
+
+// Request for listing int_contract_storage_state_with_expiry records
+message ListIntContractStorageStateWithExpiryRequest {
+  // Filter by expiry_policy - Expiry policy identifier: 1m, 6m, 12m, 18m, 24m (PRIMARY KEY - required)
+  StringFilter expiry_policy = 1;
+
+  // Filter by block_number - The block number (ORDER BY column 2 - optional)
+  UInt32Filter block_number = 2;
+
+  // Filter by address - The contract address (ORDER BY column 3 - optional)
+  StringFilter address = 3;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4;
+  // Filter by net_slots_delta - Net slot adjustment this block (negative=expiry, positive=reactivation) (optional)
+  Int32Filter net_slots_delta = 5;
+  // Filter by net_bytes_delta - Net bytes adjustment this block (negative=expiry, positive=reactivation) (optional)
+  Int64Filter net_bytes_delta = 6;
+  // Filter by cumulative_net_slots - Cumulative net slot adjustment up to this block (optional)
+  Int64Filter cumulative_net_slots = 7;
+  // Filter by cumulative_net_bytes - Cumulative net bytes adjustment up to this block (optional)
+  Int64Filter cumulative_net_bytes = 8;
+  // Filter by active_slots - Number of active storage slots in this contract (with expiry applied) (optional)
+  Int64Filter active_slots = 9;
+  // Filter by effective_bytes - Effective bytes for this contract (with expiry applied) (optional)
+  Int64Filter effective_bytes = 10;
+  // Filter by prev_active_slots - Previous block active_slots for this address (for transition detection) (optional)
+  Int64Filter prev_active_slots = 11;
+  // Filter by prev_effective_bytes - Previous block effective_bytes for this address (for delta calculation) (optional)
+  Int64Filter prev_effective_bytes = 12;
+
+  // The maximum number of int_contract_storage_state_with_expiry to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 13;
+  // A page token, received from a previous `ListIntContractStorageStateWithExpiry` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 14;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 15;
+}
+
+// Response for listing int_contract_storage_state_with_expiry records
+message ListIntContractStorageStateWithExpiryResponse {
+  // The list of int_contract_storage_state_with_expiry.
+  repeated IntContractStorageStateWithExpiry int_contract_storage_state_with_expiry = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_contract_storage_state_with_expiry record by primary key
+message GetIntContractStorageStateWithExpiryRequest {
+  // Expiry policy identifier: 1m, 6m, 12m, 18m, 24m
+  string expiry_policy = 1; // Primary key (required)
+}
+
+// Response for getting a single int_contract_storage_state_with_expiry record
+message GetIntContractStorageStateWithExpiryResponse {
+  IntContractStorageStateWithExpiry item = 1;
+}
+
+// Query int_contract_storage_state_with_expiry data
+service IntContractStorageStateWithExpiryService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntContractStorageStateWithExpiryRequest) returns (ListIntContractStorageStateWithExpiryResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntContractStorageStateWithExpiryRequest) returns (GetIntContractStorageStateWithExpiryResponse);
+}

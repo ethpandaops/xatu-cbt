@@ -29,6 +29,7 @@ WITH
             toStartOfHour(max(block_date_time)) AS max_hour
         FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+          AND meta_network_name = '{{ .env.NETWORK }}'
     ),
     -- Find ALL blocks that fall within those hour boundaries
     blocks_in_hours AS (
@@ -38,6 +39,7 @@ WITH
         FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
         WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
+          AND meta_network_name = '{{ .env.NETWORK }}'
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS ${NETWORK_NAME}.admin_cbt_incremental_local ON CLUSTER '{cluster}' (
+CREATE TABLE IF NOT EXISTS `${NETWORK_NAME}`.admin_cbt_incremental_local ON CLUSTER '{cluster}' (
     updated_date_time DateTime(3) CODEC(DoubleDelta, ZSTD(1)),
     database LowCardinality(String) COMMENT 'The database name',
     table LowCardinality(String) COMMENT 'The table name',
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS ${NETWORK_NAME}.admin_cbt_incremental_local ON CLUSTE
 )
 ORDER BY (database, table, position, interval);
 
-CREATE TABLE IF NOT EXISTS ${NETWORK_NAME}.admin_cbt_incremental ON CLUSTER '{cluster}' AS ${NETWORK_NAME}.admin_cbt_incremental_local
+CREATE TABLE IF NOT EXISTS `${NETWORK_NAME}`.admin_cbt_incremental ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.admin_cbt_incremental_local
 ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
@@ -20,7 +20,7 @@ ENGINE = Distributed(
     cityHash64(database, table)
 );
 
-CREATE TABLE IF NOT EXISTS ${NETWORK_NAME}.admin_cbt_scheduled_local ON CLUSTER '{cluster}' (
+CREATE TABLE IF NOT EXISTS `${NETWORK_NAME}`.admin_cbt_scheduled_local ON CLUSTER '{cluster}' (
     updated_date_time DateTime(3) CODEC(DoubleDelta, ZSTD(1)),
     database LowCardinality(String) COMMENT 'The database name',
     table LowCardinality(String) COMMENT 'The table name',
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS ${NETWORK_NAME}.admin_cbt_scheduled_local ON CLUSTER 
 )
 ORDER BY (database, table);
 
-CREATE TABLE IF NOT EXISTS ${NETWORK_NAME}.admin_cbt_scheduled ON CLUSTER '{cluster}' AS ${NETWORK_NAME}.admin_cbt_scheduled_local
+CREATE TABLE IF NOT EXISTS `${NETWORK_NAME}`.admin_cbt_scheduled ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.admin_cbt_scheduled_local
 ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',

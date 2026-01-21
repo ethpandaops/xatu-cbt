@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Contract-level expiry state metrics aggregated by hour
+
+message FctContractStorageStateWithExpiryByBlockHourly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the hour period
+  uint32 hour_start_date_time = 12;
+  // Expiry policy identifier: 1m, 6m, 12m, 18m, 24m
+  string expiry_policy = 13;
+  // Total active storage slots at end of hour (with expiry applied)
+  int64 active_slots = 14;
+  // Total effective bytes at end of hour (with expiry applied)
+  int64 effective_bytes = 15;
+  // Count of contracts with active_slots > 0 at end of hour
+  int64 active_contracts = 16;
+}
+
+// Request for listing fct_contract_storage_state_with_expiry_by_block_hourly records
+message ListFctContractStorageStateWithExpiryByBlockHourlyRequest {
+  // Filter by expiry_policy - Expiry policy identifier: 1m, 6m, 12m, 18m, 24m (PRIMARY KEY - required)
+  StringFilter expiry_policy = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by hour_start_date_time - Start of the hour period (ORDER BY column 2 - optional)
+  UInt32Filter hour_start_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by active_slots - Total active storage slots at end of hour (with expiry applied) (optional)
+  Int64Filter active_slots = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by effective_bytes - Total effective bytes at end of hour (with expiry applied) (optional)
+  Int64Filter effective_bytes = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by active_contracts - Count of contracts with active_slots > 0 at end of hour (optional)
+  Int64Filter active_contracts = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_contract_storage_state_with_expiry_by_block_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 7 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctContractStorageStateWithExpiryByBlockHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 8 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 9 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_contract_storage_state_with_expiry_by_block_hourly records
+message ListFctContractStorageStateWithExpiryByBlockHourlyResponse {
+  // The list of fct_contract_storage_state_with_expiry_by_block_hourly.
+  repeated FctContractStorageStateWithExpiryByBlockHourly fct_contract_storage_state_with_expiry_by_block_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_contract_storage_state_with_expiry_by_block_hourly record by primary key
+message GetFctContractStorageStateWithExpiryByBlockHourlyRequest {
+  // Expiry policy identifier: 1m, 6m, 12m, 18m, 24m
+  string expiry_policy = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_contract_storage_state_with_expiry_by_block_hourly record
+message GetFctContractStorageStateWithExpiryByBlockHourlyResponse {
+  FctContractStorageStateWithExpiryByBlockHourly item = 1;
+}
+
+// Query fct_contract_storage_state_with_expiry_by_block_hourly data
+service FctContractStorageStateWithExpiryByBlockHourlyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctContractStorageStateWithExpiryByBlockHourlyRequest) returns (ListFctContractStorageStateWithExpiryByBlockHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_contract_storage_state_with_expiry_by_block_hourly"
+    };
+  }
+  // Get record | Retrieve a single record by expiry_policy
+  rpc Get(GetFctContractStorageStateWithExpiryByBlockHourlyRequest) returns (GetFctContractStorageStateWithExpiryByBlockHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_contract_storage_state_with_expiry_by_block_hourly/{expiry_policy}"
+    };
+  }
+}

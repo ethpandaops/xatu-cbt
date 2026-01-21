@@ -29,6 +29,7 @@ WITH
             toDate(max(block_date_time)) AS max_day
         FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+          AND meta_network_name = '{{ .env.NETWORK }}'
     ),
     -- Find ALL blocks that fall within those day boundaries
     blocks_in_days AS (
@@ -38,6 +39,7 @@ WITH
         FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
         WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
+          AND meta_network_name = '{{ .env.NETWORK }}'
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
