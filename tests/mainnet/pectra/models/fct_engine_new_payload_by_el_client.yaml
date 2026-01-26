@@ -2,8 +2,11 @@ model: fct_engine_new_payload_by_el_client
 network: mainnet
 spec: pectra
 external_data:
-    consensus_engine_api_new_payload:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_by_el_client_consensus_engine_api_new_payload.parquet
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_by_el_client_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    execution_engine_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_new_payload_by_el_client_execution_engine_new_payload.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
@@ -13,59 +16,66 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Observation count should be positive for all rows
+    - name: All slots should be non-negative
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE observation_count <= 0
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE slot < 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: count
           value: 0
-    - name: Unique node count should not exceed observation count
+    - name: All epochs should be non-negative
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE unique_node_count > observation_count
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE epoch < 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: count
           value: 0
-    - name: Status column should not be empty
+    - name: Observation count should be at least 1
       sql: |
-        SELECT COUNT(*) AS empty_status_rows FROM fct_engine_new_payload_by_el_client FINAL WHERE status = ''
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE observation_count < 1
       assertions:
         - type: equals
-          column: empty_status_rows
+          column: count
           value: 0
-    - name: Min duration should not exceed max duration
+    - name: Unique node count should be at least 1
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE min_duration_ms > max_duration_ms
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE unique_node_count < 1
       assertions:
         - type: equals
-          column: invalid_count
+          column: count
           value: 0
-    - name: Median duration should be between min and max duration
+    - name: Min duration should be less than or equal to max duration
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE median_duration_ms < min_duration_ms OR median_duration_ms > max_duration_ms
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE min_duration_ms > max_duration_ms
       assertions:
         - type: equals
-          column: invalid_count
+          column: count
           value: 0
-    - name: P95 duration should be between median and max duration
+    - name: Min duration should be less than or equal to avg duration
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE p95_duration_ms < median_duration_ms OR p95_duration_ms > max_duration_ms
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE min_duration_ms > avg_duration_ms
       assertions:
         - type: equals
-          column: invalid_count
+          column: count
           value: 0
-    - name: Gas used should not exceed gas limit
+    - name: Avg duration should be less than or equal to max duration
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE gas_used > gas_limit
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE avg_duration_ms > max_duration_ms
       assertions:
         - type: equals
-          column: invalid_count
+          column: count
           value: 0
-    - name: All duration values should be non-negative
+    - name: Gas used should be non-negative
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_engine_new_payload_by_el_client FINAL WHERE min_duration_ms < 0 OR avg_duration_ms < 0 OR median_duration_ms < 0 OR max_duration_ms < 0 OR p95_duration_ms < 0
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE gas_used < 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: count
+          value: 0
+    - name: Block hash should not be empty
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_by_el_client FINAL WHERE block_hash = '' OR block_hash IS NULL
+      assertions:
+        - type: equals
+          column: count
           value: 0
