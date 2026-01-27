@@ -216,12 +216,12 @@ ENGINE = Distributed(
 );
 
 -- =============================================================================
--- fct_block_opcode_gas
+-- int_block_opcode_gas
 -- =============================================================================
 
 -- Local table for block-level opcode gas aggregation
 -- Aggregates opcode gas data from int_transaction_opcode_gas to block level
-CREATE TABLE `${NETWORK_NAME}`.fct_block_opcode_gas_local ON CLUSTER '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.int_block_opcode_gas_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -250,18 +250,176 @@ SETTINGS
 COMMENT 'Aggregated opcode-level gas usage per block. Derived from int_transaction_opcode_gas.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.fct_block_opcode_gas ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_block_opcode_gas_local
+CREATE TABLE `${NETWORK_NAME}`.int_block_opcode_gas ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.int_block_opcode_gas_local
 ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_block_opcode_gas_local,
+    int_block_opcode_gas_local,
     cityHash64(block_number)
 );
 
 -- Projection for opcode-first queries (e.g., "how much gas did SLOAD use across blocks?")
-ALTER TABLE `${NETWORK_NAME}`.fct_block_opcode_gas_local ON CLUSTER '{cluster}'
+ALTER TABLE `${NETWORK_NAME}`.int_block_opcode_gas_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_opcode (
     SELECT *
     ORDER BY (opcode, block_number)
+);
+
+-- =============================================================================
+-- fct_opcode_ops_hourly
+-- =============================================================================
+
+-- Hourly opcode execution rate (ops/sec) with statistical aggregations
+CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_hourly_local ON CLUSTER '{cluster}' (
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+    `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
+    `block_count` UInt32 COMMENT 'Number of blocks in this hour' CODEC(ZSTD(1)),
+    `total_opcode_count` UInt64 COMMENT 'Total opcode executions in this hour' CODEC(ZSTD(1)),
+    `total_gas` UInt64 COMMENT 'Total gas consumed by opcodes in this hour' CODEC(ZSTD(1)),
+    `total_seconds` UInt32 COMMENT 'Total actual seconds covered by blocks (sum of block time gaps)' CODEC(ZSTD(1)),
+    `avg_ops` Float32 COMMENT 'Average opcodes per second using actual block time gaps' CODEC(ZSTD(1)),
+    `min_ops` Float32 COMMENT 'Minimum per-block ops/sec' CODEC(ZSTD(1)),
+    `max_ops` Float32 COMMENT 'Maximum per-block ops/sec' CODEC(ZSTD(1)),
+    `p05_ops` Float32 COMMENT '5th percentile ops/sec' CODEC(ZSTD(1)),
+    `p50_ops` Float32 COMMENT '50th percentile (median) ops/sec' CODEC(ZSTD(1)),
+    `p95_ops` Float32 COMMENT '95th percentile ops/sec' CODEC(ZSTD(1)),
+    `stddev_ops` Float32 COMMENT 'Standard deviation of ops/sec' CODEC(ZSTD(1)),
+    `upper_band_ops` Float32 COMMENT 'Upper Bollinger band (avg + 2*stddev)' CODEC(ZSTD(1)),
+    `lower_band_ops` Float32 COMMENT 'Lower Bollinger band (avg - 2*stddev)' CODEC(ZSTD(1)),
+    `moving_avg_ops` Float32 COMMENT 'Moving average ops/sec (6-hour window)' CODEC(ZSTD(1))
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY toStartOfMonth(hour_start_date_time)
+ORDER BY (hour_start_date_time)
+COMMENT 'Hourly aggregated opcode execution rate statistics with percentiles, Bollinger bands, and moving averages';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_hourly ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_opcode_ops_hourly_local
+ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_opcode_ops_hourly_local,
+    cityHash64(hour_start_date_time)
+);
+
+-- =============================================================================
+-- fct_opcode_ops_daily
+-- =============================================================================
+
+-- Daily opcode execution rate (ops/sec) with statistical aggregations
+CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_daily_local ON CLUSTER '{cluster}' (
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+    `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
+    `block_count` UInt32 COMMENT 'Number of blocks in this day' CODEC(ZSTD(1)),
+    `total_opcode_count` UInt64 COMMENT 'Total opcode executions in this day' CODEC(ZSTD(1)),
+    `total_gas` UInt64 COMMENT 'Total gas consumed by opcodes in this day' CODEC(ZSTD(1)),
+    `total_seconds` UInt32 COMMENT 'Total actual seconds covered by blocks (sum of block time gaps)' CODEC(ZSTD(1)),
+    `avg_ops` Float32 COMMENT 'Average opcodes per second using actual block time gaps' CODEC(ZSTD(1)),
+    `min_ops` Float32 COMMENT 'Minimum per-block ops/sec' CODEC(ZSTD(1)),
+    `max_ops` Float32 COMMENT 'Maximum per-block ops/sec' CODEC(ZSTD(1)),
+    `p05_ops` Float32 COMMENT '5th percentile ops/sec' CODEC(ZSTD(1)),
+    `p50_ops` Float32 COMMENT '50th percentile (median) ops/sec' CODEC(ZSTD(1)),
+    `p95_ops` Float32 COMMENT '95th percentile ops/sec' CODEC(ZSTD(1)),
+    `stddev_ops` Float32 COMMENT 'Standard deviation of ops/sec' CODEC(ZSTD(1)),
+    `upper_band_ops` Float32 COMMENT 'Upper Bollinger band (avg + 2*stddev)' CODEC(ZSTD(1)),
+    `lower_band_ops` Float32 COMMENT 'Lower Bollinger band (avg - 2*stddev)' CODEC(ZSTD(1)),
+    `moving_avg_ops` Float32 COMMENT 'Moving average ops/sec (7-day window)' CODEC(ZSTD(1))
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY toStartOfMonth(day_start_date)
+ORDER BY (day_start_date)
+COMMENT 'Daily aggregated opcode execution rate statistics with percentiles, Bollinger bands, and moving averages';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_daily ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_opcode_ops_daily_local
+ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_opcode_ops_daily_local,
+    cityHash64(day_start_date)
+);
+
+-- =============================================================================
+-- fct_opcode_gas_by_opcode_hourly
+-- =============================================================================
+
+-- Hourly per-opcode gas consumption
+CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly_local ON CLUSTER '{cluster}' (
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+    `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
+    `opcode` LowCardinality(String) COMMENT 'The EVM opcode name (e.g., SLOAD, ADD, CALL)',
+    `block_count` UInt32 COMMENT 'Number of blocks containing this opcode in this hour' CODEC(ZSTD(1)),
+    `total_count` UInt64 COMMENT 'Total execution count of this opcode in this hour' CODEC(ZSTD(1)),
+    `total_gas` UInt64 COMMENT 'Total gas consumed by this opcode in this hour' CODEC(ZSTD(1)),
+    `total_error_count` UInt64 COMMENT 'Total error count for this opcode in this hour' CODEC(ZSTD(1)),
+    `avg_count_per_block` Float32 COMMENT 'Average executions per block' CODEC(ZSTD(1)),
+    `avg_gas_per_block` Float32 COMMENT 'Average gas per block' CODEC(ZSTD(1)),
+    `avg_gas_per_execution` Float32 COMMENT 'Average gas per execution' CODEC(ZSTD(1))
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY toStartOfMonth(hour_start_date_time)
+ORDER BY (hour_start_date_time, opcode)
+COMMENT 'Hourly per-opcode gas consumption for Top Opcodes by Gas charts';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly_local
+ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_opcode_gas_by_opcode_hourly_local,
+    cityHash64(hour_start_date_time)
+);
+
+-- Projection for opcode-first queries (e.g., "how much gas did SLOAD use over time?")
+ALTER TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly_local ON CLUSTER '{cluster}'
+ADD PROJECTION p_by_opcode (
+    SELECT *
+    ORDER BY (opcode, hour_start_date_time)
+);
+
+-- =============================================================================
+-- fct_opcode_gas_by_opcode_daily
+-- =============================================================================
+
+-- Daily per-opcode gas consumption
+CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily_local ON CLUSTER '{cluster}' (
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+    `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
+    `opcode` LowCardinality(String) COMMENT 'The EVM opcode name (e.g., SLOAD, ADD, CALL)',
+    `block_count` UInt32 COMMENT 'Number of blocks containing this opcode in this day' CODEC(ZSTD(1)),
+    `total_count` UInt64 COMMENT 'Total execution count of this opcode in this day' CODEC(ZSTD(1)),
+    `total_gas` UInt64 COMMENT 'Total gas consumed by this opcode in this day' CODEC(ZSTD(1)),
+    `total_error_count` UInt64 COMMENT 'Total error count for this opcode in this day' CODEC(ZSTD(1)),
+    `avg_count_per_block` Float32 COMMENT 'Average executions per block' CODEC(ZSTD(1)),
+    `avg_gas_per_block` Float32 COMMENT 'Average gas per block' CODEC(ZSTD(1)),
+    `avg_gas_per_execution` Float32 COMMENT 'Average gas per execution' CODEC(ZSTD(1))
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY toStartOfMonth(day_start_date)
+ORDER BY (day_start_date, opcode)
+COMMENT 'Daily per-opcode gas consumption for Top Opcodes by Gas charts';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily_local
+ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_opcode_gas_by_opcode_daily_local,
+    cityHash64(day_start_date)
+);
+
+-- Projection for opcode-first queries (e.g., "how much gas did SLOAD use over time?")
+ALTER TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily_local ON CLUSTER '{cluster}'
+ADD PROJECTION p_by_opcode (
+    SELECT *
+    ORDER BY (opcode, day_start_date)
 );

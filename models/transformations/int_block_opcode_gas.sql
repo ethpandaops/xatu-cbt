@@ -1,5 +1,5 @@
 ---
-table: fct_block_opcode_gas
+table: int_block_opcode_gas
 type: incremental
 interval:
   type: block
@@ -35,6 +35,7 @@ SELECT
 FROM {{ index .dep "{{transformation}}" "int_transaction_opcode_gas" "helpers" "from" }} FINAL
 WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND meta_network_name = '{{ .env.NETWORK }}'
+    AND opcode != ''
 GROUP BY
     block_number,
     opcode,
