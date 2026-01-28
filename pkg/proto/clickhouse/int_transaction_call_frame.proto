@@ -37,10 +37,12 @@ message IntTransactionCallFrame {
   uint64 gas = 23;
   // Gas consumed by this frame + all descendants. Root frame value = total EVM execution gas.
   uint64 gas_cumulative = 24;
-  // Total accumulated refund. Only populated for root frame (refund applied once at tx end).
+  // Total accumulated refund. Only populated for root frame, only for successful txs (refund not applied on failure).
   google.protobuf.UInt64Value gas_refund = 25;
-  // Intrinsic tx cost (21000 + calldata). Only populated for root frame (call_frame_id=0).
+  // Intrinsic tx cost (21000 + calldata). Only populated for root frame of successful txs.
   google.protobuf.UInt64Value intrinsic_gas = 26;
+  // Actual gas used from transaction receipt. Only populated for root frame (call_frame_id=0). Source of truth for total gas display.
+  google.protobuf.UInt64Value receipt_gas_used = 27;
 }
 
 // Request for listing int_transaction_call_frame records
@@ -76,22 +78,24 @@ message ListIntTransactionCallFrameRequest {
   UInt64Filter gas = 13;
   // Filter by gas_cumulative - Gas consumed by this frame + all descendants. Root frame value = total EVM execution gas. (optional)
   UInt64Filter gas_cumulative = 14;
-  // Filter by gas_refund - Total accumulated refund. Only populated for root frame (refund applied once at tx end). (optional)
+  // Filter by gas_refund - Total accumulated refund. Only populated for root frame, only for successful txs (refund not applied on failure). (optional)
   NullableUInt64Filter gas_refund = 15;
-  // Filter by intrinsic_gas - Intrinsic tx cost (21000 + calldata). Only populated for root frame (call_frame_id=0). (optional)
+  // Filter by intrinsic_gas - Intrinsic tx cost (21000 + calldata). Only populated for root frame of successful txs. (optional)
   NullableUInt64Filter intrinsic_gas = 16;
+  // Filter by receipt_gas_used - Actual gas used from transaction receipt. Only populated for root frame (call_frame_id=0). Source of truth for total gas display. (optional)
+  NullableUInt64Filter receipt_gas_used = 17;
 
   // The maximum number of int_transaction_call_frame to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 17;
+  int32 page_size = 18;
   // A page token, received from a previous `ListIntTransactionCallFrame` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 18;
+  string page_token = 19;
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 19;
+  string order_by = 20;
 }
 
 // Response for listing int_transaction_call_frame records

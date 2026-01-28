@@ -1,11 +1,11 @@
 ---
 table: canonical_execution_transaction_structlog_agg
 cache:
-  incremental_scan_interval: 5s
-  full_scan_interval: 10s
+  incremental_scan_interval: 1m
+  full_scan_interval: 24h
 interval:
   type: block
-lag: 0
+lag: 384
 ---
 SELECT
   {{ if .cache.is_incremental_scan }}

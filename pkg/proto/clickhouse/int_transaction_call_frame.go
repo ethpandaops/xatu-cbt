@@ -531,6 +531,40 @@ func BuildListIntTransactionCallFrameQuery(req *ListIntTransactionCallFrameReque
 		}
 	}
 
+	// Add filter for column: receipt_gas_used
+	if req.ReceiptGasUsed != nil {
+		switch filter := req.ReceiptGasUsed.Filter.(type) {
+		case *NullableUInt64Filter_Eq:
+			qb.AddCondition("receipt_gas_used", "=", filter.Eq)
+		case *NullableUInt64Filter_Ne:
+			qb.AddCondition("receipt_gas_used", "!=", filter.Ne)
+		case *NullableUInt64Filter_Lt:
+			qb.AddCondition("receipt_gas_used", "<", filter.Lt)
+		case *NullableUInt64Filter_Lte:
+			qb.AddCondition("receipt_gas_used", "<=", filter.Lte)
+		case *NullableUInt64Filter_Gt:
+			qb.AddCondition("receipt_gas_used", ">", filter.Gt)
+		case *NullableUInt64Filter_Gte:
+			qb.AddCondition("receipt_gas_used", ">=", filter.Gte)
+		case *NullableUInt64Filter_Between:
+			qb.AddBetweenCondition("receipt_gas_used", filter.Between.Min, filter.Between.Max.GetValue())
+		case *NullableUInt64Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("receipt_gas_used", UInt64SliceToInterface(filter.In.Values))
+			}
+		case *NullableUInt64Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("receipt_gas_used", UInt64SliceToInterface(filter.NotIn.Values))
+			}
+		case *NullableUInt64Filter_IsNull:
+			qb.AddIsNullCondition("receipt_gas_used")
+		case *NullableUInt64Filter_IsNotNull:
+			qb.AddIsNotNullCondition("receipt_gas_used")
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -556,7 +590,7 @@ func BuildListIntTransactionCallFrameQuery(req *ListIntTransactionCallFrameReque
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "block_number", "transaction_hash", "transaction_index", "call_frame_id", "parent_call_frame_id", "depth", "target_address", "call_type", "function_selector", "opcode_count", "error_count", "gas", "gas_cumulative", "gas_refund", "intrinsic_gas"}
+		validFields := []string{"updated_date_time", "block_number", "transaction_hash", "transaction_index", "call_frame_id", "parent_call_frame_id", "depth", "target_address", "call_type", "function_selector", "opcode_count", "error_count", "gas", "gas_cumulative", "gas_refund", "intrinsic_gas", "receipt_gas_used"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -568,7 +602,7 @@ func BuildListIntTransactionCallFrameQuery(req *ListIntTransactionCallFrameReque
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`transaction_hash`, repeat('\x00', 66)) AS `transaction_hash`", "transaction_index", "call_frame_id", "parent_call_frame_id", "depth", "target_address", "call_type", "function_selector", "opcode_count", "error_count", "gas", "gas_cumulative", "gas_refund", "intrinsic_gas"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`transaction_hash`, repeat('\x00', 66)) AS `transaction_hash`", "transaction_index", "call_frame_id", "parent_call_frame_id", "depth", "target_address", "call_type", "function_selector", "opcode_count", "error_count", "gas", "gas_cumulative", "gas_refund", "intrinsic_gas", "receipt_gas_used"}
 
 	return BuildParameterizedQuery("int_transaction_call_frame", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -588,7 +622,7 @@ func BuildGetIntTransactionCallFrameQuery(req *GetIntTransactionCallFrameRequest
 	orderByClause := " ORDER BY block_number, transaction_hash, call_frame_id"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`transaction_hash`, repeat('\x00', 66)) AS `transaction_hash`", "transaction_index", "call_frame_id", "parent_call_frame_id", "depth", "target_address", "call_type", "function_selector", "opcode_count", "error_count", "gas", "gas_cumulative", "gas_refund", "intrinsic_gas"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`transaction_hash`, repeat('\x00', 66)) AS `transaction_hash`", "transaction_index", "call_frame_id", "parent_call_frame_id", "depth", "target_address", "call_type", "function_selector", "opcode_count", "error_count", "gas", "gas_cumulative", "gas_refund", "intrinsic_gas", "receipt_gas_used"}
 
 	// Return single record
 	return BuildParameterizedQuery("int_transaction_call_frame", columns, qb, orderByClause, 1, 0, options...)
