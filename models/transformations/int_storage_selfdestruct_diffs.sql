@@ -34,95 +34,96 @@ clearing_selfdestructs AS (
         transaction_hash,
         transaction_index,
         internal_index,
-        address
+        address,
+        creation_block
     FROM {{ index .dep "{{transformation}}" "int_contract_selfdestruct" "helpers" "from" }} FINAL
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
         AND storage_cleared = true
 ),
--- Get ALL historical slots for addresses with clearing selfdestructs
--- Gets the actual last known value for each slot before the current bounds
-historical_slots AS (
-    SELECT
-        address,
-        slot,
-        argMax(to_value, (block_number, transaction_index, internal_index)) as last_value
-    FROM {{ index .dep "{{external}}" "canonical_execution_storage_diffs" "helpers" "from" }}
-    WHERE address GLOBAL IN (SELECT address FROM clearing_selfdestructs)
-        AND block_number < {{ .bounds.start }}
-        AND meta_network_name = '{{ .env.NETWORK }}'
-    GROUP BY address, slot
-    -- Only include slots with non-zero final value (something to clear)
-    HAVING last_value != '0x0000000000000000000000000000000000000000000000000000000000000000'
-),
--- For current block slots, get the to_value just BEFORE the selfdestruct
--- Only needed for slots that have diffs BEFORE the selfdestruct (otherwise no clearance needed)
-current_slots_before_selfdestruct AS (
+-- For same-batch multiple SDs of same address: find the previous SD that cleared storage
+-- This handles the case where contract is selfdestructed, recreated, and selfdestructed again in same batch
+previous_sd_in_batch AS (
     SELECT
         sd.block_number,
+        sd.transaction_index,
+        sd.internal_index,
+        sd.address,
+        -- Find the most recent previous SD of same address in this batch
+        argMax(
+            (prev.block_number, prev.transaction_index, prev.internal_index),
+            (prev.block_number, prev.transaction_index, prev.internal_index)
+        ) as prev_sd
+    FROM clearing_selfdestructs sd
+    INNER JOIN clearing_selfdestructs prev
+        ON sd.address = prev.address
+        AND (prev.block_number, prev.transaction_index, prev.internal_index)
+            < (sd.block_number, sd.transaction_index, sd.internal_index)
+    GROUP BY sd.block_number, sd.transaction_index, sd.internal_index, sd.address
+),
+-- Minimum creation block across all selfdestructs (for bounded historical scan)
+-- This prevents full table scan from block 0
+min_creation_block AS (
+    SELECT coalesce(min(creation_block), {{ .bounds.start }}) as min_block
+    FROM clearing_selfdestructs
+),
+-- Union canonical storage diffs with previous synthetic diffs (Bug 2 fix)
+-- BOUNDED: canonical uses creation_block to bounds.end, synthetic uses block < bounds.start
+all_storage_history AS (
+    SELECT block_number, transaction_index, internal_index, address, slot, to_value
+    FROM {{ index .dep "{{external}}" "canonical_execution_storage_diffs" "helpers" "from" }}
+    WHERE address GLOBAL IN (SELECT address FROM clearing_selfdestructs)
+        AND block_number >= (SELECT min_block FROM min_creation_block)  -- Lower bound from creation
+        AND block_number <= {{ .bounds.end }}  -- Safe upper bound (SDs are within bounds)
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    UNION ALL
+    SELECT block_number, transaction_index, internal_index, address, slot, to_value
+    FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
+    WHERE address GLOBAL IN (SELECT address FROM clearing_selfdestructs)
+        AND block_number < {{ .bounds.start }}  -- Only previous runs' output
+),
+-- Get the last value for each slot BEFORE each selfdestruct (Bug 1 fix)
+-- Uses per-selfdestruct filtering instead of global bounds.start
+-- For same-batch multiple SDs: only look at storage AFTER the previous SD (which cleared everything)
+all_slots_before_selfdestruct AS (
+    SELECT
+        sd.block_number as sd_block,
         sd.transaction_index as sd_tx_index,
-        toUInt32(sd.internal_index) as sd_internal_index,
+        sd.internal_index as sd_internal_index,
         sd.transaction_hash,
         sd.address,
         d.slot,
-        argMax(d.to_value, (d.transaction_index, d.internal_index)) as value_before_selfdestruct
+        argMax(d.to_value, (d.block_number, d.transaction_index, d.internal_index)) as last_value
     FROM clearing_selfdestructs sd
-    GLOBAL INNER JOIN {{ index .dep "{{external}}" "canonical_execution_storage_diffs" "helpers" "from" }} d
-        ON sd.block_number = d.block_number
-        AND sd.address = d.address
-        AND d.meta_network_name = '{{ .env.NETWORK }}'
-        AND d.block_number <= {{ .bounds.end }}
-    WHERE (d.transaction_index, d.internal_index) < (sd.transaction_index, sd.internal_index)
+    LEFT JOIN previous_sd_in_batch prev
+        ON sd.block_number = prev.block_number
+        AND sd.transaction_index = prev.transaction_index
+        AND sd.internal_index = prev.internal_index
+        AND sd.address = prev.address
+    INNER JOIN all_storage_history d
+        ON sd.address = d.address
+        -- Storage must be before this selfdestruct
+        AND (d.block_number, d.transaction_index, d.internal_index)
+            < (sd.block_number, sd.transaction_index, sd.internal_index)
+        -- If there was a previous SD in this batch, only consider storage AFTER it
+        -- (previous SD cleared everything, so only new storage since then matters)
+        AND (prev.prev_sd IS NULL
+             OR (d.block_number, d.transaction_index, d.internal_index) > prev.prev_sd)
     GROUP BY sd.block_number, sd.transaction_index, sd.internal_index, sd.transaction_hash, sd.address, d.slot
-    -- Only include if the value before selfdestruct was non-zero (otherwise 0x0 -> 0x0 is pointless)
-    HAVING value_before_selfdestruct != '0x0000000000000000000000000000000000000000000000000000000000000000'
-),
--- Historical slots that need clearance records
--- Each selfdestruct needs a clearance for every historical non-zero slot of that address
-historical_clearances AS (
-    SELECT
-        sd.block_number,
-        sd.transaction_hash,
-        sd.transaction_index,
-        toUInt32(sd.internal_index) as internal_index,
-        sd.address,
-        h.slot,
-        h.last_value as from_value
-    FROM clearing_selfdestructs sd
-    INNER JOIN historical_slots h ON sd.address = h.address
-),
--- Current block slots that need clearance (not already in historical)
-current_clearances AS (
-    SELECT
-        block_number,
-        transaction_hash,
-        sd_tx_index as transaction_index,
-        sd_internal_index as internal_index,
-        address,
-        slot,
-        value_before_selfdestruct as from_value
-    FROM current_slots_before_selfdestruct
-    -- Exclude slots already covered by historical (avoid duplicates)
-    WHERE (address, slot) NOT IN (SELECT address, slot FROM historical_slots)
-),
--- Union: historical slots + current block slots with non-zero value before selfdestruct
-slots_to_clear AS (
-    SELECT * FROM historical_clearances
-    UNION ALL
-    SELECT * FROM current_clearances
+    HAVING last_value != '0x0000000000000000000000000000000000000000000000000000000000000000'
 )
 -- Final SELECT: Generate synthetic diffs
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
-    block_number,
-    transaction_index,
+    sd_block as block_number,
+    sd_tx_index as transaction_index,
     transaction_hash,
-    internal_index,
+    sd_internal_index as internal_index,
     address,
     slot,
-    from_value,
+    last_value as from_value,
     -- to_value: Always zero (cleared)
     '0x0000000000000000000000000000000000000000000000000000000000000000' as to_value
-FROM slots_to_clear
+FROM all_slots_before_selfdestruct
 ORDER BY block_number, transaction_index, internal_index, slot
 SETTINGS
     max_bytes_before_external_group_by = 10000000000,

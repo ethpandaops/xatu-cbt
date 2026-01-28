@@ -58,31 +58,52 @@ selfdestruct_traces AS (
 ),
 -- Get contract creation info for addresses that were selfdestructed
 -- Uses int_contract_creation with projection for efficient address lookups
--- No FINAL: use argMax for deduplication (projection compatibility per ClickHouse#46968)
--- A contract can be created multiple times (CREATE2 after SELFDESTRUCT)
+-- Need every creation record (not grouped) to match same-block CREATE2 cycles correctly
+-- Dedupe by (contract_address, block_number, transaction_hash, internal_index) using argMax
 contract_creations AS (
     SELECT
         contract_address,
         block_number as creation_block,
-        argMax(transaction_hash, updated_date_time) as creation_transaction_hash
+        transaction_hash as creation_transaction_hash,
+        transaction_index as creation_transaction_index,
+        internal_index as creation_internal_index
     FROM {{ index .dep "{{transformation}}" "int_contract_creation" "helpers" "from" }}
     WHERE contract_address IN (SELECT address FROM selfdestruct_traces)
-    GROUP BY contract_address, block_number
+    GROUP BY contract_address, block_number, transaction_hash, transaction_index, internal_index
 ),
 -- For each SELFDESTRUCT, find the most recent prior creation
--- Uses argMax to get the creation with the highest block_number <= selfdestruct block
+-- Uses argMax with composite ordering to handle same-block CREATE2 cycles correctly:
+-- - Same tx: use internal_index to order creation before selfdestruct
+-- - Different tx in same block: creation must be in earlier tx (by transaction_index)
 latest_creation AS (
     SELECT
         s.block_number,
         s.transaction_hash,
+        s.transaction_index,
+        s.internal_index,
         s.address,
-        argMax(c.creation_block, c.creation_block) as creation_block,
-        argMax(c.creation_transaction_hash, c.creation_block) as creation_transaction_hash
+        argMax(
+            (c.creation_block, c.creation_transaction_hash),
+            (c.creation_block,
+             if(c.creation_block = s.block_number AND c.creation_transaction_hash = s.transaction_hash,
+                c.creation_internal_index, 0))
+        ).1 as creation_block,
+        argMax(
+            (c.creation_block, c.creation_transaction_hash),
+            (c.creation_block,
+             if(c.creation_block = s.block_number AND c.creation_transaction_hash = s.transaction_hash,
+                c.creation_internal_index, 0))
+        ).2 as creation_transaction_hash
     FROM selfdestruct_traces s
     LEFT JOIN contract_creations c
         ON s.address = c.contract_address
-        AND c.creation_block <= s.block_number
-    GROUP BY s.block_number, s.transaction_hash, s.address
+        AND (c.creation_block < s.block_number
+             OR (c.creation_block = s.block_number
+                 AND ((c.creation_transaction_hash = s.transaction_hash
+                       AND c.creation_internal_index < s.internal_index)
+                      OR (c.creation_transaction_hash != s.transaction_hash
+                          AND c.creation_transaction_index < s.transaction_index))))
+    GROUP BY s.block_number, s.transaction_hash, s.transaction_index, s.internal_index, s.address
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
@@ -113,6 +134,8 @@ FROM selfdestruct_traces s
 LEFT JOIN latest_creation lc
     ON s.block_number = lc.block_number
     AND s.transaction_hash = lc.transaction_hash
+    AND s.transaction_index = lc.transaction_index
+    AND s.internal_index = lc.internal_index
     AND s.address = lc.address
 ORDER BY s.block_number, s.transaction_index, s.internal_index
 SETTINGS

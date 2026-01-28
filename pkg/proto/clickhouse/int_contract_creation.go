@@ -121,6 +121,36 @@ func BuildListIntContractCreationQuery(req *ListIntContractCreationRequest, opti
 		}
 	}
 
+	// Add filter for column: transaction_index
+	if req.TransactionIndex != nil {
+		switch filter := req.TransactionIndex.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("transaction_index", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("transaction_index", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("transaction_index", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("transaction_index", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("transaction_index", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("transaction_index", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("transaction_index", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("transaction_index", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("transaction_index", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: internal_index
 	if req.InternalIndex != nil {
 		switch filter := req.InternalIndex.Filter.(type) {
@@ -296,7 +326,7 @@ func BuildListIntContractCreationQuery(req *ListIntContractCreationRequest, opti
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "block_number", "transaction_hash", "internal_index", "contract_address", "deployer", "factory", "init_code_hash"}
+		validFields := []string{"updated_date_time", "block_number", "transaction_hash", "transaction_index", "internal_index", "contract_address", "deployer", "factory", "init_code_hash"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -308,7 +338,7 @@ func BuildListIntContractCreationQuery(req *ListIntContractCreationRequest, opti
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "transaction_hash", "internal_index", "contract_address", "deployer", "factory", "init_code_hash"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "transaction_hash", "toUInt32(`transaction_index`) AS `transaction_index`", "internal_index", "contract_address", "deployer", "factory", "init_code_hash"}
 
 	return BuildParameterizedQuery("int_contract_creation", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -328,7 +358,7 @@ func BuildGetIntContractCreationQuery(req *GetIntContractCreationRequest, option
 	orderByClause := " ORDER BY block_number, contract_address, transaction_hash"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "transaction_hash", "internal_index", "contract_address", "deployer", "factory", "init_code_hash"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "transaction_hash", "toUInt32(`transaction_index`) AS `transaction_index`", "internal_index", "contract_address", "deployer", "factory", "init_code_hash"}
 
 	// Return single record
 	return BuildParameterizedQuery("int_contract_creation", columns, qb, orderByClause, 1, 0, options...)
