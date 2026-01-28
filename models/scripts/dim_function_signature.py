@@ -104,7 +104,7 @@ def get_existing_selectors(ch_url, target_db, target_table):
         return set()
 
 
-def lookup_signatures_batch(selectors, batch_size=50, delay=0.5):
+def lookup_signatures_batch(selectors, batch_size=20, delay=1.5, max_retries=3):
     """Lookup function signatures from Sourcify 4byte API in batches"""
     results = {}
 
@@ -119,14 +119,16 @@ def lookup_signatures_batch(selectors, batch_size=50, delay=0.5):
         selectors_param = ','.join(batch)
         url = f"https://api.4byte.sourcify.dev/signature-database/v1/lookup?function={selectors_param}&filter=true"
 
-        try:
-            req = urllib.request.Request(url)
-            req.add_header("Accept", "application/json")
-            response = urllib.request.urlopen(req, timeout=30)
-            data = json.loads(response.read().decode('utf-8'))
+        # Retry logic with exponential backoff
+        for attempt in range(max_retries):
+            try:
+                req = urllib.request.Request(url)
+                req.add_header("Accept", "application/json")
+                response = urllib.request.urlopen(req, timeout=30)
+                data = json.loads(response.read().decode('utf-8'))
 
-            if data.get('ok') and 'result' in data:
-                function_results = data['result'].get('function', {})
+                if data.get('ok') and 'result' in data:
+                    function_results = data['result'].get('function', {})
 
                 for selector, signatures in function_results.items():
                     if signatures and len(signatures) > 0:
@@ -144,12 +146,25 @@ def lookup_signatures_batch(selectors, batch_size=50, delay=0.5):
                             'has_verified_contract': best_sig.get('hasVerifiedContract', False)
                         }
 
-            print(f"  Batch {batch_num}/{total_batches}: {len(batch)} selectors, {len([s for s in batch if s in results])} found")
+                print(f"  Batch {batch_num}/{total_batches}: {len(batch)} selectors, {len([s for s in batch if s in results])} found")
+                break  # Success, exit retry loop
 
-        except urllib.error.HTTPError as e:
-            print(f"  Batch {batch_num}/{total_batches}: HTTP error {e.code}", file=sys.stderr)
-        except Exception as e:
-            print(f"  Batch {batch_num}/{total_batches}: Error: {e}", file=sys.stderr)
+            except urllib.error.HTTPError as e:
+                if e.code >= 500 and attempt < max_retries - 1:
+                    backoff = delay * (2 ** attempt)
+                    print(f"  Batch {batch_num}/{total_batches}: HTTP {e.code}, retrying in {backoff:.1f}s (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(backoff)
+                else:
+                    print(f"  Batch {batch_num}/{total_batches}: HTTP error {e.code}", file=sys.stderr)
+                    break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    backoff = delay * (2 ** attempt)
+                    print(f"  Batch {batch_num}/{total_batches}: Error: {e}, retrying in {backoff:.1f}s")
+                    time.sleep(backoff)
+                else:
+                    print(f"  Batch {batch_num}/{total_batches}: Error: {e}", file=sys.stderr)
+                    break
 
         # Rate limiting between batches
         if i + batch_size < len(selector_list):
@@ -242,7 +257,7 @@ def main():
 
         # Step 4: Lookup signatures from Sourcify
         print(f"\nLooking up signatures from Sourcify 4byte API...")
-        signatures = lookup_signatures_batch(new_selectors, batch_size=50, delay=0.5)
+        signatures = lookup_signatures_batch(new_selectors, batch_size=20, delay=1.5)
         print(f"\nFound signatures for {len(signatures)} selectors")
 
         if not signatures:

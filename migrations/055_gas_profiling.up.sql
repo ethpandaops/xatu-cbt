@@ -90,11 +90,11 @@ CREATE TABLE `${NETWORK_NAME}`.int_transaction_call_frame_local ON CLUSTER '{clu
   `error_count` UInt64 COMMENT 'Number of opcodes that resulted in errors' CODEC(ZSTD(1)),
 
   -- Gas metrics (see transformation SQL for full gas model explanation)
-  -- Receipt gas = (intrinsic + gas_cumulative) - min(gas_refund, (intrinsic + gas_cumulative) / 5)
   `gas` UInt64 COMMENT 'Gas consumed by this frame only, excludes child frames. sum(gas) = EVM execution gas. This is "self" gas in flame graphs.' CODEC(ZSTD(1)),
   `gas_cumulative` UInt64 COMMENT 'Gas consumed by this frame + all descendants. Root frame value = total EVM execution gas.' CODEC(ZSTD(1)),
-  `gas_refund` Nullable(UInt64) COMMENT 'Total accumulated refund. Only populated for root frame (refund applied once at tx end).' CODEC(ZSTD(1)),
-  `intrinsic_gas` Nullable(UInt64) COMMENT 'Intrinsic tx cost (21000 + calldata). Only populated for root frame (call_frame_id=0).' CODEC(ZSTD(1))
+  `gas_refund` Nullable(UInt64) COMMENT 'Total accumulated refund. Only populated for root frame, only for successful txs (refund not applied on failure).' CODEC(ZSTD(1)),
+  `intrinsic_gas` Nullable(UInt64) COMMENT 'Intrinsic tx cost (21000 + calldata). Only populated for root frame of successful txs.' CODEC(ZSTD(1)),
+  `receipt_gas_used` Nullable(UInt64) COMMENT 'Actual gas used from transaction receipt. Only populated for root frame (call_frame_id=0). Source of truth for total gas display.' CODEC(ZSTD(1))
 ) ENGINE = ReplicatedReplacingMergeTree(
   '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
   '{replica}',
@@ -366,6 +366,8 @@ CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly_local ON CLUSTER 
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(hour_start_date_time)
 ORDER BY (hour_start_date_time, opcode)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Hourly per-opcode gas consumption for Top Opcodes by Gas charts';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly ON CLUSTER '{cluster}'
@@ -406,6 +408,8 @@ CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily_local ON CLUSTER '
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(day_start_date)
 ORDER BY (day_start_date, opcode)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Daily per-opcode gas consumption for Top Opcodes by Gas charts';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily ON CLUSTER '{cluster}'
