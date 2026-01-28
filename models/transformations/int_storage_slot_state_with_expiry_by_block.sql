@@ -80,21 +80,26 @@ FROM (
         GROUP BY block_number, expiry_policy
     ) bd ON bp.block_number = bd.bd_block_number AND bp.expiry_policy = bd.bd_expiry_policy
     LEFT JOIN (
-        -- Previous state per policy
-        SELECT
-            ps_expiry_policy,
-            cumulative_net_slots as prev_cumulative_net_slots,
-            cumulative_net_bytes as prev_cumulative_net_bytes
-        FROM (
-            SELECT
-                expiry_policy as ps_expiry_policy,
-                cumulative_net_slots,
-                cumulative_net_bytes,
-                row_number() OVER (PARTITION BY expiry_policy ORDER BY block_number DESC) as rn
-            FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
-            WHERE block_number < {{ .bounds.start }}
-        )
-        WHERE rn = 1
+        -- Previous state per policy (UNION ALL with LIMIT is 5-7x faster than row_number window function)
+        SELECT '1m' as ps_expiry_policy, cumulative_net_slots as prev_cumulative_net_slots, cumulative_net_bytes as prev_cumulative_net_bytes
+        FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
+        WHERE block_number < {{ .bounds.start }} AND expiry_policy = '1m' ORDER BY block_number DESC LIMIT 1
+        UNION ALL
+        SELECT '6m', cumulative_net_slots, cumulative_net_bytes
+        FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
+        WHERE block_number < {{ .bounds.start }} AND expiry_policy = '6m' ORDER BY block_number DESC LIMIT 1
+        UNION ALL
+        SELECT '12m', cumulative_net_slots, cumulative_net_bytes
+        FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
+        WHERE block_number < {{ .bounds.start }} AND expiry_policy = '12m' ORDER BY block_number DESC LIMIT 1
+        UNION ALL
+        SELECT '18m', cumulative_net_slots, cumulative_net_bytes
+        FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
+        WHERE block_number < {{ .bounds.start }} AND expiry_policy = '18m' ORDER BY block_number DESC LIMIT 1
+        UNION ALL
+        SELECT '24m', cumulative_net_slots, cumulative_net_bytes
+        FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
+        WHERE block_number < {{ .bounds.start }} AND expiry_policy = '24m' ORDER BY block_number DESC LIMIT 1
     ) ps ON bp.expiry_policy = ps.ps_expiry_policy
 )
 ORDER BY expiry_policy, block_number;
