@@ -8,8 +8,8 @@ fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 2s"
-  backfill: "@every 2s"
+  forwardfill: "@every 30s"
+  backfill: "@every 1m"
 tags:
   - execution
   - call
