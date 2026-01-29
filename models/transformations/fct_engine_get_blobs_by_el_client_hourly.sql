@@ -13,7 +13,8 @@ tags:
   - get_blobs
   - el_client
 dependencies:
-  - "{{external}}.consensus_engine_api_get_blobs"
+  - "{{external}}.execution_engine_get_blobs"
+  - "{{external}}.beacon_api_eth_v1_beacon_blob"
 ---
 -- Hourly aggregation of engine_getBlobs by execution client.
 -- Computes TRUE percentiles (p50, p95) across all observations in each hour per client,
@@ -26,36 +27,93 @@ dependencies:
 -- complete data. The ReplacingMergeTree will merge duplicates keeping the latest row.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
-    -- Find the hour boundaries from the data within the current bounds
-    hour_bounds AS (
-        SELECT
-            toStartOfHour(min(slot_start_date_time)) AS min_hour,
-            toStartOfHour(max(slot_start_date_time)) AS max_hour
-        FROM {{ index .dep "{{external}}" "consensus_engine_api_get_blobs" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-          AND meta_network_name = '{{ .env.NETWORK }}'
-    ),
-    -- Find ALL events that fall within those hour boundaries (expanding to complete hours)
-    events_in_hours AS (
-        SELECT
-            slot_start_date_time,
-            block_root,
-            duration_ms,
-            status,
-            returned_count,
-            meta_execution_implementation,
-            meta_execution_version,
-            meta_client_name,
-            CASE
-                WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder'
-                ELSE ''
-            END AS node_class
-        FROM {{ index .dep "{{external}}" "consensus_engine_api_get_blobs" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
-          AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
-          AND meta_network_name = '{{ .env.NETWORK }}'
-          AND meta_execution_implementation != ''
+blob_context AS (
+    SELECT
+        versioned_hash,
+        any(slot) AS slot,
+        any(slot_start_date_time) AS slot_start_date_time,
+        any(block_root) AS block_root
+    FROM (
+        SELECT *
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_blob" "helpers" "from" }}
+        WHERE meta_network_name = '{{ .env.NETWORK }}'
+            AND slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 65 MINUTE
+                AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 65 MINUTE
     )
+    GROUP BY versioned_hash
+),
+engine_get_blobs AS (
+    SELECT
+        event_date_time,
+        -- Use computed duration from timestamps as the snooper's duration_ms field
+        -- underreports getBlobs timing (measures only EL compute, not data transfer)
+        toUInt32(toUnixTimestamp64Milli(event_date_time) - toUnixTimestamp64Milli(requested_date_time)) AS duration_ms,
+        versioned_hashes,
+        returned_count,
+        status,
+        meta_client_name,
+        meta_execution_implementation,
+        meta_execution_version,
+        arrayJoin(versioned_hashes) AS vh
+    FROM {{ index .dep "{{external}}" "execution_engine_get_blobs" "helpers" "from" }} FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+        AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 65 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 65 MINUTE
+        AND length(versioned_hashes) > 0
+),
+enriched AS (
+    SELECT
+        eg.event_date_time,
+        eg.duration_ms,
+        eg.returned_count,
+        eg.status,
+        eg.meta_client_name,
+        eg.meta_execution_implementation,
+        eg.meta_execution_version,
+        COALESCE(any(bc.slot_start_date_time), toDateTime(0)) AS slot_start_date_time,
+        COALESCE(any(bc.block_root), '') AS block_root
+    FROM engine_get_blobs eg
+    LEFT JOIN blob_context bc ON eg.vh = bc.versioned_hash
+    GROUP BY
+        eg.event_date_time,
+        eg.duration_ms,
+        eg.returned_count,
+        eg.status,
+        eg.meta_client_name,
+        eg.meta_execution_implementation,
+        eg.meta_execution_version,
+        eg.versioned_hashes
+),
+-- Find the hour boundaries from the enriched data within the current bounds
+hour_bounds AS (
+    SELECT
+        toStartOfHour(min(slot_start_date_time)) AS min_hour,
+        toStartOfHour(max(slot_start_date_time)) AS max_hour
+    FROM enriched
+    WHERE slot_start_date_time != toDateTime(0)
+        AND slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+),
+-- Filter to complete hour boundaries
+events_in_hours AS (
+    SELECT
+        slot_start_date_time,
+        block_root,
+        duration_ms,
+        status,
+        returned_count,
+        meta_execution_implementation,
+        meta_execution_version,
+        meta_client_name,
+        CASE
+            WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder'
+            ELSE ''
+        END AS node_class
+    FROM enriched
+    WHERE slot_start_date_time != toDateTime(0)
+        AND slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
+        AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
+        AND meta_execution_implementation != ''
+)
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
     toStartOfHour(slot_start_date_time) AS hour_start_date_time,

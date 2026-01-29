@@ -140,3 +140,9 @@ models:
     consensus_engine_api_new_payload:
       config:
         lag: 0
+    execution_engine_get_blobs:
+      config:
+        lag: 0
+    beacon_api_eth_v1_beacon_blob:
+      config:
+        lag: 0
