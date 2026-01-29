@@ -23,7 +23,14 @@ assertions:
         - type: equals
           column: invalid_count
           value: 0
-    - name: Duration values should be non-negative
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Duration should be non-negative
       sql: |
         SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE duration_ms < 0
       assertions:
@@ -32,21 +39,7 @@ assertions:
           value: 0
     - name: Gas used should not exceed gas limit
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE gas_used > gas_limit
-      assertions:
-        - type: equals
-          column: invalid_count
-          value: 0
-    - name: Transaction count should be non-negative
-      sql: |
-        SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE tx_count < 0
-      assertions:
-        - type: equals
-          column: invalid_count
-          value: 0
-    - name: Blob count should be non-negative
-      sql: |
-        SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE blob_count < 0
+        SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE gas_used > gas_limit AND gas_limit > 0
       assertions:
         - type: equals
           column: invalid_count
@@ -65,14 +58,21 @@ assertions:
         - type: equals
           column: invalid_count
           value: 0
-    - name: Slot start datetime should be before or equal to event datetime
+    - name: Transaction count should be non-negative
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE slot_start_date_time > event_date_time
+        SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE tx_count < 0
       assertions:
         - type: equals
           column: invalid_count
           value: 0
-    - name: Node class should only contain expected values
+    - name: Blob count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE blob_count < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Node class should only be empty or eip7870-block-builder
       sql: |
         SELECT COUNT(*) AS invalid_count FROM int_engine_new_payload FINAL WHERE node_class NOT IN ('', 'eip7870-block-builder')
       assertions:

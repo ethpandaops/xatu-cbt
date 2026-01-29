@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily aggregated opcode execution rate statistics with percentiles, Bollinger bands, and moving averages
+
+message FctOpcodeOpsDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Number of blocks in this day
+  uint32 block_count = 13;
+  // Total opcode executions in this day
+  uint64 total_opcode_count = 14;
+  // Total gas consumed by opcodes in this day
+  uint64 total_gas = 15;
+  // Total actual seconds covered by blocks (sum of block time gaps)
+  uint32 total_seconds = 16;
+  // Average opcodes per second using actual block time gaps
+  float avg_ops = 17;
+  // Minimum per-block ops/sec
+  float min_ops = 18;
+  // Maximum per-block ops/sec
+  float max_ops = 19;
+  // 5th percentile ops/sec
+  float p05_ops = 20;
+  // 50th percentile (median) ops/sec
+  float p50_ops = 21;
+  // 95th percentile ops/sec
+  float p95_ops = 22;
+  // Standard deviation of ops/sec
+  float stddev_ops = 23;
+  // Upper Bollinger band (avg + 2*stddev)
+  float upper_band_ops = 24;
+  // Lower Bollinger band (avg - 2*stddev)
+  float lower_band_ops = 25;
+  // Moving average ops/sec (7-day window)
+  float moving_avg_ops = 26;
+}
+
+// Request for listing fct_opcode_ops_daily records
+message ListFctOpcodeOpsDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Number of blocks in this day (optional)
+  UInt32Filter block_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_opcode_count - Total opcode executions in this day (optional)
+  UInt64Filter total_opcode_count = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_gas - Total gas consumed by opcodes in this day (optional)
+  UInt64Filter total_gas = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_seconds - Total actual seconds covered by blocks (sum of block time gaps) (optional)
+  UInt32Filter total_seconds = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_ops - Average opcodes per second using actual block time gaps (optional)
+  google.protobuf.FloatValue avg_ops = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_ops - Minimum per-block ops/sec (optional)
+  google.protobuf.FloatValue min_ops = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_ops - Maximum per-block ops/sec (optional)
+  google.protobuf.FloatValue max_ops = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p05_ops - 5th percentile ops/sec (optional)
+  google.protobuf.FloatValue p05_ops = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_ops - 50th percentile (median) ops/sec (optional)
+  google.protobuf.FloatValue p50_ops = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p95_ops - 95th percentile ops/sec (optional)
+  google.protobuf.FloatValue p95_ops = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by stddev_ops - Standard deviation of ops/sec (optional)
+  google.protobuf.FloatValue stddev_ops = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by upper_band_ops - Upper Bollinger band (avg + 2*stddev) (optional)
+  google.protobuf.FloatValue upper_band_ops = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by lower_band_ops - Lower Bollinger band (avg - 2*stddev) (optional)
+  google.protobuf.FloatValue lower_band_ops = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by moving_avg_ops - Moving average ops/sec (7-day window) (optional)
+  google.protobuf.FloatValue moving_avg_ops = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_opcode_ops_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 17 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctOpcodeOpsDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 18 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 19 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_opcode_ops_daily records
+message ListFctOpcodeOpsDailyResponse {
+  // The list of fct_opcode_ops_daily.
+  repeated FctOpcodeOpsDaily fct_opcode_ops_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_opcode_ops_daily record by primary key
+message GetFctOpcodeOpsDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_opcode_ops_daily record
+message GetFctOpcodeOpsDailyResponse {
+  FctOpcodeOpsDaily item = 1;
+}
+
+// Query fct_opcode_ops_daily data
+service FctOpcodeOpsDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctOpcodeOpsDailyRequest) returns (ListFctOpcodeOpsDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_opcode_ops_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctOpcodeOpsDailyRequest) returns (GetFctOpcodeOpsDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_opcode_ops_daily/{day_start_date}"
+    };
+  }
+}
