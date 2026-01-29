@@ -3,7 +3,7 @@ table: int_contract_selfdestruct
 type: incremental
 interval:
   type: block
-  max: 1000
+  max: 10000
 fill:
   direction: "tail"
   allow_gap_skipping: false

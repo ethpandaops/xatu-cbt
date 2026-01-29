@@ -3,7 +3,7 @@ table: int_contract_creation
 type: incremental
 interval:
   type: block
-  max: 100000
+  max: 10000
 fill:
   direction: "tail"
   allow_gap_skipping: false
@@ -31,15 +31,15 @@ SELECT
     c.deployer,
     c.factory,
     c.init_code_hash
-FROM {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} c
-INNER JOIN (
+FROM (
     SELECT DISTINCT block_number, transaction_hash, transaction_index
     FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
         AND meta_network_name = '{{ .env.NETWORK }}'
-) t ON c.block_number = t.block_number AND c.transaction_hash = t.transaction_hash
+) t
+GLOBAL INNER JOIN {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} AS c
+    ON t.block_number = c.block_number AND t.transaction_hash = c.transaction_hash
 WHERE c.block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND c.meta_network_name = '{{ .env.NETWORK }}'
-ORDER BY c.block_number, c.contract_address, c.transaction_hash
 SETTINGS
-    distributed_aggregation_memory_efficient = 1;
+    distributed_aggregation_memory_efficient = 1

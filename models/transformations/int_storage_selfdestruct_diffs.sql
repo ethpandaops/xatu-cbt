@@ -3,7 +3,7 @@ table: int_storage_selfdestruct_diffs
 type: incremental
 interval:
   type: block
-  max: 1000
+  max: 10000
 fill:
   direction: "tail"
   allow_gap_skipping: false
@@ -44,10 +44,10 @@ clearing_selfdestructs AS (
 -- This handles the case where contract is selfdestructed, recreated, and selfdestructed again in same batch
 previous_sd_in_batch AS (
     SELECT
-        sd.block_number,
-        sd.transaction_index,
-        sd.internal_index,
-        sd.address,
+        sd.block_number AS block_number,
+        sd.transaction_index AS transaction_index,
+        sd.internal_index AS internal_index,
+        sd.address AS address,
         -- Find the most recent previous SD of same address in this batch
         argMax(
             (prev.block_number, prev.transaction_index, prev.internal_index),
@@ -90,7 +90,7 @@ all_slots_before_selfdestruct AS (
         sd.transaction_index as sd_tx_index,
         sd.internal_index as sd_internal_index,
         sd.transaction_hash,
-        sd.address,
+        sd.address AS address,
         d.slot,
         argMax(d.to_value, (d.block_number, d.transaction_index, d.internal_index)) as last_value
     FROM clearing_selfdestructs sd
