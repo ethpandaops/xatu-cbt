@@ -39,9 +39,7 @@ blob_context AS (
 engine_get_blobs AS (
     SELECT
         event_date_time,
-        -- Use computed duration from timestamps as the snooper's duration_ms field
-        -- underreports getBlobs timing (measures only EL compute, not data transfer)
-        toUInt32(toUnixTimestamp64Milli(event_date_time) - toUnixTimestamp64Milli(requested_date_time)) AS duration_ms,
+        duration_ms,
         versioned_hashes,
         length(versioned_hashes) AS requested_count,
         returned_count,
