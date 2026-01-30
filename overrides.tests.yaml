@@ -146,3 +146,6 @@ models:
     beacon_api_eth_v1_beacon_blob:
       config:
         lag: 0
+    execution_engine_new_payload:
+      config:
+        lag: 0
