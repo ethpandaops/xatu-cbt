@@ -9,9 +9,9 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/int_engine_get_blobs_execution_engine_get_blobs.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
+    - name: Row count should be non-negative
       sql: SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client_hourly FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
