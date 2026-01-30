@@ -3,10 +3,10 @@ network: mainnet
 spec: pectra
 external_data:
     beacon_api_eth_v1_beacon_blob:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_duration_chunked_50ms_beacon_api_eth_v1_beacon_blob.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/int_engine_get_blobs_beacon_api_eth_v1_beacon_blob.parquet
         network_column: meta_network_name
     execution_engine_get_blobs:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_duration_chunked_50ms_execution_engine_get_blobs.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/int_engine_get_blobs_execution_engine_get_blobs.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
