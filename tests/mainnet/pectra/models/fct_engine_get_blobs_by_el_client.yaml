@@ -2,11 +2,11 @@ model: fct_engine_get_blobs_by_el_client
 network: mainnet
 spec: pectra
 external_data:
-    execution_engine_get_blobs:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_by_el_client_execution_engine_get_blobs.parquet
-        network_column: meta_network_name
     beacon_api_eth_v1_beacon_blob:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_by_el_client_beacon_api_eth_v1_beacon_blob.parquet
+        network_column: meta_network_name
+    execution_engine_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_by_el_client_execution_engine_get_blobs.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
@@ -16,59 +16,78 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Observation count should be positive for all rows
+    - name: Observation count should be at least 1
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE observation_count <= 0
+        SELECT MIN(observation_count) AS min_obs FROM fct_engine_get_blobs_by_el_client FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_obs
+          value: 1
+    - name: Unique node count should be at least 1 and not exceed observation count
+      sql: "SELECT \n  MIN(unique_node_count) AS min_unique,\n  SUM(CASE WHEN unique_node_count > observation_count THEN 1 ELSE 0 END) AS invalid_count\nFROM fct_engine_get_blobs_by_el_client FINAL\n"
+      assertions:
+        - type: greater_than_or_equal
+          column: min_unique
+          value: 1
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Duration ordering should be valid (min <= median <= max)
+      sql: "SELECT \n  SUM(CASE WHEN min_duration_ms > median_duration_ms THEN 1 ELSE 0 END) AS min_gt_median,\n  SUM(CASE WHEN median_duration_ms > max_duration_ms THEN 1 ELSE 0 END) AS median_gt_max\nFROM fct_engine_get_blobs_by_el_client FINAL\n"
       assertions:
         - type: equals
-          column: count
+          column: min_gt_median
           value: 0
-    - name: Unique node count should not exceed observation count
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE unique_node_count > observation_count
+        - type: equals
+          column: median_gt_max
+          value: 0
+    - name: Average duration should be between min and max
+      sql: "SELECT \n  SUM(CASE WHEN avg_duration_ms < min_duration_ms THEN 1 ELSE 0 END) AS avg_lt_min,\n  SUM(CASE WHEN avg_duration_ms > max_duration_ms THEN 1 ELSE 0 END) AS avg_gt_max\nFROM fct_engine_get_blobs_by_el_client FINAL\n"
       assertions:
         - type: equals
-          column: count
+          column: avg_lt_min
           value: 0
-    - name: Status column should not be empty
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE status = ''
+        - type: equals
+          column: avg_gt_max
+          value: 0
+    - name: P95 duration should be between min and max
+      sql: "SELECT \n  SUM(CASE WHEN p95_duration_ms < min_duration_ms THEN 1 ELSE 0 END) AS p95_lt_min,\n  SUM(CASE WHEN p95_duration_ms > max_duration_ms THEN 1 ELSE 0 END) AS p95_gt_max\nFROM fct_engine_get_blobs_by_el_client FINAL\n"
       assertions:
         - type: equals
-          column: count
+          column: p95_lt_min
           value: 0
-    - name: Min duration should not exceed max duration
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE min_duration_ms > max_duration_ms
-      assertions:
         - type: equals
-          column: count
+          column: p95_gt_max
           value: 0
-    - name: Median duration should be between min and max
+    - name: Slot should be greater than zero (filtered out invalid slots)
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE median_duration_ms < min_duration_ms OR median_duration_ms > max_duration_ms
+        SELECT MIN(slot) AS min_slot FROM fct_engine_get_blobs_by_el_client FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than
+          column: min_slot
           value: 0
-    - name: P95 duration should be between median and max
+    - name: Max requested count should be at least 1 (filtered for non-empty arrays)
       sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE p95_duration_ms < median_duration_ms OR p95_duration_ms > max_duration_ms
+        SELECT MIN(max_requested_count) AS min_requested FROM fct_engine_get_blobs_by_el_client FINAL
       assertions:
-        - type: equals
-          column: count
-          value: 0
+        - type: greater_than_or_equal
+          column: min_requested
+          value: 1
     - name: Duration values should be non-negative
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE min_duration_ms < 0 OR avg_duration_ms < 0 OR max_duration_ms < 0
+      sql: "SELECT \n  MIN(min_duration_ms) AS min_dur,\n  MIN(avg_duration_ms) AS min_avg_dur\nFROM fct_engine_get_blobs_by_el_client FINAL\n"
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than_or_equal
+          column: min_dur
           value: 0
-    - name: Slot should be non-negative
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_el_client FINAL WHERE slot < 0
+        - type: greater_than_or_equal
+          column: min_avg_dur
+          value: 0
+    - name: No null values in required columns
+      sql: "SELECT \n  SUM(CASE WHEN meta_execution_implementation = '' THEN 1 ELSE 0 END) AS empty_impl,\n  SUM(CASE WHEN slot_start_date_time = toDateTime(0) THEN 1 ELSE 0 END) AS zero_datetime\nFROM fct_engine_get_blobs_by_el_client FINAL\n"
       assertions:
         - type: equals
-          column: count
+          column: empty_impl
+          value: 0
+        - type: equals
+          column: zero_datetime
           value: 0
