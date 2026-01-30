@@ -2,8 +2,11 @@ model: fct_engine_get_blobs_duration_chunked_50ms
 network: mainnet
 spec: pectra
 external_data:
-    consensus_engine_api_get_blobs:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_duration_chunked_50ms_consensus_engine_api_get_blobs.parquet
+    execution_engine_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_duration_chunked_50ms_execution_engine_get_blobs.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_beacon_blob:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_duration_chunked_50ms_beacon_api_eth_v1_beacon_blob.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
