@@ -3,12 +3,12 @@ table: int_contract_selfdestruct
 type: incremental
 interval:
   type: block
-  max: 10000
+  max: 1000
 fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 5s"
+  forwardfill: "@every 1m"
 tags:
   - execution
   - contract
@@ -24,37 +24,45 @@ dependencies:
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
--- Transactions where the root trace failed (entire tx reverted, all state changes undone)
--- Root traces have trace_address IS NULL or empty string
-failed_transactions AS (
-    SELECT DISTINCT
-        block_number,
-        transaction_hash
-    FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
-    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-        AND meta_network_name = '{{ .env.NETWORK }}'
-        AND (trace_address IS NULL OR trace_address = '')
-        AND error IS NOT NULL AND error != ''
-),
--- Get SELFDESTRUCT traces in current bounds (only successful ones in successful txs)
-selfdestruct_traces AS (
+-- Single-pass approach: read selfdestructs and root traces together, use window function
+-- to determine if the transaction's root trace failed. This is more efficient than
+-- GLOBAL NOT IN when there are many failed transactions (e.g., blocks 4.3M-4.5M have 1M+ failed txs).
+-- Filter: selfdestructs OR root traces (to check for failures)
+traces_with_tx_status AS (
     SELECT
         block_number,
         transaction_hash,
         transaction_index,
         internal_index,
         action_from as address,
+        action_type,
+        error,
         coalesce(action_to, '') as beneficiary,
-        reinterpretAsUInt256(reverse(unhex(substring(action_value, 3)))) as value_transferred
+        reinterpretAsUInt256(reverse(unhex(substring(action_value, 3)))) as value_transferred,
+        -- Flag if this tx has a failed root trace (root = trace_address IS NULL or empty)
+        maxIf(1, (trace_address IS NULL OR trace_address = '') AND error IS NOT NULL AND error != '')
+            OVER (PARTITION BY block_number, transaction_hash) as tx_failed
     FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
         AND meta_network_name = '{{ .env.NETWORK }}'
-        AND action_type IN ('selfdestruct', 'suicide')
+        -- Read both selfdestructs AND root traces (to check for tx failure)
+        AND (action_type IN ('selfdestruct', 'suicide')
+             OR ((trace_address IS NULL OR trace_address = '') AND error IS NOT NULL AND error != ''))
+),
+-- Filter to only successful selfdestructs in non-failed transactions
+selfdestruct_traces AS (
+    SELECT
+        block_number,
+        transaction_hash,
+        transaction_index,
+        internal_index,
+        address,
+        beneficiary,
+        value_transferred
+    FROM traces_with_tx_status
+    WHERE action_type IN ('selfdestruct', 'suicide')
         AND (error IS NULL OR error = '')
-        -- Exclude selfdestructs in transactions where root trace failed
-        -- GLOBAL NOT IN: execute subquery locally, send results to remote servers
-        -- Required because remote cluster doesn't have the cluster macro defined
-        AND (block_number, transaction_hash) GLOBAL NOT IN (SELECT block_number, transaction_hash FROM failed_transactions)
+        AND tx_failed = 0
 ),
 -- Get contract creation info for addresses that were selfdestructed
 -- Uses int_contract_creation with projection for efficient address lookups
@@ -69,6 +77,8 @@ contract_creations AS (
         internal_index as creation_internal_index
     FROM {{ index .dep "{{transformation}}" "int_contract_creation" "helpers" "from" }}
     WHERE contract_address IN (SELECT address FROM selfdestruct_traces)
+        -- Partition pruning: contracts can only be created before/at selfdestruct block
+        AND block_number <= {{ .bounds.end }}
     GROUP BY contract_address, block_number, transaction_hash, transaction_index, internal_index
 ),
 -- For each SELFDESTRUCT, find the most recent prior creation
@@ -139,5 +149,10 @@ LEFT JOIN latest_creation lc
     AND s.address = lc.address
 ORDER BY s.block_number, s.transaction_index, s.internal_index
 SETTINGS
-    max_bytes_before_external_group_by = 10000000000,
+    -- Memory-safe join: spills to disk instead of OOM on large block ranges
+    -- 128 buckets handles extreme cases like the 2.4M-2.5M spam period (37M selfdestructs)
+    join_algorithm = 'grace_hash',
+    grace_hash_join_initial_buckets = 128,
+    max_bytes_before_external_group_by = 2000000000,
+    max_bytes_before_external_sort = 2000000000,
     distributed_aggregation_memory_efficient = 1;
