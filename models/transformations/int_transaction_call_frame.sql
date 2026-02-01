@@ -120,7 +120,7 @@ all_transactions AS (
 ),
 
 -- Simple transfers: transactions WITHOUT structlog data
--- Note: Uses NOT IN instead of LEFT JOIN due to FixedString comparison issues
+-- Note: Uses GLOBAL NOT IN to evaluate subquery on coordinator (avoids nested cluster() issues)
 simple_transfers AS (
   SELECT
     t.block_number,
@@ -131,7 +131,7 @@ simple_transfers AS (
     t.input,
     t.success
   FROM all_transactions t
-  WHERE (t.block_number, t.transaction_hash) NOT IN (
+  WHERE (t.block_number, t.transaction_hash) GLOBAL NOT IN (
     SELECT block_number, transaction_hash
     FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }}
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
@@ -177,12 +177,10 @@ structlog_frames AS (
     -- Receipt gas used from transaction table (only for root frame)
     if(agg.call_frame_id = 0, at.receipt_gas_used, NULL) as receipt_gas_used
   FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }} agg
-  -- Join traces for:
-  --   - target_address fallback (for root frame)
-  --   - call_type fallback (for frames where structlog didn't capture it)
-  --   - function_selector (from action_input)
+  -- Join traces for target_address, call_type fallback, and function_selector
+  -- Uses GLOBAL to evaluate on coordinator (avoids nested cluster() macro issues)
   -- traces.internal_index is 1-indexed, call_frame_id is 0-indexed
-  LEFT JOIN {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }} tr
+  GLOBAL LEFT JOIN {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }} tr
     ON agg.block_number = tr.block_number
     AND tr.block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND agg.transaction_hash = tr.transaction_hash
