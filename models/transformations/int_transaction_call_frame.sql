@@ -191,33 +191,21 @@ structlog_frames AS (
     agg.call_frame_id,
     agg.parent_call_frame_id,
     agg.depth,
-    -- Target address from aggregated table, fallback to traces for root frame
-    coalesce(agg.target_address, tr.action_to) as target_address,
-    -- Call type from aggregated table, fallback to traces
-    -- traces uses lowercase with underscores (e.g., 'delegate_call'), normalize to uppercase
-    if(
-      agg.call_frame_id = 0,
-      '',  -- Root frame has no initiating CALL
-      coalesce(nullIf(agg.call_type, ''), upper(replaceAll(tr.action_call_type, '_', '')), '')
-    ) as call_type,
-    -- Function selector from traces.action_input (first 4 bytes = 10 chars including 0x prefix)
-    -- traces.internal_index = call_frame_id + 1 (traces are 1-indexed, call_frame_id is 0-indexed)
-    substring(tr.action_input, 1, 10) as function_selector,
+    agg.target_address,
+    if(agg.call_frame_id = 0, '', agg.call_type) as call_type,
+    tr.function_selector,
     agg.opcode_count,
     agg.error_count,
     agg.gas,
     agg.gas_cumulative,
     agg.gas_refund,
     agg.intrinsic_gas,
-    -- Receipt gas used from transaction table (only for root frame)
     if(agg.call_frame_id = 0, at.receipt_gas_used, NULL) as receipt_gas_used
   FROM structlog_agg_data agg
-  -- Join with materialized traces CTE (no nested cluster() calls)
   LEFT JOIN traces_data tr
     ON agg.block_number = tr.block_number
     AND agg.transaction_hash = tr.transaction_hash
-    AND tr.internal_index = agg.call_frame_id + 1
-  -- Join all_transactions CTE to get receipt_gas_used
+    AND agg.call_frame_id = tr.call_frame_id
   LEFT JOIN all_transactions at
     ON agg.block_number = at.block_number
     AND agg.transaction_hash = at.transaction_hash
