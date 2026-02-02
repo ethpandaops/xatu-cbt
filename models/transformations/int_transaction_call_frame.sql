@@ -3,7 +3,7 @@ table: int_transaction_call_frame
 type: incremental
 interval:
   type: block
-  max: 1000
+  max: 500
 fill:
   direction: "tail"
   allow_gap_skipping: false
@@ -101,10 +101,10 @@ dependencies:
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
 -- =============================================================================
--- PART 1: Identify transactions with and without structlogs
+-- MATERIALIZED CTEs: Fetch external data once to avoid nested cluster() calls
 -- =============================================================================
 
--- All transactions from canonical_execution_transaction
+-- Materialize transactions for the block range
 all_transactions AS (
   SELECT
     block_number,
@@ -119,8 +119,49 @@ all_transactions AS (
     AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
--- Simple transfers: transactions WITHOUT structlog data
--- Note: Uses NOT IN instead of LEFT JOIN due to FixedString comparison issues
+-- Materialize structlog aggregates (summary rows only) for the block range
+structlog_agg_data AS (
+  SELECT
+    block_number,
+    transaction_hash,
+    transaction_index,
+    call_frame_id,
+    parent_call_frame_id,
+    depth,
+    target_address,
+    call_type,
+    opcode_count,
+    error_count,
+    gas,
+    gas_cumulative,
+    gas_refund,
+    intrinsic_gas
+  FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }}
+  WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    AND meta_network_name = '{{ .env.NETWORK }}'
+    AND operation = ''  -- Summary rows only
+),
+
+traces_data AS (
+  SELECT
+    block_number,
+    transaction_hash,
+    toUInt32(internal_index - 1) as call_frame_id,
+    substring(action_input, 1, 10) as function_selector
+  FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
+  WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    AND meta_network_name = '{{ .env.NETWORK }}'
+),
+
+-- =============================================================================
+-- PART 1: Identify transactions without structlogs (simple transfers)
+-- =============================================================================
+
+structlog_tx_keys AS (
+  SELECT DISTINCT block_number, transaction_hash
+  FROM structlog_agg_data
+),
+
 simple_transfers AS (
   SELECT
     t.block_number,
@@ -131,20 +172,16 @@ simple_transfers AS (
     t.input,
     t.success
   FROM all_transactions t
-  WHERE (t.block_number, t.transaction_hash) NOT IN (
-    SELECT block_number, transaction_hash
-    FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }}
-    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-      AND meta_network_name = '{{ .env.NETWORK }}'
-  )
+  LEFT JOIN structlog_tx_keys s
+    ON t.block_number = s.block_number
+    AND t.transaction_hash = s.transaction_hash
+  WHERE s.transaction_hash IS NULL  -- No structlog data
 ),
 
 -- =============================================================================
 -- PART 2: Process transactions WITH structlogs from aggregated table
 -- =============================================================================
 
--- Get call frame summary rows from the pre-aggregated table
--- Summary rows have operation = '' and contain frame-level metadata
 structlog_frames AS (
   SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
@@ -154,47 +191,24 @@ structlog_frames AS (
     agg.call_frame_id,
     agg.parent_call_frame_id,
     agg.depth,
-    -- Target address from aggregated table, fallback to traces for root frame
-    coalesce(agg.target_address, tr.action_to) as target_address,
-    -- Call type from aggregated table, fallback to traces
-    -- traces uses lowercase with underscores (e.g., 'delegate_call'), normalize to uppercase
-    if(
-      agg.call_frame_id = 0,
-      '',  -- Root frame has no initiating CALL
-      coalesce(nullIf(agg.call_type, ''), upper(replaceAll(tr.action_call_type, '_', '')), '')
-    ) as call_type,
-    -- Function selector from traces.action_input (first 4 bytes = 10 chars including 0x prefix)
-    -- traces.internal_index = call_frame_id + 1 (traces are 1-indexed, call_frame_id is 0-indexed)
-    substring(tr.action_input, 1, 10) as function_selector,
+    agg.target_address,
+    if(agg.call_frame_id = 0, '', agg.call_type) as call_type,
+    tr.function_selector,
     agg.opcode_count,
     agg.error_count,
     agg.gas,
     agg.gas_cumulative,
-    -- Gas refund only for root frame (already filtered in aggregated table)
     agg.gas_refund,
-    -- Intrinsic gas only for root frame (already computed in aggregated table)
     agg.intrinsic_gas,
-    -- Receipt gas used from transaction table (only for root frame)
     if(agg.call_frame_id = 0, at.receipt_gas_used, NULL) as receipt_gas_used
-  FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }} agg
-  -- Join traces for:
-  --   - target_address fallback (for root frame)
-  --   - call_type fallback (for frames where structlog didn't capture it)
-  --   - function_selector (from action_input)
-  -- traces.internal_index is 1-indexed, call_frame_id is 0-indexed
-  LEFT JOIN {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }} tr
+  FROM structlog_agg_data agg
+  LEFT JOIN traces_data tr
     ON agg.block_number = tr.block_number
-    AND tr.block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND agg.transaction_hash = tr.transaction_hash
-    AND tr.internal_index = agg.call_frame_id + 1
-    AND tr.meta_network_name = '{{ .env.NETWORK }}'
-  -- Join all_transactions CTE to get receipt_gas_used
+    AND agg.call_frame_id = tr.call_frame_id
   LEFT JOIN all_transactions at
     ON agg.block_number = at.block_number
     AND agg.transaction_hash = at.transaction_hash
-  WHERE agg.block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    AND agg.meta_network_name = '{{ .env.NETWORK }}'
-    AND agg.operation = ''  -- Summary rows only
 ),
 
 -- =============================================================================
@@ -241,6 +255,6 @@ simple_transfer_frames AS (
 SELECT * FROM structlog_frames
 UNION ALL
 SELECT * FROM simple_transfer_frames
-              SETTINGS
+SETTINGS
   max_bytes_before_external_group_by = 10000000000,
   distributed_aggregation_memory_efficient = 1;

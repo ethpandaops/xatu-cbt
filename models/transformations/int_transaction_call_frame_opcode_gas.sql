@@ -3,7 +3,7 @@ table: int_transaction_call_frame_opcode_gas
 type: incremental
 interval:
   type: block
-  max: 1000
+  max: 500
 fill:
   direction: "tail"
   allow_gap_skipping: false
