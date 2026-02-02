@@ -101,10 +101,10 @@ dependencies:
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
 -- =============================================================================
--- MATERIALIZED CTEs: Fetch external data once to avoid nested cluster() calls
+-- CTEs: Simple transfer identification via key exclusion pattern
 -- =============================================================================
 
--- Materialize transactions for the block range
+-- All transactions in the block range
 all_transactions AS (
   SELECT
     block_number,
@@ -119,47 +119,16 @@ all_transactions AS (
     AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
--- Materialize structlog aggregates (summary rows only) for the block range
-structlog_agg_data AS (
-  SELECT
-    block_number,
-    transaction_hash,
-    transaction_index,
-    call_frame_id,
-    parent_call_frame_id,
-    depth,
-    target_address,
-    call_type,
-    opcode_count,
-    error_count,
-    gas,
-    gas_cumulative,
-    gas_refund,
-    intrinsic_gas
-  FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }}
-  WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    AND meta_network_name = '{{ .env.NETWORK }}'
-    AND operation = ''  -- Summary rows only
-),
-
-traces_data AS (
-  SELECT
-    block_number,
-    transaction_hash,
-    toUInt32(internal_index - 1) as call_frame_id,
-    substring(action_input, 1, 10) as function_selector
-  FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
-  WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
-    AND meta_network_name = '{{ .env.NETWORK }}'
-),
-
 -- =============================================================================
 -- PART 1: Identify transactions without structlogs (simple transfers)
 -- =============================================================================
 
 structlog_tx_keys AS (
   SELECT DISTINCT block_number, transaction_hash
-  FROM structlog_agg_data
+  FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }}
+  WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    AND meta_network_name = '{{ .env.NETWORK }}'
+    AND operation = ''
 ),
 
 simple_transfers AS (
@@ -179,7 +148,7 @@ simple_transfers AS (
 ),
 
 -- =============================================================================
--- PART 2: Process transactions WITH structlogs from aggregated table
+-- PART 2: Process transactions WITH structlogs (GLOBAL LEFT ANY JOIN)
 -- =============================================================================
 
 structlog_frames AS (
@@ -200,15 +169,37 @@ structlog_frames AS (
     agg.gas_cumulative,
     agg.gas_refund,
     agg.intrinsic_gas,
-    if(agg.call_frame_id = 0, at.receipt_gas_used, NULL) as receipt_gas_used
-  FROM structlog_agg_data agg
-  LEFT JOIN traces_data tr
+    -- Receipt gas used from transaction table (only for root frame)
+    if(agg.call_frame_id = 0, tx.receipt_gas_used, NULL) as receipt_gas_used
+  FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }} agg
+  -- GLOBAL LEFT ANY JOIN: evaluates subquery once, broadcasts result, uses first match only
+  GLOBAL LEFT ANY JOIN (
+    SELECT
+      block_number,
+      transaction_hash,
+      toUInt32(internal_index - 1) as call_frame_id,
+      substring(action_input, 1, 10) as function_selector
+    FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
+  ) tr
     ON agg.block_number = tr.block_number
     AND agg.transaction_hash = tr.transaction_hash
-    AND agg.call_frame_id = tr.call_frame_id
-  LEFT JOIN all_transactions at
-    ON agg.block_number = at.block_number
-    AND agg.transaction_hash = at.transaction_hash
+    AND tr.call_frame_id = agg.call_frame_id
+  GLOBAL LEFT ANY JOIN (
+    SELECT
+      block_number,
+      transaction_hash,
+      gas_used as receipt_gas_used
+    FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }}
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+      AND meta_network_name = '{{ .env.NETWORK }}'
+  ) tx
+    ON agg.block_number = tx.block_number
+    AND agg.transaction_hash = tx.transaction_hash
+  WHERE agg.block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    AND agg.meta_network_name = '{{ .env.NETWORK }}'
+    AND agg.operation = ''  -- Summary rows only
 ),
 
 -- =============================================================================
