@@ -142,35 +142,25 @@ structlog_agg_data AS (
     AND operation = ''  -- Summary rows only
 ),
 
--- Get unique (block_number, transaction_hash) pairs from structlog data
--- Used to filter traces and identify which transactions have structlogs
-structlog_tx_keys AS (
-  SELECT DISTINCT block_number, transaction_hash
-  FROM structlog_agg_data
-),
-
--- Materialize traces ONLY for transactions that have structlog data
--- Uses GLOBAL IN to evaluate structlog_tx_keys on coordinator first (avoids nested cluster issues)
--- This significantly reduces data volume vs fetching all traces
 traces_data AS (
   SELECT
     block_number,
     transaction_hash,
-    internal_index,
-    action_to,
-    action_call_type,
-    action_input
+    toUInt32(internal_index - 1) as call_frame_id,
+    substring(action_input, 1, 10) as function_selector
   FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
   WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND meta_network_name = '{{ .env.NETWORK }}'
-    AND (block_number, transaction_hash) GLOBAL IN (
-      SELECT block_number, transaction_hash FROM structlog_tx_keys
-    )
 ),
 
 -- =============================================================================
 -- PART 1: Identify transactions without structlogs (simple transfers)
 -- =============================================================================
+
+structlog_tx_keys AS (
+  SELECT DISTINCT block_number, transaction_hash
+  FROM structlog_agg_data
+),
 
 simple_transfers AS (
   SELECT
