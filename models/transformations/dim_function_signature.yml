@@ -1,6 +1,6 @@
 table: dim_function_signature
 type: scheduled
-schedule: "@every 6h"
+schedule: "@every 5m"
 tags:
   - execution
   - function
