@@ -4,11 +4,17 @@ Function Signature Data Collection
 Collects function signature lookups from Sourcify's 4byte signature database.
 
 This script:
-1. Queries distinct function selectors from int_transaction_call_frame
-2. Queries existing selectors from dim_function_signature
-3. Computes the difference (new selectors to lookup)
-4. Batch lookups new selectors against Sourcify API
-5. Inserts new entries to dim_function_signature
+1. Uses ClickHouse to find selectors needing lookup:
+   - Selectors not yet in dim_function_signature, OR
+   - Selectors with empty name (not in 4byte) older than 30 days (re-check)
+2. Processes a batch of selectors per run (avoids OOM)
+3. Batch lookups against Sourcify 4byte API
+4. Inserts all looked-up selectors (empty name if not found)
+
+The scheduled runs handle iteration until caught up. Empty names are
+periodically re-checked in case 4byte adds signatures later.
+
+Frontend note: Check `name != ''` before displaying - show fallback if empty.
 """
 
 import os
@@ -20,6 +26,11 @@ import json
 import base64
 import time
 from datetime import datetime
+
+
+# Maximum number of new selectors to process per run
+# This prevents OOM and allows incremental catchup over multiple runs
+BATCH_SIZE = 500
 
 
 def execute_clickhouse_query(url, query):
@@ -62,46 +73,74 @@ def execute_clickhouse_query(url, query):
         raise
 
 
-def get_seen_selectors(ch_url, target_db):
-    """Get distinct function selectors from int_transaction_call_frame table"""
+def get_new_selectors(ch_url, target_db, target_table, batch_size):
+    """
+    Get selectors that need lookup from 4byte API.
+
+    Returns selectors that either:
+    1. Don't exist in dim_function_signature yet, OR
+    2. Have empty name (not found previously) and are older than 30 days
+
+    This allows re-querying unknowns periodically in case 4byte adds them later.
+    Uses ClickHouse to compute efficiently without loading all into Python memory.
+    """
     query = f"""
     SELECT DISTINCT function_selector as selector
     FROM `{target_db}`.int_transaction_call_frame FINAL
     WHERE function_selector IS NOT NULL
       AND function_selector != ''
+      AND function_selector NOT IN (
+        -- Exclude selectors that have a real name (found in 4byte)
+        SELECT selector FROM `{target_db}`.`{target_table}` FINAL
+        WHERE name != ''
+      )
+      AND function_selector NOT IN (
+        -- Exclude selectors with empty name that were checked recently (< 30 days)
+        SELECT selector FROM `{target_db}`.`{target_table}` FINAL
+        WHERE name = '' AND updated_date_time > now() - INTERVAL 30 DAY
+      )
+    LIMIT {batch_size}
     FORMAT JSONCompact
     """
 
     try:
         result = execute_clickhouse_query(ch_url, query)
-        selectors = set()
+        selectors = []
         if result and 'data' in result:
             for row in result['data']:
-                selectors.add(row[0])
+                selectors.append(row[0])
         return selectors
     except Exception as e:
-        print(f"Warning: Failed to query seen selectors: {e}", file=sys.stderr)
-        return set()
+        print(f"Error querying new selectors: {e}", file=sys.stderr)
+        raise
 
 
-def get_existing_selectors(ch_url, target_db, target_table):
-    """Get selectors already in dim_function_signature"""
+def get_pending_count(ch_url, target_db, target_table):
+    """Get approximate count of selectors still needing lookup (for progress reporting)"""
     query = f"""
-    SELECT selector
-    FROM `{target_db}`.`{target_table}` FINAL
+    SELECT count(DISTINCT function_selector) as cnt
+    FROM `{target_db}`.int_transaction_call_frame FINAL
+    WHERE function_selector IS NOT NULL
+      AND function_selector != ''
+      AND function_selector NOT IN (
+        SELECT selector FROM `{target_db}`.`{target_table}` FINAL
+        WHERE name != ''
+      )
+      AND function_selector NOT IN (
+        SELECT selector FROM `{target_db}`.`{target_table}` FINAL
+        WHERE name = '' AND updated_date_time > now() - INTERVAL 30 DAY
+      )
     FORMAT JSONCompact
     """
 
     try:
         result = execute_clickhouse_query(ch_url, query)
-        selectors = set()
-        if result and 'data' in result:
-            for row in result['data']:
-                selectors.add(row[0])
-        return selectors
+        if result and 'data' in result and result['data']:
+            return int(result['data'][0][0])
+        return 0
     except Exception as e:
-        print(f"Warning: Failed to query existing selectors: {e}", file=sys.stderr)
-        return set()
+        print(f"Warning: Failed to get pending count: {e}", file=sys.stderr)
+        return -1
 
 
 def lookup_signatures_batch(selectors, batch_size=20, delay=1.5, max_retries=3):
@@ -130,21 +169,21 @@ def lookup_signatures_batch(selectors, batch_size=20, delay=1.5, max_retries=3):
                 if data.get('ok') and 'result' in data:
                     function_results = data['result'].get('function', {})
 
-                for selector, signatures in function_results.items():
-                    if signatures and len(signatures) > 0:
-                        # Prefer signature with hasVerifiedContract: true
-                        best_sig = None
-                        for sig in signatures:
-                            if sig.get('hasVerifiedContract'):
-                                best_sig = sig
-                                break
-                        if not best_sig:
-                            best_sig = signatures[0]
+                    for selector, signatures in function_results.items():
+                        if signatures and len(signatures) > 0:
+                            # Prefer signature with hasVerifiedContract: true
+                            best_sig = None
+                            for sig in signatures:
+                                if sig.get('hasVerifiedContract'):
+                                    best_sig = sig
+                                    break
+                            if not best_sig:
+                                best_sig = signatures[0]
 
-                        results[selector] = {
-                            'name': best_sig.get('name', ''),
-                            'has_verified_contract': best_sig.get('hasVerifiedContract', False)
-                        }
+                            results[selector] = {
+                                'name': best_sig.get('name', ''),
+                                'has_verified_contract': best_sig.get('hasVerifiedContract', False)
+                            }
 
                 print(f"  Batch {batch_num}/{total_batches}: {len(batch)} selectors, {len([s for s in batch if s in results])} found")
                 break  # Success, exit retry loop
@@ -221,10 +260,11 @@ def main():
 
     print(f"=== Function Signature Data Collection ===")
     print(f"Target: {target_db}.{target_table}")
+    print(f"Batch size: {BATCH_SIZE} selectors per run")
 
     try:
         # Test ClickHouse connection
-        print("Testing ClickHouse connection...")
+        print("\nTesting ClickHouse connection...")
         test_query = "SELECT 1 FORMAT JSONCompact"
         try:
             execute_clickhouse_query(ch_url, test_query)
@@ -233,49 +273,50 @@ def main():
             print(f"ERROR: Cannot connect to ClickHouse: {e}", file=sys.stderr)
             return 1
 
-        # Step 1: Get selectors we've seen in transactions
-        print(f"\nFetching seen selectors from int_transaction_call_frame...")
-        seen_selectors = get_seen_selectors(ch_url, target_db)
-        print(f"  Found {len(seen_selectors)} distinct selectors in call frames")
-
-        if not seen_selectors:
-            print("No selectors found in int_transaction_call_frame. Nothing to do.")
-            return 0
-
-        # Step 2: Get selectors we already have
-        print(f"\nFetching existing selectors from dim_function_signature...")
-        existing_selectors = get_existing_selectors(ch_url, target_db, target_table)
-        print(f"  Found {len(existing_selectors)} existing selectors")
-
-        # Step 3: Compute difference
-        new_selectors = seen_selectors - existing_selectors
-        print(f"\nNew selectors to lookup: {len(new_selectors)}")
+        # Step 1: Get new selectors (computed in ClickHouse, not Python)
+        print(f"\nQuerying new selectors (limit {BATCH_SIZE})...")
+        new_selectors = get_new_selectors(ch_url, target_db, target_table, BATCH_SIZE)
+        print(f"  Found {len(new_selectors)} new selectors to lookup")
 
         if not new_selectors:
-            print("No new selectors to lookup. All selectors already have signatures.")
+            print("\nNo new selectors to lookup. All selectors already have signatures.")
             return 0
 
-        # Step 4: Lookup signatures from Sourcify
+        # Step 2: Get total pending count for progress reporting
+        pending_count = get_pending_count(ch_url, target_db, target_table)
+        if pending_count > 0:
+            print(f"  Total pending selectors: ~{pending_count} (will process {len(new_selectors)} this run)")
+
+        # Step 3: Lookup signatures from Sourcify
         print(f"\nLooking up signatures from Sourcify 4byte API...")
         signatures = lookup_signatures_batch(new_selectors, batch_size=20, delay=1.5)
         print(f"\nFound signatures for {len(signatures)} selectors")
 
-        if not signatures:
-            print("No signatures found from Sourcify API.")
-            return 0
+        # Step 4: Insert all looked-up selectors (found with name, unknown with empty name)
+        # This tracks "we looked this up" - prevents re-querying same selectors
+        # Frontend should check name != '' before displaying (show fallback if empty)
+        for selector in new_selectors:
+            if selector not in signatures:
+                signatures[selector] = {
+                    'name': '',
+                    'has_verified_contract': False
+                }
 
-        # Step 5: Insert signatures
-        print(f"\nInserting {len(signatures)} signatures into ClickHouse...")
+        found_count = len([s for s in signatures.values() if s['name']])
+        not_found_count = len(signatures) - found_count
+
+        print(f"\nInserting {len(signatures)} entries into ClickHouse...")
         inserted = insert_signatures(ch_url, target_db, target_table, signatures, task_start)
-        print(f"  Successfully inserted {inserted} signatures")
+        print(f"  Successfully inserted {inserted} entries")
 
-        # Summary
         print(f"\nSummary:")
-        print(f"  Selectors in call frames: {len(seen_selectors)}")
-        print(f"  Previously known: {len(existing_selectors)}")
-        print(f"  New lookups attempted: {len(new_selectors)}")
-        print(f"  Signatures found: {len(signatures)}")
-        print(f"  Signatures inserted: {inserted}")
+        print(f"  Selectors processed: {len(new_selectors)}")
+        print(f"  With signature: {found_count}")
+        print(f"  Not in 4byte (empty name): {not_found_count}")
+        print(f"  Total inserted: {inserted}")
+        remaining = pending_count - len(new_selectors) if pending_count > 0 else 0
+        if remaining > 0:
+            print(f"  Remaining to process: ~{remaining} (will continue in next scheduled run)")
 
         print("\nFunction signature data collection completed successfully")
         return 0
