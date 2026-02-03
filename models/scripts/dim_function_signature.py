@@ -4,12 +4,13 @@ Function Signature Data Collection
 Collects function signature lookups from Sourcify's 4byte signature database.
 
 This script:
-1. Uses ClickHouse to find selectors needing lookup:
+1. Scans recent blocks (BLOCK_LOOKBACK) for function selectors needing lookup:
    - Selectors not yet in dim_function_signature, OR
    - Selectors with empty name (not in 4byte) older than 30 days (re-check)
-2. Processes a batch of selectors per run (avoids OOM)
-3. Batch lookups against Sourcify 4byte API
-4. Inserts all looked-up selectors (empty name if not found)
+2. Uses efficient LEFT JOIN instead of NOT IN for large table performance
+3. Processes a batch of selectors per run (avoids OOM)
+4. Batch lookups against Sourcify 4byte API
+5. Inserts all looked-up selectors (empty name if not found)
 
 The scheduled runs handle iteration until caught up. Empty names are
 periodically re-checked in case 4byte adds signatures later.
@@ -31,6 +32,11 @@ from datetime import datetime
 # Maximum number of new selectors to process per run
 # This prevents OOM and allows incremental catchup over multiple runs
 BATCH_SIZE = 500
+
+# Number of recent blocks to scan for new selectors
+# ~50k blocks ≈ 1 week of mainnet blocks (12s block time)
+# This limits the DISTINCT scan to recent data where new selectors appear
+BLOCK_LOOKBACK = 50000
 
 
 def execute_clickhouse_query(url, query):
@@ -73,7 +79,7 @@ def execute_clickhouse_query(url, query):
         raise
 
 
-def get_new_selectors(ch_url, target_db, target_table, batch_size):
+def get_new_selectors(ch_url, target_db, target_table, batch_size, block_lookback=50000):
     """
     Get selectors that need lookup from 4byte API.
 
@@ -82,22 +88,26 @@ def get_new_selectors(ch_url, target_db, target_table, batch_size):
     2. Have empty name (not found previously) and are older than 30 days
 
     This allows re-querying unknowns periodically in case 4byte adds them later.
-    Uses ClickHouse to compute efficiently without loading all into Python memory.
+
+    Uses efficient LEFT JOIN instead of NOT IN for better performance with large tables.
+    Limits scan to recent blocks (block_lookback) since new selectors come from new blocks.
     """
     query = f"""
-    SELECT DISTINCT function_selector as selector
-    FROM `{target_db}`.int_transaction_call_frame FINAL
-    WHERE function_selector IS NOT NULL
-      AND function_selector != ''
-      AND function_selector NOT IN (
-        -- Exclude selectors that have a real name (found in 4byte)
-        SELECT selector FROM `{target_db}`.`{target_table}` FINAL
-        WHERE name != ''
-      )
-      AND function_selector NOT IN (
-        -- Exclude selectors with empty name that were checked recently (< 30 days)
-        SELECT selector FROM `{target_db}`.`{target_table}` FINAL
-        WHERE name = '' AND updated_date_time > now() - INTERVAL 30 DAY
+    WITH max_block AS (
+        SELECT max(block_number) as mb FROM `{target_db}`.int_transaction_call_frame
+    )
+    SELECT DISTINCT cf.function_selector as selector
+    FROM `{target_db}`.int_transaction_call_frame cf FINAL
+    LEFT JOIN (
+        SELECT selector, name, updated_date_time
+        FROM `{target_db}`.`{target_table}` FINAL
+    ) sig ON cf.function_selector = sig.selector
+    WHERE cf.block_number >= (SELECT mb - {block_lookback} FROM max_block)
+      AND cf.function_selector IS NOT NULL
+      AND cf.function_selector != ''
+      AND (
+        sig.selector IS NULL  -- Not in table yet
+        OR (sig.name = '' AND sig.updated_date_time < now() - INTERVAL 30 DAY)  -- Empty & stale
       )
     LIMIT {batch_size}
     FORMAT JSONCompact
@@ -115,20 +125,24 @@ def get_new_selectors(ch_url, target_db, target_table, batch_size):
         raise
 
 
-def get_pending_count(ch_url, target_db, target_table):
+def get_pending_count(ch_url, target_db, target_table, block_lookback=50000):
     """Get approximate count of selectors still needing lookup (for progress reporting)"""
     query = f"""
-    SELECT count(DISTINCT function_selector) as cnt
-    FROM `{target_db}`.int_transaction_call_frame FINAL
-    WHERE function_selector IS NOT NULL
-      AND function_selector != ''
-      AND function_selector NOT IN (
-        SELECT selector FROM `{target_db}`.`{target_table}` FINAL
-        WHERE name != ''
-      )
-      AND function_selector NOT IN (
-        SELECT selector FROM `{target_db}`.`{target_table}` FINAL
-        WHERE name = '' AND updated_date_time > now() - INTERVAL 30 DAY
+    WITH max_block AS (
+        SELECT max(block_number) as mb FROM `{target_db}`.int_transaction_call_frame
+    )
+    SELECT count(DISTINCT cf.function_selector) as cnt
+    FROM `{target_db}`.int_transaction_call_frame cf FINAL
+    LEFT JOIN (
+        SELECT selector, name, updated_date_time
+        FROM `{target_db}`.`{target_table}` FINAL
+    ) sig ON cf.function_selector = sig.selector
+    WHERE cf.block_number >= (SELECT mb - {block_lookback} FROM max_block)
+      AND cf.function_selector IS NOT NULL
+      AND cf.function_selector != ''
+      AND (
+        sig.selector IS NULL
+        OR (sig.name = '' AND sig.updated_date_time < now() - INTERVAL 30 DAY)
       )
     FORMAT JSONCompact
     """
@@ -274,8 +288,8 @@ def main():
             return 1
 
         # Step 1: Get new selectors (computed in ClickHouse, not Python)
-        print(f"\nQuerying new selectors (limit {BATCH_SIZE})...")
-        new_selectors = get_new_selectors(ch_url, target_db, target_table, BATCH_SIZE)
+        print(f"\nQuerying new selectors (limit {BATCH_SIZE}, last {BLOCK_LOOKBACK} blocks)...")
+        new_selectors = get_new_selectors(ch_url, target_db, target_table, BATCH_SIZE, BLOCK_LOOKBACK)
         print(f"  Found {len(new_selectors)} new selectors to lookup")
 
         if not new_selectors:
@@ -283,7 +297,7 @@ def main():
             return 0
 
         # Step 2: Get total pending count for progress reporting
-        pending_count = get_pending_count(ch_url, target_db, target_table)
+        pending_count = get_pending_count(ch_url, target_db, target_table, BLOCK_LOOKBACK)
         if pending_count > 0:
             print(f"  Total pending selectors: ~{pending_count} (will process {len(new_selectors)} this run)")
 
