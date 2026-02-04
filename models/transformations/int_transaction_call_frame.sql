@@ -67,6 +67,29 @@ dependencies:
 --      - Capped at 20% of total gas consumed (EIP-3529)
 --
 -- =============================================================================
+-- CONTRACT CREATION CODE DEPOSIT COST
+-- =============================================================================
+--
+-- For CREATE/CREATE2 transactions, there's an additional gas cost NOT captured
+-- in structlog_agg: the CODE DEPOSIT COST (200 gas per byte of deployed bytecode).
+--
+-- This cost is a STATE TRANSITION charge applied when the constructor successfully
+-- returns (RETURN opcode), not an opcode execution cost. The EVM charges it after
+-- all opcodes complete, so debug_traceTransaction's structlog doesn't include it.
+--
+-- The structlog tracer reports opcode-by-opcode gas. Code deposit isn't an opcode -
+-- it's charged as part of CREATE/CREATE2 result processing in the EVM state transition.
+--
+-- This transformation corrects for this by:
+--   1. Detecting CREATE transactions (action_type = 'create' in traces)
+--   2. Getting deployed bytecode from traces.result_code
+--   3. Adding code_deposit = len(bytecode) * 200 to gas and gas_cumulative
+--   4. Recalculating intrinsic_gas with the corrected gas_cumulative
+--
+-- Without this correction, the code deposit cost would incorrectly appear as
+-- intrinsic gas (since intrinsic = receipt - gas_cumulative + refund).
+--
+-- =============================================================================
 -- COLUMN DEFINITIONS
 -- =============================================================================
 --
@@ -160,15 +183,42 @@ structlog_frames AS (
     agg.call_frame_id,
     agg.parent_call_frame_id,
     agg.depth,
-    agg.target_address,
-    if(agg.call_frame_id = 0, '', agg.call_type) as call_type,
+    -- For CREATE transactions at root, use result_address (the created contract)
+    -- Otherwise use the normal target_address from structlog
+    if(agg.call_frame_id = 0 AND tr.action_type = 'create',
+       tr.result_address,
+       agg.target_address) as target_address,
+    -- For root frames: use 'CREATE' if it's a contract creation, else empty
+    -- For non-root frames: use the call_type from structlog
+    if(agg.call_frame_id = 0,
+       if(tr.action_type = 'create', 'CREATE', ''),
+       agg.call_type) as call_type,
     tr.function_selector,
     agg.opcode_count,
     agg.error_count,
-    agg.gas,
-    agg.gas_cumulative,
+    -- CODE DEPOSIT CORRECTION (see "CONTRACT CREATION CODE DEPOSIT COST" section above)
+    -- For CREATE: add code_deposit = len(deployed_bytecode) * 200 to gas fields
+    -- result_code is hex with '0x' prefix, so byte_count = (length - 2) / 2
+    -- Cast to UInt64 to avoid Int64 promotion from subtraction
+    if(agg.call_frame_id = 0 AND tr.action_type = 'create' AND tr.result_code IS NOT NULL AND length(tr.result_code) > 2,
+       agg.gas + toUInt64(intDiv(length(tr.result_code) - 2, 2) * 200),
+       agg.gas) as gas,
+    if(agg.call_frame_id = 0 AND tr.action_type = 'create' AND tr.result_code IS NOT NULL AND length(tr.result_code) > 2,
+       agg.gas_cumulative + toUInt64(intDiv(length(tr.result_code) - 2, 2) * 200),
+       agg.gas_cumulative) as gas_cumulative,
     agg.gas_refund,
-    agg.intrinsic_gas,
+    -- Recalculate intrinsic_gas with corrected gas_cumulative for CREATE transactions
+    -- Use Int64 arithmetic to avoid UInt64 subtraction promotion issues, then cast result
+    if(agg.call_frame_id = 0,
+       if(tr.action_type = 'create' AND tr.result_code IS NOT NULL AND length(tr.result_code) > 2,
+          CAST(
+            toInt64(tx.receipt_gas_used)
+            - toInt64(agg.gas_cumulative)
+            - toInt64(intDiv(length(tr.result_code) - 2, 2) * 200)
+            + toInt64(coalesce(agg.gas_refund, toUInt64(0)))
+          AS Nullable(UInt64)),
+          agg.intrinsic_gas),
+       NULL) as intrinsic_gas,
     -- Receipt gas used from transaction table (only for root frame)
     if(agg.call_frame_id = 0, tx.receipt_gas_used, NULL) as receipt_gas_used
   FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }} agg
@@ -178,7 +228,10 @@ structlog_frames AS (
       block_number,
       transaction_hash,
       toUInt32(internal_index - 1) as call_frame_id,
-      substring(action_input, 1, 10) as function_selector
+      substring(action_input, 1, 10) as function_selector,
+      action_type,
+      result_address,
+      result_code
     FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
       AND meta_network_name = '{{ .env.NETWORK }}'
