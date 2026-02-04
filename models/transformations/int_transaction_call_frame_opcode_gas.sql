@@ -68,8 +68,6 @@ SELECT
     opcode_count AS count,
     gas,
     gas_cumulative,
-    min_depth,
-    max_depth,
     error_count,
     meta_network_name
 FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }}

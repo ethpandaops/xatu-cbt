@@ -53,8 +53,6 @@ SELECT
     sum(count) AS count,
     sum(gas) AS gas,
     sum(gas_cumulative) AS gas_cumulative,
-    min(min_depth) AS min_depth,
-    max(max_depth) AS max_depth,
     sum(error_count) AS error_count,
     meta_network_name
 FROM {{ index .dep "{{transformation}}" "int_transaction_call_frame_opcode_gas" "helpers" "from" }} FINAL

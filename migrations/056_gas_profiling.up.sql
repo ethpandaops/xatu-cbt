@@ -18,10 +18,6 @@ CREATE TABLE `${NETWORK_NAME}`.int_transaction_opcode_gas_local ON CLUSTER '{clu
     `gas` UInt64 COMMENT 'Gas consumed by this opcode. sum(gas) = transaction executed gas' CODEC(ZSTD(1)),
     `gas_cumulative` UInt64 COMMENT 'For CALL opcodes: includes all descendant frame gas. For others: same as gas' CODEC(ZSTD(1)),
 
-    -- Call depth metrics
-    `min_depth` UInt64 COMMENT 'Minimum call stack depth for this opcode' CODEC(ZSTD(1)),
-    `max_depth` UInt64 COMMENT 'Maximum call stack depth for this opcode' CODEC(ZSTD(1)),
-
     -- Error tracking
     `error_count` UInt64 COMMENT 'Number of times this opcode resulted in an error' CODEC(ZSTD(1)),
 
@@ -145,10 +141,6 @@ CREATE TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas_local ON CL
     `count` UInt64 COMMENT 'Number of times this opcode was executed in this frame' CODEC(ZSTD(1)),
     `gas` UInt64 COMMENT 'Gas consumed by this opcode in this frame. sum(gas) = frame gas' CODEC(ZSTD(1)),
     `gas_cumulative` UInt64 COMMENT 'For CALL opcodes: includes all descendant frame gas. For others: same as gas' CODEC(ZSTD(1)),
-
-    -- Call depth metrics
-    `min_depth` UInt64 COMMENT 'Minimum call stack depth for this opcode in this frame' CODEC(ZSTD(1)),
-    `max_depth` UInt64 COMMENT 'Maximum call stack depth for this opcode in this frame' CODEC(ZSTD(1)),
 
     -- Error tracking
     `error_count` UInt64 COMMENT 'Number of times this opcode resulted in an error in this frame' CODEC(ZSTD(1)),
