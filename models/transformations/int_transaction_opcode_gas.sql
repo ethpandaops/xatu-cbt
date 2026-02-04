@@ -3,7 +3,7 @@ table: int_transaction_opcode_gas
 type: incremental
 interval:
   type: block
-  max: 1000
+  max: 2000
 fill:
   direction: "tail"
   allow_gap_skipping: false
@@ -15,25 +15,20 @@ tags:
   - opcode
   - gas
 dependencies:
-  - "{{external}}.canonical_execution_transaction_structlog_agg"
+  - "{{transformation}}.int_transaction_call_frame_opcode_gas"
 ---
 -- Aggregates opcode execution data per transaction.
 --
 -- =============================================================================
--- DATA SOURCE: canonical_execution_transaction_structlog_agg
+-- DATA SOURCE: int_transaction_call_frame_opcode_gas
 -- =============================================================================
 --
--- This transformation uses the pre-aggregated structlog_agg table which contains
--- per-opcode aggregations at the call frame level. We aggregate across all frames
--- in a transaction to get transaction-level opcode metrics.
+-- This transformation reads from the per-frame opcode table (which already
+-- contains filtered, per-opcode data) and aggregates across all call frames
+-- to produce transaction-level opcode metrics.
 --
--- The per-opcode rows have operation != '' and contain:
---   - opcode_count: Number of times this opcode was executed in a frame
---   - gas: SUM(gas_self) - excludes child frame gas for CALL/CREATE opcodes
---   - gas_cumulative: SUM(gas_used) - includes child frame gas for CALL/CREATE
---   - min_depth/max_depth: Depth range where opcode appeared in the frame
---
--- We SUM across frames to get transaction totals, and take MIN/MAX of depth.
+-- This avoids an expensive distributed read from structlog_agg by reading
+-- from a local CBT table instead.
 --
 -- =============================================================================
 -- GAS METRICS
@@ -53,27 +48,21 @@ SELECT
     block_number,
     transaction_hash,
     transaction_index,
-    operation AS opcode,
+    opcode,
     -- Aggregate across all frames in the transaction
-    sum(opcode_count) AS count,
+    sum(count) AS count,
     sum(gas) AS gas,
     sum(gas_cumulative) AS gas_cumulative,
-    min(min_depth) AS min_depth,
-    max(max_depth) AS max_depth,
     sum(error_count) AS error_count,
     meta_network_name
-FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }}
+FROM {{ index .dep "{{transformation}}" "int_transaction_call_frame_opcode_gas" "helpers" "from" }} FINAL
 WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND meta_network_name = '{{ .env.NETWORK }}'
-    AND operation != ''  -- Per-opcode rows only (exclude frame summary rows)
 GROUP BY
     block_number,
     transaction_hash,
     transaction_index,
-    operation,
+    opcode,
     meta_network_name
 SETTINGS
-    max_bytes_before_external_group_by = 10000000000,
-    max_threads = 8,
-    distributed_aggregation_memory_efficient = 1,
-    do_not_merge_across_partitions_select_final = 1;
+    max_threads = 8;
