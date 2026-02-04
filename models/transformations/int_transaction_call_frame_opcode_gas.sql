@@ -75,5 +75,5 @@ WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND meta_network_name = '{{ .env.NETWORK }}'
     AND operation != ''  -- Per-opcode rows only (exclude frame summary rows)
 SETTINGS
-    max_bytes_before_external_group_by = 10000000000,
-    distributed_aggregation_memory_efficient = 1;
+    max_threads = 8,
+    do_not_merge_across_partitions_select_final = 1;
