@@ -97,10 +97,10 @@ def get_new_selectors(ch_url, target_db, target_table, batch_size, block_lookbac
         SELECT max(block_number) as mb FROM `{target_db}`.int_transaction_call_frame
     )
     SELECT DISTINCT cf.function_selector as selector
-    FROM `{target_db}`.int_transaction_call_frame cf FINAL
+    FROM `{target_db}`.int_transaction_call_frame cf
     LEFT JOIN (
         SELECT selector, name, updated_date_time
-        FROM `{target_db}`.`{target_table}` FINAL
+        FROM `{target_db}`.`{target_table}`
     ) sig ON cf.function_selector = sig.selector
     WHERE cf.block_number >= (SELECT mb - {block_lookback} FROM max_block)
       AND cf.function_selector IS NOT NULL
@@ -123,38 +123,6 @@ def get_new_selectors(ch_url, target_db, target_table, batch_size, block_lookbac
     except Exception as e:
         print(f"Error querying new selectors: {e}", file=sys.stderr)
         raise
-
-
-def get_pending_count(ch_url, target_db, target_table, block_lookback=50000):
-    """Get approximate count of selectors still needing lookup (for progress reporting)"""
-    query = f"""
-    WITH max_block AS (
-        SELECT max(block_number) as mb FROM `{target_db}`.int_transaction_call_frame
-    )
-    SELECT count(DISTINCT cf.function_selector) as cnt
-    FROM `{target_db}`.int_transaction_call_frame cf FINAL
-    LEFT JOIN (
-        SELECT selector, name, updated_date_time
-        FROM `{target_db}`.`{target_table}` FINAL
-    ) sig ON cf.function_selector = sig.selector
-    WHERE cf.block_number >= (SELECT mb - {block_lookback} FROM max_block)
-      AND cf.function_selector IS NOT NULL
-      AND cf.function_selector != ''
-      AND (
-        sig.selector IS NULL
-        OR (sig.name = '' AND sig.updated_date_time < now() - INTERVAL 30 DAY)
-      )
-    FORMAT JSONCompact
-    """
-
-    try:
-        result = execute_clickhouse_query(ch_url, query)
-        if result and 'data' in result and result['data']:
-            return int(result['data'][0][0])
-        return 0
-    except Exception as e:
-        print(f"Warning: Failed to get pending count: {e}", file=sys.stderr)
-        return -1
 
 
 def lookup_signatures_batch(selectors, batch_size=20, delay=1.5, max_retries=3):
@@ -296,17 +264,12 @@ def main():
             print("\nNo new selectors to lookup. All selectors already have signatures.")
             return 0
 
-        # Step 2: Get total pending count for progress reporting
-        pending_count = get_pending_count(ch_url, target_db, target_table, BLOCK_LOOKBACK)
-        if pending_count > 0:
-            print(f"  Total pending selectors: ~{pending_count} (will process {len(new_selectors)} this run)")
-
-        # Step 3: Lookup signatures from Sourcify
+        # Step 2: Lookup signatures from Sourcify
         print(f"\nLooking up signatures from Sourcify 4byte API...")
         signatures = lookup_signatures_batch(new_selectors, batch_size=20, delay=1.5)
         print(f"\nFound signatures for {len(signatures)} selectors")
 
-        # Step 4: Insert all looked-up selectors (found with name, unknown with empty name)
+        # Step 3: Insert all looked-up selectors (found with name, unknown with empty name)
         # This tracks "we looked this up" - prevents re-querying same selectors
         # Frontend should check name != '' before displaying (show fallback if empty)
         for selector in new_selectors:
@@ -328,9 +291,6 @@ def main():
         print(f"  With signature: {found_count}")
         print(f"  Not in 4byte (empty name): {not_found_count}")
         print(f"  Total inserted: {inserted}")
-        remaining = pending_count - len(new_selectors) if pending_count > 0 else 0
-        if remaining > 0:
-            print(f"  Remaining to process: ~{remaining} (will continue in next scheduled run)")
 
         print("\nFunction signature data collection completed successfully")
         return 0
