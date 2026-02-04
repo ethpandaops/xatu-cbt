@@ -4,8 +4,8 @@ cache:
   incremental_scan_interval: 1m
   full_scan_interval: 24h
 interval:
-  type: epoch
-lag: 5
+  type: slot
+lag: 12
 ---
 SELECT
     {{ if .cache.is_incremental_scan }}

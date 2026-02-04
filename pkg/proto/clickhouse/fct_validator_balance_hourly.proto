@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Hourly validator balance snapshots aggregated from per-epoch data
+
+message FctValidatorBalanceHourly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The start of the hour for this aggregation
+  uint32 hour_start_date_time = 12;
+  // The index of the validator
+  uint32 validator_index = 13;
+  // First epoch in this hour for this validator
+  uint32 start_epoch = 14;
+  // Last epoch in this hour for this validator
+  uint32 end_epoch = 15;
+  // Balance at start of hour (first epoch) in Gwei
+  google.protobuf.UInt64Value start_balance = 16;
+  // Balance at end of hour (last epoch) in Gwei
+  google.protobuf.UInt64Value end_balance = 17;
+  // Minimum balance during the hour in Gwei
+  google.protobuf.UInt64Value min_balance = 18;
+  // Maximum balance during the hour in Gwei
+  google.protobuf.UInt64Value max_balance = 19;
+  // Effective balance at end of hour in Gwei
+  google.protobuf.UInt64Value effective_balance = 20;
+  // Validator status at end of hour
+  string status = 21;
+  // Whether the validator was slashed (as of end of hour)
+  bool slashed = 22;
+}
+
+// Request for listing fct_validator_balance_hourly records
+message ListFctValidatorBalanceHourlyRequest {
+  // Filter by validator_index - The index of the validator (PRIMARY KEY - required)
+  UInt32Filter validator_index = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by hour_start_date_time - The start of the hour for this aggregation (ORDER BY column 2 - optional)
+  UInt32Filter hour_start_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by start_epoch - First epoch in this hour for this validator (optional)
+  UInt32Filter start_epoch = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by end_epoch - Last epoch in this hour for this validator (optional)
+  UInt32Filter end_epoch = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by start_balance - Balance at start of hour (first epoch) in Gwei (optional)
+  NullableUInt64Filter start_balance = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by end_balance - Balance at end of hour (last epoch) in Gwei (optional)
+  NullableUInt64Filter end_balance = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_balance - Minimum balance during the hour in Gwei (optional)
+  NullableUInt64Filter min_balance = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_balance - Maximum balance during the hour in Gwei (optional)
+  NullableUInt64Filter max_balance = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by effective_balance - Effective balance at end of hour in Gwei (optional)
+  NullableUInt64Filter effective_balance = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by status - Validator status at end of hour (optional)
+  StringFilter status = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by slashed - Whether the validator was slashed (as of end of hour) (optional)
+  BoolFilter slashed = 12 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_validator_balance_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 13 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctValidatorBalanceHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 14 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 15 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_validator_balance_hourly records
+message ListFctValidatorBalanceHourlyResponse {
+  // The list of fct_validator_balance_hourly.
+  repeated FctValidatorBalanceHourly fct_validator_balance_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_validator_balance_hourly record by primary key
+message GetFctValidatorBalanceHourlyRequest {
+  // The index of the validator
+  uint32 validator_index = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_validator_balance_hourly record
+message GetFctValidatorBalanceHourlyResponse {
+  FctValidatorBalanceHourly item = 1;
+}
+
+// Query fct_validator_balance_hourly data
+service FctValidatorBalanceHourlyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctValidatorBalanceHourlyRequest) returns (ListFctValidatorBalanceHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_validator_balance_hourly"
+    };
+  }
+  // Get record | Retrieve a single record by validator_index
+  rpc Get(GetFctValidatorBalanceHourlyRequest) returns (GetFctValidatorBalanceHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_validator_balance_hourly/{validator_index}"
+    };
+  }
+}
