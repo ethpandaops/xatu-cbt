@@ -14,7 +14,7 @@ tags:
   - validator_performance
 dependencies:
   - "{{external}}.canonical_beacon_validators"
-  - "{{external}}.canonical_beacon_validators_pubkeys"
+  - "{{transformation}}.dim_validator_pubkey"
 ---
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
@@ -22,8 +22,8 @@ WITH
         SELECT
             `index` AS validator_index,
             status,
-            min(epoch) AS epoch,
-            min(epoch_start_date_time) AS epoch_start_date_time,
+            min(epoch) AS first_epoch,
+            min(epoch_start_date_time) AS first_epoch_start_date_time,
             argMin(activation_epoch, epoch) AS activation_epoch,
             argMin(activation_eligibility_epoch, epoch) AS activation_eligibility_epoch,
             argMin(exit_epoch, epoch) AS exit_epoch,
@@ -36,24 +36,22 @@ WITH
     ),
     pubkeys AS (
         SELECT
-            `index`,
-            argMin(pubkey, epoch) AS pubkey
-        FROM {{ index .dep "{{external}}" "canonical_beacon_validators_pubkeys" "helpers" "from" }} FINAL
-        WHERE meta_network_name = '{{ .env.NETWORK }}'
-        GROUP BY `index`
+            validator_index,
+            pubkey
+        FROM {{ index .dep "{{transformation}}" "dim_validator_pubkey" "helpers" "from" }} FINAL
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
-    toUInt32(4294967295 - st.epoch) AS version,
+    toUInt32(4294967295 - st.first_epoch) AS version,
     st.validator_index,
     coalesce(p.pubkey, '') AS pubkey,
     st.status,
-    st.epoch,
-    st.epoch_start_date_time,
+    st.first_epoch AS epoch,
+    st.first_epoch_start_date_time AS epoch_start_date_time,
     st.activation_epoch,
     st.activation_eligibility_epoch,
     st.exit_epoch,
     st.withdrawable_epoch,
     st.slashed
 FROM status_transitions st
-LEFT JOIN pubkeys p ON st.validator_index = p.index
+LEFT JOIN pubkeys p ON st.validator_index = p.validator_index

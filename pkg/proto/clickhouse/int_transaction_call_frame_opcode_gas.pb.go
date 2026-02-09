@@ -164,7 +164,7 @@ type ListIntTransactionCallFrameOpcodeGasRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Filter by block_number - The block number containing the transaction (PRIMARY KEY - required unless using alternatives: transaction_hash, opcode)
+	// Filter by block_number - The block number containing the transaction (PRIMARY KEY - required)
 	BlockNumber *UInt64Filter `protobuf:"bytes,1,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
 	// Filter by transaction_hash - The transaction hash (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
 	TransactionHash *StringFilter `protobuf:"bytes,2,opt,name=transaction_hash,json=transactionHash,proto3" json:"transaction_hash,omitempty"`

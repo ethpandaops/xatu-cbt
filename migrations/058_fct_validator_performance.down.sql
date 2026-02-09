@@ -27,3 +27,9 @@ DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_sync_committee_participation_by_valid
 
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_block_proposer_by_validator ON CLUSTER '{cluster}';
 DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_block_proposer_by_validator_local ON CLUSTER '{cluster}';
+
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.dim_validator_status ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.dim_validator_status_local ON CLUSTER '{cluster}';
+
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.dim_validator_pubkey ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS `${NETWORK_NAME}`.dim_validator_pubkey_local ON CLUSTER '{cluster}';
