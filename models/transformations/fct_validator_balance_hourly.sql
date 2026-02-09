@@ -5,8 +5,8 @@ interval:
   type: slot
   max: 10000
 schedules:
-  forwardfill: "@every 5m"
-  backfill: "@every 10m"
+  forwardfill: "@every 5s"
+  backfill: "@every 5s"
 tags:
   - hourly
   - validator

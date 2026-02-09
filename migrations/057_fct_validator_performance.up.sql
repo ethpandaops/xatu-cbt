@@ -1,4 +1,119 @@
 -- ============================================================================
+-- fct_attestation_vote_correctness_by_validator (per-slot)
+-- ============================================================================
+CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_local ON CLUSTER '{cluster}' (
+    -- Metadata
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Slot dimension
+    `slot` UInt64 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
+    `slot_start_date_time` DateTime COMMENT 'The start time of the slot' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Validator
+    `validator_index` UInt32 COMMENT 'The index of the validator' CODEC(ZSTD(1)),
+
+    -- Per-slot metrics
+    `attested` Bool COMMENT 'Whether the validator attested in this slot',
+    `head_correct` Nullable(Bool) COMMENT 'Whether the head vote was correct. NULL if not attested' CODEC(ZSTD(1)),
+    `target_correct` Nullable(Bool) COMMENT 'Whether the target vote was correct. NULL if not attested' CODEC(ZSTD(1)),
+    `source_correct` Nullable(Bool) COMMENT 'Whether the source vote was correct. NULL if not attested' CODEC(ZSTD(1)),
+    `inclusion_distance` Nullable(UInt32) COMMENT 'Inclusion distance for the attestation. NULL if not attested' CODEC(ZSTD(1))
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY toStartOfMonth(slot_start_date_time)
+ORDER BY (validator_index, slot_start_date_time)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild'
+COMMENT 'Per-slot attestation vote correctness by validator';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_local
+ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_attestation_vote_correctness_by_validator_local,
+    cityHash64(validator_index, slot_start_date_time)
+);
+
+ALTER TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_local ON CLUSTER '{cluster}'
+ADD PROJECTION p_by_slot_start_date_time
+(
+    SELECT *
+    ORDER BY (slot_start_date_time, validator_index)
+);
+
+-- ============================================================================
+-- fct_sync_committee_participation_by_validator (per-slot)
+-- ============================================================================
+CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_local ON CLUSTER '{cluster}' (
+    -- Metadata
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Slot dimension
+    `slot` UInt64 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
+    `slot_start_date_time` DateTime COMMENT 'The start time of the slot' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Validator
+    `validator_index` UInt32 COMMENT 'Index of the validator' CODEC(ZSTD(1)),
+
+    -- Per-slot metrics
+    `participated` Bool COMMENT 'Whether the validator participated in sync committee for this slot'
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY toStartOfMonth(slot_start_date_time)
+ORDER BY (validator_index, slot_start_date_time)
+COMMENT 'Per-slot sync committee participation by validator';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_local
+ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_sync_committee_participation_by_validator_local,
+    cityHash64(validator_index, slot_start_date_time)
+);
+
+-- ============================================================================
+-- fct_validator_balance (per-epoch)
+-- ============================================================================
+CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_local ON CLUSTER '{cluster}' (
+    -- Metadata
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Epoch dimension
+    `epoch` UInt32 COMMENT 'The epoch number' CODEC(DoubleDelta, ZSTD(1)),
+    `epoch_start_date_time` DateTime COMMENT 'The start time of the epoch' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Validator
+    `validator_index` UInt32 COMMENT 'The index of the validator' CODEC(ZSTD(1)),
+
+    -- Per-epoch metrics (in Gwei)
+    `balance` UInt64 COMMENT 'Validator balance at this epoch in Gwei' CODEC(T64, ZSTD(1)),
+    `effective_balance` UInt64 COMMENT 'Effective balance at this epoch in Gwei' CODEC(ZSTD(1)),
+    `status` LowCardinality(String) COMMENT 'Validator status at this epoch',
+    `slashed` Bool COMMENT 'Whether the validator was slashed (as of this epoch)'
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY toStartOfMonth(epoch_start_date_time)
+ORDER BY (validator_index, epoch_start_date_time)
+COMMENT 'Per-epoch validator balance and status';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_validator_balance_local
+ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_validator_balance_local,
+    cityHash64(validator_index, epoch_start_date_time)
+);
+
+-- ============================================================================
 -- fct_attestation_vote_correctness_by_validator_hourly
 -- ============================================================================
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_hourly_local ON CLUSTER '{cluster}' (
@@ -25,6 +140,8 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_hou
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(hour_start_date_time)
 ORDER BY (validator_index, hour_start_date_time)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Hourly aggregation of per-validator attestation vote correctness';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_hourly ON CLUSTER '{cluster}'
@@ -34,6 +151,13 @@ ENGINE = Distributed(
     '${NETWORK_NAME}',
     fct_attestation_vote_correctness_by_validator_hourly_local,
     cityHash64(validator_index, hour_start_date_time)
+);
+
+ALTER TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_hourly_local ON CLUSTER '{cluster}'
+ADD PROJECTION p_by_hour_start_date_time
+(
+    SELECT *
+    ORDER BY (hour_start_date_time, validator_index)
 );
 
 -- ============================================================================
@@ -69,6 +193,8 @@ CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_hourly_local ON CLUSTER '{c
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(hour_start_date_time)
 ORDER BY (validator_index, hour_start_date_time)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Hourly validator balance snapshots aggregated from per-epoch data';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_hourly ON CLUSTER '{cluster}'
@@ -78,6 +204,13 @@ ENGINE = Distributed(
     '${NETWORK_NAME}',
     fct_validator_balance_hourly_local,
     cityHash64(validator_index, hour_start_date_time)
+);
+
+ALTER TABLE `${NETWORK_NAME}`.fct_validator_balance_hourly_local ON CLUSTER '{cluster}'
+ADD PROJECTION p_by_hour_start_date_time
+(
+    SELECT *
+    ORDER BY (hour_start_date_time, validator_index)
 );
 
 -- ============================================================================
@@ -103,6 +236,8 @@ CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_hou
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(hour_start_date_time)
 ORDER BY (validator_index, hour_start_date_time)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Hourly aggregation of per-validator sync committee participation';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_hourly ON CLUSTER '{cluster}'
@@ -112,6 +247,13 @@ ENGINE = Distributed(
     '${NETWORK_NAME}',
     fct_sync_committee_participation_by_validator_hourly_local,
     cityHash64(validator_index, hour_start_date_time)
+);
+
+ALTER TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_hourly_local ON CLUSTER '{cluster}'
+ADD PROJECTION p_by_hour_start_date_time
+(
+    SELECT *
+    ORDER BY (hour_start_date_time, validator_index)
 );
 
 -- ============================================================================
@@ -228,4 +370,41 @@ ENGINE = Distributed(
     '${NETWORK_NAME}',
     fct_sync_committee_participation_by_validator_daily_local,
     cityHash64(validator_index, day_start_date)
+);
+
+-- ============================================================================
+-- fct_block_proposer_by_validator (per-slot, re-indexed by validator)
+-- ============================================================================
+CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_by_validator_local ON CLUSTER '{cluster}' (
+    -- Metadata
+    `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Slot dimension
+    `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
+    `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
+    `epoch` UInt32 COMMENT 'The epoch number containing the slot' CODEC(DoubleDelta, ZSTD(1)),
+    `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
+
+    -- Validator
+    `validator_index` UInt32 COMMENT 'The validator index of the proposer' CODEC(ZSTD(1)),
+    `pubkey` String COMMENT 'The public key of the proposer' CODEC(ZSTD(1)),
+
+    -- Block
+    `block_root` Nullable(String) COMMENT 'The beacon block root hash. NULL if missed' CODEC(ZSTD(1)),
+    `status` LowCardinality(String) COMMENT 'Can be "canonical", "orphaned" or "missed"'
+) ENGINE = ReplicatedReplacingMergeTree(
+    '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
+    '{replica}',
+    `updated_date_time`
+) PARTITION BY toStartOfMonth(slot_start_date_time)
+ORDER BY (validator_index, slot_start_date_time)
+COMMENT 'Block proposers re-indexed by validator for efficient validator lookups';
+
+CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_by_validator ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_block_proposer_by_validator_local
+ENGINE = Distributed(
+    '{cluster}',
+    '${NETWORK_NAME}',
+    fct_block_proposer_by_validator_local,
+    cityHash64(validator_index, slot_start_date_time)
 );

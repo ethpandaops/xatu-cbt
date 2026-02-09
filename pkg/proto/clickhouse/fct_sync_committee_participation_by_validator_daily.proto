@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily aggregation of per-validator sync committee participation
+
+message FctSyncCommitteeParticipationByValidatorDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The start of the day for this aggregation
+  string day_start_date = 12;
+  // Index of the validator
+  uint32 validator_index = 13;
+  // Total sync committee slots for the validator in this day
+  uint32 total_slots = 14;
+  // Number of slots where validator participated
+  uint32 participated_count = 15;
+  // Number of slots where validator missed
+  uint32 missed_count = 16;
+}
+
+// Request for listing fct_sync_committee_participation_by_validator_daily records
+message ListFctSyncCommitteeParticipationByValidatorDailyRequest {
+  // Filter by validator_index - Index of the validator (PRIMARY KEY - required)
+  UInt32Filter validator_index = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by day_start_date - The start of the day for this aggregation (ORDER BY column 2 - optional)
+  StringFilter day_start_date = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_slots - Total sync committee slots for the validator in this day (optional)
+  UInt32Filter total_slots = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by participated_count - Number of slots where validator participated (optional)
+  UInt32Filter participated_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by missed_count - Number of slots where validator missed (optional)
+  UInt32Filter missed_count = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_sync_committee_participation_by_validator_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 7 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctSyncCommitteeParticipationByValidatorDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 8 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 9 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_sync_committee_participation_by_validator_daily records
+message ListFctSyncCommitteeParticipationByValidatorDailyResponse {
+  // The list of fct_sync_committee_participation_by_validator_daily.
+  repeated FctSyncCommitteeParticipationByValidatorDaily fct_sync_committee_participation_by_validator_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_sync_committee_participation_by_validator_daily record by primary key
+message GetFctSyncCommitteeParticipationByValidatorDailyRequest {
+  // Index of the validator
+  uint32 validator_index = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_sync_committee_participation_by_validator_daily record
+message GetFctSyncCommitteeParticipationByValidatorDailyResponse {
+  FctSyncCommitteeParticipationByValidatorDaily item = 1;
+}
+
+// Query fct_sync_committee_participation_by_validator_daily data
+service FctSyncCommitteeParticipationByValidatorDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctSyncCommitteeParticipationByValidatorDailyRequest) returns (ListFctSyncCommitteeParticipationByValidatorDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_sync_committee_participation_by_validator_daily"
+    };
+  }
+  // Get record | Retrieve a single record by validator_index
+  rpc Get(GetFctSyncCommitteeParticipationByValidatorDailyRequest) returns (GetFctSyncCommitteeParticipationByValidatorDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_sync_committee_participation_by_validator_daily/{validator_index}"
+    };
+  }
+}

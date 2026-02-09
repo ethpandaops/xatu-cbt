@@ -5,8 +5,8 @@ interval:
   type: slot
   max: 10000
 schedules:
-  forwardfill: "@every 30s"
-  backfill: "@every 1m"
+  forwardfill: "@every 5s"
+  backfill: "@every 5s"
 tags:
   - hourly
   - sync_committee

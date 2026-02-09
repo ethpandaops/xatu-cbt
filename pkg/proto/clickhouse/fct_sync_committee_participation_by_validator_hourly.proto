@@ -27,8 +27,8 @@ message FctSyncCommitteeParticipationByValidatorHourly {
 
 // Request for listing fct_sync_committee_participation_by_validator_hourly records
 message ListFctSyncCommitteeParticipationByValidatorHourlyRequest {
-  // Filter by validator_index - Index of the validator (PRIMARY KEY - required)
-  UInt32Filter validator_index = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  // Filter by validator_index - Index of the validator (PRIMARY KEY - required unless using alternatives: hour_start_date_time)
+  UInt32Filter validator_index = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by hour_start_date_time - The start of the hour for this aggregation (ORDER BY column 2 - optional)
   UInt32Filter hour_start_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
