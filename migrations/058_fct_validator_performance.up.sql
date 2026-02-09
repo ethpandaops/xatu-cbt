@@ -470,6 +470,8 @@ CREATE TABLE `${NETWORK_NAME}`.dim_validator_pubkey_local ON CLUSTER '{cluster}'
     `updated_date_time`
 )
 ORDER BY (pubkey, validator_index)
+SETTINGS
+    deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Validator index to pubkey mapping — one row per validator with the latest pubkey';
 
 CREATE TABLE `${NETWORK_NAME}`.dim_validator_pubkey ON CLUSTER '{cluster}'

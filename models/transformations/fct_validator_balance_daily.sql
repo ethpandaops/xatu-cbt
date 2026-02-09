@@ -73,3 +73,4 @@ SELECT
     argMax(h_slashed, h_end_epoch) AS slashed
 FROM per_hour
 GROUP BY day_start_date, validator_index
+SETTINGS max_bytes_before_external_group_by = 10000000000
