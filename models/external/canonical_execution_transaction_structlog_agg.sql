@@ -9,9 +9,9 @@ lag: 384
 ---
 SELECT
   {{ if .cache.is_incremental_scan }}
-  '{{ .cache.previous_min }}' as min,
+  greatest({{ .cache.previous_min }}, {{ default "0" .env.STRUCTLOG_AGG_MIN_BLOCK }}) as min,
   {{ else }}
-  min(block_number) as min,
+  greatest(min(block_number), {{ default "0" .env.STRUCTLOG_AGG_MIN_BLOCK }}) as min,
   {{ end }}
     max(block_number) as max
 FROM {{ .self.helpers.from }}
