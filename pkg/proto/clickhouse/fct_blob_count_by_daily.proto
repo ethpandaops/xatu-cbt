@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily aggregated consensus layer blob count statistics with percentiles, Bollinger bands, and moving averages
+
+message FctBlobCountByDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Number of slots with blobs in this day
+  uint32 block_count = 13;
+  // Total blobs in this day
+  uint64 total_blobs = 14;
+  // Average blob count per slot
+  float avg_blob_count = 15;
+  // Minimum blob count in a slot
+  uint32 min_blob_count = 16;
+  // Maximum blob count in a slot
+  uint32 max_blob_count = 17;
+  // 5th percentile blob count
+  float p05_blob_count = 18;
+  // 50th percentile (median) blob count
+  float p50_blob_count = 19;
+  // 95th percentile blob count
+  float p95_blob_count = 20;
+  // Standard deviation of blob count
+  float stddev_blob_count = 21;
+  // Upper Bollinger band (avg + 2*stddev)
+  float upper_band_blob_count = 22;
+  // Lower Bollinger band (avg - 2*stddev)
+  float lower_band_blob_count = 23;
+  // Moving average blob count (7-day window)
+  float moving_avg_blob_count = 24;
+}
+
+// Request for listing fct_blob_count_by_daily records
+message ListFctBlobCountByDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Number of slots with blobs in this day (optional)
+  UInt32Filter block_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_blobs - Total blobs in this day (optional)
+  UInt64Filter total_blobs = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_blob_count - Average blob count per slot (optional)
+  google.protobuf.FloatValue avg_blob_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_blob_count - Minimum blob count in a slot (optional)
+  UInt32Filter min_blob_count = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_blob_count - Maximum blob count in a slot (optional)
+  UInt32Filter max_blob_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p05_blob_count - 5th percentile blob count (optional)
+  google.protobuf.FloatValue p05_blob_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_blob_count - 50th percentile (median) blob count (optional)
+  google.protobuf.FloatValue p50_blob_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p95_blob_count - 95th percentile blob count (optional)
+  google.protobuf.FloatValue p95_blob_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by stddev_blob_count - Standard deviation of blob count (optional)
+  google.protobuf.FloatValue stddev_blob_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by upper_band_blob_count - Upper Bollinger band (avg + 2*stddev) (optional)
+  google.protobuf.FloatValue upper_band_blob_count = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by lower_band_blob_count - Lower Bollinger band (avg - 2*stddev) (optional)
+  google.protobuf.FloatValue lower_band_blob_count = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by moving_avg_blob_count - Moving average blob count (7-day window) (optional)
+  google.protobuf.FloatValue moving_avg_blob_count = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_blob_count_by_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 15 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctBlobCountByDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 16 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 17 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_blob_count_by_daily records
+message ListFctBlobCountByDailyResponse {
+  // The list of fct_blob_count_by_daily.
+  repeated FctBlobCountByDaily fct_blob_count_by_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_blob_count_by_daily record by primary key
+message GetFctBlobCountByDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_blob_count_by_daily record
+message GetFctBlobCountByDailyResponse {
+  FctBlobCountByDaily item = 1;
+}
+
+// Query fct_blob_count_by_daily data
+service FctBlobCountByDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctBlobCountByDailyRequest) returns (ListFctBlobCountByDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_blob_count_by_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctBlobCountByDailyRequest) returns (GetFctBlobCountByDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_blob_count_by_daily/{day_start_date}"
+    };
+  }
+}
