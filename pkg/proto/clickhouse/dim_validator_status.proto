@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Validator lifecycle status transitions — one row per (validator_index, status) with the first epoch observed
+
+message DimValidatorStatus {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // ReplacingMergeTree version: 4294967295 - epoch, keeps earliest epoch
+  uint32 version = 12;
+  // The index of the validator
+  uint32 validator_index = 13;
+  // The public key of the validator
+  string pubkey = 14;
+  // Beacon chain validator status (e.g. pending_initialized, active_ongoing)
+  string status = 15;
+  // First epoch this status was observed
+  uint32 epoch = 16;
+  // Wall clock time of the first observed epoch
+  uint32 epoch_start_date_time = 17;
+  // Epoch when activation is/was scheduled
+  google.protobuf.UInt64Value activation_epoch = 18;
+  // Epoch when validator became eligible for activation
+  google.protobuf.UInt64Value activation_eligibility_epoch = 19;
+  // Epoch when exit is/was scheduled
+  google.protobuf.UInt64Value exit_epoch = 20;
+  // Epoch when withdrawal becomes possible
+  google.protobuf.UInt64Value withdrawable_epoch = 21;
+  // Whether the validator was slashed at this transition
+  bool slashed = 22;
+}
+
+// Request for listing dim_validator_status records
+message ListDimValidatorStatusRequest {
+  // Filter by validator_index - The index of the validator (PRIMARY KEY - required)
+  UInt32Filter validator_index = 1;
+
+  // Filter by status - Beacon chain validator status (e.g. pending_initialized, active_ongoing) (ORDER BY column 2 - optional)
+  StringFilter status = 2;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3;
+  // Filter by version - ReplacingMergeTree version: 4294967295 - epoch, keeps earliest epoch (optional)
+  UInt32Filter version = 4;
+  // Filter by pubkey - The public key of the validator (optional)
+  StringFilter pubkey = 5;
+  // Filter by epoch - First epoch this status was observed (optional)
+  UInt32Filter epoch = 6;
+  // Filter by epoch_start_date_time - Wall clock time of the first observed epoch (optional)
+  UInt32Filter epoch_start_date_time = 7;
+  // Filter by activation_epoch - Epoch when activation is/was scheduled (optional)
+  NullableUInt64Filter activation_epoch = 8;
+  // Filter by activation_eligibility_epoch - Epoch when validator became eligible for activation (optional)
+  NullableUInt64Filter activation_eligibility_epoch = 9;
+  // Filter by exit_epoch - Epoch when exit is/was scheduled (optional)
+  NullableUInt64Filter exit_epoch = 10;
+  // Filter by withdrawable_epoch - Epoch when withdrawal becomes possible (optional)
+  NullableUInt64Filter withdrawable_epoch = 11;
+  // Filter by slashed - Whether the validator was slashed at this transition (optional)
+  BoolFilter slashed = 12;
+
+  // The maximum number of dim_validator_status to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 13;
+  // A page token, received from a previous `ListDimValidatorStatus` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 14;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 15;
+}
+
+// Response for listing dim_validator_status records
+message ListDimValidatorStatusResponse {
+  // The list of dim_validator_status.
+  repeated DimValidatorStatus dim_validator_status = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single dim_validator_status record by primary key
+message GetDimValidatorStatusRequest {
+  // The index of the validator
+  uint32 validator_index = 1; // Primary key (required)
+}
+
+// Response for getting a single dim_validator_status record
+message GetDimValidatorStatusResponse {
+  DimValidatorStatus item = 1;
+}
+
+// Query dim_validator_status data
+service DimValidatorStatusService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListDimValidatorStatusRequest) returns (ListDimValidatorStatusResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetDimValidatorStatusRequest) returns (GetDimValidatorStatusResponse);
+}

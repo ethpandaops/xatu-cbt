@@ -24,19 +24,15 @@ message IntTransactionOpcodeGas {
   uint64 gas = 17;
   // For CALL opcodes: includes all descendant frame gas. For others: same as gas
   uint64 gas_cumulative = 18;
-  // Minimum call stack depth for this opcode
-  uint64 min_depth = 19;
-  // Maximum call stack depth for this opcode
-  uint64 max_depth = 20;
   // Number of times this opcode resulted in an error
-  uint64 error_count = 21;
+  uint64 error_count = 19;
   // The name of the network
-  string meta_network_name = 22;
+  string meta_network_name = 20;
 }
 
 // Request for listing int_transaction_opcode_gas records
 message ListIntTransactionOpcodeGasRequest {
-  // Filter by block_number - The block number containing the transaction (PRIMARY KEY - required unless using alternatives: opcode, transaction_hash)
+  // Filter by block_number - The block number containing the transaction (PRIMARY KEY - required)
   UInt64Filter block_number = 1;
 
   // Filter by transaction_hash - The transaction hash (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
@@ -58,24 +54,20 @@ message ListIntTransactionOpcodeGasRequest {
   UInt64Filter gas = 8;
   // Filter by gas_cumulative - For CALL opcodes: includes all descendant frame gas. For others: same as gas (optional)
   UInt64Filter gas_cumulative = 9;
-  // Filter by min_depth - Minimum call stack depth for this opcode (optional)
-  UInt64Filter min_depth = 10;
-  // Filter by max_depth - Maximum call stack depth for this opcode (optional)
-  UInt64Filter max_depth = 11;
   // Filter by error_count - Number of times this opcode resulted in an error (optional)
-  UInt64Filter error_count = 12;
+  UInt64Filter error_count = 10;
 
   // The maximum number of int_transaction_opcode_gas to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 13;
+  int32 page_size = 11;
   // A page token, received from a previous `ListIntTransactionOpcodeGas` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 14;
+  string page_token = 12;
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 15;
+  string order_by = 13;
 }
 
 // Response for listing int_transaction_opcode_gas records
