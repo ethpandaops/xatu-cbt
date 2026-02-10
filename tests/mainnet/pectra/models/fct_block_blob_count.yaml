@@ -39,51 +39,51 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Slot should never be negative
+    - name: No rows should have null block_root
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE slot < 0
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE block_root = ''
       assertions:
         - type: equals
           column: count
           value: 0
-    - name: Epoch should never be negative
+    - name: Slot should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE epoch < 0
+        SELECT MIN(slot) AS min_slot FROM fct_block_blob_count FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than_or_equal
+          column: min_slot
           value: 0
-    - name: No null block roots
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE block_root = '' OR block_root IS NULL
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: No null slot start date times
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE slot_start_date_time IS NULL
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: No duplicate block root and status combinations
-      sql: |
-        SELECT COUNT(*) AS count FROM (SELECT block_root, status, COUNT(*) AS cnt FROM fct_block_blob_count FINAL GROUP BY block_root, status HAVING cnt > 1)
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Epoch should be consistent with slot (slot div 32)
+    - name: Epoch should be consistent with slot
       sql: |
         SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE epoch != intDiv(slot, 32)
       assertions:
         - type: equals
           column: count
           value: 0
-    - name: Updated date time should not be null
+    - name: At least one canonical block should exist
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE updated_date_time IS NULL
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE status = 'canonical'
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: No duplicate block_root per slot and status
+      sql: |
+        SELECT COUNT(*) AS count FROM (SELECT slot, block_root, status, COUNT(*) AS cnt FROM fct_block_blob_count FINAL GROUP BY slot, block_root, status HAVING cnt > 1)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Updated date time should not be in the future
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE updated_date_time > now() + INTERVAL 1 DAY
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot start date time should be before or equal to epoch start date time plus 32 slots
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE slot_start_date_time < epoch_start_date_time OR slot_start_date_time > epoch_start_date_time + INTERVAL 384 SECOND
       assertions:
         - type: equals
           column: count

@@ -29,12 +29,19 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Blob count should not exceed max blobs per block
+    - name: Slot should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE blob_count > 128
+        SELECT min(slot) AS min_slot FROM fct_block_blob_count_head FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 0
+    - name: Epoch should be non-negative
+      sql: |
+        SELECT min(epoch) AS min_epoch FROM fct_block_blob_count_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_epoch
           value: 0
     - name: Block root should not be empty
       sql: |
@@ -43,37 +50,42 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Slot should be non-negative
+    - name: No duplicate slot and block root combinations
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE slot < 0
+        SELECT COUNT(*) AS count FROM (
+          SELECT slot, block_root, COUNT(*) AS cnt
+          FROM fct_block_blob_count_head FINAL
+          GROUP BY slot, block_root
+          HAVING cnt > 1
+        )
       assertions:
         - type: equals
           column: count
           value: 0
-    - name: Epoch should be consistent with slot
+    - name: Slot start date time should not be null
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE epoch != intDiv(slot, 32)
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE slot_start_date_time IS NULL
       assertions:
         - type: equals
           column: count
           value: 0
-    - name: Slot start date time should not be zero
+    - name: Epoch start date time should not be null
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE slot_start_date_time = '1970-01-01 00:00:00'
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE epoch_start_date_time IS NULL
       assertions:
         - type: equals
           column: count
           value: 0
-    - name: Each slot and block root combination should be unique
+    - name: Blob count should not exceed max blobs per block
       sql: |
-        SELECT COUNT(*) AS total, COUNT(DISTINCT (slot, block_root)) AS distinct_count FROM fct_block_blob_count_head FINAL
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE blob_count > 6
       assertions:
         - type: equals
-          column: total
-          value: '{distinct_count}'
-    - name: Updated date time should not be zero
+          column: count
+          value: 0
+    - name: Updated date time should not be null
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE updated_date_time = '1970-01-01 00:00:00'
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE updated_date_time IS NULL
       assertions:
         - type: equals
           column: count
