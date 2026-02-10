@@ -37,7 +37,7 @@ WITH
             slot,
             slot_start_date_time,
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
-            avg(inclusion_distance) AS avg_inclusion_delay
+            avg(inclusion_distance) AS slot_avg_delay
         FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_canonical" "helpers" "from" }} FINAL
         WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
           AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
@@ -49,23 +49,23 @@ WITH
         SELECT
             slot,
             slot_start_date_time,
-            avg_inclusion_delay,
-            avg(avg_inclusion_delay) OVER (ORDER BY slot_timestamp RANGE BETWEEN 604800 PRECEDING AND CURRENT ROW) AS ma_inclusion_delay
+            slot_avg_delay,
+            avg(slot_avg_delay) OVER (ORDER BY slot_timestamp RANGE BETWEEN 604800 PRECEDING AND CURRENT ROW) AS ma_inclusion_delay
         FROM slot_averages
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
     toDate(slot_start_date_time) AS day_start_date,
     count() AS slot_count,
-    round(avg(avg_inclusion_delay), 4) AS avg_inclusion_delay,
-    round(min(avg_inclusion_delay), 4) AS min_inclusion_delay,
-    round(max(avg_inclusion_delay), 4) AS max_inclusion_delay,
-    round(quantile(0.05)(avg_inclusion_delay), 4) AS p05_inclusion_delay,
-    round(quantile(0.50)(avg_inclusion_delay), 4) AS p50_inclusion_delay,
-    round(quantile(0.95)(avg_inclusion_delay), 4) AS p95_inclusion_delay,
-    round(stddevPop(avg_inclusion_delay), 4) AS stddev_inclusion_delay,
-    round(avg(avg_inclusion_delay) + 2 * stddevPop(avg_inclusion_delay), 4) AS upper_band_inclusion_delay,
-    round(avg(avg_inclusion_delay) - 2 * stddevPop(avg_inclusion_delay), 4) AS lower_band_inclusion_delay,
+    round(avg(slot_avg_delay), 4) AS avg_inclusion_delay,
+    round(min(slot_avg_delay), 4) AS min_inclusion_delay,
+    round(max(slot_avg_delay), 4) AS max_inclusion_delay,
+    round(quantile(0.05)(slot_avg_delay), 4) AS p05_inclusion_delay,
+    round(quantile(0.50)(slot_avg_delay), 4) AS p50_inclusion_delay,
+    round(quantile(0.95)(slot_avg_delay), 4) AS p95_inclusion_delay,
+    round(stddevPop(slot_avg_delay), 4) AS stddev_inclusion_delay,
+    round(avg(slot_avg_delay) + 2 * stddevPop(slot_avg_delay), 4) AS upper_band_inclusion_delay,
+    round(avg(slot_avg_delay) - 2 * stddevPop(slot_avg_delay), 4) AS lower_band_inclusion_delay,
     round(avg(ma_inclusion_delay), 4) AS moving_avg_inclusion_delay
 FROM slots_with_ma
 GROUP BY toDate(slot_start_date_time)
