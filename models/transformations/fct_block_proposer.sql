@@ -5,8 +5,8 @@ interval:
   type: slot
   max: 50000
 schedules:
-  forwardfill: "@every 5s"
-  backfill: "@every 5s"
+  forwardfill: "@every 30s"
+  backfill: "@every 1m"
 tags:
   - slot
   - block
