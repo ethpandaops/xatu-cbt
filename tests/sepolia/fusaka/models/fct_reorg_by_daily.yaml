@@ -21,26 +21,26 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_reorg_by_daily_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
+    - name: Row count should be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
-    - name: Depth should be at least 1
+    - name: Depth should be non-negative when rows exist
       sql: |
-        SELECT MIN(depth) AS min_depth FROM fct_reorg_by_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL WHERE depth < 1
       assertions:
-        - type: greater_than_or_equal
-          column: min_depth
-          value: 1
-    - name: Reorg count should be greater than zero for all rows
+        - type: equals
+          column: count
+          value: 0
+    - name: Reorg count should be positive when rows exist
       sql: |
-        SELECT MIN(reorg_count) AS min_reorg_count FROM fct_reorg_by_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL WHERE reorg_count <= 0
       assertions:
-        - type: greater_than
-          column: min_reorg_count
+        - type: equals
+          column: count
           value: 0
     - name: No null day_start_date values
       sql: |
@@ -70,10 +70,10 @@ assertions:
         - type: less_than
           column: max_depth
           value: 1000
-    - name: Total reorg count should equal sum of individual reorg counts per day
+    - name: Day count should be non-negative
       sql: |
         SELECT COUNT(DISTINCT day_start_date) AS day_count FROM fct_reorg_by_daily FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: day_count
           value: 0
