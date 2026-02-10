@@ -21,59 +21,72 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_reorg_daily_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be non-negative
+    - name: Row count should be greater than or equal to zero
       sql: |
         SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL
       assertions:
         - type: greater_than_or_equal
           column: count
           value: 0
-    - name: Depth should be non-negative when rows exist
+    - name: reorg_count should never be negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE depth < 1
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL
+        WHERE reorg_count < 0
       assertions:
         - type: equals
           column: count
           value: 0
-    - name: Reorg count should be non-negative when rows exist
+    - name: depth should always be at least 1
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE reorg_count < 0
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL
+        WHERE depth < 1
       assertions:
         - type: equals
           column: count
           value: 0
-    - name: No null day_start_date values
+    - name: day_start_date should never be null
       sql: |
-        SELECT COUNT(*) AS null_count FROM fct_reorg_daily FINAL WHERE day_start_date IS NULL OR day_start_date = '1970-01-01'
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL
+        WHERE day_start_date IS NULL
       assertions:
         - type: equals
-          column: null_count
+          column: count
           value: 0
-    - name: No null updated_date_time values
+    - name: updated_date_time should never be null
       sql: |
-        SELECT COUNT(*) AS null_count FROM fct_reorg_daily FINAL WHERE updated_date_time IS NULL OR updated_date_time = toDateTime('1970-01-01 00:00:00')
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL
+        WHERE updated_date_time IS NULL
       assertions:
         - type: equals
-          column: null_count
+          column: count
           value: 0
-    - name: No duplicate day and depth combinations
+    - name: No duplicate rows per day and depth
       sql: |
-        SELECT COUNT(*) AS duplicate_count FROM (SELECT day_start_date, depth, COUNT(*) AS cnt FROM fct_reorg_daily FINAL GROUP BY day_start_date, depth HAVING cnt > 1)
+        SELECT COUNT(*) AS count FROM (
+          SELECT day_start_date, depth, COUNT(*) AS cnt
+          FROM fct_reorg_daily FINAL
+          GROUP BY day_start_date, depth
+          HAVING cnt > 1
+        )
       assertions:
         - type: equals
-          column: duplicate_count
+          column: count
           value: 0
-    - name: Depth should be a reasonable value
+    - name: Total reorg_count per day should be reasonable (not excessively large)
       sql: |
-        SELECT MAX(depth) AS max_depth FROM fct_reorg_daily FINAL
+        SELECT COALESCE(MAX(daily_total), 0) AS max_daily_total FROM (
+          SELECT day_start_date, SUM(reorg_count) AS daily_total
+          FROM fct_reorg_daily FINAL
+          GROUP BY day_start_date
+        )
+      assertions:
+        - type: less_than
+          column: max_daily_total
+          value: 7200
+    - name: depth should be a reasonable value (no more than 64 consecutive orphaned slots)
+      sql: |
+        SELECT COALESCE(MAX(depth), 0) AS max_depth FROM fct_reorg_daily FINAL
       assertions:
         - type: less_than
           column: max_depth
-          value: 1000
-    - name: Day count should be non-negative
-      sql: |
-        SELECT COUNT(DISTINCT day_start_date) AS day_count FROM fct_reorg_daily FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: day_count
-          value: 0
+          value: 65

@@ -21,80 +21,72 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_reorg_hourly_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be non-negative
+    - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL
+        SELECT count() AS count FROM fct_reorg_hourly FINAL
       assertions:
-        - type: greater_than_or_equal
-          column: count
-          value: 0
-    - name: Reorg count should always be non-negative
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE reorg_count < 0
-      assertions:
-        - type: equals
+        - type: greater_than
           column: count
           value: 0
     - name: Depth should always be at least 1
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE depth < 1
+        SELECT min(depth) AS min_depth FROM fct_reorg_hourly FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than_or_equal
+          column: min_depth
+          value: 1
+    - name: Reorg count should never be negative
+      sql: |
+        SELECT min(reorg_count) AS min_reorg_count FROM fct_reorg_hourly FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_reorg_count
           value: 0
     - name: Hour start date time should be aligned to hour boundaries
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+        SELECT count() AS misaligned_count
+        FROM fct_reorg_hourly FINAL
+        WHERE toMinute(hour_start_date_time) != 0
+           OR toSecond(hour_start_date_time) != 0
       assertions:
         - type: equals
-          column: count
+          column: misaligned_count
           value: 0
-    - name: No null hour start date times
+    - name: No null updated_date_time values
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE hour_start_date_time IS NULL
+        SELECT count() AS null_count
+        FROM fct_reorg_hourly FINAL
+        WHERE updated_date_time IS NULL
       assertions:
         - type: equals
-          column: count
+          column: null_count
           value: 0
-    - name: No null updated date times
+    - name: No null hour_start_date_time values
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE updated_date_time IS NULL
+        SELECT count() AS null_count
+        FROM fct_reorg_hourly FINAL
+        WHERE hour_start_date_time IS NULL
       assertions:
         - type: equals
-          column: count
+          column: null_count
           value: 0
-    - name: No duplicate hour and depth combinations
+    - name: Each hour and depth combination should be unique after FINAL
       sql: |
-        SELECT COUNT(*) AS count FROM (
-          SELECT hour_start_date_time, depth, COUNT(*) AS cnt
-          FROM fct_reorg_hourly FINAL
-          GROUP BY hour_start_date_time, depth
-          HAVING cnt > 1
+        SELECT count() AS duplicate_count
+        FROM (
+            SELECT hour_start_date_time, depth, count() AS cnt
+            FROM fct_reorg_hourly FINAL
+            GROUP BY hour_start_date_time, depth
+            HAVING cnt > 1
         )
       assertions:
         - type: equals
-          column: count
+          column: duplicate_count
           value: 0
-    - name: Total reorg count should be non-negative
+    - name: Depth should be within a reasonable range
       sql: |
-        SELECT
-          COALESCE(SUM(reorg_count), 0) AS total_reorgs
-        FROM fct_reorg_hourly FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: total_reorgs
-          value: 0
-    - name: Depth should be a reasonable value
-      sql: |
-        SELECT MAX(depth) AS max_depth FROM fct_reorg_hourly FINAL
+        SELECT max(depth) AS max_depth FROM fct_reorg_hourly FINAL
       assertions:
         - type: less_than
           column: max_depth
           value: 1000
-    - name: Hour start date time should not be before Ethereum beacon chain genesis
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE hour_start_date_time < '2020-12-01'
-      assertions:
-        - type: equals
-          column: count
-          value: 0

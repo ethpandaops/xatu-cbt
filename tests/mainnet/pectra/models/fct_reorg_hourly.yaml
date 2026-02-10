@@ -28,16 +28,16 @@ assertions:
         - type: greater_than_or_equal
           column: count
           value: 0
-    - name: Reorg count should always be non-negative
+    - name: Depth should always be at least 1
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE reorg_count < 0
+        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE depth < 1
       assertions:
         - type: equals
           column: count
           value: 0
-    - name: Depth should always be at least 1
+    - name: Reorg count should always be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE depth < 1
+        SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL WHERE reorg_count < 0
       assertions:
         - type: equals
           column: count
