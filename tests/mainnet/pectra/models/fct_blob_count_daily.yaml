@@ -1,0 +1,82 @@
+model: fct_blob_count_daily
+network: mainnet
+spec: pectra
+external_data:
+    canonical_beacon_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_blob_count_daily_canonical_beacon_blob_sidecar.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_blob_count_daily_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_blob_count_daily_beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_blob_count_daily_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_blob_count_daily_libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Block count should be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE block_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Blob totals should be at least block totals
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE total_blobs < block_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Percentiles should be ordered
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
+        WHERE min_blob_count > p05_blob_count
+           OR p05_blob_count > p50_blob_count
+           OR p50_blob_count > p95_blob_count
+           OR p95_blob_count > max_blob_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Standard deviation should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE stddev_blob_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Bollinger bands should bracket average
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
+        WHERE upper_band_blob_count < avg_blob_count
+           OR lower_band_blob_count > avg_blob_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Day start date should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE day_start_date IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null updated date time values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0

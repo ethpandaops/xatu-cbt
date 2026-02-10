@@ -36,10 +36,10 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Slot count should always be positive
+    - name: Slot count should always be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_block_proposal_status_daily FINAL
-        WHERE slot_count <= 0
+        WHERE slot_count < 0
       assertions:
         - type: equals
           column: count

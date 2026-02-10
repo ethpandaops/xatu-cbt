@@ -8,23 +8,23 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Daily reorg event counts by depth
+// Hourly reorg event counts by depth
 
-message FctReorgByDaily {
+message FctReorgHourly {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
-  // Start of the day period
-  string day_start_date = 12;
+  // Start of the hour period
+  uint32 hour_start_date_time = 12;
   // Reorg depth (number of consecutive orphaned slots)
   uint32 depth = 13;
   // Number of reorg events at this depth
   uint32 reorg_count = 14;
 }
 
-// Request for listing fct_reorg_by_daily records
-message ListFctReorgByDailyRequest {
-  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
-  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+// Request for listing fct_reorg_hourly records
+message ListFctReorgHourlyRequest {
+  // Filter by hour_start_date_time - Start of the hour period (PRIMARY KEY - required)
+  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by depth - Reorg depth (number of consecutive orphaned slots) (ORDER BY column 2 - optional)
   UInt32Filter depth = 2 [(google.api.field_behavior) = OPTIONAL];
@@ -34,11 +34,11 @@ message ListFctReorgByDailyRequest {
   // Filter by reorg_count - Number of reorg events at this depth (optional)
   UInt32Filter reorg_count = 4 [(google.api.field_behavior) = OPTIONAL];
 
-  // The maximum number of fct_reorg_by_daily to return.
+  // The maximum number of fct_reorg_hourly to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 5 [(google.api.field_behavior) = OPTIONAL];
-  // A page token, received from a previous `ListFctReorgByDaily` call.
+  // A page token, received from a previous `ListFctReorgHourly` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 6 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
@@ -47,38 +47,38 @@ message ListFctReorgByDailyRequest {
   string order_by = 7 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Response for listing fct_reorg_by_daily records
-message ListFctReorgByDailyResponse {
-  // The list of fct_reorg_by_daily.
-  repeated FctReorgByDaily fct_reorg_by_daily = 1;
+// Response for listing fct_reorg_hourly records
+message ListFctReorgHourlyResponse {
+  // The list of fct_reorg_hourly.
+  repeated FctReorgHourly fct_reorg_hourly = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// Request for getting a single fct_reorg_by_daily record by primary key
-message GetFctReorgByDailyRequest {
-  // Start of the day period
-  string day_start_date = 1; // Primary key (required)
+// Request for getting a single fct_reorg_hourly record by primary key
+message GetFctReorgHourlyRequest {
+  // Start of the hour period
+  uint32 hour_start_date_time = 1; // Primary key (required)
 }
 
-// Response for getting a single fct_reorg_by_daily record
-message GetFctReorgByDailyResponse {
-  FctReorgByDaily item = 1;
+// Response for getting a single fct_reorg_hourly record
+message GetFctReorgHourlyResponse {
+  FctReorgHourly item = 1;
 }
 
-// Query fct_reorg_by_daily data
-service FctReorgByDailyService {
+// Query fct_reorg_hourly data
+service FctReorgHourlyService {
   // List records | Retrieve paginated results with optional filtering
-  rpc List(ListFctReorgByDailyRequest) returns (ListFctReorgByDailyResponse) {
+  rpc List(ListFctReorgHourlyRequest) returns (ListFctReorgHourlyResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_reorg_by_daily"
+      get: "/api/v1/fct_reorg_hourly"
     };
   }
-  // Get record | Retrieve a single record by day_start_date
-  rpc Get(GetFctReorgByDailyRequest) returns (GetFctReorgByDailyResponse) {
+  // Get record | Retrieve a single record by hour_start_date_time
+  rpc Get(GetFctReorgHourlyRequest) returns (GetFctReorgHourlyResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_reorg_by_daily/{day_start_date}"
+      get: "/api/v1/fct_reorg_hourly/{hour_start_date_time}"
     };
   }
 }

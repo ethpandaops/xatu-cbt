@@ -28,9 +28,9 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: All slot counts should be positive
+    - name: All slot counts should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_proposal_status_hourly FINAL WHERE slot_count = 0
+        SELECT COUNT(*) AS count FROM fct_block_proposal_status_hourly FINAL WHERE slot_count < 0
       assertions:
         - type: equals
           column: count

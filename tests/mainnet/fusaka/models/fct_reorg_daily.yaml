@@ -1,64 +1,64 @@
-model: fct_reorg_by_daily
+model: fct_reorg_daily
 network: mainnet
 spec: fusaka
 external_data:
     beacon_api_eth_v1_events_block:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_beacon_api_eth_v1_events_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_daily_beacon_api_eth_v1_events_block.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_block_gossip:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_beacon_api_eth_v1_events_block_gossip.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_daily_beacon_api_eth_v1_events_block_gossip.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_beacon_api_eth_v1_proposer_duty.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_daily_beacon_api_eth_v1_proposer_duty.parquet
         network_column: meta_network_name
     canonical_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_canonical_beacon_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_daily_canonical_beacon_block.parquet
         network_column: meta_network_name
     canonical_beacon_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_canonical_beacon_proposer_duty.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_daily_canonical_beacon_proposer_duty.parquet
         network_column: meta_network_name
     libp2p_gossipsub_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_libp2p_gossipsub_beacon_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_daily_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL
       assertions:
         - type: greater_than_or_equal
           column: count
           value: 0
     - name: Depth should be non-negative when rows exist
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL WHERE depth < 1
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE depth < 1
       assertions:
         - type: equals
           column: count
           value: 0
     - name: Reorg count should be non-negative when rows exist
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL WHERE reorg_count < 0
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE reorg_count < 0
       assertions:
         - type: equals
           column: count
           value: 0
     - name: No null day_start_date values
       sql: |
-        SELECT COUNT(*) AS null_count FROM fct_reorg_by_daily FINAL WHERE day_start_date IS NULL
+        SELECT COUNT(*) AS null_count FROM fct_reorg_daily FINAL WHERE day_start_date IS NULL
       assertions:
         - type: equals
           column: null_count
           value: 0
     - name: No null updated_date_time values
       sql: |
-        SELECT COUNT(*) AS null_count FROM fct_reorg_by_daily FINAL WHERE updated_date_time IS NULL
+        SELECT COUNT(*) AS null_count FROM fct_reorg_daily FINAL WHERE updated_date_time IS NULL
       assertions:
         - type: equals
           column: null_count
           value: 0
     - name: Depth should be within reasonable bounds
       sql: |
-        SELECT MAX(depth) AS max_depth FROM fct_reorg_by_daily FINAL
+        SELECT MAX(depth) AS max_depth FROM fct_reorg_daily FINAL
       assertions:
         - type: less_than
           column: max_depth
@@ -67,7 +67,7 @@ assertions:
       sql: |
         SELECT
           COUNT(*) - COUNT(DISTINCT (day_start_date, depth)) AS duplicate_count
-        FROM fct_reorg_by_daily FINAL
+        FROM fct_reorg_daily FINAL
       assertions:
         - type: equals
           column: duplicate_count
@@ -76,7 +76,7 @@ assertions:
       sql: |
         SELECT
           COALESCE(SUM(reorg_count), 0) AS total_reorg_count
-        FROM fct_reorg_by_daily FINAL
+        FROM fct_reorg_daily FINAL
       assertions:
         - type: greater_than_or_equal
           column: total_reorg_count

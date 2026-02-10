@@ -34,16 +34,43 @@
             </shard>
         </cluster_2S_1R>
         <xatu_cluster>
-            <secret>supersecret</secret>
             <shard>
                 <internal_replication>true</internal_replication>
                 <replica>
-                    <host>xatu-clickhouse-01</host>
+                    <host>chendpoint-xatu-clickhouse-0-0.analytics.production.ethpandaops</host>
                     <port>9000</port>
+                    <secure>0</secure>
                 </replica>
                 <replica>
-                    <host>xatu-clickhouse-02</host>
+                    <host>chendpoint-xatu-clickhouse-0-1.analytics.production.ethpandaops</host>
                     <port>9000</port>
+                    <secure>0</secure>
+                </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>chendpoint-xatu-clickhouse-1-0.analytics.production.ethpandaops</host>
+                    <port>9000</port>
+                    <secure>0</secure>
+                </replica>
+                <replica>
+                    <host>chendpoint-xatu-clickhouse-1-1.analytics.production.ethpandaops</host>
+                    <port>9000</port>
+                    <secure>0</secure>
+                </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>chendpoint-xatu-clickhouse-2-0.analytics.production.ethpandaops</host>
+                    <port>9000</port>
+                    <secure>0</secure>
+                </replica>
+                <replica>
+                    <host>chendpoint-xatu-clickhouse-2-1.analytics.production.ethpandaops</host>
+                    <port>9000</port>
+                    <secure>0</secure>
                 </replica>
             </shard>
         </xatu_cluster>

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.2
 // 	protoc        (unknown)
-// source: fct_reorg_by_daily.proto
+// source: fct_reorg_daily.proto
 
 package clickhouse
 
@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type FctReorgByDaily struct {
+type FctReorgDaily struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -37,23 +37,23 @@ type FctReorgByDaily struct {
 	ReorgCount uint32 `protobuf:"varint,14,opt,name=reorg_count,json=reorgCount,proto3" json:"reorg_count,omitempty"`
 }
 
-func (x *FctReorgByDaily) Reset() {
-	*x = FctReorgByDaily{}
+func (x *FctReorgDaily) Reset() {
+	*x = FctReorgDaily{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_daily_proto_msgTypes[0]
+		mi := &file_fct_reorg_daily_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *FctReorgByDaily) String() string {
+func (x *FctReorgDaily) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FctReorgByDaily) ProtoMessage() {}
+func (*FctReorgDaily) ProtoMessage() {}
 
-func (x *FctReorgByDaily) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_daily_proto_msgTypes[0]
+func (x *FctReorgDaily) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_daily_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -64,41 +64,41 @@ func (x *FctReorgByDaily) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FctReorgByDaily.ProtoReflect.Descriptor instead.
-func (*FctReorgByDaily) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_daily_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use FctReorgDaily.ProtoReflect.Descriptor instead.
+func (*FctReorgDaily) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_daily_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *FctReorgByDaily) GetUpdatedDateTime() uint32 {
+func (x *FctReorgDaily) GetUpdatedDateTime() uint32 {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return 0
 }
 
-func (x *FctReorgByDaily) GetDayStartDate() string {
+func (x *FctReorgDaily) GetDayStartDate() string {
 	if x != nil {
 		return x.DayStartDate
 	}
 	return ""
 }
 
-func (x *FctReorgByDaily) GetDepth() uint32 {
+func (x *FctReorgDaily) GetDepth() uint32 {
 	if x != nil {
 		return x.Depth
 	}
 	return 0
 }
 
-func (x *FctReorgByDaily) GetReorgCount() uint32 {
+func (x *FctReorgDaily) GetReorgCount() uint32 {
 	if x != nil {
 		return x.ReorgCount
 	}
 	return 0
 }
 
-// Request for listing fct_reorg_by_daily records
-type ListFctReorgByDailyRequest struct {
+// Request for listing fct_reorg_daily records
+type ListFctReorgDailyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -111,11 +111,11 @@ type ListFctReorgByDailyRequest struct {
 	UpdatedDateTime *UInt32Filter `protobuf:"bytes,3,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`
 	// Filter by reorg_count - Number of reorg events at this depth (optional)
 	ReorgCount *UInt32Filter `protobuf:"bytes,4,opt,name=reorg_count,json=reorgCount,proto3" json:"reorg_count,omitempty"`
-	// The maximum number of fct_reorg_by_daily to return.
+	// The maximum number of fct_reorg_daily to return.
 	// If unspecified, at most 100 items will be returned.
 	// The maximum value is 10000; values above 10000 will be coerced to 10000.
 	PageSize int32 `protobuf:"varint,5,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListFctReorgByDaily` call.
+	// A page token, received from a previous `ListFctReorgDaily` call.
 	// Provide this to retrieve the subsequent page.
 	PageToken string `protobuf:"bytes,6,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// The order of results. Format: comma-separated list of fields.
@@ -124,23 +124,23 @@ type ListFctReorgByDailyRequest struct {
 	OrderBy string `protobuf:"bytes,7,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 }
 
-func (x *ListFctReorgByDailyRequest) Reset() {
-	*x = ListFctReorgByDailyRequest{}
+func (x *ListFctReorgDailyRequest) Reset() {
+	*x = ListFctReorgDailyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_daily_proto_msgTypes[1]
+		mi := &file_fct_reorg_daily_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctReorgByDailyRequest) String() string {
+func (x *ListFctReorgDailyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctReorgByDailyRequest) ProtoMessage() {}
+func (*ListFctReorgDailyRequest) ProtoMessage() {}
 
-func (x *ListFctReorgByDailyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_daily_proto_msgTypes[1]
+func (x *ListFctReorgDailyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_daily_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -151,90 +151,90 @@ func (x *ListFctReorgByDailyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctReorgByDailyRequest.ProtoReflect.Descriptor instead.
-func (*ListFctReorgByDailyRequest) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_daily_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use ListFctReorgDailyRequest.ProtoReflect.Descriptor instead.
+func (*ListFctReorgDailyRequest) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_daily_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListFctReorgByDailyRequest) GetDayStartDate() *StringFilter {
+func (x *ListFctReorgDailyRequest) GetDayStartDate() *StringFilter {
 	if x != nil {
 		return x.DayStartDate
 	}
 	return nil
 }
 
-func (x *ListFctReorgByDailyRequest) GetDepth() *UInt32Filter {
+func (x *ListFctReorgDailyRequest) GetDepth() *UInt32Filter {
 	if x != nil {
 		return x.Depth
 	}
 	return nil
 }
 
-func (x *ListFctReorgByDailyRequest) GetUpdatedDateTime() *UInt32Filter {
+func (x *ListFctReorgDailyRequest) GetUpdatedDateTime() *UInt32Filter {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return nil
 }
 
-func (x *ListFctReorgByDailyRequest) GetReorgCount() *UInt32Filter {
+func (x *ListFctReorgDailyRequest) GetReorgCount() *UInt32Filter {
 	if x != nil {
 		return x.ReorgCount
 	}
 	return nil
 }
 
-func (x *ListFctReorgByDailyRequest) GetPageSize() int32 {
+func (x *ListFctReorgDailyRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-func (x *ListFctReorgByDailyRequest) GetPageToken() string {
+func (x *ListFctReorgDailyRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
 	}
 	return ""
 }
 
-func (x *ListFctReorgByDailyRequest) GetOrderBy() string {
+func (x *ListFctReorgDailyRequest) GetOrderBy() string {
 	if x != nil {
 		return x.OrderBy
 	}
 	return ""
 }
 
-// Response for listing fct_reorg_by_daily records
-type ListFctReorgByDailyResponse struct {
+// Response for listing fct_reorg_daily records
+type ListFctReorgDailyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The list of fct_reorg_by_daily.
-	FctReorgByDaily []*FctReorgByDaily `protobuf:"bytes,1,rep,name=fct_reorg_by_daily,json=fctReorgByDaily,proto3" json:"fct_reorg_by_daily,omitempty"`
+	// The list of fct_reorg_daily.
+	FctReorgDaily []*FctReorgDaily `protobuf:"bytes,1,rep,name=fct_reorg_daily,json=fctReorgByDaily,proto3" json:"fct_reorg_daily,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 }
 
-func (x *ListFctReorgByDailyResponse) Reset() {
-	*x = ListFctReorgByDailyResponse{}
+func (x *ListFctReorgDailyResponse) Reset() {
+	*x = ListFctReorgDailyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_daily_proto_msgTypes[2]
+		mi := &file_fct_reorg_daily_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctReorgByDailyResponse) String() string {
+func (x *ListFctReorgDailyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctReorgByDailyResponse) ProtoMessage() {}
+func (*ListFctReorgDailyResponse) ProtoMessage() {}
 
-func (x *ListFctReorgByDailyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_daily_proto_msgTypes[2]
+func (x *ListFctReorgDailyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_daily_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -245,27 +245,27 @@ func (x *ListFctReorgByDailyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctReorgByDailyResponse.ProtoReflect.Descriptor instead.
-func (*ListFctReorgByDailyResponse) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_daily_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use ListFctReorgDailyResponse.ProtoReflect.Descriptor instead.
+func (*ListFctReorgDailyResponse) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_daily_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListFctReorgByDailyResponse) GetFctReorgByDaily() []*FctReorgByDaily {
+func (x *ListFctReorgDailyResponse) GetFctReorgDaily() []*FctReorgDaily {
 	if x != nil {
-		return x.FctReorgByDaily
+		return x.FctReorgDaily
 	}
 	return nil
 }
 
-func (x *ListFctReorgByDailyResponse) GetNextPageToken() string {
+func (x *ListFctReorgDailyResponse) GetNextPageToken() string {
 	if x != nil {
 		return x.NextPageToken
 	}
 	return ""
 }
 
-// Request for getting a single fct_reorg_by_daily record by primary key
-type GetFctReorgByDailyRequest struct {
+// Request for getting a single fct_reorg_daily record by primary key
+type GetFctReorgDailyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -274,23 +274,23 @@ type GetFctReorgByDailyRequest struct {
 	DayStartDate string `protobuf:"bytes,1,opt,name=day_start_date,json=dayStartDate,proto3" json:"day_start_date,omitempty"` // Primary key (required)
 }
 
-func (x *GetFctReorgByDailyRequest) Reset() {
-	*x = GetFctReorgByDailyRequest{}
+func (x *GetFctReorgDailyRequest) Reset() {
+	*x = GetFctReorgDailyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_daily_proto_msgTypes[3]
+		mi := &file_fct_reorg_daily_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctReorgByDailyRequest) String() string {
+func (x *GetFctReorgDailyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctReorgByDailyRequest) ProtoMessage() {}
+func (*GetFctReorgDailyRequest) ProtoMessage() {}
 
-func (x *GetFctReorgByDailyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_daily_proto_msgTypes[3]
+func (x *GetFctReorgDailyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_daily_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -301,44 +301,44 @@ func (x *GetFctReorgByDailyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctReorgByDailyRequest.ProtoReflect.Descriptor instead.
-func (*GetFctReorgByDailyRequest) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_daily_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use GetFctReorgDailyRequest.ProtoReflect.Descriptor instead.
+func (*GetFctReorgDailyRequest) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_daily_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetFctReorgByDailyRequest) GetDayStartDate() string {
+func (x *GetFctReorgDailyRequest) GetDayStartDate() string {
 	if x != nil {
 		return x.DayStartDate
 	}
 	return ""
 }
 
-// Response for getting a single fct_reorg_by_daily record
-type GetFctReorgByDailyResponse struct {
+// Response for getting a single fct_reorg_daily record
+type GetFctReorgDailyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Item *FctReorgByDaily `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	Item *FctReorgDaily `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
 }
 
-func (x *GetFctReorgByDailyResponse) Reset() {
-	*x = GetFctReorgByDailyResponse{}
+func (x *GetFctReorgDailyResponse) Reset() {
+	*x = GetFctReorgDailyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_daily_proto_msgTypes[4]
+		mi := &file_fct_reorg_daily_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctReorgByDailyResponse) String() string {
+func (x *GetFctReorgDailyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctReorgByDailyResponse) ProtoMessage() {}
+func (*GetFctReorgDailyResponse) ProtoMessage() {}
 
-func (x *GetFctReorgByDailyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_daily_proto_msgTypes[4]
+func (x *GetFctReorgDailyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_daily_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -349,21 +349,21 @@ func (x *GetFctReorgByDailyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctReorgByDailyResponse.ProtoReflect.Descriptor instead.
-func (*GetFctReorgByDailyResponse) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_daily_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use GetFctReorgDailyResponse.ProtoReflect.Descriptor instead.
+func (*GetFctReorgDailyResponse) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_daily_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetFctReorgByDailyResponse) GetItem() *FctReorgByDaily {
+func (x *GetFctReorgDailyResponse) GetItem() *FctReorgDaily {
 	if x != nil {
 		return x.Item
 	}
 	return nil
 }
 
-var File_fct_reorg_by_daily_proto protoreflect.FileDescriptor
+var File_fct_reorg_daily_proto protoreflect.FileDescriptor
 
-var file_fct_reorg_by_daily_proto_rawDesc = []byte{
+var file_fct_reorg_daily_proto_rawDesc = []byte{
 	0x0a, 0x18, 0x66, 0x63, 0x74, 0x5f, 0x72, 0x65, 0x6f, 0x72, 0x67, 0x5f, 0x62, 0x79, 0x5f, 0x64,
 	0x61, 0x69, 0x6c, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x03, 0x63, 0x62, 0x74, 0x1a,
 	0x0c, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67,
@@ -448,38 +448,38 @@ var file_fct_reorg_by_daily_proto_rawDesc = []byte{
 }
 
 var (
-	file_fct_reorg_by_daily_proto_rawDescOnce sync.Once
-	file_fct_reorg_by_daily_proto_rawDescData = file_fct_reorg_by_daily_proto_rawDesc
+	file_fct_reorg_daily_proto_rawDescOnce sync.Once
+	file_fct_reorg_daily_proto_rawDescData = file_fct_reorg_daily_proto_rawDesc
 )
 
-func file_fct_reorg_by_daily_proto_rawDescGZIP() []byte {
-	file_fct_reorg_by_daily_proto_rawDescOnce.Do(func() {
-		file_fct_reorg_by_daily_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_reorg_by_daily_proto_rawDescData)
+func file_fct_reorg_daily_proto_rawDescGZIP() []byte {
+	file_fct_reorg_daily_proto_rawDescOnce.Do(func() {
+		file_fct_reorg_daily_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_reorg_daily_proto_rawDescData)
 	})
-	return file_fct_reorg_by_daily_proto_rawDescData
+	return file_fct_reorg_daily_proto_rawDescData
 }
 
-var file_fct_reorg_by_daily_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_fct_reorg_by_daily_proto_goTypes = []any{
-	(*FctReorgByDaily)(nil),             // 0: cbt.FctReorgByDaily
-	(*ListFctReorgByDailyRequest)(nil),  // 1: cbt.ListFctReorgByDailyRequest
-	(*ListFctReorgByDailyResponse)(nil), // 2: cbt.ListFctReorgByDailyResponse
-	(*GetFctReorgByDailyRequest)(nil),   // 3: cbt.GetFctReorgByDailyRequest
-	(*GetFctReorgByDailyResponse)(nil),  // 4: cbt.GetFctReorgByDailyResponse
+var file_fct_reorg_daily_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_fct_reorg_daily_proto_goTypes = []any{
+	(*FctReorgDaily)(nil),             // 0: cbt.FctReorgDaily
+	(*ListFctReorgDailyRequest)(nil),  // 1: cbt.ListFctReorgDailyRequest
+	(*ListFctReorgDailyResponse)(nil), // 2: cbt.ListFctReorgDailyResponse
+	(*GetFctReorgDailyRequest)(nil),   // 3: cbt.GetFctReorgDailyRequest
+	(*GetFctReorgDailyResponse)(nil),  // 4: cbt.GetFctReorgDailyResponse
 	(*StringFilter)(nil),                // 5: cbt.StringFilter
 	(*UInt32Filter)(nil),                // 6: cbt.UInt32Filter
 }
-var file_fct_reorg_by_daily_proto_depIdxs = []int32{
-	5, // 0: cbt.ListFctReorgByDailyRequest.day_start_date:type_name -> cbt.StringFilter
-	6, // 1: cbt.ListFctReorgByDailyRequest.depth:type_name -> cbt.UInt32Filter
-	6, // 2: cbt.ListFctReorgByDailyRequest.updated_date_time:type_name -> cbt.UInt32Filter
-	6, // 3: cbt.ListFctReorgByDailyRequest.reorg_count:type_name -> cbt.UInt32Filter
-	0, // 4: cbt.ListFctReorgByDailyResponse.fct_reorg_by_daily:type_name -> cbt.FctReorgByDaily
-	0, // 5: cbt.GetFctReorgByDailyResponse.item:type_name -> cbt.FctReorgByDaily
-	1, // 6: cbt.FctReorgByDailyService.List:input_type -> cbt.ListFctReorgByDailyRequest
-	3, // 7: cbt.FctReorgByDailyService.Get:input_type -> cbt.GetFctReorgByDailyRequest
-	2, // 8: cbt.FctReorgByDailyService.List:output_type -> cbt.ListFctReorgByDailyResponse
-	4, // 9: cbt.FctReorgByDailyService.Get:output_type -> cbt.GetFctReorgByDailyResponse
+var file_fct_reorg_daily_proto_depIdxs = []int32{
+	5, // 0: cbt.ListFctReorgDailyRequest.day_start_date:type_name -> cbt.StringFilter
+	6, // 1: cbt.ListFctReorgDailyRequest.depth:type_name -> cbt.UInt32Filter
+	6, // 2: cbt.ListFctReorgDailyRequest.updated_date_time:type_name -> cbt.UInt32Filter
+	6, // 3: cbt.ListFctReorgDailyRequest.reorg_count:type_name -> cbt.UInt32Filter
+	0, // 4: cbt.ListFctReorgDailyResponse.fct_reorg_daily:type_name -> cbt.FctReorgDaily
+	0, // 5: cbt.GetFctReorgDailyResponse.item:type_name -> cbt.FctReorgDaily
+	1, // 6: cbt.FctReorgDailyService.List:input_type -> cbt.ListFctReorgDailyRequest
+	3, // 7: cbt.FctReorgDailyService.Get:input_type -> cbt.GetFctReorgDailyRequest
+	2, // 8: cbt.FctReorgDailyService.List:output_type -> cbt.ListFctReorgDailyResponse
+	4, // 9: cbt.FctReorgDailyService.Get:output_type -> cbt.GetFctReorgDailyResponse
 	8, // [8:10] is the sub-list for method output_type
 	6, // [6:8] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name
@@ -487,15 +487,15 @@ var file_fct_reorg_by_daily_proto_depIdxs = []int32{
 	0, // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_fct_reorg_by_daily_proto_init() }
-func file_fct_reorg_by_daily_proto_init() {
-	if File_fct_reorg_by_daily_proto != nil {
+func init() { file_fct_reorg_daily_proto_init() }
+func file_fct_reorg_daily_proto_init() {
+	if File_fct_reorg_daily_proto != nil {
 		return
 	}
 	file_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_fct_reorg_by_daily_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*FctReorgByDaily); i {
+		file_fct_reorg_daily_proto_msgTypes[0].Exporter = func(v any, i int) any {
+			switch v := v.(*FctReorgDaily); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -506,8 +506,8 @@ func file_fct_reorg_by_daily_proto_init() {
 				return nil
 			}
 		}
-		file_fct_reorg_by_daily_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctReorgByDailyRequest); i {
+		file_fct_reorg_daily_proto_msgTypes[1].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctReorgDailyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -518,8 +518,8 @@ func file_fct_reorg_by_daily_proto_init() {
 				return nil
 			}
 		}
-		file_fct_reorg_by_daily_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctReorgByDailyResponse); i {
+		file_fct_reorg_daily_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctReorgDailyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -530,8 +530,8 @@ func file_fct_reorg_by_daily_proto_init() {
 				return nil
 			}
 		}
-		file_fct_reorg_by_daily_proto_msgTypes[3].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctReorgByDailyRequest); i {
+		file_fct_reorg_daily_proto_msgTypes[3].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctReorgDailyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -542,8 +542,8 @@ func file_fct_reorg_by_daily_proto_init() {
 				return nil
 			}
 		}
-		file_fct_reorg_by_daily_proto_msgTypes[4].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctReorgByDailyResponse); i {
+		file_fct_reorg_daily_proto_msgTypes[4].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctReorgDailyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -559,18 +559,18 @@ func file_fct_reorg_by_daily_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_fct_reorg_by_daily_proto_rawDesc,
+			RawDescriptor: file_fct_reorg_daily_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_fct_reorg_by_daily_proto_goTypes,
-		DependencyIndexes: file_fct_reorg_by_daily_proto_depIdxs,
-		MessageInfos:      file_fct_reorg_by_daily_proto_msgTypes,
+		GoTypes:           file_fct_reorg_daily_proto_goTypes,
+		DependencyIndexes: file_fct_reorg_daily_proto_depIdxs,
+		MessageInfos:      file_fct_reorg_daily_proto_msgTypes,
 	}.Build()
-	File_fct_reorg_by_daily_proto = out.File
-	file_fct_reorg_by_daily_proto_rawDesc = nil
-	file_fct_reorg_by_daily_proto_goTypes = nil
-	file_fct_reorg_by_daily_proto_depIdxs = nil
+	File_fct_reorg_daily_proto = out.File
+	file_fct_reorg_daily_proto_rawDesc = nil
+	file_fct_reorg_daily_proto_goTypes = nil
+	file_fct_reorg_daily_proto_depIdxs = nil
 }

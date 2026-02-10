@@ -1,5 +1,5 @@
--- fct_blob_count_by_hourly
-CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_by_hourly_local ON CLUSTER '{cluster}' (
+-- fct_blob_count_hourly
+CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of slots with blobs in this hour' CODEC(ZSTD(1)),
@@ -22,17 +22,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_by_hourly_local ON CLUSTER '{clust
 ORDER BY (hour_start_date_time)
 COMMENT 'Hourly aggregated consensus layer blob count statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_by_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_blob_count_by_hourly_local
+CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_hourly ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_blob_count_hourly_local
 ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_blob_count_by_hourly_local,
+    fct_blob_count_hourly_local,
     cityHash64(hour_start_date_time)
 );
 
--- fct_blob_count_by_daily
-CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_by_daily_local ON CLUSTER '{cluster}' (
+-- fct_blob_count_daily
+CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of slots with blobs in this day' CODEC(ZSTD(1)),
@@ -55,11 +55,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_by_daily_local ON CLUSTER '{cluste
 ORDER BY (day_start_date)
 COMMENT 'Daily aggregated consensus layer blob count statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_by_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_blob_count_by_daily_local
+CREATE TABLE `${NETWORK_NAME}`.fct_blob_count_daily ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.fct_blob_count_daily_local
 ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_blob_count_by_daily_local,
+    fct_blob_count_daily_local,
     cityHash64(day_start_date)
 );

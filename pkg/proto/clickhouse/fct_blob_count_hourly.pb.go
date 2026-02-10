@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.2
 // 	protoc        (unknown)
-// source: fct_blob_count_by_hourly.proto
+// source: fct_blob_count_hourly.proto
 
 package clickhouse
 
@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type FctBlobCountByHourly struct {
+type FctBlobCountHourly struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -58,23 +58,23 @@ type FctBlobCountByHourly struct {
 	MovingAvgBlobCount float32 `protobuf:"fixed32,24,opt,name=moving_avg_blob_count,json=movingAvgBlobCount,proto3" json:"moving_avg_blob_count,omitempty"`
 }
 
-func (x *FctBlobCountByHourly) Reset() {
-	*x = FctBlobCountByHourly{}
+func (x *FctBlobCountHourly) Reset() {
+	*x = FctBlobCountHourly{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_hourly_proto_msgTypes[0]
+		mi := &file_fct_blob_count_hourly_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *FctBlobCountByHourly) String() string {
+func (x *FctBlobCountHourly) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FctBlobCountByHourly) ProtoMessage() {}
+func (*FctBlobCountHourly) ProtoMessage() {}
 
-func (x *FctBlobCountByHourly) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_hourly_proto_msgTypes[0]
+func (x *FctBlobCountHourly) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_hourly_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -85,111 +85,111 @@ func (x *FctBlobCountByHourly) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FctBlobCountByHourly.ProtoReflect.Descriptor instead.
-func (*FctBlobCountByHourly) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_hourly_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use FctBlobCountHourly.ProtoReflect.Descriptor instead.
+func (*FctBlobCountHourly) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_hourly_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *FctBlobCountByHourly) GetUpdatedDateTime() uint32 {
+func (x *FctBlobCountHourly) GetUpdatedDateTime() uint32 {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetHourStartDateTime() uint32 {
+func (x *FctBlobCountHourly) GetHourStartDateTime() uint32 {
 	if x != nil {
 		return x.HourStartDateTime
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetBlockCount() uint32 {
+func (x *FctBlobCountHourly) GetBlockCount() uint32 {
 	if x != nil {
 		return x.BlockCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetTotalBlobs() uint64 {
+func (x *FctBlobCountHourly) GetTotalBlobs() uint64 {
 	if x != nil {
 		return x.TotalBlobs
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetAvgBlobCount() float32 {
+func (x *FctBlobCountHourly) GetAvgBlobCount() float32 {
 	if x != nil {
 		return x.AvgBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetMinBlobCount() uint32 {
+func (x *FctBlobCountHourly) GetMinBlobCount() uint32 {
 	if x != nil {
 		return x.MinBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetMaxBlobCount() uint32 {
+func (x *FctBlobCountHourly) GetMaxBlobCount() uint32 {
 	if x != nil {
 		return x.MaxBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetP05BlobCount() float32 {
+func (x *FctBlobCountHourly) GetP05BlobCount() float32 {
 	if x != nil {
 		return x.P05BlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetP50BlobCount() float32 {
+func (x *FctBlobCountHourly) GetP50BlobCount() float32 {
 	if x != nil {
 		return x.P50BlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetP95BlobCount() float32 {
+func (x *FctBlobCountHourly) GetP95BlobCount() float32 {
 	if x != nil {
 		return x.P95BlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetStddevBlobCount() float32 {
+func (x *FctBlobCountHourly) GetStddevBlobCount() float32 {
 	if x != nil {
 		return x.StddevBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetUpperBandBlobCount() float32 {
+func (x *FctBlobCountHourly) GetUpperBandBlobCount() float32 {
 	if x != nil {
 		return x.UpperBandBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetLowerBandBlobCount() float32 {
+func (x *FctBlobCountHourly) GetLowerBandBlobCount() float32 {
 	if x != nil {
 		return x.LowerBandBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByHourly) GetMovingAvgBlobCount() float32 {
+func (x *FctBlobCountHourly) GetMovingAvgBlobCount() float32 {
 	if x != nil {
 		return x.MovingAvgBlobCount
 	}
 	return 0
 }
 
-// Request for listing fct_blob_count_by_hourly records
-type ListFctBlobCountByHourlyRequest struct {
+// Request for listing fct_blob_count_hourly records
+type ListFctBlobCountHourlyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -222,11 +222,11 @@ type ListFctBlobCountByHourlyRequest struct {
 	LowerBandBlobCount *wrapperspb.FloatValue `protobuf:"bytes,13,opt,name=lower_band_blob_count,json=lowerBandBlobCount,proto3" json:"lower_band_blob_count,omitempty"`
 	// Filter by moving_avg_blob_count - Moving average blob count (6-hour window) (optional)
 	MovingAvgBlobCount *wrapperspb.FloatValue `protobuf:"bytes,14,opt,name=moving_avg_blob_count,json=movingAvgBlobCount,proto3" json:"moving_avg_blob_count,omitempty"`
-	// The maximum number of fct_blob_count_by_hourly to return.
+	// The maximum number of fct_blob_count_hourly to return.
 	// If unspecified, at most 100 items will be returned.
 	// The maximum value is 10000; values above 10000 will be coerced to 10000.
 	PageSize int32 `protobuf:"varint,15,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListFctBlobCountByHourly` call.
+	// A page token, received from a previous `ListFctBlobCountHourly` call.
 	// Provide this to retrieve the subsequent page.
 	PageToken string `protobuf:"bytes,16,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// The order of results. Format: comma-separated list of fields.
@@ -235,23 +235,23 @@ type ListFctBlobCountByHourlyRequest struct {
 	OrderBy string `protobuf:"bytes,17,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 }
 
-func (x *ListFctBlobCountByHourlyRequest) Reset() {
-	*x = ListFctBlobCountByHourlyRequest{}
+func (x *ListFctBlobCountHourlyRequest) Reset() {
+	*x = ListFctBlobCountHourlyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_hourly_proto_msgTypes[1]
+		mi := &file_fct_blob_count_hourly_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctBlobCountByHourlyRequest) String() string {
+func (x *ListFctBlobCountHourlyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctBlobCountByHourlyRequest) ProtoMessage() {}
+func (*ListFctBlobCountHourlyRequest) ProtoMessage() {}
 
-func (x *ListFctBlobCountByHourlyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_hourly_proto_msgTypes[1]
+func (x *ListFctBlobCountHourlyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_hourly_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -262,160 +262,160 @@ func (x *ListFctBlobCountByHourlyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctBlobCountByHourlyRequest.ProtoReflect.Descriptor instead.
-func (*ListFctBlobCountByHourlyRequest) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_hourly_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use ListFctBlobCountHourlyRequest.ProtoReflect.Descriptor instead.
+func (*ListFctBlobCountHourlyRequest) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_hourly_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetHourStartDateTime() *UInt32Filter {
+func (x *ListFctBlobCountHourlyRequest) GetHourStartDateTime() *UInt32Filter {
 	if x != nil {
 		return x.HourStartDateTime
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetUpdatedDateTime() *UInt32Filter {
+func (x *ListFctBlobCountHourlyRequest) GetUpdatedDateTime() *UInt32Filter {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetBlockCount() *UInt32Filter {
+func (x *ListFctBlobCountHourlyRequest) GetBlockCount() *UInt32Filter {
 	if x != nil {
 		return x.BlockCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetTotalBlobs() *UInt64Filter {
+func (x *ListFctBlobCountHourlyRequest) GetTotalBlobs() *UInt64Filter {
 	if x != nil {
 		return x.TotalBlobs
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetAvgBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountHourlyRequest) GetAvgBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.AvgBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetMinBlobCount() *UInt32Filter {
+func (x *ListFctBlobCountHourlyRequest) GetMinBlobCount() *UInt32Filter {
 	if x != nil {
 		return x.MinBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetMaxBlobCount() *UInt32Filter {
+func (x *ListFctBlobCountHourlyRequest) GetMaxBlobCount() *UInt32Filter {
 	if x != nil {
 		return x.MaxBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetP05BlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountHourlyRequest) GetP05BlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.P05BlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetP50BlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountHourlyRequest) GetP50BlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.P50BlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetP95BlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountHourlyRequest) GetP95BlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.P95BlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetStddevBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountHourlyRequest) GetStddevBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.StddevBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetUpperBandBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountHourlyRequest) GetUpperBandBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.UpperBandBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetLowerBandBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountHourlyRequest) GetLowerBandBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.LowerBandBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetMovingAvgBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountHourlyRequest) GetMovingAvgBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.MovingAvgBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetPageSize() int32 {
+func (x *ListFctBlobCountHourlyRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetPageToken() string {
+func (x *ListFctBlobCountHourlyRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
 	}
 	return ""
 }
 
-func (x *ListFctBlobCountByHourlyRequest) GetOrderBy() string {
+func (x *ListFctBlobCountHourlyRequest) GetOrderBy() string {
 	if x != nil {
 		return x.OrderBy
 	}
 	return ""
 }
 
-// Response for listing fct_blob_count_by_hourly records
-type ListFctBlobCountByHourlyResponse struct {
+// Response for listing fct_blob_count_hourly records
+type ListFctBlobCountHourlyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The list of fct_blob_count_by_hourly.
-	FctBlobCountByHourly []*FctBlobCountByHourly `protobuf:"bytes,1,rep,name=fct_blob_count_by_hourly,json=fctBlobCountByHourly,proto3" json:"fct_blob_count_by_hourly,omitempty"`
+	// The list of fct_blob_count_hourly.
+	FctBlobCountHourly []*FctBlobCountHourly `protobuf:"bytes,1,rep,name=fct_blob_count_hourly,json=fctBlobCountByHourly,proto3" json:"fct_blob_count_hourly,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 }
 
-func (x *ListFctBlobCountByHourlyResponse) Reset() {
-	*x = ListFctBlobCountByHourlyResponse{}
+func (x *ListFctBlobCountHourlyResponse) Reset() {
+	*x = ListFctBlobCountHourlyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_hourly_proto_msgTypes[2]
+		mi := &file_fct_blob_count_hourly_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctBlobCountByHourlyResponse) String() string {
+func (x *ListFctBlobCountHourlyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctBlobCountByHourlyResponse) ProtoMessage() {}
+func (*ListFctBlobCountHourlyResponse) ProtoMessage() {}
 
-func (x *ListFctBlobCountByHourlyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_hourly_proto_msgTypes[2]
+func (x *ListFctBlobCountHourlyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_hourly_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -426,27 +426,27 @@ func (x *ListFctBlobCountByHourlyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctBlobCountByHourlyResponse.ProtoReflect.Descriptor instead.
-func (*ListFctBlobCountByHourlyResponse) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_hourly_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use ListFctBlobCountHourlyResponse.ProtoReflect.Descriptor instead.
+func (*ListFctBlobCountHourlyResponse) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_hourly_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListFctBlobCountByHourlyResponse) GetFctBlobCountByHourly() []*FctBlobCountByHourly {
+func (x *ListFctBlobCountHourlyResponse) GetFctBlobCountHourly() []*FctBlobCountHourly {
 	if x != nil {
-		return x.FctBlobCountByHourly
+		return x.FctBlobCountHourly
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByHourlyResponse) GetNextPageToken() string {
+func (x *ListFctBlobCountHourlyResponse) GetNextPageToken() string {
 	if x != nil {
 		return x.NextPageToken
 	}
 	return ""
 }
 
-// Request for getting a single fct_blob_count_by_hourly record by primary key
-type GetFctBlobCountByHourlyRequest struct {
+// Request for getting a single fct_blob_count_hourly record by primary key
+type GetFctBlobCountHourlyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -455,23 +455,23 @@ type GetFctBlobCountByHourlyRequest struct {
 	HourStartDateTime uint32 `protobuf:"varint,1,opt,name=hour_start_date_time,json=hourStartDateTime,proto3" json:"hour_start_date_time,omitempty"` // Primary key (required)
 }
 
-func (x *GetFctBlobCountByHourlyRequest) Reset() {
-	*x = GetFctBlobCountByHourlyRequest{}
+func (x *GetFctBlobCountHourlyRequest) Reset() {
+	*x = GetFctBlobCountHourlyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_hourly_proto_msgTypes[3]
+		mi := &file_fct_blob_count_hourly_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctBlobCountByHourlyRequest) String() string {
+func (x *GetFctBlobCountHourlyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctBlobCountByHourlyRequest) ProtoMessage() {}
+func (*GetFctBlobCountHourlyRequest) ProtoMessage() {}
 
-func (x *GetFctBlobCountByHourlyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_hourly_proto_msgTypes[3]
+func (x *GetFctBlobCountHourlyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_hourly_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -482,44 +482,44 @@ func (x *GetFctBlobCountByHourlyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctBlobCountByHourlyRequest.ProtoReflect.Descriptor instead.
-func (*GetFctBlobCountByHourlyRequest) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_hourly_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use GetFctBlobCountHourlyRequest.ProtoReflect.Descriptor instead.
+func (*GetFctBlobCountHourlyRequest) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_hourly_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetFctBlobCountByHourlyRequest) GetHourStartDateTime() uint32 {
+func (x *GetFctBlobCountHourlyRequest) GetHourStartDateTime() uint32 {
 	if x != nil {
 		return x.HourStartDateTime
 	}
 	return 0
 }
 
-// Response for getting a single fct_blob_count_by_hourly record
-type GetFctBlobCountByHourlyResponse struct {
+// Response for getting a single fct_blob_count_hourly record
+type GetFctBlobCountHourlyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Item *FctBlobCountByHourly `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	Item *FctBlobCountHourly `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
 }
 
-func (x *GetFctBlobCountByHourlyResponse) Reset() {
-	*x = GetFctBlobCountByHourlyResponse{}
+func (x *GetFctBlobCountHourlyResponse) Reset() {
+	*x = GetFctBlobCountHourlyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_hourly_proto_msgTypes[4]
+		mi := &file_fct_blob_count_hourly_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctBlobCountByHourlyResponse) String() string {
+func (x *GetFctBlobCountHourlyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctBlobCountByHourlyResponse) ProtoMessage() {}
+func (*GetFctBlobCountHourlyResponse) ProtoMessage() {}
 
-func (x *GetFctBlobCountByHourlyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_hourly_proto_msgTypes[4]
+func (x *GetFctBlobCountHourlyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_hourly_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -530,21 +530,21 @@ func (x *GetFctBlobCountByHourlyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctBlobCountByHourlyResponse.ProtoReflect.Descriptor instead.
-func (*GetFctBlobCountByHourlyResponse) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_hourly_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use GetFctBlobCountHourlyResponse.ProtoReflect.Descriptor instead.
+func (*GetFctBlobCountHourlyResponse) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_hourly_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetFctBlobCountByHourlyResponse) GetItem() *FctBlobCountByHourly {
+func (x *GetFctBlobCountHourlyResponse) GetItem() *FctBlobCountHourly {
 	if x != nil {
 		return x.Item
 	}
 	return nil
 }
 
-var File_fct_blob_count_by_hourly_proto protoreflect.FileDescriptor
+var File_fct_blob_count_hourly_proto protoreflect.FileDescriptor
 
-var file_fct_blob_count_by_hourly_proto_rawDesc = []byte{
+var file_fct_blob_count_hourly_proto_rawDesc = []byte{
 	0x0a, 0x1e, 0x66, 0x63, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x62, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74,
 	0x5f, 0x62, 0x79, 0x5f, 0x68, 0x6f, 0x75, 0x72, 0x6c, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x12, 0x03, 0x63, 0x62, 0x74, 0x1a, 0x0c, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72,
@@ -713,49 +713,49 @@ var file_fct_blob_count_by_hourly_proto_rawDesc = []byte{
 }
 
 var (
-	file_fct_blob_count_by_hourly_proto_rawDescOnce sync.Once
-	file_fct_blob_count_by_hourly_proto_rawDescData = file_fct_blob_count_by_hourly_proto_rawDesc
+	file_fct_blob_count_hourly_proto_rawDescOnce sync.Once
+	file_fct_blob_count_hourly_proto_rawDescData = file_fct_blob_count_hourly_proto_rawDesc
 )
 
-func file_fct_blob_count_by_hourly_proto_rawDescGZIP() []byte {
-	file_fct_blob_count_by_hourly_proto_rawDescOnce.Do(func() {
-		file_fct_blob_count_by_hourly_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_blob_count_by_hourly_proto_rawDescData)
+func file_fct_blob_count_hourly_proto_rawDescGZIP() []byte {
+	file_fct_blob_count_hourly_proto_rawDescOnce.Do(func() {
+		file_fct_blob_count_hourly_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_blob_count_hourly_proto_rawDescData)
 	})
-	return file_fct_blob_count_by_hourly_proto_rawDescData
+	return file_fct_blob_count_hourly_proto_rawDescData
 }
 
-var file_fct_blob_count_by_hourly_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_fct_blob_count_by_hourly_proto_goTypes = []any{
-	(*FctBlobCountByHourly)(nil),             // 0: cbt.FctBlobCountByHourly
-	(*ListFctBlobCountByHourlyRequest)(nil),  // 1: cbt.ListFctBlobCountByHourlyRequest
-	(*ListFctBlobCountByHourlyResponse)(nil), // 2: cbt.ListFctBlobCountByHourlyResponse
-	(*GetFctBlobCountByHourlyRequest)(nil),   // 3: cbt.GetFctBlobCountByHourlyRequest
-	(*GetFctBlobCountByHourlyResponse)(nil),  // 4: cbt.GetFctBlobCountByHourlyResponse
+var file_fct_blob_count_hourly_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_fct_blob_count_hourly_proto_goTypes = []any{
+	(*FctBlobCountHourly)(nil),             // 0: cbt.FctBlobCountHourly
+	(*ListFctBlobCountHourlyRequest)(nil),  // 1: cbt.ListFctBlobCountHourlyRequest
+	(*ListFctBlobCountHourlyResponse)(nil), // 2: cbt.ListFctBlobCountHourlyResponse
+	(*GetFctBlobCountHourlyRequest)(nil),   // 3: cbt.GetFctBlobCountHourlyRequest
+	(*GetFctBlobCountHourlyResponse)(nil),  // 4: cbt.GetFctBlobCountHourlyResponse
 	(*UInt32Filter)(nil),                     // 5: cbt.UInt32Filter
 	(*UInt64Filter)(nil),                     // 6: cbt.UInt64Filter
 	(*wrapperspb.FloatValue)(nil),            // 7: google.protobuf.FloatValue
 }
-var file_fct_blob_count_by_hourly_proto_depIdxs = []int32{
-	5,  // 0: cbt.ListFctBlobCountByHourlyRequest.hour_start_date_time:type_name -> cbt.UInt32Filter
-	5,  // 1: cbt.ListFctBlobCountByHourlyRequest.updated_date_time:type_name -> cbt.UInt32Filter
-	5,  // 2: cbt.ListFctBlobCountByHourlyRequest.block_count:type_name -> cbt.UInt32Filter
-	6,  // 3: cbt.ListFctBlobCountByHourlyRequest.total_blobs:type_name -> cbt.UInt64Filter
-	7,  // 4: cbt.ListFctBlobCountByHourlyRequest.avg_blob_count:type_name -> google.protobuf.FloatValue
-	5,  // 5: cbt.ListFctBlobCountByHourlyRequest.min_blob_count:type_name -> cbt.UInt32Filter
-	5,  // 6: cbt.ListFctBlobCountByHourlyRequest.max_blob_count:type_name -> cbt.UInt32Filter
-	7,  // 7: cbt.ListFctBlobCountByHourlyRequest.p05_blob_count:type_name -> google.protobuf.FloatValue
-	7,  // 8: cbt.ListFctBlobCountByHourlyRequest.p50_blob_count:type_name -> google.protobuf.FloatValue
-	7,  // 9: cbt.ListFctBlobCountByHourlyRequest.p95_blob_count:type_name -> google.protobuf.FloatValue
-	7,  // 10: cbt.ListFctBlobCountByHourlyRequest.stddev_blob_count:type_name -> google.protobuf.FloatValue
-	7,  // 11: cbt.ListFctBlobCountByHourlyRequest.upper_band_blob_count:type_name -> google.protobuf.FloatValue
-	7,  // 12: cbt.ListFctBlobCountByHourlyRequest.lower_band_blob_count:type_name -> google.protobuf.FloatValue
-	7,  // 13: cbt.ListFctBlobCountByHourlyRequest.moving_avg_blob_count:type_name -> google.protobuf.FloatValue
-	0,  // 14: cbt.ListFctBlobCountByHourlyResponse.fct_blob_count_by_hourly:type_name -> cbt.FctBlobCountByHourly
-	0,  // 15: cbt.GetFctBlobCountByHourlyResponse.item:type_name -> cbt.FctBlobCountByHourly
-	1,  // 16: cbt.FctBlobCountByHourlyService.List:input_type -> cbt.ListFctBlobCountByHourlyRequest
-	3,  // 17: cbt.FctBlobCountByHourlyService.Get:input_type -> cbt.GetFctBlobCountByHourlyRequest
-	2,  // 18: cbt.FctBlobCountByHourlyService.List:output_type -> cbt.ListFctBlobCountByHourlyResponse
-	4,  // 19: cbt.FctBlobCountByHourlyService.Get:output_type -> cbt.GetFctBlobCountByHourlyResponse
+var file_fct_blob_count_hourly_proto_depIdxs = []int32{
+	5,  // 0: cbt.ListFctBlobCountHourlyRequest.hour_start_date_time:type_name -> cbt.UInt32Filter
+	5,  // 1: cbt.ListFctBlobCountHourlyRequest.updated_date_time:type_name -> cbt.UInt32Filter
+	5,  // 2: cbt.ListFctBlobCountHourlyRequest.block_count:type_name -> cbt.UInt32Filter
+	6,  // 3: cbt.ListFctBlobCountHourlyRequest.total_blobs:type_name -> cbt.UInt64Filter
+	7,  // 4: cbt.ListFctBlobCountHourlyRequest.avg_blob_count:type_name -> google.protobuf.FloatValue
+	5,  // 5: cbt.ListFctBlobCountHourlyRequest.min_blob_count:type_name -> cbt.UInt32Filter
+	5,  // 6: cbt.ListFctBlobCountHourlyRequest.max_blob_count:type_name -> cbt.UInt32Filter
+	7,  // 7: cbt.ListFctBlobCountHourlyRequest.p05_blob_count:type_name -> google.protobuf.FloatValue
+	7,  // 8: cbt.ListFctBlobCountHourlyRequest.p50_blob_count:type_name -> google.protobuf.FloatValue
+	7,  // 9: cbt.ListFctBlobCountHourlyRequest.p95_blob_count:type_name -> google.protobuf.FloatValue
+	7,  // 10: cbt.ListFctBlobCountHourlyRequest.stddev_blob_count:type_name -> google.protobuf.FloatValue
+	7,  // 11: cbt.ListFctBlobCountHourlyRequest.upper_band_blob_count:type_name -> google.protobuf.FloatValue
+	7,  // 12: cbt.ListFctBlobCountHourlyRequest.lower_band_blob_count:type_name -> google.protobuf.FloatValue
+	7,  // 13: cbt.ListFctBlobCountHourlyRequest.moving_avg_blob_count:type_name -> google.protobuf.FloatValue
+	0,  // 14: cbt.ListFctBlobCountHourlyResponse.fct_blob_count_hourly:type_name -> cbt.FctBlobCountHourly
+	0,  // 15: cbt.GetFctBlobCountHourlyResponse.item:type_name -> cbt.FctBlobCountHourly
+	1,  // 16: cbt.FctBlobCountHourlyService.List:input_type -> cbt.ListFctBlobCountHourlyRequest
+	3,  // 17: cbt.FctBlobCountHourlyService.Get:input_type -> cbt.GetFctBlobCountHourlyRequest
+	2,  // 18: cbt.FctBlobCountHourlyService.List:output_type -> cbt.ListFctBlobCountHourlyResponse
+	4,  // 19: cbt.FctBlobCountHourlyService.Get:output_type -> cbt.GetFctBlobCountHourlyResponse
 	18, // [18:20] is the sub-list for method output_type
 	16, // [16:18] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
@@ -763,15 +763,15 @@ var file_fct_blob_count_by_hourly_proto_depIdxs = []int32{
 	0,  // [0:16] is the sub-list for field type_name
 }
 
-func init() { file_fct_blob_count_by_hourly_proto_init() }
-func file_fct_blob_count_by_hourly_proto_init() {
-	if File_fct_blob_count_by_hourly_proto != nil {
+func init() { file_fct_blob_count_hourly_proto_init() }
+func file_fct_blob_count_hourly_proto_init() {
+	if File_fct_blob_count_hourly_proto != nil {
 		return
 	}
 	file_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_fct_blob_count_by_hourly_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*FctBlobCountByHourly); i {
+		file_fct_blob_count_hourly_proto_msgTypes[0].Exporter = func(v any, i int) any {
+			switch v := v.(*FctBlobCountHourly); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -782,8 +782,8 @@ func file_fct_blob_count_by_hourly_proto_init() {
 				return nil
 			}
 		}
-		file_fct_blob_count_by_hourly_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctBlobCountByHourlyRequest); i {
+		file_fct_blob_count_hourly_proto_msgTypes[1].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctBlobCountHourlyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -794,8 +794,8 @@ func file_fct_blob_count_by_hourly_proto_init() {
 				return nil
 			}
 		}
-		file_fct_blob_count_by_hourly_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctBlobCountByHourlyResponse); i {
+		file_fct_blob_count_hourly_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctBlobCountHourlyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -806,8 +806,8 @@ func file_fct_blob_count_by_hourly_proto_init() {
 				return nil
 			}
 		}
-		file_fct_blob_count_by_hourly_proto_msgTypes[3].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctBlobCountByHourlyRequest); i {
+		file_fct_blob_count_hourly_proto_msgTypes[3].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctBlobCountHourlyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -818,8 +818,8 @@ func file_fct_blob_count_by_hourly_proto_init() {
 				return nil
 			}
 		}
-		file_fct_blob_count_by_hourly_proto_msgTypes[4].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctBlobCountByHourlyResponse); i {
+		file_fct_blob_count_hourly_proto_msgTypes[4].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctBlobCountHourlyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -835,18 +835,18 @@ func file_fct_blob_count_by_hourly_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_fct_blob_count_by_hourly_proto_rawDesc,
+			RawDescriptor: file_fct_blob_count_hourly_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_fct_blob_count_by_hourly_proto_goTypes,
-		DependencyIndexes: file_fct_blob_count_by_hourly_proto_depIdxs,
-		MessageInfos:      file_fct_blob_count_by_hourly_proto_msgTypes,
+		GoTypes:           file_fct_blob_count_hourly_proto_goTypes,
+		DependencyIndexes: file_fct_blob_count_hourly_proto_depIdxs,
+		MessageInfos:      file_fct_blob_count_hourly_proto_msgTypes,
 	}.Build()
-	File_fct_blob_count_by_hourly_proto = out.File
-	file_fct_blob_count_by_hourly_proto_rawDesc = nil
-	file_fct_blob_count_by_hourly_proto_goTypes = nil
-	file_fct_blob_count_by_hourly_proto_depIdxs = nil
+	File_fct_blob_count_hourly_proto = out.File
+	file_fct_blob_count_hourly_proto_rawDesc = nil
+	file_fct_blob_count_hourly_proto_goTypes = nil
+	file_fct_blob_count_hourly_proto_depIdxs = nil
 }

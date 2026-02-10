@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.2
 // 	protoc        (unknown)
-// source: fct_blob_count_by_daily.proto
+// source: fct_blob_count_daily.proto
 
 package clickhouse
 
@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type FctBlobCountByDaily struct {
+type FctBlobCountDaily struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -58,23 +58,23 @@ type FctBlobCountByDaily struct {
 	MovingAvgBlobCount float32 `protobuf:"fixed32,24,opt,name=moving_avg_blob_count,json=movingAvgBlobCount,proto3" json:"moving_avg_blob_count,omitempty"`
 }
 
-func (x *FctBlobCountByDaily) Reset() {
-	*x = FctBlobCountByDaily{}
+func (x *FctBlobCountDaily) Reset() {
+	*x = FctBlobCountDaily{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_daily_proto_msgTypes[0]
+		mi := &file_fct_blob_count_daily_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *FctBlobCountByDaily) String() string {
+func (x *FctBlobCountDaily) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FctBlobCountByDaily) ProtoMessage() {}
+func (*FctBlobCountDaily) ProtoMessage() {}
 
-func (x *FctBlobCountByDaily) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_daily_proto_msgTypes[0]
+func (x *FctBlobCountDaily) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_daily_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -85,111 +85,111 @@ func (x *FctBlobCountByDaily) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FctBlobCountByDaily.ProtoReflect.Descriptor instead.
-func (*FctBlobCountByDaily) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_daily_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use FctBlobCountDaily.ProtoReflect.Descriptor instead.
+func (*FctBlobCountDaily) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_daily_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *FctBlobCountByDaily) GetUpdatedDateTime() uint32 {
+func (x *FctBlobCountDaily) GetUpdatedDateTime() uint32 {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetDayStartDate() string {
+func (x *FctBlobCountDaily) GetDayStartDate() string {
 	if x != nil {
 		return x.DayStartDate
 	}
 	return ""
 }
 
-func (x *FctBlobCountByDaily) GetBlockCount() uint32 {
+func (x *FctBlobCountDaily) GetBlockCount() uint32 {
 	if x != nil {
 		return x.BlockCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetTotalBlobs() uint64 {
+func (x *FctBlobCountDaily) GetTotalBlobs() uint64 {
 	if x != nil {
 		return x.TotalBlobs
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetAvgBlobCount() float32 {
+func (x *FctBlobCountDaily) GetAvgBlobCount() float32 {
 	if x != nil {
 		return x.AvgBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetMinBlobCount() uint32 {
+func (x *FctBlobCountDaily) GetMinBlobCount() uint32 {
 	if x != nil {
 		return x.MinBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetMaxBlobCount() uint32 {
+func (x *FctBlobCountDaily) GetMaxBlobCount() uint32 {
 	if x != nil {
 		return x.MaxBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetP05BlobCount() float32 {
+func (x *FctBlobCountDaily) GetP05BlobCount() float32 {
 	if x != nil {
 		return x.P05BlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetP50BlobCount() float32 {
+func (x *FctBlobCountDaily) GetP50BlobCount() float32 {
 	if x != nil {
 		return x.P50BlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetP95BlobCount() float32 {
+func (x *FctBlobCountDaily) GetP95BlobCount() float32 {
 	if x != nil {
 		return x.P95BlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetStddevBlobCount() float32 {
+func (x *FctBlobCountDaily) GetStddevBlobCount() float32 {
 	if x != nil {
 		return x.StddevBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetUpperBandBlobCount() float32 {
+func (x *FctBlobCountDaily) GetUpperBandBlobCount() float32 {
 	if x != nil {
 		return x.UpperBandBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetLowerBandBlobCount() float32 {
+func (x *FctBlobCountDaily) GetLowerBandBlobCount() float32 {
 	if x != nil {
 		return x.LowerBandBlobCount
 	}
 	return 0
 }
 
-func (x *FctBlobCountByDaily) GetMovingAvgBlobCount() float32 {
+func (x *FctBlobCountDaily) GetMovingAvgBlobCount() float32 {
 	if x != nil {
 		return x.MovingAvgBlobCount
 	}
 	return 0
 }
 
-// Request for listing fct_blob_count_by_daily records
-type ListFctBlobCountByDailyRequest struct {
+// Request for listing fct_blob_count_daily records
+type ListFctBlobCountDailyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -222,11 +222,11 @@ type ListFctBlobCountByDailyRequest struct {
 	LowerBandBlobCount *wrapperspb.FloatValue `protobuf:"bytes,13,opt,name=lower_band_blob_count,json=lowerBandBlobCount,proto3" json:"lower_band_blob_count,omitempty"`
 	// Filter by moving_avg_blob_count - Moving average blob count (7-day window) (optional)
 	MovingAvgBlobCount *wrapperspb.FloatValue `protobuf:"bytes,14,opt,name=moving_avg_blob_count,json=movingAvgBlobCount,proto3" json:"moving_avg_blob_count,omitempty"`
-	// The maximum number of fct_blob_count_by_daily to return.
+	// The maximum number of fct_blob_count_daily to return.
 	// If unspecified, at most 100 items will be returned.
 	// The maximum value is 10000; values above 10000 will be coerced to 10000.
 	PageSize int32 `protobuf:"varint,15,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListFctBlobCountByDaily` call.
+	// A page token, received from a previous `ListFctBlobCountDaily` call.
 	// Provide this to retrieve the subsequent page.
 	PageToken string `protobuf:"bytes,16,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// The order of results. Format: comma-separated list of fields.
@@ -235,23 +235,23 @@ type ListFctBlobCountByDailyRequest struct {
 	OrderBy string `protobuf:"bytes,17,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 }
 
-func (x *ListFctBlobCountByDailyRequest) Reset() {
-	*x = ListFctBlobCountByDailyRequest{}
+func (x *ListFctBlobCountDailyRequest) Reset() {
+	*x = ListFctBlobCountDailyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_daily_proto_msgTypes[1]
+		mi := &file_fct_blob_count_daily_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctBlobCountByDailyRequest) String() string {
+func (x *ListFctBlobCountDailyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctBlobCountByDailyRequest) ProtoMessage() {}
+func (*ListFctBlobCountDailyRequest) ProtoMessage() {}
 
-func (x *ListFctBlobCountByDailyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_daily_proto_msgTypes[1]
+func (x *ListFctBlobCountDailyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_daily_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -262,160 +262,160 @@ func (x *ListFctBlobCountByDailyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctBlobCountByDailyRequest.ProtoReflect.Descriptor instead.
-func (*ListFctBlobCountByDailyRequest) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_daily_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use ListFctBlobCountDailyRequest.ProtoReflect.Descriptor instead.
+func (*ListFctBlobCountDailyRequest) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_daily_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetDayStartDate() *StringFilter {
+func (x *ListFctBlobCountDailyRequest) GetDayStartDate() *StringFilter {
 	if x != nil {
 		return x.DayStartDate
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetUpdatedDateTime() *UInt32Filter {
+func (x *ListFctBlobCountDailyRequest) GetUpdatedDateTime() *UInt32Filter {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetBlockCount() *UInt32Filter {
+func (x *ListFctBlobCountDailyRequest) GetBlockCount() *UInt32Filter {
 	if x != nil {
 		return x.BlockCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetTotalBlobs() *UInt64Filter {
+func (x *ListFctBlobCountDailyRequest) GetTotalBlobs() *UInt64Filter {
 	if x != nil {
 		return x.TotalBlobs
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetAvgBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountDailyRequest) GetAvgBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.AvgBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetMinBlobCount() *UInt32Filter {
+func (x *ListFctBlobCountDailyRequest) GetMinBlobCount() *UInt32Filter {
 	if x != nil {
 		return x.MinBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetMaxBlobCount() *UInt32Filter {
+func (x *ListFctBlobCountDailyRequest) GetMaxBlobCount() *UInt32Filter {
 	if x != nil {
 		return x.MaxBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetP05BlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountDailyRequest) GetP05BlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.P05BlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetP50BlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountDailyRequest) GetP50BlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.P50BlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetP95BlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountDailyRequest) GetP95BlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.P95BlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetStddevBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountDailyRequest) GetStddevBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.StddevBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetUpperBandBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountDailyRequest) GetUpperBandBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.UpperBandBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetLowerBandBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountDailyRequest) GetLowerBandBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.LowerBandBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetMovingAvgBlobCount() *wrapperspb.FloatValue {
+func (x *ListFctBlobCountDailyRequest) GetMovingAvgBlobCount() *wrapperspb.FloatValue {
 	if x != nil {
 		return x.MovingAvgBlobCount
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetPageSize() int32 {
+func (x *ListFctBlobCountDailyRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetPageToken() string {
+func (x *ListFctBlobCountDailyRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
 	}
 	return ""
 }
 
-func (x *ListFctBlobCountByDailyRequest) GetOrderBy() string {
+func (x *ListFctBlobCountDailyRequest) GetOrderBy() string {
 	if x != nil {
 		return x.OrderBy
 	}
 	return ""
 }
 
-// Response for listing fct_blob_count_by_daily records
-type ListFctBlobCountByDailyResponse struct {
+// Response for listing fct_blob_count_daily records
+type ListFctBlobCountDailyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The list of fct_blob_count_by_daily.
-	FctBlobCountByDaily []*FctBlobCountByDaily `protobuf:"bytes,1,rep,name=fct_blob_count_by_daily,json=fctBlobCountByDaily,proto3" json:"fct_blob_count_by_daily,omitempty"`
+	// The list of fct_blob_count_daily.
+	FctBlobCountDaily []*FctBlobCountDaily `protobuf:"bytes,1,rep,name=fct_blob_count_daily,json=fctBlobCountByDaily,proto3" json:"fct_blob_count_daily,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 }
 
-func (x *ListFctBlobCountByDailyResponse) Reset() {
-	*x = ListFctBlobCountByDailyResponse{}
+func (x *ListFctBlobCountDailyResponse) Reset() {
+	*x = ListFctBlobCountDailyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_daily_proto_msgTypes[2]
+		mi := &file_fct_blob_count_daily_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctBlobCountByDailyResponse) String() string {
+func (x *ListFctBlobCountDailyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctBlobCountByDailyResponse) ProtoMessage() {}
+func (*ListFctBlobCountDailyResponse) ProtoMessage() {}
 
-func (x *ListFctBlobCountByDailyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_daily_proto_msgTypes[2]
+func (x *ListFctBlobCountDailyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_daily_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -426,27 +426,27 @@ func (x *ListFctBlobCountByDailyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctBlobCountByDailyResponse.ProtoReflect.Descriptor instead.
-func (*ListFctBlobCountByDailyResponse) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_daily_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use ListFctBlobCountDailyResponse.ProtoReflect.Descriptor instead.
+func (*ListFctBlobCountDailyResponse) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_daily_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListFctBlobCountByDailyResponse) GetFctBlobCountByDaily() []*FctBlobCountByDaily {
+func (x *ListFctBlobCountDailyResponse) GetFctBlobCountDaily() []*FctBlobCountDaily {
 	if x != nil {
-		return x.FctBlobCountByDaily
+		return x.FctBlobCountDaily
 	}
 	return nil
 }
 
-func (x *ListFctBlobCountByDailyResponse) GetNextPageToken() string {
+func (x *ListFctBlobCountDailyResponse) GetNextPageToken() string {
 	if x != nil {
 		return x.NextPageToken
 	}
 	return ""
 }
 
-// Request for getting a single fct_blob_count_by_daily record by primary key
-type GetFctBlobCountByDailyRequest struct {
+// Request for getting a single fct_blob_count_daily record by primary key
+type GetFctBlobCountDailyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -455,23 +455,23 @@ type GetFctBlobCountByDailyRequest struct {
 	DayStartDate string `protobuf:"bytes,1,opt,name=day_start_date,json=dayStartDate,proto3" json:"day_start_date,omitempty"` // Primary key (required)
 }
 
-func (x *GetFctBlobCountByDailyRequest) Reset() {
-	*x = GetFctBlobCountByDailyRequest{}
+func (x *GetFctBlobCountDailyRequest) Reset() {
+	*x = GetFctBlobCountDailyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_daily_proto_msgTypes[3]
+		mi := &file_fct_blob_count_daily_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctBlobCountByDailyRequest) String() string {
+func (x *GetFctBlobCountDailyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctBlobCountByDailyRequest) ProtoMessage() {}
+func (*GetFctBlobCountDailyRequest) ProtoMessage() {}
 
-func (x *GetFctBlobCountByDailyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_daily_proto_msgTypes[3]
+func (x *GetFctBlobCountDailyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_daily_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -482,44 +482,44 @@ func (x *GetFctBlobCountByDailyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctBlobCountByDailyRequest.ProtoReflect.Descriptor instead.
-func (*GetFctBlobCountByDailyRequest) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_daily_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use GetFctBlobCountDailyRequest.ProtoReflect.Descriptor instead.
+func (*GetFctBlobCountDailyRequest) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_daily_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetFctBlobCountByDailyRequest) GetDayStartDate() string {
+func (x *GetFctBlobCountDailyRequest) GetDayStartDate() string {
 	if x != nil {
 		return x.DayStartDate
 	}
 	return ""
 }
 
-// Response for getting a single fct_blob_count_by_daily record
-type GetFctBlobCountByDailyResponse struct {
+// Response for getting a single fct_blob_count_daily record
+type GetFctBlobCountDailyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Item *FctBlobCountByDaily `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	Item *FctBlobCountDaily `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
 }
 
-func (x *GetFctBlobCountByDailyResponse) Reset() {
-	*x = GetFctBlobCountByDailyResponse{}
+func (x *GetFctBlobCountDailyResponse) Reset() {
+	*x = GetFctBlobCountDailyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_blob_count_by_daily_proto_msgTypes[4]
+		mi := &file_fct_blob_count_daily_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctBlobCountByDailyResponse) String() string {
+func (x *GetFctBlobCountDailyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctBlobCountByDailyResponse) ProtoMessage() {}
+func (*GetFctBlobCountDailyResponse) ProtoMessage() {}
 
-func (x *GetFctBlobCountByDailyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_blob_count_by_daily_proto_msgTypes[4]
+func (x *GetFctBlobCountDailyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_blob_count_daily_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -530,21 +530,21 @@ func (x *GetFctBlobCountByDailyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctBlobCountByDailyResponse.ProtoReflect.Descriptor instead.
-func (*GetFctBlobCountByDailyResponse) Descriptor() ([]byte, []int) {
-	return file_fct_blob_count_by_daily_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use GetFctBlobCountDailyResponse.ProtoReflect.Descriptor instead.
+func (*GetFctBlobCountDailyResponse) Descriptor() ([]byte, []int) {
+	return file_fct_blob_count_daily_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetFctBlobCountByDailyResponse) GetItem() *FctBlobCountByDaily {
+func (x *GetFctBlobCountDailyResponse) GetItem() *FctBlobCountDaily {
 	if x != nil {
 		return x.Item
 	}
 	return nil
 }
 
-var File_fct_blob_count_by_daily_proto protoreflect.FileDescriptor
+var File_fct_blob_count_daily_proto protoreflect.FileDescriptor
 
-var file_fct_blob_count_by_daily_proto_rawDesc = []byte{
+var file_fct_blob_count_daily_proto_rawDesc = []byte{
 	0x0a, 0x1d, 0x66, 0x63, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x62, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74,
 	0x5f, 0x62, 0x79, 0x5f, 0x64, 0x61, 0x69, 0x6c, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12,
 	0x03, 0x63, 0x62, 0x74, 0x1a, 0x0c, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f,
@@ -710,50 +710,50 @@ var file_fct_blob_count_by_daily_proto_rawDesc = []byte{
 }
 
 var (
-	file_fct_blob_count_by_daily_proto_rawDescOnce sync.Once
-	file_fct_blob_count_by_daily_proto_rawDescData = file_fct_blob_count_by_daily_proto_rawDesc
+	file_fct_blob_count_daily_proto_rawDescOnce sync.Once
+	file_fct_blob_count_daily_proto_rawDescData = file_fct_blob_count_daily_proto_rawDesc
 )
 
-func file_fct_blob_count_by_daily_proto_rawDescGZIP() []byte {
-	file_fct_blob_count_by_daily_proto_rawDescOnce.Do(func() {
-		file_fct_blob_count_by_daily_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_blob_count_by_daily_proto_rawDescData)
+func file_fct_blob_count_daily_proto_rawDescGZIP() []byte {
+	file_fct_blob_count_daily_proto_rawDescOnce.Do(func() {
+		file_fct_blob_count_daily_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_blob_count_daily_proto_rawDescData)
 	})
-	return file_fct_blob_count_by_daily_proto_rawDescData
+	return file_fct_blob_count_daily_proto_rawDescData
 }
 
-var file_fct_blob_count_by_daily_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_fct_blob_count_by_daily_proto_goTypes = []any{
-	(*FctBlobCountByDaily)(nil),             // 0: cbt.FctBlobCountByDaily
-	(*ListFctBlobCountByDailyRequest)(nil),  // 1: cbt.ListFctBlobCountByDailyRequest
-	(*ListFctBlobCountByDailyResponse)(nil), // 2: cbt.ListFctBlobCountByDailyResponse
-	(*GetFctBlobCountByDailyRequest)(nil),   // 3: cbt.GetFctBlobCountByDailyRequest
-	(*GetFctBlobCountByDailyResponse)(nil),  // 4: cbt.GetFctBlobCountByDailyResponse
+var file_fct_blob_count_daily_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_fct_blob_count_daily_proto_goTypes = []any{
+	(*FctBlobCountDaily)(nil),             // 0: cbt.FctBlobCountDaily
+	(*ListFctBlobCountDailyRequest)(nil),  // 1: cbt.ListFctBlobCountDailyRequest
+	(*ListFctBlobCountDailyResponse)(nil), // 2: cbt.ListFctBlobCountDailyResponse
+	(*GetFctBlobCountDailyRequest)(nil),   // 3: cbt.GetFctBlobCountDailyRequest
+	(*GetFctBlobCountDailyResponse)(nil),  // 4: cbt.GetFctBlobCountDailyResponse
 	(*StringFilter)(nil),                    // 5: cbt.StringFilter
 	(*UInt32Filter)(nil),                    // 6: cbt.UInt32Filter
 	(*UInt64Filter)(nil),                    // 7: cbt.UInt64Filter
 	(*wrapperspb.FloatValue)(nil),           // 8: google.protobuf.FloatValue
 }
-var file_fct_blob_count_by_daily_proto_depIdxs = []int32{
-	5,  // 0: cbt.ListFctBlobCountByDailyRequest.day_start_date:type_name -> cbt.StringFilter
-	6,  // 1: cbt.ListFctBlobCountByDailyRequest.updated_date_time:type_name -> cbt.UInt32Filter
-	6,  // 2: cbt.ListFctBlobCountByDailyRequest.block_count:type_name -> cbt.UInt32Filter
-	7,  // 3: cbt.ListFctBlobCountByDailyRequest.total_blobs:type_name -> cbt.UInt64Filter
-	8,  // 4: cbt.ListFctBlobCountByDailyRequest.avg_blob_count:type_name -> google.protobuf.FloatValue
-	6,  // 5: cbt.ListFctBlobCountByDailyRequest.min_blob_count:type_name -> cbt.UInt32Filter
-	6,  // 6: cbt.ListFctBlobCountByDailyRequest.max_blob_count:type_name -> cbt.UInt32Filter
-	8,  // 7: cbt.ListFctBlobCountByDailyRequest.p05_blob_count:type_name -> google.protobuf.FloatValue
-	8,  // 8: cbt.ListFctBlobCountByDailyRequest.p50_blob_count:type_name -> google.protobuf.FloatValue
-	8,  // 9: cbt.ListFctBlobCountByDailyRequest.p95_blob_count:type_name -> google.protobuf.FloatValue
-	8,  // 10: cbt.ListFctBlobCountByDailyRequest.stddev_blob_count:type_name -> google.protobuf.FloatValue
-	8,  // 11: cbt.ListFctBlobCountByDailyRequest.upper_band_blob_count:type_name -> google.protobuf.FloatValue
-	8,  // 12: cbt.ListFctBlobCountByDailyRequest.lower_band_blob_count:type_name -> google.protobuf.FloatValue
-	8,  // 13: cbt.ListFctBlobCountByDailyRequest.moving_avg_blob_count:type_name -> google.protobuf.FloatValue
-	0,  // 14: cbt.ListFctBlobCountByDailyResponse.fct_blob_count_by_daily:type_name -> cbt.FctBlobCountByDaily
-	0,  // 15: cbt.GetFctBlobCountByDailyResponse.item:type_name -> cbt.FctBlobCountByDaily
-	1,  // 16: cbt.FctBlobCountByDailyService.List:input_type -> cbt.ListFctBlobCountByDailyRequest
-	3,  // 17: cbt.FctBlobCountByDailyService.Get:input_type -> cbt.GetFctBlobCountByDailyRequest
-	2,  // 18: cbt.FctBlobCountByDailyService.List:output_type -> cbt.ListFctBlobCountByDailyResponse
-	4,  // 19: cbt.FctBlobCountByDailyService.Get:output_type -> cbt.GetFctBlobCountByDailyResponse
+var file_fct_blob_count_daily_proto_depIdxs = []int32{
+	5,  // 0: cbt.ListFctBlobCountDailyRequest.day_start_date:type_name -> cbt.StringFilter
+	6,  // 1: cbt.ListFctBlobCountDailyRequest.updated_date_time:type_name -> cbt.UInt32Filter
+	6,  // 2: cbt.ListFctBlobCountDailyRequest.block_count:type_name -> cbt.UInt32Filter
+	7,  // 3: cbt.ListFctBlobCountDailyRequest.total_blobs:type_name -> cbt.UInt64Filter
+	8,  // 4: cbt.ListFctBlobCountDailyRequest.avg_blob_count:type_name -> google.protobuf.FloatValue
+	6,  // 5: cbt.ListFctBlobCountDailyRequest.min_blob_count:type_name -> cbt.UInt32Filter
+	6,  // 6: cbt.ListFctBlobCountDailyRequest.max_blob_count:type_name -> cbt.UInt32Filter
+	8,  // 7: cbt.ListFctBlobCountDailyRequest.p05_blob_count:type_name -> google.protobuf.FloatValue
+	8,  // 8: cbt.ListFctBlobCountDailyRequest.p50_blob_count:type_name -> google.protobuf.FloatValue
+	8,  // 9: cbt.ListFctBlobCountDailyRequest.p95_blob_count:type_name -> google.protobuf.FloatValue
+	8,  // 10: cbt.ListFctBlobCountDailyRequest.stddev_blob_count:type_name -> google.protobuf.FloatValue
+	8,  // 11: cbt.ListFctBlobCountDailyRequest.upper_band_blob_count:type_name -> google.protobuf.FloatValue
+	8,  // 12: cbt.ListFctBlobCountDailyRequest.lower_band_blob_count:type_name -> google.protobuf.FloatValue
+	8,  // 13: cbt.ListFctBlobCountDailyRequest.moving_avg_blob_count:type_name -> google.protobuf.FloatValue
+	0,  // 14: cbt.ListFctBlobCountDailyResponse.fct_blob_count_daily:type_name -> cbt.FctBlobCountDaily
+	0,  // 15: cbt.GetFctBlobCountDailyResponse.item:type_name -> cbt.FctBlobCountDaily
+	1,  // 16: cbt.FctBlobCountDailyService.List:input_type -> cbt.ListFctBlobCountDailyRequest
+	3,  // 17: cbt.FctBlobCountDailyService.Get:input_type -> cbt.GetFctBlobCountDailyRequest
+	2,  // 18: cbt.FctBlobCountDailyService.List:output_type -> cbt.ListFctBlobCountDailyResponse
+	4,  // 19: cbt.FctBlobCountDailyService.Get:output_type -> cbt.GetFctBlobCountDailyResponse
 	18, // [18:20] is the sub-list for method output_type
 	16, // [16:18] is the sub-list for method input_type
 	16, // [16:16] is the sub-list for extension type_name
@@ -761,15 +761,15 @@ var file_fct_blob_count_by_daily_proto_depIdxs = []int32{
 	0,  // [0:16] is the sub-list for field type_name
 }
 
-func init() { file_fct_blob_count_by_daily_proto_init() }
-func file_fct_blob_count_by_daily_proto_init() {
-	if File_fct_blob_count_by_daily_proto != nil {
+func init() { file_fct_blob_count_daily_proto_init() }
+func file_fct_blob_count_daily_proto_init() {
+	if File_fct_blob_count_daily_proto != nil {
 		return
 	}
 	file_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_fct_blob_count_by_daily_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*FctBlobCountByDaily); i {
+		file_fct_blob_count_daily_proto_msgTypes[0].Exporter = func(v any, i int) any {
+			switch v := v.(*FctBlobCountDaily); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -780,8 +780,8 @@ func file_fct_blob_count_by_daily_proto_init() {
 				return nil
 			}
 		}
-		file_fct_blob_count_by_daily_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctBlobCountByDailyRequest); i {
+		file_fct_blob_count_daily_proto_msgTypes[1].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctBlobCountDailyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -792,8 +792,8 @@ func file_fct_blob_count_by_daily_proto_init() {
 				return nil
 			}
 		}
-		file_fct_blob_count_by_daily_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctBlobCountByDailyResponse); i {
+		file_fct_blob_count_daily_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctBlobCountDailyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -804,8 +804,8 @@ func file_fct_blob_count_by_daily_proto_init() {
 				return nil
 			}
 		}
-		file_fct_blob_count_by_daily_proto_msgTypes[3].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctBlobCountByDailyRequest); i {
+		file_fct_blob_count_daily_proto_msgTypes[3].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctBlobCountDailyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -816,8 +816,8 @@ func file_fct_blob_count_by_daily_proto_init() {
 				return nil
 			}
 		}
-		file_fct_blob_count_by_daily_proto_msgTypes[4].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctBlobCountByDailyResponse); i {
+		file_fct_blob_count_daily_proto_msgTypes[4].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctBlobCountDailyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -833,18 +833,18 @@ func file_fct_blob_count_by_daily_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_fct_blob_count_by_daily_proto_rawDesc,
+			RawDescriptor: file_fct_blob_count_daily_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_fct_blob_count_by_daily_proto_goTypes,
-		DependencyIndexes: file_fct_blob_count_by_daily_proto_depIdxs,
-		MessageInfos:      file_fct_blob_count_by_daily_proto_msgTypes,
+		GoTypes:           file_fct_blob_count_daily_proto_goTypes,
+		DependencyIndexes: file_fct_blob_count_daily_proto_depIdxs,
+		MessageInfos:      file_fct_blob_count_daily_proto_msgTypes,
 	}.Build()
-	File_fct_blob_count_by_daily_proto = out.File
-	file_fct_blob_count_by_daily_proto_rawDesc = nil
-	file_fct_blob_count_by_daily_proto_goTypes = nil
-	file_fct_blob_count_by_daily_proto_depIdxs = nil
+	File_fct_blob_count_daily_proto = out.File
+	file_fct_blob_count_daily_proto_rawDesc = nil
+	file_fct_blob_count_daily_proto_goTypes = nil
+	file_fct_blob_count_daily_proto_depIdxs = nil
 }

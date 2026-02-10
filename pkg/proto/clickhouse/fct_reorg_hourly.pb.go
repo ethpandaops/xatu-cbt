@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.34.2
 // 	protoc        (unknown)
-// source: fct_reorg_by_hourly.proto
+// source: fct_reorg_hourly.proto
 
 package clickhouse
 
@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type FctReorgByHourly struct {
+type FctReorgHourly struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -37,23 +37,23 @@ type FctReorgByHourly struct {
 	ReorgCount uint32 `protobuf:"varint,14,opt,name=reorg_count,json=reorgCount,proto3" json:"reorg_count,omitempty"`
 }
 
-func (x *FctReorgByHourly) Reset() {
-	*x = FctReorgByHourly{}
+func (x *FctReorgHourly) Reset() {
+	*x = FctReorgHourly{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_hourly_proto_msgTypes[0]
+		mi := &file_fct_reorg_hourly_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *FctReorgByHourly) String() string {
+func (x *FctReorgHourly) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*FctReorgByHourly) ProtoMessage() {}
+func (*FctReorgHourly) ProtoMessage() {}
 
-func (x *FctReorgByHourly) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_hourly_proto_msgTypes[0]
+func (x *FctReorgHourly) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_hourly_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -64,41 +64,41 @@ func (x *FctReorgByHourly) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use FctReorgByHourly.ProtoReflect.Descriptor instead.
-func (*FctReorgByHourly) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_hourly_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use FctReorgHourly.ProtoReflect.Descriptor instead.
+func (*FctReorgHourly) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_hourly_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *FctReorgByHourly) GetUpdatedDateTime() uint32 {
+func (x *FctReorgHourly) GetUpdatedDateTime() uint32 {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return 0
 }
 
-func (x *FctReorgByHourly) GetHourStartDateTime() uint32 {
+func (x *FctReorgHourly) GetHourStartDateTime() uint32 {
 	if x != nil {
 		return x.HourStartDateTime
 	}
 	return 0
 }
 
-func (x *FctReorgByHourly) GetDepth() uint32 {
+func (x *FctReorgHourly) GetDepth() uint32 {
 	if x != nil {
 		return x.Depth
 	}
 	return 0
 }
 
-func (x *FctReorgByHourly) GetReorgCount() uint32 {
+func (x *FctReorgHourly) GetReorgCount() uint32 {
 	if x != nil {
 		return x.ReorgCount
 	}
 	return 0
 }
 
-// Request for listing fct_reorg_by_hourly records
-type ListFctReorgByHourlyRequest struct {
+// Request for listing fct_reorg_hourly records
+type ListFctReorgHourlyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -111,11 +111,11 @@ type ListFctReorgByHourlyRequest struct {
 	UpdatedDateTime *UInt32Filter `protobuf:"bytes,3,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`
 	// Filter by reorg_count - Number of reorg events at this depth (optional)
 	ReorgCount *UInt32Filter `protobuf:"bytes,4,opt,name=reorg_count,json=reorgCount,proto3" json:"reorg_count,omitempty"`
-	// The maximum number of fct_reorg_by_hourly to return.
+	// The maximum number of fct_reorg_hourly to return.
 	// If unspecified, at most 100 items will be returned.
 	// The maximum value is 10000; values above 10000 will be coerced to 10000.
 	PageSize int32 `protobuf:"varint,5,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListFctReorgByHourly` call.
+	// A page token, received from a previous `ListFctReorgHourly` call.
 	// Provide this to retrieve the subsequent page.
 	PageToken string `protobuf:"bytes,6,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// The order of results. Format: comma-separated list of fields.
@@ -124,23 +124,23 @@ type ListFctReorgByHourlyRequest struct {
 	OrderBy string `protobuf:"bytes,7,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 }
 
-func (x *ListFctReorgByHourlyRequest) Reset() {
-	*x = ListFctReorgByHourlyRequest{}
+func (x *ListFctReorgHourlyRequest) Reset() {
+	*x = ListFctReorgHourlyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_hourly_proto_msgTypes[1]
+		mi := &file_fct_reorg_hourly_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctReorgByHourlyRequest) String() string {
+func (x *ListFctReorgHourlyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctReorgByHourlyRequest) ProtoMessage() {}
+func (*ListFctReorgHourlyRequest) ProtoMessage() {}
 
-func (x *ListFctReorgByHourlyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_hourly_proto_msgTypes[1]
+func (x *ListFctReorgHourlyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_hourly_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -151,90 +151,90 @@ func (x *ListFctReorgByHourlyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctReorgByHourlyRequest.ProtoReflect.Descriptor instead.
-func (*ListFctReorgByHourlyRequest) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_hourly_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use ListFctReorgHourlyRequest.ProtoReflect.Descriptor instead.
+func (*ListFctReorgHourlyRequest) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_hourly_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListFctReorgByHourlyRequest) GetHourStartDateTime() *UInt32Filter {
+func (x *ListFctReorgHourlyRequest) GetHourStartDateTime() *UInt32Filter {
 	if x != nil {
 		return x.HourStartDateTime
 	}
 	return nil
 }
 
-func (x *ListFctReorgByHourlyRequest) GetDepth() *UInt32Filter {
+func (x *ListFctReorgHourlyRequest) GetDepth() *UInt32Filter {
 	if x != nil {
 		return x.Depth
 	}
 	return nil
 }
 
-func (x *ListFctReorgByHourlyRequest) GetUpdatedDateTime() *UInt32Filter {
+func (x *ListFctReorgHourlyRequest) GetUpdatedDateTime() *UInt32Filter {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return nil
 }
 
-func (x *ListFctReorgByHourlyRequest) GetReorgCount() *UInt32Filter {
+func (x *ListFctReorgHourlyRequest) GetReorgCount() *UInt32Filter {
 	if x != nil {
 		return x.ReorgCount
 	}
 	return nil
 }
 
-func (x *ListFctReorgByHourlyRequest) GetPageSize() int32 {
+func (x *ListFctReorgHourlyRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-func (x *ListFctReorgByHourlyRequest) GetPageToken() string {
+func (x *ListFctReorgHourlyRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
 	}
 	return ""
 }
 
-func (x *ListFctReorgByHourlyRequest) GetOrderBy() string {
+func (x *ListFctReorgHourlyRequest) GetOrderBy() string {
 	if x != nil {
 		return x.OrderBy
 	}
 	return ""
 }
 
-// Response for listing fct_reorg_by_hourly records
-type ListFctReorgByHourlyResponse struct {
+// Response for listing fct_reorg_hourly records
+type ListFctReorgHourlyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The list of fct_reorg_by_hourly.
-	FctReorgByHourly []*FctReorgByHourly `protobuf:"bytes,1,rep,name=fct_reorg_by_hourly,json=fctReorgByHourly,proto3" json:"fct_reorg_by_hourly,omitempty"`
+	// The list of fct_reorg_hourly.
+	FctReorgHourly []*FctReorgHourly `protobuf:"bytes,1,rep,name=fct_reorg_hourly,json=fctReorgByHourly,proto3" json:"fct_reorg_hourly,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 }
 
-func (x *ListFctReorgByHourlyResponse) Reset() {
-	*x = ListFctReorgByHourlyResponse{}
+func (x *ListFctReorgHourlyResponse) Reset() {
+	*x = ListFctReorgHourlyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_hourly_proto_msgTypes[2]
+		mi := &file_fct_reorg_hourly_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *ListFctReorgByHourlyResponse) String() string {
+func (x *ListFctReorgHourlyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListFctReorgByHourlyResponse) ProtoMessage() {}
+func (*ListFctReorgHourlyResponse) ProtoMessage() {}
 
-func (x *ListFctReorgByHourlyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_hourly_proto_msgTypes[2]
+func (x *ListFctReorgHourlyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_hourly_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -245,27 +245,27 @@ func (x *ListFctReorgByHourlyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListFctReorgByHourlyResponse.ProtoReflect.Descriptor instead.
-func (*ListFctReorgByHourlyResponse) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_hourly_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use ListFctReorgHourlyResponse.ProtoReflect.Descriptor instead.
+func (*ListFctReorgHourlyResponse) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_hourly_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListFctReorgByHourlyResponse) GetFctReorgByHourly() []*FctReorgByHourly {
+func (x *ListFctReorgHourlyResponse) GetFctReorgHourly() []*FctReorgHourly {
 	if x != nil {
-		return x.FctReorgByHourly
+		return x.FctReorgHourly
 	}
 	return nil
 }
 
-func (x *ListFctReorgByHourlyResponse) GetNextPageToken() string {
+func (x *ListFctReorgHourlyResponse) GetNextPageToken() string {
 	if x != nil {
 		return x.NextPageToken
 	}
 	return ""
 }
 
-// Request for getting a single fct_reorg_by_hourly record by primary key
-type GetFctReorgByHourlyRequest struct {
+// Request for getting a single fct_reorg_hourly record by primary key
+type GetFctReorgHourlyRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -274,23 +274,23 @@ type GetFctReorgByHourlyRequest struct {
 	HourStartDateTime uint32 `protobuf:"varint,1,opt,name=hour_start_date_time,json=hourStartDateTime,proto3" json:"hour_start_date_time,omitempty"` // Primary key (required)
 }
 
-func (x *GetFctReorgByHourlyRequest) Reset() {
-	*x = GetFctReorgByHourlyRequest{}
+func (x *GetFctReorgHourlyRequest) Reset() {
+	*x = GetFctReorgHourlyRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_hourly_proto_msgTypes[3]
+		mi := &file_fct_reorg_hourly_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctReorgByHourlyRequest) String() string {
+func (x *GetFctReorgHourlyRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctReorgByHourlyRequest) ProtoMessage() {}
+func (*GetFctReorgHourlyRequest) ProtoMessage() {}
 
-func (x *GetFctReorgByHourlyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_hourly_proto_msgTypes[3]
+func (x *GetFctReorgHourlyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_hourly_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -301,44 +301,44 @@ func (x *GetFctReorgByHourlyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctReorgByHourlyRequest.ProtoReflect.Descriptor instead.
-func (*GetFctReorgByHourlyRequest) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_hourly_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use GetFctReorgHourlyRequest.ProtoReflect.Descriptor instead.
+func (*GetFctReorgHourlyRequest) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_hourly_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetFctReorgByHourlyRequest) GetHourStartDateTime() uint32 {
+func (x *GetFctReorgHourlyRequest) GetHourStartDateTime() uint32 {
 	if x != nil {
 		return x.HourStartDateTime
 	}
 	return 0
 }
 
-// Response for getting a single fct_reorg_by_hourly record
-type GetFctReorgByHourlyResponse struct {
+// Response for getting a single fct_reorg_hourly record
+type GetFctReorgHourlyResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Item *FctReorgByHourly `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	Item *FctReorgHourly `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
 }
 
-func (x *GetFctReorgByHourlyResponse) Reset() {
-	*x = GetFctReorgByHourlyResponse{}
+func (x *GetFctReorgHourlyResponse) Reset() {
+	*x = GetFctReorgHourlyResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_fct_reorg_by_hourly_proto_msgTypes[4]
+		mi := &file_fct_reorg_hourly_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
 }
 
-func (x *GetFctReorgByHourlyResponse) String() string {
+func (x *GetFctReorgHourlyResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetFctReorgByHourlyResponse) ProtoMessage() {}
+func (*GetFctReorgHourlyResponse) ProtoMessage() {}
 
-func (x *GetFctReorgByHourlyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_fct_reorg_by_hourly_proto_msgTypes[4]
+func (x *GetFctReorgHourlyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_fct_reorg_hourly_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -349,21 +349,21 @@ func (x *GetFctReorgByHourlyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetFctReorgByHourlyResponse.ProtoReflect.Descriptor instead.
-func (*GetFctReorgByHourlyResponse) Descriptor() ([]byte, []int) {
-	return file_fct_reorg_by_hourly_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use GetFctReorgHourlyResponse.ProtoReflect.Descriptor instead.
+func (*GetFctReorgHourlyResponse) Descriptor() ([]byte, []int) {
+	return file_fct_reorg_hourly_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetFctReorgByHourlyResponse) GetItem() *FctReorgByHourly {
+func (x *GetFctReorgHourlyResponse) GetItem() *FctReorgHourly {
 	if x != nil {
 		return x.Item
 	}
 	return nil
 }
 
-var File_fct_reorg_by_hourly_proto protoreflect.FileDescriptor
+var File_fct_reorg_hourly_proto protoreflect.FileDescriptor
 
-var file_fct_reorg_by_hourly_proto_rawDesc = []byte{
+var file_fct_reorg_hourly_proto_rawDesc = []byte{
 	0x0a, 0x19, 0x66, 0x63, 0x74, 0x5f, 0x72, 0x65, 0x6f, 0x72, 0x67, 0x5f, 0x62, 0x79, 0x5f, 0x68,
 	0x6f, 0x75, 0x72, 0x6c, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x03, 0x63, 0x62, 0x74,
 	0x1a, 0x0c, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c,
@@ -451,37 +451,37 @@ var file_fct_reorg_by_hourly_proto_rawDesc = []byte{
 }
 
 var (
-	file_fct_reorg_by_hourly_proto_rawDescOnce sync.Once
-	file_fct_reorg_by_hourly_proto_rawDescData = file_fct_reorg_by_hourly_proto_rawDesc
+	file_fct_reorg_hourly_proto_rawDescOnce sync.Once
+	file_fct_reorg_hourly_proto_rawDescData = file_fct_reorg_hourly_proto_rawDesc
 )
 
-func file_fct_reorg_by_hourly_proto_rawDescGZIP() []byte {
-	file_fct_reorg_by_hourly_proto_rawDescOnce.Do(func() {
-		file_fct_reorg_by_hourly_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_reorg_by_hourly_proto_rawDescData)
+func file_fct_reorg_hourly_proto_rawDescGZIP() []byte {
+	file_fct_reorg_hourly_proto_rawDescOnce.Do(func() {
+		file_fct_reorg_hourly_proto_rawDescData = protoimpl.X.CompressGZIP(file_fct_reorg_hourly_proto_rawDescData)
 	})
-	return file_fct_reorg_by_hourly_proto_rawDescData
+	return file_fct_reorg_hourly_proto_rawDescData
 }
 
-var file_fct_reorg_by_hourly_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
-var file_fct_reorg_by_hourly_proto_goTypes = []any{
-	(*FctReorgByHourly)(nil),             // 0: cbt.FctReorgByHourly
-	(*ListFctReorgByHourlyRequest)(nil),  // 1: cbt.ListFctReorgByHourlyRequest
-	(*ListFctReorgByHourlyResponse)(nil), // 2: cbt.ListFctReorgByHourlyResponse
-	(*GetFctReorgByHourlyRequest)(nil),   // 3: cbt.GetFctReorgByHourlyRequest
-	(*GetFctReorgByHourlyResponse)(nil),  // 4: cbt.GetFctReorgByHourlyResponse
+var file_fct_reorg_hourly_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_fct_reorg_hourly_proto_goTypes = []any{
+	(*FctReorgHourly)(nil),             // 0: cbt.FctReorgHourly
+	(*ListFctReorgHourlyRequest)(nil),  // 1: cbt.ListFctReorgHourlyRequest
+	(*ListFctReorgHourlyResponse)(nil), // 2: cbt.ListFctReorgHourlyResponse
+	(*GetFctReorgHourlyRequest)(nil),   // 3: cbt.GetFctReorgHourlyRequest
+	(*GetFctReorgHourlyResponse)(nil),  // 4: cbt.GetFctReorgHourlyResponse
 	(*UInt32Filter)(nil),                 // 5: cbt.UInt32Filter
 }
-var file_fct_reorg_by_hourly_proto_depIdxs = []int32{
-	5, // 0: cbt.ListFctReorgByHourlyRequest.hour_start_date_time:type_name -> cbt.UInt32Filter
-	5, // 1: cbt.ListFctReorgByHourlyRequest.depth:type_name -> cbt.UInt32Filter
-	5, // 2: cbt.ListFctReorgByHourlyRequest.updated_date_time:type_name -> cbt.UInt32Filter
-	5, // 3: cbt.ListFctReorgByHourlyRequest.reorg_count:type_name -> cbt.UInt32Filter
-	0, // 4: cbt.ListFctReorgByHourlyResponse.fct_reorg_by_hourly:type_name -> cbt.FctReorgByHourly
-	0, // 5: cbt.GetFctReorgByHourlyResponse.item:type_name -> cbt.FctReorgByHourly
-	1, // 6: cbt.FctReorgByHourlyService.List:input_type -> cbt.ListFctReorgByHourlyRequest
-	3, // 7: cbt.FctReorgByHourlyService.Get:input_type -> cbt.GetFctReorgByHourlyRequest
-	2, // 8: cbt.FctReorgByHourlyService.List:output_type -> cbt.ListFctReorgByHourlyResponse
-	4, // 9: cbt.FctReorgByHourlyService.Get:output_type -> cbt.GetFctReorgByHourlyResponse
+var file_fct_reorg_hourly_proto_depIdxs = []int32{
+	5, // 0: cbt.ListFctReorgHourlyRequest.hour_start_date_time:type_name -> cbt.UInt32Filter
+	5, // 1: cbt.ListFctReorgHourlyRequest.depth:type_name -> cbt.UInt32Filter
+	5, // 2: cbt.ListFctReorgHourlyRequest.updated_date_time:type_name -> cbt.UInt32Filter
+	5, // 3: cbt.ListFctReorgHourlyRequest.reorg_count:type_name -> cbt.UInt32Filter
+	0, // 4: cbt.ListFctReorgHourlyResponse.fct_reorg_hourly:type_name -> cbt.FctReorgHourly
+	0, // 5: cbt.GetFctReorgHourlyResponse.item:type_name -> cbt.FctReorgHourly
+	1, // 6: cbt.FctReorgHourlyService.List:input_type -> cbt.ListFctReorgHourlyRequest
+	3, // 7: cbt.FctReorgHourlyService.Get:input_type -> cbt.GetFctReorgHourlyRequest
+	2, // 8: cbt.FctReorgHourlyService.List:output_type -> cbt.ListFctReorgHourlyResponse
+	4, // 9: cbt.FctReorgHourlyService.Get:output_type -> cbt.GetFctReorgHourlyResponse
 	8, // [8:10] is the sub-list for method output_type
 	6, // [6:8] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name
@@ -489,15 +489,15 @@ var file_fct_reorg_by_hourly_proto_depIdxs = []int32{
 	0, // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_fct_reorg_by_hourly_proto_init() }
-func file_fct_reorg_by_hourly_proto_init() {
-	if File_fct_reorg_by_hourly_proto != nil {
+func init() { file_fct_reorg_hourly_proto_init() }
+func file_fct_reorg_hourly_proto_init() {
+	if File_fct_reorg_hourly_proto != nil {
 		return
 	}
 	file_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
-		file_fct_reorg_by_hourly_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*FctReorgByHourly); i {
+		file_fct_reorg_hourly_proto_msgTypes[0].Exporter = func(v any, i int) any {
+			switch v := v.(*FctReorgHourly); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -508,8 +508,8 @@ func file_fct_reorg_by_hourly_proto_init() {
 				return nil
 			}
 		}
-		file_fct_reorg_by_hourly_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctReorgByHourlyRequest); i {
+		file_fct_reorg_hourly_proto_msgTypes[1].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctReorgHourlyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -520,8 +520,8 @@ func file_fct_reorg_by_hourly_proto_init() {
 				return nil
 			}
 		}
-		file_fct_reorg_by_hourly_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*ListFctReorgByHourlyResponse); i {
+		file_fct_reorg_hourly_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*ListFctReorgHourlyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -532,8 +532,8 @@ func file_fct_reorg_by_hourly_proto_init() {
 				return nil
 			}
 		}
-		file_fct_reorg_by_hourly_proto_msgTypes[3].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctReorgByHourlyRequest); i {
+		file_fct_reorg_hourly_proto_msgTypes[3].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctReorgHourlyRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -544,8 +544,8 @@ func file_fct_reorg_by_hourly_proto_init() {
 				return nil
 			}
 		}
-		file_fct_reorg_by_hourly_proto_msgTypes[4].Exporter = func(v any, i int) any {
-			switch v := v.(*GetFctReorgByHourlyResponse); i {
+		file_fct_reorg_hourly_proto_msgTypes[4].Exporter = func(v any, i int) any {
+			switch v := v.(*GetFctReorgHourlyResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -561,18 +561,18 @@ func file_fct_reorg_by_hourly_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_fct_reorg_by_hourly_proto_rawDesc,
+			RawDescriptor: file_fct_reorg_hourly_proto_rawDesc,
 			NumEnums:      0,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_fct_reorg_by_hourly_proto_goTypes,
-		DependencyIndexes: file_fct_reorg_by_hourly_proto_depIdxs,
-		MessageInfos:      file_fct_reorg_by_hourly_proto_msgTypes,
+		GoTypes:           file_fct_reorg_hourly_proto_goTypes,
+		DependencyIndexes: file_fct_reorg_hourly_proto_depIdxs,
+		MessageInfos:      file_fct_reorg_hourly_proto_msgTypes,
 	}.Build()
-	File_fct_reorg_by_hourly_proto = out.File
-	file_fct_reorg_by_hourly_proto_rawDesc = nil
-	file_fct_reorg_by_hourly_proto_goTypes = nil
-	file_fct_reorg_by_hourly_proto_depIdxs = nil
+	File_fct_reorg_hourly_proto = out.File
+	file_fct_reorg_hourly_proto_rawDesc = nil
+	file_fct_reorg_hourly_proto_goTypes = nil
+	file_fct_reorg_hourly_proto_depIdxs = nil
 }

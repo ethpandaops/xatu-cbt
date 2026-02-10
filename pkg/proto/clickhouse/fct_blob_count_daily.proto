@@ -11,7 +11,7 @@ import "clickhouse/annotations.proto";
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Daily aggregated consensus layer blob count statistics with percentiles, Bollinger bands, and moving averages
 
-message FctBlobCountByDaily {
+message FctBlobCountDaily {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Start of the day period
@@ -42,8 +42,8 @@ message FctBlobCountByDaily {
   float moving_avg_blob_count = 24;
 }
 
-// Request for listing fct_blob_count_by_daily records
-message ListFctBlobCountByDailyRequest {
+// Request for listing fct_blob_count_daily records
+message ListFctBlobCountDailyRequest {
   // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
   StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
@@ -74,11 +74,11 @@ message ListFctBlobCountByDailyRequest {
   // Filter by moving_avg_blob_count - Moving average blob count (7-day window) (optional)
   google.protobuf.FloatValue moving_avg_blob_count = 14 [(google.api.field_behavior) = OPTIONAL];
 
-  // The maximum number of fct_blob_count_by_daily to return.
+  // The maximum number of fct_blob_count_daily to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 15 [(google.api.field_behavior) = OPTIONAL];
-  // A page token, received from a previous `ListFctBlobCountByDaily` call.
+  // A page token, received from a previous `ListFctBlobCountDaily` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 16 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
@@ -87,38 +87,38 @@ message ListFctBlobCountByDailyRequest {
   string order_by = 17 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Response for listing fct_blob_count_by_daily records
-message ListFctBlobCountByDailyResponse {
-  // The list of fct_blob_count_by_daily.
-  repeated FctBlobCountByDaily fct_blob_count_by_daily = 1;
+// Response for listing fct_blob_count_daily records
+message ListFctBlobCountDailyResponse {
+  // The list of fct_blob_count_daily.
+  repeated FctBlobCountDaily fct_blob_count_daily = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// Request for getting a single fct_blob_count_by_daily record by primary key
-message GetFctBlobCountByDailyRequest {
+// Request for getting a single fct_blob_count_daily record by primary key
+message GetFctBlobCountDailyRequest {
   // Start of the day period
   string day_start_date = 1; // Primary key (required)
 }
 
-// Response for getting a single fct_blob_count_by_daily record
-message GetFctBlobCountByDailyResponse {
-  FctBlobCountByDaily item = 1;
+// Response for getting a single fct_blob_count_daily record
+message GetFctBlobCountDailyResponse {
+  FctBlobCountDaily item = 1;
 }
 
-// Query fct_blob_count_by_daily data
-service FctBlobCountByDailyService {
+// Query fct_blob_count_daily data
+service FctBlobCountDailyService {
   // List records | Retrieve paginated results with optional filtering
-  rpc List(ListFctBlobCountByDailyRequest) returns (ListFctBlobCountByDailyResponse) {
+  rpc List(ListFctBlobCountDailyRequest) returns (ListFctBlobCountDailyResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_blob_count_by_daily"
+      get: "/api/v1/fct_blob_count_daily"
     };
   }
   // Get record | Retrieve a single record by day_start_date
-  rpc Get(GetFctBlobCountByDailyRequest) returns (GetFctBlobCountByDailyResponse) {
+  rpc Get(GetFctBlobCountDailyRequest) returns (GetFctBlobCountDailyResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_blob_count_by_daily/{day_start_date}"
+      get: "/api/v1/fct_blob_count_daily/{day_start_date}"
     };
   }
 }
