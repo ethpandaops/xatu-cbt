@@ -1,0 +1,83 @@
+model: fct_reorg_by_daily
+network: mainnet
+spec: fusaka
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Depth should be at least 1
+      sql: |
+        SELECT MIN(depth) AS min_depth FROM fct_reorg_by_daily FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_depth
+          value: 1
+    - name: Reorg count should be at least 1
+      sql: |
+        SELECT MIN(reorg_count) AS min_reorg_count FROM fct_reorg_by_daily FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_reorg_count
+          value: 1
+    - name: No null day_start_date values
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_reorg_by_daily FINAL WHERE day_start_date IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: No null updated_date_time values
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_reorg_by_daily FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: Depth should be within reasonable bounds
+      sql: |
+        SELECT MAX(depth) AS max_depth FROM fct_reorg_by_daily FINAL
+      assertions:
+        - type: less_than
+          column: max_depth
+          value: 1000
+    - name: Each day and depth combination should be unique
+      sql: |
+        SELECT
+          COUNT(*) - COUNT(DISTINCT (day_start_date, depth)) AS duplicate_count
+        FROM fct_reorg_by_daily FINAL
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: Sum of reorg counts should equal total reorg events
+      sql: |
+        SELECT
+          SUM(reorg_count) AS total_reorg_count
+        FROM fct_reorg_by_daily FINAL
+      assertions:
+        - type: greater_than
+          column: total_reorg_count
+          value: 0

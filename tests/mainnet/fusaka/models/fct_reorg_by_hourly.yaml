@@ -1,0 +1,90 @@
+model: fct_reorg_by_hourly
+network: mainnet
+spec: fusaka
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_hourly_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_hourly_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_hourly_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_hourly_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_hourly_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_hourly_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Reorg count should always be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE reorg_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Depth should always be at least 1
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE depth < 1
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null hour_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE hour_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: hour_start_date_time should be aligned to start of hour
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No duplicate rows per hour and depth
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT hour_start_date_time, depth, COUNT(*) AS cnt
+          FROM fct_reorg_by_hourly FINAL
+          GROUP BY hour_start_date_time, depth
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Total reorg count should not exceed orphaned slots in source
+      sql: |
+        SELECT
+          CASE WHEN reorg_total <= orphaned_total THEN 1 ELSE 0 END AS valid
+        FROM (
+          SELECT
+            (SELECT SUM(reorg_count * depth) FROM fct_reorg_by_hourly FINAL) AS reorg_total,
+            (SELECT COUNT(*) FROM fct_block_proposer FINAL WHERE status = 'orphaned') AS orphaned_total
+        )
+      assertions:
+        - type: equals
+          column: valid
+          value: 1
+    - name: No null updated_date_time values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
