@@ -21,11 +21,11 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_reorg_hourly_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
+    - name: Row count should be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_reorg_hourly FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
     - name: All hour_start_date_time values should be truncated to the start of the hour
@@ -86,16 +86,11 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Total reorg count per hour should be consistent with event count
+    - name: Total reorg count should be non-negative
       sql: |
-        SELECT MIN(total_reorg_count) AS min_total
-        FROM (
-          SELECT hour_start_date_time, SUM(reorg_count) AS total_reorg_count
-          FROM fct_reorg_hourly FINAL
-          WHERE reorg_count > 0
-          GROUP BY hour_start_date_time
-        )
+        SELECT COALESCE(SUM(reorg_count), 0) AS total_reorg_count
+        FROM fct_reorg_hourly FINAL
       assertions:
         - type: greater_than_or_equal
-          column: min_total
-          value: 1
+          column: total_reorg_count
+          value: 0

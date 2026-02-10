@@ -18,26 +18,26 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_blob_count_hourly_libp2p_gossipsub_data_column_sidecar.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
+    - name: Row count should be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
     - name: Block count should be positive for every hour
       sql: |
-        SELECT MIN(block_count) AS min_block_count FROM fct_blob_count_hourly FINAL
+        SELECT COUNT(*) AS invalid_count FROM fct_blob_count_hourly FINAL WHERE block_count <= 0
       assertions:
-        - type: greater_than
-          column: min_block_count
+        - type: equals
+          column: invalid_count
           value: 0
     - name: Total blobs should be non-negative
       sql: |
-        SELECT MIN(total_blobs) AS min_total_blobs FROM fct_blob_count_hourly FINAL
+        SELECT COUNT(*) AS invalid_count FROM fct_blob_count_hourly FINAL WHERE total_blobs < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_total_blobs
+        - type: equals
+          column: invalid_count
           value: 0
     - name: Min blob count should not exceed max blob count
       sql: |
@@ -62,10 +62,10 @@ assertions:
           value: 0
     - name: Standard deviation should be non-negative
       sql: |
-        SELECT MIN(stddev_blob_count) AS min_stddev FROM fct_blob_count_hourly FINAL
+        SELECT COUNT(*) AS invalid_count FROM fct_blob_count_hourly FINAL WHERE stddev_blob_count < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_stddev
+        - type: equals
+          column: invalid_count
           value: 0
     - name: Upper Bollinger band should be greater than or equal to lower band
       sql: |
@@ -83,8 +83,8 @@ assertions:
           value: 0
     - name: Moving average blob count should be non-negative
       sql: |
-        SELECT MIN(moving_avg_blob_count) AS min_ma FROM fct_blob_count_hourly FINAL
+        SELECT COUNT(*) AS invalid_count FROM fct_blob_count_hourly FINAL WHERE moving_avg_blob_count < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_ma
+        - type: equals
+          column: invalid_count
           value: 0

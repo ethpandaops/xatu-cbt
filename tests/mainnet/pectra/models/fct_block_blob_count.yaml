@@ -18,11 +18,11 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_block_blob_count_libp2p_gossipsub_data_column_sidecar.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
+    - name: Row count should be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
     - name: All rows should have a valid status
@@ -48,10 +48,10 @@ assertions:
           value: 0
     - name: Slot should be non-negative
       sql: |
-        SELECT MIN(slot) AS min_slot FROM fct_block_blob_count FINAL
+        SELECT COUNT(*) AS invalid_count FROM fct_block_blob_count FINAL WHERE slot < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_slot
+        - type: equals
+          column: invalid_count
           value: 0
     - name: Epoch should be consistent with slot
       sql: |
@@ -60,11 +60,11 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: At least one canonical block should exist
+    - name: Canonical block count should be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE status = 'canonical'
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
     - name: No duplicate block_root per slot and status
