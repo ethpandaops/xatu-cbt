@@ -2,20 +2,20 @@ model: fct_blob_count_daily
 network: sepolia
 spec: fusaka
 external_data:
-    canonical_beacon_blob_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_canonical_beacon_blob_sidecar.parquet
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_beacon_api_eth_v1_events_blob_sidecar.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_data_column_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_beacon_api_eth_v1_events_data_column_sidecar.parquet
         network_column: meta_network_name
-    beacon_api_eth_v1_events_blob_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_beacon_api_eth_v1_events_blob_sidecar.parquet
-        network_column: meta_network_name
-    libp2p_gossipsub_data_column_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_libp2p_gossipsub_data_column_sidecar.parquet
+    canonical_beacon_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_canonical_beacon_blob_sidecar.parquet
         network_column: meta_network_name
     libp2p_gossipsub_blob_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_libp2p_gossipsub_data_column_sidecar.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
@@ -25,6 +25,33 @@ assertions:
         - type: greater_than
           column: count
           value: 0
+    - name: No null updated date time values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null day start date values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE day_start_date IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No duplicate days
+      sql: |
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+            SELECT day_start_date, COUNT(*) AS cnt
+            FROM fct_blob_count_daily FINAL
+            GROUP BY day_start_date
+            HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
     - name: Block count should be positive
       sql: |
         SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE block_count <= 0
@@ -32,20 +59,29 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Blob totals should be at least block totals
+    - name: Total blobs should be at least block count
       sql: |
         SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE total_blobs < block_count
       assertions:
         - type: equals
           column: count
           value: 0
-    - name: Percentiles should be ordered
+    - name: Percentiles should be ordered correctly
       sql: |
         SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
         WHERE min_blob_count > p05_blob_count
            OR p05_blob_count > p50_blob_count
            OR p50_blob_count > p95_blob_count
            OR p95_blob_count > max_blob_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Average should be between min and max
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
+        WHERE avg_blob_count < min_blob_count
+           OR avg_blob_count > max_blob_count
       assertions:
         - type: equals
           column: count
@@ -66,16 +102,11 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Day start date should not be null
+    - name: Bollinger band formula should be avg plus minus 2 stddev
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE day_start_date IS NULL
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: No null updated date time values
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE updated_date_time IS NULL
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
+        WHERE abs(upper_band_blob_count - (avg_blob_count + 2 * stddev_blob_count)) > 0.01
+           OR abs(lower_band_blob_count - (avg_blob_count - 2 * stddev_blob_count)) > 0.01
       assertions:
         - type: equals
           column: count
