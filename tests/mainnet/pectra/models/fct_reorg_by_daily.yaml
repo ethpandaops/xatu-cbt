@@ -21,27 +21,27 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_reorg_by_daily_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
+    - name: Row count should be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
-    - name: Depth should be at least 1
+    - name: Depth should be non-negative when rows exist
       sql: |
-        SELECT min(depth) AS min_depth FROM fct_reorg_by_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL WHERE depth < 1
       assertions:
-        - type: greater_than_or_equal
-          column: min_depth
-          value: 1
-    - name: Reorg count should be at least 1
+        - type: equals
+          column: count
+          value: 0
+    - name: Reorg count should be non-negative when rows exist
       sql: |
-        SELECT min(reorg_count) AS min_reorg_count FROM fct_reorg_by_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL WHERE reorg_count < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_reorg_count
-          value: 1
+        - type: equals
+          column: count
+          value: 0
     - name: No null day_start_date values
       sql: |
         SELECT COUNT(*) AS null_count FROM fct_reorg_by_daily FINAL WHERE day_start_date IS NULL

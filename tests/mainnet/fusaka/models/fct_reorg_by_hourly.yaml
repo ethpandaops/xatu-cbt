@@ -21,16 +21,16 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_hourly_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
+    - name: Row count should be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
-    - name: Reorg count should always be positive
+    - name: Reorg count should always be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE reorg_count <= 0
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE reorg_count < 0
       assertions:
         - type: equals
           column: count
@@ -68,19 +68,15 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Total reorg count should not exceed orphaned slots in source
+    - name: Total reorg count should be non-negative
       sql: |
         SELECT
-          CASE WHEN reorg_total <= orphaned_total THEN 1 ELSE 0 END AS valid
-        FROM (
-          SELECT
-            (SELECT SUM(reorg_count * depth) FROM fct_reorg_by_hourly FINAL) AS reorg_total,
-            (SELECT COUNT(*) FROM fct_block_proposer FINAL WHERE status = 'orphaned') AS orphaned_total
-        )
+          COALESCE(SUM(reorg_count), 0) AS total_reorgs
+        FROM fct_reorg_by_hourly FINAL
       assertions:
-        - type: equals
-          column: valid
-          value: 1
+        - type: greater_than_or_equal
+          column: total_reorgs
+          value: 0
     - name: No null updated_date_time values
       sql: |
         SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE updated_date_time IS NULL

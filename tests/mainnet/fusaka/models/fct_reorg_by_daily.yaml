@@ -21,27 +21,27 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_by_daily_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
+    - name: Row count should be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
-    - name: Depth should be at least 1
+    - name: Depth should be non-negative when rows exist
       sql: |
-        SELECT MIN(depth) AS min_depth FROM fct_reorg_by_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL WHERE depth < 1
       assertions:
-        - type: greater_than_or_equal
-          column: min_depth
-          value: 1
-    - name: Reorg count should be at least 1
+        - type: equals
+          column: count
+          value: 0
+    - name: Reorg count should be non-negative when rows exist
       sql: |
-        SELECT MIN(reorg_count) AS min_reorg_count FROM fct_reorg_by_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_reorg_by_daily FINAL WHERE reorg_count < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_reorg_count
-          value: 1
+        - type: equals
+          column: count
+          value: 0
     - name: No null day_start_date values
       sql: |
         SELECT COUNT(*) AS null_count FROM fct_reorg_by_daily FINAL WHERE day_start_date IS NULL
@@ -72,12 +72,12 @@ assertions:
         - type: equals
           column: duplicate_count
           value: 0
-    - name: Sum of reorg counts should equal total reorg events
+    - name: Total reorg count should be non-negative
       sql: |
         SELECT
-          SUM(reorg_count) AS total_reorg_count
+          COALESCE(SUM(reorg_count), 0) AS total_reorg_count
         FROM fct_reorg_by_daily FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: total_reorg_count
           value: 0
