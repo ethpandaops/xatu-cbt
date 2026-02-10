@@ -443,7 +443,7 @@ func (c *ModelCache) buildDependencyGraph(modelName string, visited map[string]b
 
 // extractLeafExternalTables finds all external table dependencies.
 // Caller must hold c.mu read lock.
-func (c *ModelCache) extractLeafExternalTables(transformations []*ModelMetadata) []string {
+func (c *ModelCache) extractLeafExternalTables(transformations []*ModelMetadata) []string { //nolint:unused // kept for future use
 	externalSet := make(map[string]bool)
 
 	for _, model := range transformations {

@@ -188,7 +188,7 @@ func (r *runner) RunAssertions(ctx context.Context, model, dbName string, assert
 }
 
 // executeAssertion runs a single assertion with retry logic.
-func (r *runner) executeAssertion(ctx context.Context, log logrus.FieldLogger, dbName string, assertion *testdef.Assertion) *Result {
+func (r *runner) executeAssertion(ctx context.Context, log logrus.FieldLogger, dbName string, assertion *testdef.Assertion) *Result { //nolint:gocyclo // test assertion runner with retry logic
 	var (
 		start  = time.Now()
 		result = &Result{
