@@ -28,52 +28,73 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Depth should be at least 1
+    - name: Reorg count should always be positive
       sql: |
-        SELECT MIN(depth) AS min_depth FROM fct_reorg_by_hourly FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_depth
-          value: 1
-    - name: Reorg count should be positive
-      sql: |
-        SELECT MIN(reorg_count) AS min_reorg_count FROM fct_reorg_by_hourly FINAL
-      assertions:
-        - type: greater_than
-          column: min_reorg_count
-          value: 0
-    - name: No null hour_start_date_time values
-      sql: |
-        SELECT COUNT(*) AS null_count FROM fct_reorg_by_hourly FINAL WHERE hour_start_date_time IS NULL
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE reorg_count <= 0
       assertions:
         - type: equals
-          column: null_count
+          column: count
           value: 0
-    - name: hour_start_date_time should be aligned to start of hour
+    - name: Depth should always be at least 1
       sql: |
-        SELECT COUNT(*) AS misaligned_count FROM fct_reorg_by_hourly FINAL WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE depth < 1
       assertions:
         - type: equals
-          column: misaligned_count
+          column: count
+          value: 0
+    - name: Hour start date time should be aligned to hour boundaries
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null hour start date times
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE hour_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null updated date times
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
           value: 0
     - name: No duplicate hour and depth combinations
       sql: |
-        SELECT COUNT(*) AS duplicate_count FROM (SELECT hour_start_date_time, depth, COUNT(*) AS cnt FROM fct_reorg_by_hourly FINAL GROUP BY hour_start_date_time, depth HAVING cnt > 1)
+        SELECT COUNT(*) AS count FROM (
+          SELECT hour_start_date_time, depth, COUNT(*) AS cnt
+          FROM fct_reorg_by_hourly FINAL
+          GROUP BY hour_start_date_time, depth
+          HAVING cnt > 1
+        )
       assertions:
         - type: equals
-          column: duplicate_count
+          column: count
           value: 0
+    - name: Total reorg count should be at least 1
+      sql: |
+        SELECT
+          SUM(reorg_count) AS total_reorgs
+        FROM fct_reorg_by_hourly FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: total_reorgs
+          value: 1
     - name: Depth should be a reasonable value
       sql: |
         SELECT MAX(depth) AS max_depth FROM fct_reorg_by_hourly FINAL
       assertions:
         - type: less_than
           column: max_depth
-          value: 7200
-    - name: updated_date_time should not be null
+          value: 1000
+    - name: Hour start date time should not be before Ethereum beacon chain genesis
       sql: |
-        SELECT COUNT(*) AS null_count FROM fct_reorg_by_hourly FINAL WHERE updated_date_time IS NULL
+        SELECT COUNT(*) AS count FROM fct_reorg_by_hourly FINAL WHERE hour_start_date_time < '2020-12-01'
       assertions:
         - type: equals
-          column: null_count
+          column: count
           value: 0
