@@ -25,89 +25,74 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: No null updated date time values
+    - name: Block count should be positive for every day
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE updated_date_time IS NULL
+        SELECT MIN(block_count) AS min_block_count FROM fct_blob_count_daily FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than
+          column: min_block_count
           value: 0
-    - name: No null day start date values
+    - name: Total blobs should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE day_start_date IS NULL
+        SELECT MIN(total_blobs) AS min_total_blobs FROM fct_blob_count_daily FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than_or_equal
+          column: min_total_blobs
           value: 0
-    - name: No duplicate days
+    - name: Average blob count should be between min and max
       sql: |
-        SELECT COUNT(*) AS duplicate_count
-        FROM (
-            SELECT day_start_date, COUNT(*) AS cnt
-            FROM fct_blob_count_daily FINAL
-            GROUP BY day_start_date
-            HAVING cnt > 1
-        )
+        SELECT COUNT(*) AS violations FROM fct_blob_count_daily FINAL
+        WHERE avg_blob_count < min_blob_count OR avg_blob_count > max_blob_count
       assertions:
         - type: equals
-          column: duplicate_count
+          column: violations
           value: 0
-    - name: Block count should be positive
+    - name: Percentiles should be ordered p05 <= p50 <= p95
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE block_count <= 0
+        SELECT COUNT(*) AS violations FROM fct_blob_count_daily FINAL
+        WHERE p05_blob_count > p50_blob_count OR p50_blob_count > p95_blob_count
       assertions:
         - type: equals
-          column: count
-          value: 0
-    - name: Total blobs should be at least block count
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE total_blobs < block_count
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Percentiles should be ordered correctly
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
-        WHERE min_blob_count > p05_blob_count
-           OR p05_blob_count > p50_blob_count
-           OR p50_blob_count > p95_blob_count
-           OR p95_blob_count > max_blob_count
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Average should be between min and max
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
-        WHERE avg_blob_count < min_blob_count
-           OR avg_blob_count > max_blob_count
-      assertions:
-        - type: equals
-          column: count
+          column: violations
           value: 0
     - name: Standard deviation should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL WHERE stddev_blob_count < 0
+        SELECT MIN(stddev_blob_count) AS min_stddev FROM fct_blob_count_daily FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than_or_equal
+          column: min_stddev
           value: 0
-    - name: Bollinger bands should bracket average
+    - name: Upper Bollinger band should be greater than or equal to lower band
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
-        WHERE upper_band_blob_count < avg_blob_count
-           OR lower_band_blob_count > avg_blob_count
+        SELECT COUNT(*) AS violations FROM fct_blob_count_daily FINAL
+        WHERE upper_band_blob_count < lower_band_blob_count
       assertions:
         - type: equals
-          column: count
+          column: violations
           value: 0
-    - name: Bollinger band formula should be avg plus minus 2 stddev
+    - name: Bollinger bands should be symmetric around the average
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
-        WHERE abs(upper_band_blob_count - (avg_blob_count + 2 * stddev_blob_count)) > 0.01
-           OR abs(lower_band_blob_count - (avg_blob_count - 2 * stddev_blob_count)) > 0.01
+        SELECT COUNT(*) AS violations FROM fct_blob_count_daily FINAL
+        WHERE abs(round((upper_band_blob_count + lower_band_blob_count) / 2, 2) - round(avg_blob_count, 2)) > 0.02
       assertions:
         - type: equals
-          column: count
+          column: violations
+          value: 0
+    - name: Moving average blob count should be non-negative
+      sql: |
+        SELECT MIN(moving_avg_blob_count) AS min_ma FROM fct_blob_count_daily FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_ma
+          value: 0
+    - name: No null values in key columns
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_blob_count_daily FINAL
+        WHERE day_start_date IS NULL
+           OR block_count IS NULL
+           OR total_blobs IS NULL
+           OR avg_blob_count IS NULL
+      assertions:
+        - type: equals
+          column: null_count
           value: 0

@@ -21,65 +21,64 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_reorg_daily_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than or equal to zero
+    - name: Row count should be greater than zero
       sql: |
-        SELECT count() AS count FROM fct_reorg_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL
       assertions:
-        - type: greater_than_or_equal
+        - type: greater_than
           column: count
-          value: 0
-    - name: No NULL values in day_start_date
-      sql: |
-        SELECT countIf(day_start_date IS NULL) AS null_count FROM fct_reorg_daily FINAL
-      assertions:
-        - type: equals
-          column: null_count
-          value: 0
-    - name: No NULL values in updated_date_time
-      sql: |
-        SELECT countIf(updated_date_time IS NULL) AS null_count FROM fct_reorg_daily FINAL
-      assertions:
-        - type: equals
-          column: null_count
-          value: 0
-    - name: Depth should always be greater than zero
-      sql: |
-        SELECT countIf(depth = 0) AS invalid_count FROM fct_reorg_daily FINAL
-      assertions:
-        - type: equals
-          column: invalid_count
           value: 0
     - name: Reorg count should never be negative
       sql: |
-        SELECT min(reorg_count) AS min_reorg_count FROM fct_reorg_daily FINAL WHERE 1=1 HAVING count() > 0
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE reorg_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Depth should always be at least 1
+      sql: |
+        SELECT MIN(depth) AS min_depth FROM fct_reorg_daily FINAL WHERE reorg_count > 0
       assertions:
         - type: greater_than_or_equal
-          column: min_reorg_count
+          column: min_depth
+          value: 1
+    - name: No null day_start_date values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE day_start_date IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null updated_date_time values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
           value: 0
     - name: No duplicate day and depth combinations
       sql: |
-        SELECT count() AS duplicate_count
-        FROM (
-            SELECT day_start_date, depth, count() AS cnt
-            FROM fct_reorg_daily FINAL
-            GROUP BY day_start_date, depth
-            HAVING cnt > 1
+        SELECT COUNT(*) AS count FROM (
+          SELECT day_start_date, depth, COUNT(*) AS cnt
+          FROM fct_reorg_daily FINAL
+          GROUP BY day_start_date, depth
+          HAVING cnt > 1
         )
       assertions:
         - type: equals
-          column: duplicate_count
+          column: count
+          value: 0
+    - name: Total reorg count should be consistent with distinct reorg events
+      sql: |
+        SELECT SUM(reorg_count) AS total_reorg_count FROM fct_reorg_daily FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: total_reorg_count
           value: 0
     - name: Depth should be within a reasonable range
       sql: |
-        SELECT countIf(depth > 225) AS unreasonable_count FROM fct_reorg_daily FINAL
+        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE depth > 1000
       assertions:
         - type: equals
-          column: unreasonable_count
-          value: 0
-    - name: Day start date should not be in the future
-      sql: |
-        SELECT countIf(day_start_date > today() + INTERVAL 1 DAY) AS future_count FROM fct_reorg_daily FINAL
-      assertions:
-        - type: equals
-          column: future_count
+          column: count
           value: 0

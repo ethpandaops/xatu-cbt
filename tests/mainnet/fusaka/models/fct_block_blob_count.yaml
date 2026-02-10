@@ -1,0 +1,95 @@
+model: fct_block_blob_count
+network: mainnet
+spec: fusaka
+external_data:
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_block_blob_count_beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_block_blob_count_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+    canonical_beacon_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_block_blob_count_canonical_beacon_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_block_blob_count_libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_block_blob_count_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Blob count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE blob_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Status should only be canonical or orphaned
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE status NOT IN ('canonical', 'orphaned')
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null block roots
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Epoch should be consistent with slot
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No duplicate block_root and status combinations
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT block_root, status, COUNT(*) AS cnt
+          FROM fct_block_blob_count FINAL
+          GROUP BY block_root, status
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot start date time should not be in the future
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE slot_start_date_time > now() + INTERVAL 1 DAY
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: At least one canonical block should exist
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE status = 'canonical'
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0

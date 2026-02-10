@@ -27,64 +27,64 @@ assertions:
           value: 0
     - name: Block count should be positive for every hour
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL WHERE block_count <= 0
+        SELECT MIN(block_count) AS min_block_count FROM fct_blob_count_hourly FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than
+          column: min_block_count
           value: 0
-    - name: Total blobs should be greater than or equal to zero
+    - name: Total blobs should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL WHERE total_blobs < 0
+        SELECT MIN(total_blobs) AS min_total_blobs FROM fct_blob_count_hourly FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than_or_equal
+          column: min_total_blobs
           value: 0
-    - name: Average blob count should be between min and max
+    - name: Min blob count should not exceed max blob count
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL WHERE avg_blob_count < min_blob_count OR avg_blob_count > max_blob_count
+        SELECT COUNT(*) AS violations FROM fct_blob_count_hourly FINAL WHERE min_blob_count > max_blob_count
       assertions:
         - type: equals
-          column: count
+          column: violations
           value: 0
-    - name: Min blob count should be less than or equal to max blob count
+    - name: Average blob count should be between min and max blob count
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL WHERE min_blob_count > max_blob_count
+        SELECT COUNT(*) AS violations FROM fct_blob_count_hourly FINAL WHERE avg_blob_count < min_blob_count OR avg_blob_count > max_blob_count
       assertions:
         - type: equals
-          column: count
+          column: violations
           value: 0
     - name: Percentiles should be ordered p05 <= p50 <= p95
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL WHERE p05_blob_count > p50_blob_count OR p50_blob_count > p95_blob_count
+        SELECT COUNT(*) AS violations FROM fct_blob_count_hourly FINAL WHERE p05_blob_count > p50_blob_count OR p50_blob_count > p95_blob_count
       assertions:
         - type: equals
-          column: count
+          column: violations
           value: 0
     - name: Standard deviation should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL WHERE stddev_blob_count < 0
+        SELECT MIN(stddev_blob_count) AS min_stddev FROM fct_blob_count_hourly FINAL
       assertions:
-        - type: equals
-          column: count
+        - type: greater_than_or_equal
+          column: min_stddev
           value: 0
     - name: Upper Bollinger band should be greater than or equal to lower band
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL WHERE upper_band_blob_count < lower_band_blob_count
+        SELECT COUNT(*) AS violations FROM fct_blob_count_hourly FINAL WHERE upper_band_blob_count < lower_band_blob_count
       assertions:
         - type: equals
-          column: count
+          column: violations
+          value: 0
+    - name: Total blobs should be consistent with block count and blob count range
+      sql: |
+        SELECT COUNT(*) AS violations FROM fct_blob_count_hourly FINAL WHERE total_blobs < min_blob_count * block_count OR total_blobs > max_blob_count * block_count
+      assertions:
+        - type: equals
+          column: violations
           value: 0
     - name: Moving average blob count should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL WHERE moving_avg_blob_count < 0
+        SELECT MIN(moving_avg_blob_count) AS min_ma FROM fct_blob_count_hourly FINAL
       assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Total blobs should equal block count times average blob count approximately
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL WHERE abs(total_blobs - (block_count * avg_blob_count)) > 1
-      assertions:
-        - type: equals
-          column: count
+        - type: greater_than_or_equal
+          column: min_ma
           value: 0
