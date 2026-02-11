@@ -1,0 +1,142 @@
+clickhouse:
+  maxOpenConns: 50
+  maxIdleConns: 25
+
+models:
+  env:
+    MODELS_SCRIPTS_PATH: "../xatu-cbt/models/scripts"
+  overrides:
+    # Disable entire storage/contract/address model family to free
+    # connection pool for fct_block_head and engine_new_payload models
+    dim_contract_owner:
+      enabled: false
+    fct_address_access_chunked_10000:
+      enabled: false
+    fct_address_access_total:
+      enabled: false
+    fct_address_storage_slot_chunked_10000:
+      enabled: false
+    fct_address_storage_slot_expired_top_100_by_contract:
+      enabled: false
+    fct_address_storage_slot_top_100_by_contract:
+      enabled: false
+    fct_address_storage_slot_total:
+      enabled: false
+    fct_contract_storage_state_by_address_daily:
+      enabled: false
+    fct_contract_storage_state_by_address_hourly:
+      enabled: false
+    fct_contract_storage_state_by_block_daily:
+      enabled: false
+    fct_contract_storage_state_by_block_hourly:
+      enabled: false
+    fct_contract_storage_state_with_expiry_by_address_daily:
+      enabled: false
+    fct_contract_storage_state_with_expiry_by_address_hourly:
+      enabled: false
+    fct_contract_storage_state_with_expiry_by_block_daily:
+      enabled: false
+    fct_contract_storage_state_with_expiry_by_block_hourly:
+      enabled: false
+    fct_storage_slot_state_by_address_daily:
+      enabled: false
+    fct_storage_slot_state_by_address_hourly:
+      enabled: false
+    fct_storage_slot_state_by_block_daily:
+      enabled: false
+    fct_storage_slot_state_by_block_hourly:
+      enabled: false
+    fct_storage_slot_state_with_expiry_by_address_daily:
+      enabled: false
+    fct_storage_slot_state_with_expiry_by_address_hourly:
+      enabled: false
+    fct_storage_slot_state_with_expiry_by_block_daily:
+      enabled: false
+    fct_storage_slot_state_with_expiry_by_block_hourly:
+      enabled: false
+    fct_storage_slot_top_100_by_bytes:
+      enabled: false
+    fct_storage_slot_top_100_by_slots:
+      enabled: false
+    int_address_first_access:
+      enabled: false
+    int_address_last_access:
+      enabled: false
+    int_address_storage_slot_first_access:
+      enabled: false
+    int_address_storage_slot_last_access:
+      enabled: false
+    int_contract_storage_expiry_12m:
+      enabled: false
+    int_contract_storage_expiry_18m:
+      enabled: false
+    int_contract_storage_expiry_1m:
+      enabled: false
+    int_contract_storage_expiry_24m:
+      enabled: false
+    int_contract_storage_expiry_6m:
+      enabled: false
+    int_contract_storage_next_touch:
+      enabled: false
+    int_contract_storage_reactivation_12m:
+      enabled: false
+    int_contract_storage_reactivation_18m:
+      enabled: false
+    int_contract_storage_reactivation_1m:
+      enabled: false
+    int_contract_storage_reactivation_24m:
+      enabled: false
+    int_contract_storage_reactivation_6m:
+      enabled: false
+    int_contract_storage_state:
+      enabled: false
+    int_contract_storage_state_by_address:
+      enabled: false
+    int_contract_storage_state_by_block:
+      enabled: false
+    int_contract_storage_state_with_expiry:
+      enabled: false
+    int_contract_storage_state_with_expiry_by_address:
+      enabled: false
+    int_contract_storage_state_with_expiry_by_block:
+      enabled: false
+    int_storage_slot_diff:
+      enabled: false
+    int_storage_slot_diff_by_address_slot:
+      enabled: false
+    int_storage_slot_expiry_12m:
+      enabled: false
+    int_storage_slot_expiry_18m:
+      enabled: false
+    int_storage_slot_expiry_1m:
+      enabled: false
+    int_storage_slot_expiry_24m:
+      enabled: false
+    int_storage_slot_expiry_6m:
+      enabled: false
+    int_storage_slot_next_touch:
+      enabled: false
+    int_storage_slot_reactivation_12m:
+      enabled: false
+    int_storage_slot_reactivation_18m:
+      enabled: false
+    int_storage_slot_reactivation_1m:
+      enabled: false
+    int_storage_slot_reactivation_24m:
+      enabled: false
+    int_storage_slot_reactivation_6m:
+      enabled: false
+    int_storage_slot_read:
+      enabled: false
+    int_storage_slot_state:
+      enabled: false
+    int_storage_slot_state_by_address:
+      enabled: false
+    int_storage_slot_state_by_block:
+      enabled: false
+    int_storage_slot_state_with_expiry:
+      enabled: false
+    int_storage_slot_state_with_expiry_by_address:
+      enabled: false
+    int_storage_slot_state_with_expiry_by_block:
+      enabled: false
