@@ -15,17 +15,17 @@ tags:
   - execution
   - engine
 dependencies:
-  - "{{transformation}}.int_engine_new_payload_fastest"
+  - "{{transformation}}.int_engine_new_payload_fastest_execution_by_node_class"
 ---
 -- Daily execution client winrate based on fastest engine_newPayload duration per slot.
--- Reads pre-computed winners from int_engine_new_payload_fastest and aggregates by day.
+-- Reads pre-computed winners from int_engine_new_payload_fastest_execution_by_node_class and aggregates by day.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
         SELECT
             toDate(min(slot_start_date_time)) AS min_day,
             toDate(max(slot_start_date_time)) AS max_day
-        FROM {{ index .dep "{{transformation}}" "int_engine_new_payload_fastest" "helpers" "from" }} FINAL
+        FROM {{ index .dep "{{transformation}}" "int_engine_new_payload_fastest_execution_by_node_class" "helpers" "from" }} FINAL
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     ),
     winners AS (
@@ -33,7 +33,7 @@ WITH
             slot_start_date_time,
             node_class,
             meta_execution_implementation
-        FROM {{ index .dep "{{transformation}}" "int_engine_new_payload_fastest" "helpers" "from" }} FINAL
+        FROM {{ index .dep "{{transformation}}" "int_engine_new_payload_fastest_execution_by_node_class" "helpers" "from" }} FINAL
         WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
           AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
     ),

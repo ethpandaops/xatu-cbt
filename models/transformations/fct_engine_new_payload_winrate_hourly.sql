@@ -15,17 +15,17 @@ tags:
   - execution
   - engine
 dependencies:
-  - "{{transformation}}.int_engine_new_payload_fastest"
+  - "{{transformation}}.int_engine_new_payload_fastest_execution_by_node_class"
 ---
 -- Hourly execution client winrate based on fastest engine_newPayload duration per slot.
--- Reads pre-computed winners from int_engine_new_payload_fastest and aggregates by hour.
+-- Reads pre-computed winners from int_engine_new_payload_fastest_execution_by_node_class and aggregates by hour.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     hour_bounds AS (
         SELECT
             toStartOfHour(min(slot_start_date_time)) AS min_hour,
             toStartOfHour(max(slot_start_date_time)) AS max_hour
-        FROM {{ index .dep "{{transformation}}" "int_engine_new_payload_fastest" "helpers" "from" }} FINAL
+        FROM {{ index .dep "{{transformation}}" "int_engine_new_payload_fastest_execution_by_node_class" "helpers" "from" }} FINAL
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     ),
     winners AS (
@@ -33,7 +33,7 @@ WITH
             slot_start_date_time,
             node_class,
             meta_execution_implementation
-        FROM {{ index .dep "{{transformation}}" "int_engine_new_payload_fastest" "helpers" "from" }} FINAL
+        FROM {{ index .dep "{{transformation}}" "int_engine_new_payload_fastest_execution_by_node_class" "helpers" "from" }} FINAL
         WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
           AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),

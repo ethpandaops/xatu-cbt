@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload_fastest_local ON CLUSTER '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload_fastest_execution_by_node_class_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number of the beacon block containing the payload' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -18,11 +18,11 @@ CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload_fastest_local ON CLUSTER '
 ORDER BY (slot_start_date_time, slot, node_class)
 COMMENT 'Fastest valid engine_newPayload observation per slot per node_class';
 
-CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload_fastest ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_engine_new_payload_fastest_local
+CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload_fastest_execution_by_node_class ON CLUSTER '{cluster}'
+AS `${NETWORK_NAME}`.int_engine_new_payload_fastest_execution_by_node_class_local
 ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    int_engine_new_payload_fastest_local,
+    int_engine_new_payload_fastest_execution_by_node_class_local,
     cityHash64(slot_start_date_time, slot, node_class)
 );

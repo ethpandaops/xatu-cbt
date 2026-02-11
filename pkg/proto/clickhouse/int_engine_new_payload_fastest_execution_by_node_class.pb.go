@@ -20,7 +20,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type IntEngineNewPayloadFastest struct {
+type IntEngineNewPayloadFastestExecutionByNodeClass struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -49,8 +49,8 @@ type IntEngineNewPayloadFastest struct {
 	MetaClientName string `protobuf:"bytes,21,opt,name=meta_client_name,json=metaClientName,proto3" json:"meta_client_name,omitempty"`
 }
 
-func (x *IntEngineNewPayloadFastest) Reset() {
-	*x = IntEngineNewPayloadFastest{}
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) Reset() {
+	*x = IntEngineNewPayloadFastestExecutionByNodeClass{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_int_engine_new_payload_fastest_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -58,13 +58,13 @@ func (x *IntEngineNewPayloadFastest) Reset() {
 	}
 }
 
-func (x *IntEngineNewPayloadFastest) String() string {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*IntEngineNewPayloadFastest) ProtoMessage() {}
+func (*IntEngineNewPayloadFastestExecutionByNodeClass) ProtoMessage() {}
 
-func (x *IntEngineNewPayloadFastest) ProtoReflect() protoreflect.Message {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) ProtoReflect() protoreflect.Message {
 	mi := &file_int_engine_new_payload_fastest_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -76,82 +76,82 @@ func (x *IntEngineNewPayloadFastest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use IntEngineNewPayloadFastest.ProtoReflect.Descriptor instead.
-func (*IntEngineNewPayloadFastest) Descriptor() ([]byte, []int) {
+// Deprecated: Use IntEngineNewPayloadFastestExecutionByNodeClass.ProtoReflect.Descriptor instead.
+func (*IntEngineNewPayloadFastestExecutionByNodeClass) Descriptor() ([]byte, []int) {
 	return file_int_engine_new_payload_fastest_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *IntEngineNewPayloadFastest) GetUpdatedDateTime() uint32 {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetUpdatedDateTime() uint32 {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return 0
 }
 
-func (x *IntEngineNewPayloadFastest) GetSlot() uint32 {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetSlot() uint32 {
 	if x != nil {
 		return x.Slot
 	}
 	return 0
 }
 
-func (x *IntEngineNewPayloadFastest) GetSlotStartDateTime() uint32 {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetSlotStartDateTime() uint32 {
 	if x != nil {
 		return x.SlotStartDateTime
 	}
 	return 0
 }
 
-func (x *IntEngineNewPayloadFastest) GetEpoch() uint32 {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetEpoch() uint32 {
 	if x != nil {
 		return x.Epoch
 	}
 	return 0
 }
 
-func (x *IntEngineNewPayloadFastest) GetEpochStartDateTime() uint32 {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetEpochStartDateTime() uint32 {
 	if x != nil {
 		return x.EpochStartDateTime
 	}
 	return 0
 }
 
-func (x *IntEngineNewPayloadFastest) GetBlockHash() string {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetBlockHash() string {
 	if x != nil {
 		return x.BlockHash
 	}
 	return ""
 }
 
-func (x *IntEngineNewPayloadFastest) GetDurationMs() uint64 {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetDurationMs() uint64 {
 	if x != nil {
 		return x.DurationMs
 	}
 	return 0
 }
 
-func (x *IntEngineNewPayloadFastest) GetNodeClass() string {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetNodeClass() string {
 	if x != nil {
 		return x.NodeClass
 	}
 	return ""
 }
 
-func (x *IntEngineNewPayloadFastest) GetMetaExecutionImplementation() string {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetMetaExecutionImplementation() string {
 	if x != nil {
 		return x.MetaExecutionImplementation
 	}
 	return ""
 }
 
-func (x *IntEngineNewPayloadFastest) GetMetaExecutionVersion() string {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetMetaExecutionVersion() string {
 	if x != nil {
 		return x.MetaExecutionVersion
 	}
 	return ""
 }
 
-func (x *IntEngineNewPayloadFastest) GetMetaClientName() string {
+func (x *IntEngineNewPayloadFastestExecutionByNodeClass) GetMetaClientName() string {
 	if x != nil {
 		return x.MetaClientName
 	}
@@ -159,7 +159,7 @@ func (x *IntEngineNewPayloadFastest) GetMetaClientName() string {
 }
 
 // Request for listing int_engine_new_payload_fastest records
-type ListIntEngineNewPayloadFastestRequest struct {
+type ListIntEngineNewPayloadFastestExecutionByNodeClassRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -190,7 +190,7 @@ type ListIntEngineNewPayloadFastestRequest struct {
 	// If unspecified, at most 100 items will be returned.
 	// The maximum value is 10000; values above 10000 will be coerced to 10000.
 	PageSize int32 `protobuf:"varint,12,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListIntEngineNewPayloadFastest` call.
+	// A page token, received from a previous `ListIntEngineNewPayloadFastestExecutionByNodeClass` call.
 	// Provide this to retrieve the subsequent page.
 	PageToken string `protobuf:"bytes,13,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// The order of results. Format: comma-separated list of fields.
@@ -199,8 +199,8 @@ type ListIntEngineNewPayloadFastestRequest struct {
 	OrderBy string `protobuf:"bytes,14,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) Reset() {
-	*x = ListIntEngineNewPayloadFastestRequest{}
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) Reset() {
+	*x = ListIntEngineNewPayloadFastestExecutionByNodeClassRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_int_engine_new_payload_fastest_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -208,13 +208,13 @@ func (x *ListIntEngineNewPayloadFastestRequest) Reset() {
 	}
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) String() string {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListIntEngineNewPayloadFastestRequest) ProtoMessage() {}
+func (*ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) ProtoMessage() {}
 
-func (x *ListIntEngineNewPayloadFastestRequest) ProtoReflect() protoreflect.Message {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_int_engine_new_payload_fastest_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -226,103 +226,103 @@ func (x *ListIntEngineNewPayloadFastestRequest) ProtoReflect() protoreflect.Mess
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListIntEngineNewPayloadFastestRequest.ProtoReflect.Descriptor instead.
-func (*ListIntEngineNewPayloadFastestRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.ProtoReflect.Descriptor instead.
+func (*ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) Descriptor() ([]byte, []int) {
 	return file_int_engine_new_payload_fastest_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetSlotStartDateTime() *UInt32Filter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetSlotStartDateTime() *UInt32Filter {
 	if x != nil {
 		return x.SlotStartDateTime
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetSlot() *UInt32Filter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetSlot() *UInt32Filter {
 	if x != nil {
 		return x.Slot
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetNodeClass() *StringFilter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetNodeClass() *StringFilter {
 	if x != nil {
 		return x.NodeClass
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetUpdatedDateTime() *UInt32Filter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetUpdatedDateTime() *UInt32Filter {
 	if x != nil {
 		return x.UpdatedDateTime
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetEpoch() *UInt32Filter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetEpoch() *UInt32Filter {
 	if x != nil {
 		return x.Epoch
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetEpochStartDateTime() *UInt32Filter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetEpochStartDateTime() *UInt32Filter {
 	if x != nil {
 		return x.EpochStartDateTime
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetBlockHash() *StringFilter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetBlockHash() *StringFilter {
 	if x != nil {
 		return x.BlockHash
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetDurationMs() *UInt64Filter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetDurationMs() *UInt64Filter {
 	if x != nil {
 		return x.DurationMs
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetMetaExecutionImplementation() *StringFilter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetMetaExecutionImplementation() *StringFilter {
 	if x != nil {
 		return x.MetaExecutionImplementation
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetMetaExecutionVersion() *StringFilter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetMetaExecutionVersion() *StringFilter {
 	if x != nil {
 		return x.MetaExecutionVersion
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetMetaClientName() *StringFilter {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetMetaClientName() *StringFilter {
 	if x != nil {
 		return x.MetaClientName
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetPageSize() int32 {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetPageSize() int32 {
 	if x != nil {
 		return x.PageSize
 	}
 	return 0
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetPageToken() string {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
 	}
 	return ""
 }
 
-func (x *ListIntEngineNewPayloadFastestRequest) GetOrderBy() string {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetOrderBy() string {
 	if x != nil {
 		return x.OrderBy
 	}
@@ -330,20 +330,20 @@ func (x *ListIntEngineNewPayloadFastestRequest) GetOrderBy() string {
 }
 
 // Response for listing int_engine_new_payload_fastest records
-type ListIntEngineNewPayloadFastestResponse struct {
+type ListIntEngineNewPayloadFastestExecutionByNodeClassResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// The list of int_engine_new_payload_fastest.
-	IntEngineNewPayloadFastest []*IntEngineNewPayloadFastest `protobuf:"bytes,1,rep,name=int_engine_new_payload_fastest,json=intEngineNewPayloadFastest,proto3" json:"int_engine_new_payload_fastest,omitempty"`
+	IntEngineNewPayloadFastestExecutionByNodeClass []*IntEngineNewPayloadFastestExecutionByNodeClass `protobuf:"bytes,1,rep,name=int_engine_new_payload_fastest,json=intEngineNewPayloadFastest,proto3" json:"int_engine_new_payload_fastest,omitempty"`
 	// A token, which can be sent as `page_token` to retrieve the next page.
 	// If this field is omitted, there are no subsequent pages.
 	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 }
 
-func (x *ListIntEngineNewPayloadFastestResponse) Reset() {
-	*x = ListIntEngineNewPayloadFastestResponse{}
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassResponse) Reset() {
+	*x = ListIntEngineNewPayloadFastestExecutionByNodeClassResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_int_engine_new_payload_fastest_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -351,13 +351,13 @@ func (x *ListIntEngineNewPayloadFastestResponse) Reset() {
 	}
 }
 
-func (x *ListIntEngineNewPayloadFastestResponse) String() string {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListIntEngineNewPayloadFastestResponse) ProtoMessage() {}
+func (*ListIntEngineNewPayloadFastestExecutionByNodeClassResponse) ProtoMessage() {}
 
-func (x *ListIntEngineNewPayloadFastestResponse) ProtoReflect() protoreflect.Message {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_int_engine_new_payload_fastest_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -369,19 +369,19 @@ func (x *ListIntEngineNewPayloadFastestResponse) ProtoReflect() protoreflect.Mes
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListIntEngineNewPayloadFastestResponse.ProtoReflect.Descriptor instead.
-func (*ListIntEngineNewPayloadFastestResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListIntEngineNewPayloadFastestExecutionByNodeClassResponse.ProtoReflect.Descriptor instead.
+func (*ListIntEngineNewPayloadFastestExecutionByNodeClassResponse) Descriptor() ([]byte, []int) {
 	return file_int_engine_new_payload_fastest_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListIntEngineNewPayloadFastestResponse) GetIntEngineNewPayloadFastest() []*IntEngineNewPayloadFastest {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassResponse) GetIntEngineNewPayloadFastestExecutionByNodeClass() []*IntEngineNewPayloadFastestExecutionByNodeClass {
 	if x != nil {
-		return x.IntEngineNewPayloadFastest
+		return x.IntEngineNewPayloadFastestExecutionByNodeClass
 	}
 	return nil
 }
 
-func (x *ListIntEngineNewPayloadFastestResponse) GetNextPageToken() string {
+func (x *ListIntEngineNewPayloadFastestExecutionByNodeClassResponse) GetNextPageToken() string {
 	if x != nil {
 		return x.NextPageToken
 	}
@@ -389,7 +389,7 @@ func (x *ListIntEngineNewPayloadFastestResponse) GetNextPageToken() string {
 }
 
 // Request for getting a single int_engine_new_payload_fastest record by primary key
-type GetIntEngineNewPayloadFastestRequest struct {
+type GetIntEngineNewPayloadFastestExecutionByNodeClassRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -398,8 +398,8 @@ type GetIntEngineNewPayloadFastestRequest struct {
 	SlotStartDateTime uint32 `protobuf:"varint,1,opt,name=slot_start_date_time,json=slotStartDateTime,proto3" json:"slot_start_date_time,omitempty"` // Primary key (required)
 }
 
-func (x *GetIntEngineNewPayloadFastestRequest) Reset() {
-	*x = GetIntEngineNewPayloadFastestRequest{}
+func (x *GetIntEngineNewPayloadFastestExecutionByNodeClassRequest) Reset() {
+	*x = GetIntEngineNewPayloadFastestExecutionByNodeClassRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_int_engine_new_payload_fastest_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -407,13 +407,13 @@ func (x *GetIntEngineNewPayloadFastestRequest) Reset() {
 	}
 }
 
-func (x *GetIntEngineNewPayloadFastestRequest) String() string {
+func (x *GetIntEngineNewPayloadFastestExecutionByNodeClassRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetIntEngineNewPayloadFastestRequest) ProtoMessage() {}
+func (*GetIntEngineNewPayloadFastestExecutionByNodeClassRequest) ProtoMessage() {}
 
-func (x *GetIntEngineNewPayloadFastestRequest) ProtoReflect() protoreflect.Message {
+func (x *GetIntEngineNewPayloadFastestExecutionByNodeClassRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_int_engine_new_payload_fastest_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -425,12 +425,12 @@ func (x *GetIntEngineNewPayloadFastestRequest) ProtoReflect() protoreflect.Messa
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetIntEngineNewPayloadFastestRequest.ProtoReflect.Descriptor instead.
-func (*GetIntEngineNewPayloadFastestRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetIntEngineNewPayloadFastestExecutionByNodeClassRequest.ProtoReflect.Descriptor instead.
+func (*GetIntEngineNewPayloadFastestExecutionByNodeClassRequest) Descriptor() ([]byte, []int) {
 	return file_int_engine_new_payload_fastest_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetIntEngineNewPayloadFastestRequest) GetSlotStartDateTime() uint32 {
+func (x *GetIntEngineNewPayloadFastestExecutionByNodeClassRequest) GetSlotStartDateTime() uint32 {
 	if x != nil {
 		return x.SlotStartDateTime
 	}
@@ -438,16 +438,16 @@ func (x *GetIntEngineNewPayloadFastestRequest) GetSlotStartDateTime() uint32 {
 }
 
 // Response for getting a single int_engine_new_payload_fastest record
-type GetIntEngineNewPayloadFastestResponse struct {
+type GetIntEngineNewPayloadFastestExecutionByNodeClassResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Item *IntEngineNewPayloadFastest `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	Item *IntEngineNewPayloadFastestExecutionByNodeClass `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
 }
 
-func (x *GetIntEngineNewPayloadFastestResponse) Reset() {
-	*x = GetIntEngineNewPayloadFastestResponse{}
+func (x *GetIntEngineNewPayloadFastestExecutionByNodeClassResponse) Reset() {
+	*x = GetIntEngineNewPayloadFastestExecutionByNodeClassResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_int_engine_new_payload_fastest_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -455,13 +455,13 @@ func (x *GetIntEngineNewPayloadFastestResponse) Reset() {
 	}
 }
 
-func (x *GetIntEngineNewPayloadFastestResponse) String() string {
+func (x *GetIntEngineNewPayloadFastestExecutionByNodeClassResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetIntEngineNewPayloadFastestResponse) ProtoMessage() {}
+func (*GetIntEngineNewPayloadFastestExecutionByNodeClassResponse) ProtoMessage() {}
 
-func (x *GetIntEngineNewPayloadFastestResponse) ProtoReflect() protoreflect.Message {
+func (x *GetIntEngineNewPayloadFastestExecutionByNodeClassResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_int_engine_new_payload_fastest_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -473,12 +473,12 @@ func (x *GetIntEngineNewPayloadFastestResponse) ProtoReflect() protoreflect.Mess
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetIntEngineNewPayloadFastestResponse.ProtoReflect.Descriptor instead.
-func (*GetIntEngineNewPayloadFastestResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetIntEngineNewPayloadFastestExecutionByNodeClassResponse.ProtoReflect.Descriptor instead.
+func (*GetIntEngineNewPayloadFastestExecutionByNodeClassResponse) Descriptor() ([]byte, []int) {
 	return file_int_engine_new_payload_fastest_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *GetIntEngineNewPayloadFastestResponse) GetItem() *IntEngineNewPayloadFastest {
+func (x *GetIntEngineNewPayloadFastestExecutionByNodeClassResponse) GetItem() *IntEngineNewPayloadFastestExecutionByNodeClass {
 	if x != nil {
 		return x.Item
 	}
@@ -628,33 +628,33 @@ func file_int_engine_new_payload_fastest_proto_rawDescGZIP() []byte {
 
 var file_int_engine_new_payload_fastest_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_int_engine_new_payload_fastest_proto_goTypes = []any{
-	(*IntEngineNewPayloadFastest)(nil),             // 0: cbt.IntEngineNewPayloadFastest
-	(*ListIntEngineNewPayloadFastestRequest)(nil),  // 1: cbt.ListIntEngineNewPayloadFastestRequest
-	(*ListIntEngineNewPayloadFastestResponse)(nil), // 2: cbt.ListIntEngineNewPayloadFastestResponse
-	(*GetIntEngineNewPayloadFastestRequest)(nil),   // 3: cbt.GetIntEngineNewPayloadFastestRequest
-	(*GetIntEngineNewPayloadFastestResponse)(nil),  // 4: cbt.GetIntEngineNewPayloadFastestResponse
-	(*UInt32Filter)(nil),                           // 5: cbt.UInt32Filter
-	(*StringFilter)(nil),                           // 6: cbt.StringFilter
-	(*UInt64Filter)(nil),                           // 7: cbt.UInt64Filter
+	(*IntEngineNewPayloadFastestExecutionByNodeClass)(nil),             // 0: cbt.IntEngineNewPayloadFastestExecutionByNodeClass
+	(*ListIntEngineNewPayloadFastestExecutionByNodeClassRequest)(nil),  // 1: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest
+	(*ListIntEngineNewPayloadFastestExecutionByNodeClassResponse)(nil), // 2: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassResponse
+	(*GetIntEngineNewPayloadFastestExecutionByNodeClassRequest)(nil),   // 3: cbt.GetIntEngineNewPayloadFastestExecutionByNodeClassRequest
+	(*GetIntEngineNewPayloadFastestExecutionByNodeClassResponse)(nil),  // 4: cbt.GetIntEngineNewPayloadFastestExecutionByNodeClassResponse
+	(*UInt32Filter)(nil), // 5: cbt.UInt32Filter
+	(*StringFilter)(nil), // 6: cbt.StringFilter
+	(*UInt64Filter)(nil), // 7: cbt.UInt64Filter
 }
 var file_int_engine_new_payload_fastest_proto_depIdxs = []int32{
-	5,  // 0: cbt.ListIntEngineNewPayloadFastestRequest.slot_start_date_time:type_name -> cbt.UInt32Filter
-	5,  // 1: cbt.ListIntEngineNewPayloadFastestRequest.slot:type_name -> cbt.UInt32Filter
-	6,  // 2: cbt.ListIntEngineNewPayloadFastestRequest.node_class:type_name -> cbt.StringFilter
-	5,  // 3: cbt.ListIntEngineNewPayloadFastestRequest.updated_date_time:type_name -> cbt.UInt32Filter
-	5,  // 4: cbt.ListIntEngineNewPayloadFastestRequest.epoch:type_name -> cbt.UInt32Filter
-	5,  // 5: cbt.ListIntEngineNewPayloadFastestRequest.epoch_start_date_time:type_name -> cbt.UInt32Filter
-	6,  // 6: cbt.ListIntEngineNewPayloadFastestRequest.block_hash:type_name -> cbt.StringFilter
-	7,  // 7: cbt.ListIntEngineNewPayloadFastestRequest.duration_ms:type_name -> cbt.UInt64Filter
-	6,  // 8: cbt.ListIntEngineNewPayloadFastestRequest.meta_execution_implementation:type_name -> cbt.StringFilter
-	6,  // 9: cbt.ListIntEngineNewPayloadFastestRequest.meta_execution_version:type_name -> cbt.StringFilter
-	6,  // 10: cbt.ListIntEngineNewPayloadFastestRequest.meta_client_name:type_name -> cbt.StringFilter
-	0,  // 11: cbt.ListIntEngineNewPayloadFastestResponse.int_engine_new_payload_fastest:type_name -> cbt.IntEngineNewPayloadFastest
-	0,  // 12: cbt.GetIntEngineNewPayloadFastestResponse.item:type_name -> cbt.IntEngineNewPayloadFastest
-	1,  // 13: cbt.IntEngineNewPayloadFastestService.List:input_type -> cbt.ListIntEngineNewPayloadFastestRequest
-	3,  // 14: cbt.IntEngineNewPayloadFastestService.Get:input_type -> cbt.GetIntEngineNewPayloadFastestRequest
-	2,  // 15: cbt.IntEngineNewPayloadFastestService.List:output_type -> cbt.ListIntEngineNewPayloadFastestResponse
-	4,  // 16: cbt.IntEngineNewPayloadFastestService.Get:output_type -> cbt.GetIntEngineNewPayloadFastestResponse
+	5,  // 0: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.slot_start_date_time:type_name -> cbt.UInt32Filter
+	5,  // 1: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.slot:type_name -> cbt.UInt32Filter
+	6,  // 2: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.node_class:type_name -> cbt.StringFilter
+	5,  // 3: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.updated_date_time:type_name -> cbt.UInt32Filter
+	5,  // 4: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.epoch:type_name -> cbt.UInt32Filter
+	5,  // 5: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.epoch_start_date_time:type_name -> cbt.UInt32Filter
+	6,  // 6: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.block_hash:type_name -> cbt.StringFilter
+	7,  // 7: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.duration_ms:type_name -> cbt.UInt64Filter
+	6,  // 8: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.meta_execution_implementation:type_name -> cbt.StringFilter
+	6,  // 9: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.meta_execution_version:type_name -> cbt.StringFilter
+	6,  // 10: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest.meta_client_name:type_name -> cbt.StringFilter
+	0,  // 11: cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassResponse.int_engine_new_payload_fastest:type_name -> cbt.IntEngineNewPayloadFastestExecutionByNodeClass
+	0,  // 12: cbt.GetIntEngineNewPayloadFastestExecutionByNodeClassResponse.item:type_name -> cbt.IntEngineNewPayloadFastestExecutionByNodeClass
+	1,  // 13: cbt.IntEngineNewPayloadFastestExecutionByNodeClassService.List:input_type -> cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassRequest
+	3,  // 14: cbt.IntEngineNewPayloadFastestExecutionByNodeClassService.Get:input_type -> cbt.GetIntEngineNewPayloadFastestExecutionByNodeClassRequest
+	2,  // 15: cbt.IntEngineNewPayloadFastestExecutionByNodeClassService.List:output_type -> cbt.ListIntEngineNewPayloadFastestExecutionByNodeClassResponse
+	4,  // 16: cbt.IntEngineNewPayloadFastestExecutionByNodeClassService.Get:output_type -> cbt.GetIntEngineNewPayloadFastestExecutionByNodeClassResponse
 	15, // [15:17] is the sub-list for method output_type
 	13, // [13:15] is the sub-list for method input_type
 	13, // [13:13] is the sub-list for extension type_name
@@ -670,7 +670,7 @@ func file_int_engine_new_payload_fastest_proto_init() {
 	file_common_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_int_engine_new_payload_fastest_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*IntEngineNewPayloadFastest); i {
+			switch v := v.(*IntEngineNewPayloadFastestExecutionByNodeClass); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -682,7 +682,7 @@ func file_int_engine_new_payload_fastest_proto_init() {
 			}
 		}
 		file_int_engine_new_payload_fastest_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*ListIntEngineNewPayloadFastestRequest); i {
+			switch v := v.(*ListIntEngineNewPayloadFastestExecutionByNodeClassRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -694,7 +694,7 @@ func file_int_engine_new_payload_fastest_proto_init() {
 			}
 		}
 		file_int_engine_new_payload_fastest_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*ListIntEngineNewPayloadFastestResponse); i {
+			switch v := v.(*ListIntEngineNewPayloadFastestExecutionByNodeClassResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -706,7 +706,7 @@ func file_int_engine_new_payload_fastest_proto_init() {
 			}
 		}
 		file_int_engine_new_payload_fastest_proto_msgTypes[3].Exporter = func(v any, i int) any {
-			switch v := v.(*GetIntEngineNewPayloadFastestRequest); i {
+			switch v := v.(*GetIntEngineNewPayloadFastestExecutionByNodeClassRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -718,7 +718,7 @@ func file_int_engine_new_payload_fastest_proto_init() {
 			}
 		}
 		file_int_engine_new_payload_fastest_proto_msgTypes[4].Exporter = func(v any, i int) any {
-			switch v := v.(*GetIntEngineNewPayloadFastestResponse); i {
+			switch v := v.(*GetIntEngineNewPayloadFastestExecutionByNodeClassResponse); i {
 			case 0:
 				return &v.state
 			case 1:

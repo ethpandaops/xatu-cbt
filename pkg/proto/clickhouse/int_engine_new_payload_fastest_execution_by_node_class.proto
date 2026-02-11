@@ -7,7 +7,7 @@ import "common.proto";
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Fastest valid engine_newPayload observation per slot per node_class
 
-message IntEngineNewPayloadFastest {
+message IntEngineNewPayloadFastestExecutionByNodeClass {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Slot number of the beacon block containing the payload
@@ -33,7 +33,7 @@ message IntEngineNewPayloadFastest {
 }
 
 // Request for listing int_engine_new_payload_fastest records
-message ListIntEngineNewPayloadFastestRequest {
+message ListIntEngineNewPayloadFastestExecutionByNodeClassRequest {
   // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
   UInt32Filter slot_start_date_time = 1;
 
@@ -64,7 +64,7 @@ message ListIntEngineNewPayloadFastestRequest {
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 12;
-  // A page token, received from a previous `ListIntEngineNewPayloadFastest` call.
+  // A page token, received from a previous `ListIntEngineNewPayloadFastestExecutionByNodeClass` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 13;
   // The order of results. Format: comma-separated list of fields.
@@ -74,29 +74,29 @@ message ListIntEngineNewPayloadFastestRequest {
 }
 
 // Response for listing int_engine_new_payload_fastest records
-message ListIntEngineNewPayloadFastestResponse {
+message ListIntEngineNewPayloadFastestExecutionByNodeClassResponse {
   // The list of int_engine_new_payload_fastest.
-  repeated IntEngineNewPayloadFastest int_engine_new_payload_fastest = 1;
+  repeated IntEngineNewPayloadFastestExecutionByNodeClass int_engine_new_payload_fastest = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
 // Request for getting a single int_engine_new_payload_fastest record by primary key
-message GetIntEngineNewPayloadFastestRequest {
+message GetIntEngineNewPayloadFastestExecutionByNodeClassRequest {
   // The wall clock time when the slot started
   uint32 slot_start_date_time = 1; // Primary key (required)
 }
 
 // Response for getting a single int_engine_new_payload_fastest record
-message GetIntEngineNewPayloadFastestResponse {
-  IntEngineNewPayloadFastest item = 1;
+message GetIntEngineNewPayloadFastestExecutionByNodeClassResponse {
+  IntEngineNewPayloadFastestExecutionByNodeClass item = 1;
 }
 
 // Query int_engine_new_payload_fastest data
-service IntEngineNewPayloadFastestService {
+service IntEngineNewPayloadFastestExecutionByNodeClassService {
   // List records | Retrieve paginated results with optional filtering
-  rpc List(ListIntEngineNewPayloadFastestRequest) returns (ListIntEngineNewPayloadFastestResponse);
+  rpc List(ListIntEngineNewPayloadFastestExecutionByNodeClassRequest) returns (ListIntEngineNewPayloadFastestExecutionByNodeClassResponse);
   // Get record | Retrieve a single record by primary key
-  rpc Get(GetIntEngineNewPayloadFastestRequest) returns (GetIntEngineNewPayloadFastestResponse);
+  rpc Get(GetIntEngineNewPayloadFastestExecutionByNodeClassRequest) returns (GetIntEngineNewPayloadFastestExecutionByNodeClassResponse);
 }

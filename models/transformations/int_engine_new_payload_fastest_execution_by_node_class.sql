@@ -1,5 +1,5 @@
 ---
-table: int_engine_new_payload_fastest
+table: int_engine_new_payload_fastest_execution_by_node_class
 type: incremental
 interval:
   type: slot
