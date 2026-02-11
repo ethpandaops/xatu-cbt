@@ -6,7 +6,7 @@ interval:
   max: 100000
 schedules:
   forwardfill: "@every 5s"
-  backfill: "@every 5s"
+  backfill: "@every 1m"
 tags:
   - slot
   - block
