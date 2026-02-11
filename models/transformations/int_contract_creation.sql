@@ -14,11 +14,11 @@ tags:
   - contract
 dependencies:
   - "{{external}}.canonical_execution_contracts"
-  - "{{external}}.canonical_execution_traces"
+  - "{{external}}.canonical_execution_transaction"
 ---
 -- Contract creation events with projection for efficient address lookups.
 -- Used by int_contract_selfdestruct for EIP-6780 same-transaction-creation checks.
--- Joins with canonical_execution_traces to get transaction_index for same-block ordering.
+-- Joins with canonical_execution_transaction to get transaction_index for same-block ordering.
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 SELECT
@@ -32,10 +32,11 @@ SELECT
     c.factory,
     c.init_code_hash
 FROM (
-    SELECT DISTINCT block_number, transaction_hash, transaction_index
-    FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
+    SELECT block_number, transaction_hash, argMax(transaction_index, updated_date_time) as transaction_index
+    FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }}
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
         AND meta_network_name = '{{ .env.NETWORK }}'
+    GROUP BY block_number, transaction_hash
 ) t
 GLOBAL INNER JOIN {{ index .dep "{{external}}" "canonical_execution_contracts" "helpers" "from" }} AS c
     ON t.block_number = c.block_number AND t.transaction_hash = c.transaction_hash
