@@ -85,7 +85,7 @@ WITH
     existing_depths AS (
         SELECT DISTINCT
             e.depth AS depth
-        FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL AS e
+        FROM `{{ .self.database }}`.`{{ .self.table }}` AS e FINAL
         INNER JOIN target_days d
             ON e.day_start_date = d.day_start_date
     ),

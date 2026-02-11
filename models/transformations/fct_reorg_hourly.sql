@@ -87,7 +87,7 @@ WITH
     existing_depths AS (
         SELECT DISTINCT
             e.depth AS depth
-        FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL AS e
+        FROM `{{ .self.database }}`.`{{ .self.table }}` AS e FINAL
         INNER JOIN target_hours h
             ON e.hour_start_date_time = h.hour_start_date_time
     ),
