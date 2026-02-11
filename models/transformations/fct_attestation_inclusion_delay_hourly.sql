@@ -4,9 +4,6 @@ type: incremental
 interval:
   type: slot
   max: 25200
-fill:
-  direction: "tail"
-  allow_gap_skipping: false
 schedules:
   forwardfill: "@every 5m"
   backfill: "@every 30s"
