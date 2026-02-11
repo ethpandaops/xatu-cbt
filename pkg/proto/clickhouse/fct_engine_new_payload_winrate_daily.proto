@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily execution client winrate based on fastest engine_newPayload duration per slot
+
+message FctEngineNewPayloadWinrateDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)
+  string node_class = 13;
+  // Execution client implementation name (e.g., Reth, Nethermind, Besu)
+  string meta_execution_implementation = 14;
+  // Number of slots where this client had the fastest engine_newPayload duration
+  uint32 win_count = 15;
+}
+
+// Request for listing fct_engine_new_payload_winrate_daily records
+message ListFctEngineNewPayloadWinrateDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by node_class - Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes) (ORDER BY column 2 - optional)
+  StringFilter node_class = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by meta_execution_implementation - Execution client implementation name (e.g., Reth, Nethermind, Besu) (ORDER BY column 3 - optional)
+  StringFilter meta_execution_implementation = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by win_count - Number of slots where this client had the fastest engine_newPayload duration (optional)
+  UInt32Filter win_count = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_engine_new_payload_winrate_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 6 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctEngineNewPayloadWinrateDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 7 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 8 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_engine_new_payload_winrate_daily records
+message ListFctEngineNewPayloadWinrateDailyResponse {
+  // The list of fct_engine_new_payload_winrate_daily.
+  repeated FctEngineNewPayloadWinrateDaily fct_engine_new_payload_winrate_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_engine_new_payload_winrate_daily record by primary key
+message GetFctEngineNewPayloadWinrateDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_engine_new_payload_winrate_daily record
+message GetFctEngineNewPayloadWinrateDailyResponse {
+  FctEngineNewPayloadWinrateDaily item = 1;
+}
+
+// Query fct_engine_new_payload_winrate_daily data
+service FctEngineNewPayloadWinrateDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctEngineNewPayloadWinrateDailyRequest) returns (ListFctEngineNewPayloadWinrateDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_engine_new_payload_winrate_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctEngineNewPayloadWinrateDailyRequest) returns (GetFctEngineNewPayloadWinrateDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_engine_new_payload_winrate_daily/{day_start_date}"
+    };
+  }
+}
