@@ -1,0 +1,87 @@
+model: fct_attestation_participation_rate_daily
+network: sepolia
+spec: fusaka
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_participation_rate_daily_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_participation_rate_daily_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_participation_rate_daily_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_attestation_participation_rate_daily_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot count should be positive for all rows
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL WHERE slot_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Participation rate should be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL WHERE avg_participation_rate < 0 OR avg_participation_rate > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Min participation rate should not exceed max
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL WHERE min_participation_rate > max_participation_rate
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Percentiles should be ordered p05 <= p50 <= p95
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL WHERE p05_participation_rate > p50_participation_rate OR p50_participation_rate > p95_participation_rate
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Standard deviation should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL WHERE stddev_participation_rate < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Upper Bollinger band should be greater than or equal to lower band
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL WHERE upper_band_participation_rate < lower_band_participation_rate
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Moving average participation rate should be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL WHERE moving_avg_participation_rate < 0 OR moving_avg_participation_rate > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null values in key columns
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL WHERE day_start_date IS NULL OR slot_count IS NULL OR avg_participation_rate IS NULL OR stddev_participation_rate IS NULL OR moving_avg_participation_rate IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Average participation rate should be within min and max bounds
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_participation_rate_daily FINAL WHERE avg_participation_rate < min_participation_rate OR avg_participation_rate > max_participation_rate
+      assertions:
+        - type: equals
+          column: count
+          value: 0

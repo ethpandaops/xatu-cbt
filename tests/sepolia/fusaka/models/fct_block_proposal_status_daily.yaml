@@ -1,0 +1,106 @@
+model: fct_block_proposal_status_daily
+network: sepolia
+spec: fusaka
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_proposal_status_daily_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_proposal_status_daily_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_proposal_status_daily_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_proposal_status_daily_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_proposal_status_daily_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_proposal_status_daily_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_proposal_status_daily FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot count should always be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_proposal_status_daily FINAL WHERE slot_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Status should only contain expected values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_proposal_status_daily FINAL WHERE status NOT IN ('canonical', 'orphaned', 'missed')
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null day_start_date values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_proposal_status_daily FINAL WHERE day_start_date IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null status values
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_proposal_status_daily FINAL WHERE status IS NULL OR status = ''
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Each day-status combination should be unique
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT day_start_date, status, COUNT(*) AS dupes
+          FROM fct_block_proposal_status_daily FINAL
+          GROUP BY day_start_date, status
+          HAVING dupes > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Daily slot count should not exceed slots per day (7200)
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT day_start_date, SUM(slot_count) AS total
+          FROM fct_block_proposal_status_daily FINAL
+          GROUP BY day_start_date
+          HAVING total > 7200
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Sum of daily slot counts should match source proposer rows
+      sql: |
+        SELECT
+          CASE WHEN source_count = 0 THEN 0
+               ELSE abs(toInt64(agg_total) - toInt64(source_count))
+          END AS diff
+        FROM (
+          SELECT SUM(slot_count) AS agg_total FROM fct_block_proposal_status_daily FINAL
+        ) a,
+        (
+          SELECT COUNT(*) AS source_count FROM fct_block_proposer FINAL
+          WHERE toDate(slot_start_date_time) IN (SELECT DISTINCT day_start_date FROM fct_block_proposal_status_daily FINAL)
+        ) b
+      assertions:
+        - type: equals
+          column: diff
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_proposal_status_daily FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0

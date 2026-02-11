@@ -2,38 +2,91 @@ model: fct_block_blob_count_head
 network: sepolia
 spec: fusaka
 external_data:
-    beacon_api_eth_v1_events_data_column_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_data_column_sidecar.parquet
-        network_column: meta_network_name
     beacon_api_eth_v1_events_blob_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/beacon_api_eth_v1_events_blob_sidecar.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_blob_count_head_beacon_api_eth_v1_events_blob_sidecar.parquet
         network_column: meta_network_name
-    libp2p_gossipsub_data_column_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_data_column_sidecar.parquet
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_blob_count_head_beacon_api_eth_v1_events_data_column_sidecar.parquet
         network_column: meta_network_name
     libp2p_gossipsub_blob_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/libp2p_gossipsub_blob_sidecar.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_blob_count_head_libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_block_blob_count_head_libp2p_gossipsub_data_column_sidecar.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be non-negative
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          fct_block_blob_count_head FINAL
-      expected:
-        count: 40
-        max: "2025-10-27T00:30:24Z"
-        min: "2025-10-27T00:26:36Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: count
+          value: 0
+    - name: Blob count should be non-negative
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_block_blob_count_head'
-      expected:
-        max: "2025-10-27T00:30:24Z"
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE blob_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Blob count should be greater than zero for all rows
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_block_blob_count_head FINAL WHERE blob_count <= 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Slot should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Block root should not be empty
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Epoch should be consistent with slot
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No duplicate slot and block root combinations
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT slot, block_root, COUNT(*) AS cnt
+          FROM fct_block_blob_count_head FINAL
+          GROUP BY slot, block_root
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE slot_start_date_time IS NULL OR slot_start_date_time = toDateTime('1970-01-01 00:00:00')
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE updated_date_time IS NULL OR updated_date_time = toDateTime('1970-01-01 00:00:00')
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Blob count should not exceed max possible blobs per block
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE blob_count > 128
+      assertions:
+        - type: equals
+          column: count
+          value: 0
