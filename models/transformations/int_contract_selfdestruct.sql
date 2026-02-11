@@ -34,6 +34,7 @@ traces_with_tx_status AS (
         transaction_hash,
         transaction_index,
         internal_index,
+        trace_address,
         action_from as address,
         action_type,
         error,
@@ -50,12 +51,13 @@ traces_with_tx_status AS (
              OR ((trace_address IS NULL OR trace_address = '') AND error IS NOT NULL AND error != ''))
 ),
 -- Filter to only successful selfdestructs in non-failed transactions
-selfdestruct_traces AS (
+candidate_selfdestructs AS (
     SELECT
         block_number,
         transaction_hash,
         transaction_index,
         internal_index,
+        trace_address,
         address,
         beneficiary,
         value_transferred
@@ -63,6 +65,36 @@ selfdestruct_traces AS (
     WHERE action_type IN ('selfdestruct', 'suicide')
         AND (error IS NULL OR error = '')
         AND tx_failed = 0
+),
+-- Find non-root traces with errors in the block range.
+-- These represent failed intermediate sub-calls whose children (including selfdestructs)
+-- would have been reverted by the EVM, even if the root transaction succeeded.
+errored_ancestors AS (
+    SELECT DISTINCT block_number, transaction_hash, trace_address
+    FROM {{ index .dep "{{external}}" "canonical_execution_traces" "helpers" "from" }}
+    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+        AND meta_network_name = '{{ .env.NETWORK }}'
+        AND error IS NOT NULL AND error != ''
+        AND NOT (trace_address IS NULL OR trace_address = '')
+),
+-- Anti-join: exclude selfdestructs that have any errored ancestor in their trace path.
+-- A selfdestruct at trace_address '8_0_0' is a child of '8' if startsWith('8_0_0', '8_').
+-- trace_address is Nullable(String), so unmatched LEFT JOIN rows have NULL (not '').
+selfdestruct_traces AS (
+    SELECT
+        c.block_number,
+        c.transaction_hash,
+        c.transaction_index,
+        c.internal_index,
+        c.address,
+        c.beneficiary,
+        c.value_transferred
+    FROM candidate_selfdestructs c
+    LEFT JOIN errored_ancestors ea
+        ON c.block_number = ea.block_number
+        AND c.transaction_hash = ea.transaction_hash
+        AND startsWith(c.trace_address, concat(ea.trace_address, '_'))
+    WHERE ea.trace_address IS NULL
 ),
 -- Get contract creation info for addresses that were selfdestructed
 -- Uses int_contract_creation with projection for efficient address lookups
