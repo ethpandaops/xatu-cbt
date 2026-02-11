@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Hourly aggregated MEV proposer reward statistics with percentiles, Bollinger bands, and moving averages
+
+message FctProposerRewardHourly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the hour period
+  uint32 hour_start_date_time = 12;
+  // Number of MEV relay blocks in this hour
+  uint32 block_count = 13;
+  // Total proposer reward in ETH
+  double total_reward_eth = 14;
+  // Average proposer reward in ETH
+  double avg_reward_eth = 15;
+  // Minimum proposer reward in ETH
+  double min_reward_eth = 16;
+  // Maximum proposer reward in ETH
+  double max_reward_eth = 17;
+  // 5th percentile proposer reward
+  double p05_reward_eth = 18;
+  // 50th percentile (median) proposer reward
+  double p50_reward_eth = 19;
+  // 95th percentile proposer reward
+  double p95_reward_eth = 20;
+  // Standard deviation of proposer reward
+  double stddev_reward_eth = 21;
+  // Upper Bollinger band (avg + 2*stddev)
+  double upper_band_reward_eth = 22;
+  // Lower Bollinger band (avg - 2*stddev)
+  double lower_band_reward_eth = 23;
+  // Moving average proposer reward (6-hour window)
+  double moving_avg_reward_eth = 24;
+}
+
+// Request for listing fct_proposer_reward_hourly records
+message ListFctProposerRewardHourlyRequest {
+  // Filter by hour_start_date_time - Start of the hour period (PRIMARY KEY - required)
+  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Number of MEV relay blocks in this hour (optional)
+  UInt32Filter block_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_reward_eth - Total proposer reward in ETH (optional)
+  google.protobuf.DoubleValue total_reward_eth = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_reward_eth - Average proposer reward in ETH (optional)
+  google.protobuf.DoubleValue avg_reward_eth = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_reward_eth - Minimum proposer reward in ETH (optional)
+  google.protobuf.DoubleValue min_reward_eth = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_reward_eth - Maximum proposer reward in ETH (optional)
+  google.protobuf.DoubleValue max_reward_eth = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p05_reward_eth - 5th percentile proposer reward (optional)
+  google.protobuf.DoubleValue p05_reward_eth = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_reward_eth - 50th percentile (median) proposer reward (optional)
+  google.protobuf.DoubleValue p50_reward_eth = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p95_reward_eth - 95th percentile proposer reward (optional)
+  google.protobuf.DoubleValue p95_reward_eth = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by stddev_reward_eth - Standard deviation of proposer reward (optional)
+  google.protobuf.DoubleValue stddev_reward_eth = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by upper_band_reward_eth - Upper Bollinger band (avg + 2*stddev) (optional)
+  google.protobuf.DoubleValue upper_band_reward_eth = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by lower_band_reward_eth - Lower Bollinger band (avg - 2*stddev) (optional)
+  google.protobuf.DoubleValue lower_band_reward_eth = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by moving_avg_reward_eth - Moving average proposer reward (6-hour window) (optional)
+  google.protobuf.DoubleValue moving_avg_reward_eth = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_proposer_reward_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 15 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctProposerRewardHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 16 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 17 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_proposer_reward_hourly records
+message ListFctProposerRewardHourlyResponse {
+  // The list of fct_proposer_reward_hourly.
+  repeated FctProposerRewardHourly fct_proposer_reward_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_proposer_reward_hourly record by primary key
+message GetFctProposerRewardHourlyRequest {
+  // Start of the hour period
+  uint32 hour_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_proposer_reward_hourly record
+message GetFctProposerRewardHourlyResponse {
+  FctProposerRewardHourly item = 1;
+}
+
+// Query fct_proposer_reward_hourly data
+service FctProposerRewardHourlyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctProposerRewardHourlyRequest) returns (ListFctProposerRewardHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_proposer_reward_hourly"
+    };
+  }
+  // Get record | Retrieve a single record by hour_start_date_time
+  rpc Get(GetFctProposerRewardHourlyRequest) returns (GetFctProposerRewardHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_proposer_reward_hourly/{hour_start_date_time}"
+    };
+  }
+}

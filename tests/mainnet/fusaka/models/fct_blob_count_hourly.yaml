@@ -1,0 +1,26 @@
+model: fct_blob_count_hourly
+network: mainnet
+spec: fusaka
+external_data:
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_blob_count_hourly_beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_blob_count_hourly_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+    canonical_beacon_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_blob_count_hourly_canonical_beacon_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_blob_count_hourly_libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_blob_count_hourly_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative
+      sql: SELECT COUNT(*) AS count FROM fct_blob_count_hourly FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: count
+          value: 0

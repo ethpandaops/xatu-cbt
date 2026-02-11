@@ -1,0 +1,98 @@
+model: fct_blob_count_daily
+network: sepolia
+spec: fusaka
+external_data:
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+    canonical_beacon_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_canonical_beacon_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_blob_count_daily_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_blob_count_daily FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: count
+          value: 0
+    - name: Block count should be positive for every day
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_blob_count_daily FINAL WHERE block_count <= 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Total blobs should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_blob_count_daily FINAL WHERE total_blobs < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Average blob count should be between min and max
+      sql: |
+        SELECT COUNT(*) AS violations FROM fct_blob_count_daily FINAL
+        WHERE avg_blob_count < min_blob_count OR avg_blob_count > max_blob_count
+      assertions:
+        - type: equals
+          column: violations
+          value: 0
+    - name: Percentiles should be ordered p05 <= p50 <= p95
+      sql: |
+        SELECT COUNT(*) AS violations FROM fct_blob_count_daily FINAL
+        WHERE p05_blob_count > p50_blob_count OR p50_blob_count > p95_blob_count
+      assertions:
+        - type: equals
+          column: violations
+          value: 0
+    - name: Standard deviation should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_blob_count_daily FINAL WHERE stddev_blob_count < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Upper Bollinger band should be greater than or equal to lower band
+      sql: |
+        SELECT COUNT(*) AS violations FROM fct_blob_count_daily FINAL
+        WHERE upper_band_blob_count < lower_band_blob_count
+      assertions:
+        - type: equals
+          column: violations
+          value: 0
+    - name: Bollinger bands should be symmetric around the average
+      sql: |
+        SELECT COUNT(*) AS violations FROM fct_blob_count_daily FINAL
+        WHERE abs(round((upper_band_blob_count + lower_band_blob_count) / 2, 2) - round(avg_blob_count, 2)) > 0.02
+      assertions:
+        - type: equals
+          column: violations
+          value: 0
+    - name: Moving average blob count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_blob_count_daily FINAL WHERE moving_avg_blob_count < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: No null values in key columns
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_blob_count_daily FINAL
+        WHERE day_start_date IS NULL
+           OR block_count IS NULL
+           OR total_blobs IS NULL
+           OR avg_blob_count IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0

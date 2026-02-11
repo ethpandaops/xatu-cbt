@@ -13,24 +13,51 @@ tags:
   - new_payload
   - chunked
 dependencies:
-  - "{{external}}.consensus_engine_api_new_payload"
+  - "{{external}}.execution_engine_new_payload"
+  - "{{transformation}}.fct_block_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
--- Get newPayload timing data
-WITH payloads AS (
+WITH
+-- Get slot context from fct_block_head
+block_context AS (
     SELECT
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
+        execution_payload_block_hash
+    FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} FINAL
+    -- Use wider window to ensure we catch all blocks that might match engine events
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 5 MINUTE
+        AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 5 MINUTE
+        AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
+),
+-- Fetch external data separately to avoid cross-cluster join pushdown issues
+engine_payloads AS (
+    SELECT
         block_hash,
         duration_ms,
         status,
-        CASE WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class
-    FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
+        meta_client_name
+    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+        AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+),
+-- Join execution engine data with slot context locally
+payloads AS (
+    SELECT
+        COALESCE(bc.slot, 0) AS slot,
+        COALESCE(bc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
+        COALESCE(bc.epoch, 0) AS epoch,
+        COALESCE(bc.epoch_start_date_time, toDateTime(0)) AS epoch_start_date_time,
+        ep.block_hash,
+        ep.duration_ms,
+        ep.status,
+        CASE WHEN positionCaseInsensitive(ep.meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class
+    FROM engine_payloads ep
+    LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
 ),
 
 -- Group payloads into 50ms chunks
@@ -47,6 +74,7 @@ payloads_chunked AS (
         countIf(status = 'VALID') AS valid_count,
         countIf(status = 'INVALID' OR status = 'INVALID_BLOCK_HASH') AS invalid_count
     FROM payloads
+    WHERE slot_start_date_time != toDateTime(0)
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_hash, node_class, chunk_duration_ms
 )
 

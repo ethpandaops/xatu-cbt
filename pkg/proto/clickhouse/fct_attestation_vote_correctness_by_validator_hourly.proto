@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Hourly aggregation of per-validator attestation vote correctness
+
+message FctAttestationVoteCorrectnessByValidatorHourly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The start of the hour for this aggregation
+  uint32 hour_start_date_time = 12;
+  // The index of the validator
+  uint32 validator_index = 13;
+  // Total attestation duties for the validator in this hour
+  uint32 total_duties = 14;
+  // Number of attestations made
+  uint32 attested_count = 15;
+  // Number of attestations missed
+  uint32 missed_count = 16;
+  // Number of head votes that were correct
+  uint32 head_correct_count = 17;
+  // Number of target votes that were correct
+  uint32 target_correct_count = 18;
+  // Number of source votes that were correct
+  uint32 source_correct_count = 19;
+  // Average inclusion distance for attested slots. NULL if no attestations
+  google.protobuf.FloatValue avg_inclusion_distance = 20;
+}
+
+// Request for listing fct_attestation_vote_correctness_by_validator_hourly records
+message ListFctAttestationVoteCorrectnessByValidatorHourlyRequest {
+  // Filter by validator_index - The index of the validator (PRIMARY KEY - required unless using alternatives: hour_start_date_time)
+  UInt32Filter validator_index = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by hour_start_date_time - The start of the hour for this aggregation (ORDER BY column 2 - optional)
+  UInt32Filter hour_start_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_duties - Total attestation duties for the validator in this hour (optional)
+  UInt32Filter total_duties = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by attested_count - Number of attestations made (optional)
+  UInt32Filter attested_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by missed_count - Number of attestations missed (optional)
+  UInt32Filter missed_count = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by head_correct_count - Number of head votes that were correct (optional)
+  UInt32Filter head_correct_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by target_correct_count - Number of target votes that were correct (optional)
+  UInt32Filter target_correct_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by source_correct_count - Number of source votes that were correct (optional)
+  UInt32Filter source_correct_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_inclusion_distance - Average inclusion distance for attested slots. NULL if no attestations (optional)
+  google.protobuf.FloatValue avg_inclusion_distance = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_attestation_vote_correctness_by_validator_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 11 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctAttestationVoteCorrectnessByValidatorHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 12 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 13 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_attestation_vote_correctness_by_validator_hourly records
+message ListFctAttestationVoteCorrectnessByValidatorHourlyResponse {
+  // The list of fct_attestation_vote_correctness_by_validator_hourly.
+  repeated FctAttestationVoteCorrectnessByValidatorHourly fct_attestation_vote_correctness_by_validator_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_attestation_vote_correctness_by_validator_hourly record by primary key
+message GetFctAttestationVoteCorrectnessByValidatorHourlyRequest {
+  // The index of the validator
+  uint32 validator_index = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_attestation_vote_correctness_by_validator_hourly record
+message GetFctAttestationVoteCorrectnessByValidatorHourlyResponse {
+  FctAttestationVoteCorrectnessByValidatorHourly item = 1;
+}
+
+// Query fct_attestation_vote_correctness_by_validator_hourly data
+service FctAttestationVoteCorrectnessByValidatorHourlyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctAttestationVoteCorrectnessByValidatorHourlyRequest) returns (ListFctAttestationVoteCorrectnessByValidatorHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_vote_correctness_by_validator_hourly"
+    };
+  }
+  // Get record | Retrieve a single record by validator_index
+  rpc Get(GetFctAttestationVoteCorrectnessByValidatorHourlyRequest) returns (GetFctAttestationVoteCorrectnessByValidatorHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_vote_correctness_by_validator_hourly/{validator_index}"
+    };
+  }
+}

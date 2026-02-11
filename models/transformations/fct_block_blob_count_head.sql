@@ -12,13 +12,10 @@ tags:
   - block
   - blob
 dependencies:
-  # At least one of these must be present
-  - [
-    "{{external}}.beacon_api_eth_v1_events_data_column_sidecar",
-    "{{external}}.beacon_api_eth_v1_events_blob_sidecar",
-    "{{external}}.libp2p_gossipsub_data_column_sidecar",
-    "{{external}}.libp2p_gossipsub_blob_sidecar"
-  ]
+  - "{{external}}.beacon_api_eth_v1_events_data_column_sidecar"
+  - "{{external}}.beacon_api_eth_v1_events_blob_sidecar"
+  - "{{external}}.libp2p_gossipsub_data_column_sidecar"
+  - "{{external}}.libp2p_gossipsub_blob_sidecar"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`

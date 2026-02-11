@@ -1,0 +1,86 @@
+model: fct_missed_slot_rate_hourly
+network: mainnet
+spec: fusaka
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_missed_slot_rate_hourly_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_missed_slot_rate_hourly_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_missed_slot_rate_hourly_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_missed_slot_rate_hourly_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_missed_slot_rate_hourly_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_missed_slot_rate_hourly_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot count must be positive for every hour
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_hourly FINAL WHERE slot_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Missed count must not exceed slot count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_hourly FINAL WHERE missed_count > slot_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Missed rate must be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_hourly FINAL WHERE missed_rate < 0 OR missed_rate > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Moving average missed rate must be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_hourly FINAL WHERE moving_avg_missed_rate < 0 OR moving_avg_missed_rate > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Missed rate must equal missed_count divided by slot_count times 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_hourly FINAL WHERE abs(missed_rate - round(missed_count / slot_count * 100, 4)) > 0.0001
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null values in key columns
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_hourly FINAL WHERE hour_start_date_time IS NULL OR slot_count IS NULL OR missed_count IS NULL OR missed_rate IS NULL OR moving_avg_missed_rate IS NULL OR updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Hour start date time must be aligned to start of hour
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_hourly FINAL WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No duplicate hours should exist
+      sql: |
+        SELECT COUNT(*) AS count FROM (SELECT hour_start_date_time, COUNT(*) AS cnt FROM fct_missed_slot_rate_hourly FINAL GROUP BY hour_start_date_time HAVING cnt > 1)
+      assertions:
+        - type: equals
+          column: count
+          value: 0

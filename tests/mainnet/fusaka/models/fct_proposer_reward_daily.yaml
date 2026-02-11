@@ -1,0 +1,99 @@
+model: fct_proposer_reward_daily
+network: mainnet
+spec: fusaka
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_proposer_reward_daily_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_proposer_reward_daily_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_proposer_reward_daily_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_proposer_reward_daily_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Block count should be positive for every row
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL WHERE block_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: All reward ETH values should be positive since source filters value > 0
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL
+        WHERE total_reward_eth <= 0 OR avg_reward_eth <= 0 OR min_reward_eth <= 0 OR max_reward_eth <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Min reward should be less than or equal to avg and avg less than or equal to max
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL
+        WHERE min_reward_eth > avg_reward_eth OR avg_reward_eth > max_reward_eth
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Percentiles should be ordered p05 <= p50 <= p95
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL
+        WHERE p05_reward_eth > p50_reward_eth OR p50_reward_eth > p95_reward_eth
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Standard deviation should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL
+        WHERE stddev_reward_eth < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Bollinger bands should be symmetric around avg by 2x stddev
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL
+        WHERE round(upper_band_reward_eth - avg_reward_eth, 4) != round(avg_reward_eth - lower_band_reward_eth, 4)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Total reward should equal avg times block count within rounding tolerance
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL
+        WHERE abs(total_reward_eth - round(avg_reward_eth * block_count, 6)) > 0.01
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Moving average reward should be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL
+        WHERE moving_avg_reward_eth <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null values in required columns
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_proposer_reward_daily FINAL
+        WHERE day_start_date IS NULL
+          OR block_count IS NULL
+          OR total_reward_eth IS NULL
+          OR avg_reward_eth IS NULL
+          OR moving_avg_reward_eth IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0

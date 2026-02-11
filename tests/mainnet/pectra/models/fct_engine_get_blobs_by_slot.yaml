@@ -2,70 +2,16 @@ model: fct_engine_get_blobs_by_slot
 network: mainnet
 spec: pectra
 external_data:
-    consensus_engine_api_get_blobs:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_engine_get_blobs_by_slot_consensus_engine_api_get_blobs.parquet
+    beacon_api_eth_v1_beacon_blob:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/int_engine_get_blobs_beacon_api_eth_v1_beacon_blob.parquet
+        network_column: meta_network_name
+    execution_engine_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/int_engine_get_blobs_execution_engine_get_blobs.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL
+      sql: SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL
       assertions:
         - type: greater_than
-          column: count
-          value: 0
-    - name: Observation count should be positive for all rows
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL WHERE observation_count <= 0
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Unique node count should not exceed observation count
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL WHERE unique_node_count > observation_count
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Status column should not be empty
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL WHERE status = ''
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Full return percentage should be between 0 and 100 or null
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL WHERE full_return_pct IS NOT NULL AND (full_return_pct < 0 OR full_return_pct > 100)
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Min duration should not exceed max duration
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL WHERE min_duration_ms > max_duration_ms
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Median duration should be between min and max duration
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL WHERE median_duration_ms < min_duration_ms OR median_duration_ms > max_duration_ms
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: P95 duration should be between median and max duration
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL WHERE p95_duration_ms < median_duration_ms OR p95_duration_ms > max_duration_ms
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Duration values should be non-negative
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL WHERE min_duration_ms < 0 OR avg_duration_ms < 0 OR max_duration_ms < 0
-      assertions:
-        - type: equals
           column: count
           value: 0

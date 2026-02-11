@@ -1,0 +1,87 @@
+model: fct_head_vote_correctness_rate_hourly
+network: sepolia
+spec: fusaka
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_head_vote_correctness_rate_hourly_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_head_vote_correctness_rate_hourly_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_head_vote_correctness_rate_hourly_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/sepolia/fusaka/fct_head_vote_correctness_rate_hourly_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot count should be positive for every row
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL WHERE slot_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Head vote rate values should be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL WHERE avg_head_vote_rate < 0 OR avg_head_vote_rate > 100 OR min_head_vote_rate < 0 OR min_head_vote_rate > 100 OR max_head_vote_rate < 0 OR max_head_vote_rate > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Min should be less than or equal to avg and avg less than or equal to max
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL WHERE min_head_vote_rate > avg_head_vote_rate OR avg_head_vote_rate > max_head_vote_rate
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Percentiles should be ordered p05 <= p50 <= p95
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL WHERE p05_head_vote_rate > p50_head_vote_rate OR p50_head_vote_rate > p95_head_vote_rate
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Standard deviation should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL WHERE stddev_head_vote_rate < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Bollinger bands should be consistent with avg and stddev
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL WHERE round(abs(upper_band_head_vote_rate - (avg_head_vote_rate + 2 * stddev_head_vote_rate)), 2) > 0.01 OR round(abs(lower_band_head_vote_rate - (avg_head_vote_rate - 2 * stddev_head_vote_rate)), 2) > 0.01
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Moving average should be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL WHERE moving_avg_head_vote_rate < 0 OR moving_avg_head_vote_rate > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null values in key columns
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL WHERE hour_start_date_time IS NULL OR slot_count IS NULL OR avg_head_vote_rate IS NULL OR min_head_vote_rate IS NULL OR max_head_vote_rate IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Hour start date time should be aligned to hour boundaries
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_head_vote_correctness_rate_hourly FINAL WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+      assertions:
+        - type: equals
+          column: count
+          value: 0

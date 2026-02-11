@@ -8,14 +8,14 @@ interval:
 lag: 384
 ---
 SELECT
-    {{ if .cache.is_incremental_scan }}
-      '{{ .cache.previous_min }}' as min,
-    {{ else }}
-      min(block_number) as min,
-    {{ end }}
+  {{ if .cache.is_incremental_scan }}
+    '{{ .cache.previous_min }}' as min,
+  {{ else }}
+    min(block_number) as min,
+  {{ end }}
     max(block_number) as max
 FROM {{ .self.helpers.from }}
-WHERE 
+WHERE
     meta_network_name = '{{ .env.NETWORK }}'
 
     -- previous_max if incremental scan and is set, otherwise default/env
