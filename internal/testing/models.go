@@ -37,14 +37,26 @@ type ModelMetadata struct {
 	Name          string   // Table name (inferred from filename or frontmatter)
 	ExecutionType string   // incremental, scheduled, or empty for external models
 	Dependencies  []string // List of table dependencies
+	SourceDB      string   // Source database for cross-database external models (empty = default)
+	SourceTable   string   // Actual table name in source database (empty = same as Name)
+}
+
+// ExternalTableRef describes the source location of an external table in ClickHouse.
+// For standard external models, SourceDB and SourceTable are empty (default database, model name as table).
+// For cross-database models (e.g., observoor.cpu_utilization), these fields specify the actual source location.
+type ExternalTableRef struct {
+	ModelName   string // Model identifier used in the test database
+	SourceDB    string // Source database ("" = default)
+	SourceTable string // Actual source table name ("" = same as ModelName)
 }
 
 // Dependencies contains resolved dependency information for test execution.
 type Dependencies struct {
-	TargetModel          *ModelMetadata    // The model being tested
-	TransformationModels []*ModelMetadata  // Transformations in execution order (topologically sorted)
-	ExternalTables       []string          // Leaf external table names required
-	ParquetURLs          map[string]string // External table name → parquet URL (from testConfig)
+	TargetModel          *ModelMetadata     // The model being tested
+	TransformationModels []*ModelMetadata   // Transformations in execution order (topologically sorted)
+	ExternalTables       []string           // Leaf external table names required (model identifiers)
+	ExternalTableRefs    []ExternalTableRef // Source references for external tables (includes cross-database info)
+	ParquetURLs          map[string]string  // External table name → parquet URL (from testConfig)
 }
 
 // ModelCache caches parsed model metadata and handles dependency resolution.
@@ -58,6 +70,7 @@ type ModelCache struct {
 
 // Frontmatter represents YAML frontmatter in SQL files.
 type Frontmatter struct {
+	Database     string        `yaml:"database"` // Source database for cross-database external models
 	Table        string        `yaml:"table"`
 	Type         string        `yaml:"type"`         // incremental or scheduled
 	Dependencies []interface{} `yaml:"dependencies"` // Can be []string or [][]string (OR dependencies)
@@ -144,7 +157,12 @@ func (c *ModelCache) ResolveTestDependencies(testConfig *testdef.TestDefinition)
 			TargetModel:          externalModel,
 			TransformationModels: []*ModelMetadata{},
 			ExternalTables:       []string{externalModel.Name},
-			ParquetURLs:          make(map[string]string),
+			ExternalTableRefs: []ExternalTableRef{{
+				ModelName:   externalModel.Name,
+				SourceDB:    externalModel.SourceDB,
+				SourceTable: externalModel.SourceTable,
+			}},
+			ParquetURLs: make(map[string]string),
 		}
 
 		// Build parquet URL map
@@ -193,10 +211,23 @@ func (c *ModelCache) ResolveTestDependencies(testConfig *testdef.TestDefinition)
 		return nil, fmt.Errorf("topological sort: %w", err)
 	}
 
+	// Build ExternalTableRefs with cross-database source info
+	extRefs := make([]ExternalTableRef, 0, len(externalTables))
+	for _, tableName := range externalTables {
+		ref := ExternalTableRef{ModelName: tableName}
+		if ext, ok := c.externalModels[tableName]; ok {
+			ref.SourceDB = ext.SourceDB
+			ref.SourceTable = ext.SourceTable
+		}
+
+		extRefs = append(extRefs, ref)
+	}
+
 	deps := &Dependencies{
 		TargetModel:          targetModel,
 		TransformationModels: sortedTransformations,
 		ExternalTables:       externalTables,
+		ExternalTableRefs:    extRefs,
 		ParquetURLs:          parquetURLs,
 	}
 
@@ -224,6 +255,14 @@ func (c *ModelCache) IsExternalModel(name string) bool {
 	_, exists := c.externalModels[name]
 
 	return exists
+}
+
+// GetExternalModel returns the metadata for an external model, or nil if not found.
+func (c *ModelCache) GetExternalModel(name string) *ModelMetadata {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return c.externalModels[name]
 }
 
 // IsTransformationModel checks if a model exists in the transformations.
@@ -360,10 +399,21 @@ func (c *ModelCache) parseModel(path string, _ ModelType) (*ModelMetadata, error
 		executionType = "" // Default to empty for external models or unknown types
 	}
 
+	// Capture cross-database source info for external models.
+	// When database is set in frontmatter (e.g., "observoor"), the actual source table
+	// lives in a different database (e.g., observoor.cpu_utilization) than the model name implies.
+	var sourceDB, sourceTable string
+	if frontmatter.Database != "" {
+		sourceDB = frontmatter.Database
+		sourceTable = frontmatter.Table
+	}
+
 	return &ModelMetadata{
 		Name:          tableName,
 		ExecutionType: executionType,
 		Dependencies:  dependencies,
+		SourceDB:      sourceDB,
+		SourceTable:   sourceTable,
 	}, nil
 }
 

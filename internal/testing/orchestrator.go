@@ -447,30 +447,41 @@ func (o *Orchestrator) precloneAllDatabases(
 		model := cfg.Model
 		deps := testDBs[model].deps
 
-		// Merge external tables from model deps + test definition's ExternalData
-		extTableSet := make(map[string]bool)
-		for _, t := range deps.ExternalTables {
-			extTableSet[t] = true
-		}
-		for tableName := range cfg.ExternalData {
-			extTableSet[tableName] = true
+		// Merge external table refs from model deps + test definition's ExternalData.
+		// Build a map keyed by model name to deduplicate and enrich with cross-database info.
+		refMap := make(map[string]ExternalTableRef, len(deps.ExternalTableRefs))
+		for _, ref := range deps.ExternalTableRefs {
+			refMap[ref.ModelName] = ref
 		}
 
-		extTables := make([]string, 0, len(extTableSet))
-		for t := range extTableSet {
-			extTables = append(extTables, t)
+		for tableName := range cfg.ExternalData {
+			if _, exists := refMap[tableName]; !exists {
+				// Table from test config without model metadata — use defaults (standard database)
+				ref := ExternalTableRef{ModelName: tableName}
+				if ext := o.modelCache.GetExternalModel(tableName); ext != nil {
+					ref.SourceDB = ext.SourceDB
+					ref.SourceTable = ext.SourceTable
+				}
+
+				refMap[tableName] = ref
+			}
+		}
+
+		extRefs := make([]ExternalTableRef, 0, len(refMap))
+		for _, ref := range refMap {
+			extRefs = append(extRefs, ref)
 		}
 
 		// Clone external DB with only needed tables
 		wg.Add(1)
 
-		go func(m, id string, tables []string) {
+		go func(m, id string, refs []ExternalTableRef) {
 			defer wg.Done()
 
 			cloneSem <- struct{}{}
 			defer func() { <-cloneSem }()
 
-			extDB, err := o.dbManager.CloneExternalDatabase(ctx, id, tables)
+			extDB, err := o.dbManager.CloneExternalDatabase(ctx, id, refs)
 			if err != nil {
 				errChan <- fmt.Errorf("cloning ext DB for %s: %w", m, err)
 
@@ -480,7 +491,7 @@ func (o *Orchestrator) precloneAllDatabases(
 			mu.Lock()
 			testDBs[m].extDB = extDB
 			mu.Unlock()
-		}(model, testID, extTables)
+		}(model, testID, extRefs)
 
 		// Clone CBT DB with only needed tables (transformation model names)
 		wg.Add(1)
