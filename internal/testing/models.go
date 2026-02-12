@@ -505,9 +505,9 @@ func (c *ModelCache) extractLeafExternalTables(transformations []*ModelMetadata)
 
 	for _, model := range transformations {
 		for _, dep := range model.Dependencies {
-			// Check if dependency is an external model
-			if _, isExternal := c.externalModels[dep]; isExternal {
-				externalSet[dep] = true
+			// Resolve dependency to canonical model name, handling cross-database references.
+			if canonicalName, isExternal := c.resolveExternalDependency(dep); isExternal {
+				externalSet[canonicalName] = true
 			}
 		}
 	}
@@ -530,10 +530,11 @@ func (c *ModelCache) extractLeafExternalTablesWithDependents(transformations []*
 
 	for _, model := range transformations {
 		for _, dep := range model.Dependencies {
-			// Check if dependency is an external model
-			if _, isExternal := c.externalModels[dep]; isExternal {
-				externalSet[dep] = true
-				dependents[dep] = append(dependents[dep], model.Name)
+			// Resolve dependency to canonical model name, handling cross-database references
+			// (e.g., "observoor.cpu_utilization" → "observoor_cpu_utilization").
+			if canonicalName, isExternal := c.resolveExternalDependency(dep); isExternal {
+				externalSet[canonicalName] = true
+				dependents[canonicalName] = append(dependents[canonicalName], model.Name)
 			}
 		}
 	}
@@ -545,6 +546,30 @@ func (c *ModelCache) extractLeafExternalTablesWithDependents(transformations []*
 	}
 
 	return externals, dependents
+}
+
+// resolveExternalDependency resolves a dependency string to the canonical external model name.
+// Supports both direct model name lookups (e.g., "beacon_api_eth_v1_events_block")
+// and cross-database references (e.g., "observoor.cpu_utilization" → "observoor_cpu_utilization").
+// Caller must hold c.mu read lock.
+func (c *ModelCache) resolveExternalDependency(dep string) (string, bool) {
+	// Direct lookup by model name.
+	if _, ok := c.externalModels[dep]; ok {
+		return dep, true
+	}
+
+	// Cross-database lookup: "database.table" → find model with matching SourceDB and SourceTable.
+	if strings.Contains(dep, ".") {
+		parts := strings.SplitN(dep, ".", 2)
+
+		for name, model := range c.externalModels {
+			if model.SourceDB == parts[0] && model.SourceTable == parts[1] {
+				return name, true
+			}
+		}
+	}
+
+	return "", false
 }
 
 // warnMissingExternalData logs warnings for any external tables that are required
