@@ -365,33 +365,18 @@ func (c *ModelCache) parseModel(path string, _ ModelType) (*ModelMetadata, error
 		}
 	}
 
-	// Determine table name
-	tableName := frontmatter.Table
-	if tableName == "" {
-		// Infer from filename
-		filename := filepath.Base(path)
-		tableName = strings.TrimSuffix(filename, filepath.Ext(filename))
+	// Derive model name from filename (always available, always consistent).
+	filename := filepath.Base(path)
+	modelName := strings.TrimSuffix(filename, filepath.Ext(filename))
+
+	// For non-cross-database models, prefer frontmatter.Table as the model name if set.
+	// For cross-database models (database field set), the frontmatter.Table is the source table
+	// name (e.g., "cpu_utilization"), not the model identifier (e.g., "observoor_cpu_utilization").
+	if frontmatter.Database == "" && frontmatter.Table != "" {
+		modelName = frontmatter.Table
 	}
 
-	// Normalize dependencies - handle both simple strings and OR dependencies (nested lists)
-	dependencies := make([]string, 0)
-	for _, dep := range frontmatter.Dependencies {
-		switch v := dep.(type) {
-		case string:
-			// Simple dependency: "{{external}}.table_name"
-			normalized := c.normalizeDependency(v)
-			dependencies = append(dependencies, normalized)
-		case []interface{}:
-			// OR dependency: ["{{external}}.table1", "{{external}}.table2"]
-			// Flatten - include all options since CBT needs to know about all of them
-			for _, orDep := range v {
-				if depStr, ok := orDep.(string); ok {
-					normalized := c.normalizeDependency(depStr)
-					dependencies = append(dependencies, normalized)
-				}
-			}
-		}
-	}
+	dependencies := c.normalizeDependencies(frontmatter.Dependencies)
 
 	// Normalize execution type (incremental, scheduled, or empty)
 	executionType := strings.ToLower(strings.TrimSpace(frontmatter.Type))
@@ -409,7 +394,7 @@ func (c *ModelCache) parseModel(path string, _ ModelType) (*ModelMetadata, error
 	}
 
 	return &ModelMetadata{
-		Name:          tableName,
+		Name:          modelName,
 		ExecutionType: executionType,
 		Dependencies:  dependencies,
 		SourceDB:      sourceDB,
@@ -440,6 +425,28 @@ func (c *ModelCache) extractFrontmatter(content string) (*Frontmatter, string, e
 	}
 
 	return &frontmatter, sql, nil
+}
+
+// normalizeDependencies converts raw frontmatter dependencies to normalized table names.
+// Handles both simple string dependencies and OR dependencies (nested lists).
+func (c *ModelCache) normalizeDependencies(raw []interface{}) []string {
+	deps := make([]string, 0, len(raw))
+
+	for _, dep := range raw {
+		switch v := dep.(type) {
+		case string:
+			deps = append(deps, c.normalizeDependency(v))
+		case []interface{}:
+			// OR dependency: flatten all options
+			for _, orDep := range v {
+				if depStr, ok := orDep.(string); ok {
+					deps = append(deps, c.normalizeDependency(depStr))
+				}
+			}
+		}
+	}
+
+	return deps
 }
 
 // normalizeDependency converts dependency references to table names
