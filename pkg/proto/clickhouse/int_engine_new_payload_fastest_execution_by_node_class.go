@@ -198,11 +198,11 @@ func BuildListIntEngineNewPayloadFastestExecutionByNodeClassQuery(req *ListIntEn
 		case *StringFilter_Ne:
 			qb.AddCondition("block_hash", "!=", filter.Ne)
 		case *StringFilter_Contains:
-			qb.AddLikeCondition("block_hash", "%"+filter.Contains+"%")
+			qb.AddLikeCondition("block_hash", "%" + filter.Contains + "%")
 		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("block_hash", filter.StartsWith+"%")
+			qb.AddLikeCondition("block_hash", filter.StartsWith + "%")
 		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("block_hash", "%"+filter.EndsWith)
+			qb.AddLikeCondition("block_hash", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("block_hash", filter.Like)
 		case *StringFilter_NotLike:
@@ -258,11 +258,11 @@ func BuildListIntEngineNewPayloadFastestExecutionByNodeClassQuery(req *ListIntEn
 		case *StringFilter_Ne:
 			qb.AddCondition("node_class", "!=", filter.Ne)
 		case *StringFilter_Contains:
-			qb.AddLikeCondition("node_class", "%"+filter.Contains+"%")
+			qb.AddLikeCondition("node_class", "%" + filter.Contains + "%")
 		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("node_class", filter.StartsWith+"%")
+			qb.AddLikeCondition("node_class", filter.StartsWith + "%")
 		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("node_class", "%"+filter.EndsWith)
+			qb.AddLikeCondition("node_class", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("node_class", filter.Like)
 		case *StringFilter_NotLike:
@@ -288,11 +288,11 @@ func BuildListIntEngineNewPayloadFastestExecutionByNodeClassQuery(req *ListIntEn
 		case *StringFilter_Ne:
 			qb.AddCondition("meta_execution_implementation", "!=", filter.Ne)
 		case *StringFilter_Contains:
-			qb.AddLikeCondition("meta_execution_implementation", "%"+filter.Contains+"%")
+			qb.AddLikeCondition("meta_execution_implementation", "%" + filter.Contains + "%")
 		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("meta_execution_implementation", filter.StartsWith+"%")
+			qb.AddLikeCondition("meta_execution_implementation", filter.StartsWith + "%")
 		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("meta_execution_implementation", "%"+filter.EndsWith)
+			qb.AddLikeCondition("meta_execution_implementation", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_execution_implementation", filter.Like)
 		case *StringFilter_NotLike:
@@ -318,11 +318,11 @@ func BuildListIntEngineNewPayloadFastestExecutionByNodeClassQuery(req *ListIntEn
 		case *StringFilter_Ne:
 			qb.AddCondition("meta_execution_version", "!=", filter.Ne)
 		case *StringFilter_Contains:
-			qb.AddLikeCondition("meta_execution_version", "%"+filter.Contains+"%")
+			qb.AddLikeCondition("meta_execution_version", "%" + filter.Contains + "%")
 		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("meta_execution_version", filter.StartsWith+"%")
+			qb.AddLikeCondition("meta_execution_version", filter.StartsWith + "%")
 		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("meta_execution_version", "%"+filter.EndsWith)
+			qb.AddLikeCondition("meta_execution_version", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_execution_version", filter.Like)
 		case *StringFilter_NotLike:
@@ -348,11 +348,11 @@ func BuildListIntEngineNewPayloadFastestExecutionByNodeClassQuery(req *ListIntEn
 		case *StringFilter_Ne:
 			qb.AddCondition("meta_client_name", "!=", filter.Ne)
 		case *StringFilter_Contains:
-			qb.AddLikeCondition("meta_client_name", "%"+filter.Contains+"%")
+			qb.AddLikeCondition("meta_client_name", "%" + filter.Contains + "%")
 		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("meta_client_name", filter.StartsWith+"%")
+			qb.AddLikeCondition("meta_client_name", filter.StartsWith + "%")
 		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("meta_client_name", "%"+filter.EndsWith)
+			qb.AddLikeCondition("meta_client_name", "%" + filter.EndsWith)
 		case *StringFilter_Like:
 			qb.AddLikeCondition("meta_client_name", filter.Like)
 		case *StringFilter_NotLike:
