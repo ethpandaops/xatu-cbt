@@ -33,5 +33,5 @@ SELECT
         WHEN positionCaseInsensitive(meta_client_name, '7870') > 0 THEN 'eip7870'
         ELSE ''
     END AS node_class
-FROM {{ index .dep "{{external}}" "observoor_cpu_utilization" "helpers" "from" }} FINAL
+FROM {{ index .dep "{{external}}" "cpu_utilization" "helpers" "from" }} FINAL
 WHERE wallclock_slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})

@@ -597,10 +597,24 @@ func (o *Orchestrator) executeTestWithDBs(
 	result.ParquetURLs = deps.ParquetURLs
 	result.Transformations = extractModelNames(deps.TransformationModels)
 
-	// Step 2: Fetch and load parquet data into pre-cloned external database
-	if loadErr := o.fetchAndLoadParquetData(ctx, extDB, deps.ParquetURLs); loadErr != nil {
-		result.Error = loadErr
-		return result
+	// Step 2: Fetch and load parquet data.
+	// Standard external models load into the per-test ext database.
+	// Cross-database external models (e.g., observoor.cpu_utilization) load into the
+	// source database so the CBT bounds scan and dependency helpers resolve correctly.
+	standardURLs, crossDBLoads := splitParquetBySourceDB(deps)
+
+	if len(standardURLs) > 0 {
+		if loadErr := o.fetchAndLoadParquetData(ctx, extDB, standardURLs); loadErr != nil {
+			result.Error = loadErr
+			return result
+		}
+	}
+
+	for sourceDB, sourceURLs := range crossDBLoads {
+		if loadErr := o.fetchAndLoadParquetData(ctx, sourceDB, sourceURLs); loadErr != nil {
+			result.Error = loadErr
+			return result
+		}
 	}
 
 	// Step 3: Run transformations (reads extDB, writes cbtDB)
@@ -742,6 +756,37 @@ func (o *Orchestrator) recordTestMetrics(result *TestResult, testConfig *testdef
 		FailedAssertions: failedAssertions,
 		Timestamp:        time.Now(),
 	})
+}
+
+// splitParquetBySourceDB separates parquet URLs into standard loads (keyed by model name)
+// and cross-database loads (keyed by source database → source table name).
+// Cross-database external models (where SourceDB is set) need data loaded into their
+// source database so the CBT engine's bounds scan and dependency helpers resolve correctly.
+func splitParquetBySourceDB(deps *Dependencies) (standard map[string]string, crossDB map[string]map[string]string) {
+	standard = make(map[string]string, len(deps.ParquetURLs))
+	crossDB = make(map[string]map[string]string)
+
+	// Build lookup from model name to ExternalTableRef for cross-database detection.
+	refMap := make(map[string]ExternalTableRef, len(deps.ExternalTableRefs))
+	for _, ref := range deps.ExternalTableRefs {
+		refMap[ref.ModelName] = ref
+	}
+
+	for tableName, url := range deps.ParquetURLs {
+		ref, exists := refMap[tableName]
+		if exists && ref.SourceDB != "" && ref.SourceTable != "" {
+			// Cross-database: load into source database with source table name.
+			if crossDB[ref.SourceDB] == nil {
+				crossDB[ref.SourceDB] = make(map[string]string, 1)
+			}
+
+			crossDB[ref.SourceDB][ref.SourceTable] = url
+		} else {
+			standard[tableName] = url
+		}
+	}
+
+	return standard, crossDB
 }
 
 // extractModelNames extracts model names from ModelMetadata structs.
