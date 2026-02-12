@@ -736,11 +736,25 @@ func (m *DatabaseManager) modifyCreateTableForClone(
 	result = strings.ReplaceAll(result, oldDistRef, newDistRef)
 
 	// For cross-database models where source table name differs from target table name,
-	// rename remaining references (e.g., _local table refs in Distributed engine and AS clauses).
+	// rename the Distributed engine's local table reference.
 	// Example: Distributed('{cluster}', 'ext_123', 'cpu_utilization_local', ...) needs to become
 	//          Distributed('{cluster}', 'ext_123', 'observoor_cpu_utilization_local', ...)
+	// Only target quoted references in the Distributed engine to avoid unintended global replacements.
 	if sourceTable != targetTable {
-		result = strings.ReplaceAll(result, sourceTable, targetTable)
+		// Quoted reference (most common): 'cpu_utilization_local' → 'observoor_cpu_utilization_local'
+		oldQuotedLocal := fmt.Sprintf("'%s_local'", sourceTable)
+		newQuotedLocal := fmt.Sprintf("'%s_local'", targetTable)
+		result = strings.ReplaceAll(result, oldQuotedLocal, newQuotedLocal)
+
+		// Unquoted reference: cpu_utilization_local, → observoor_cpu_utilization_local,
+		oldUnquotedLocal := fmt.Sprintf(", %s_local,", sourceTable)
+		newUnquotedLocal := fmt.Sprintf(", %s_local,", targetTable)
+		result = strings.ReplaceAll(result, oldUnquotedLocal, newUnquotedLocal)
+
+		// Quoted base table ref: 'cpu_utilization' → 'observoor_cpu_utilization'
+		oldQuotedBase := fmt.Sprintf("'%s'", sourceTable)
+		newQuotedBase := fmt.Sprintf("'%s'", targetTable)
+		result = strings.ReplaceAll(result, oldQuotedBase, newQuotedBase)
 	}
 
 	return result
