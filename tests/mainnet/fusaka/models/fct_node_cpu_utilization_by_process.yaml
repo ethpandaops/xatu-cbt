@@ -1,77 +1,77 @@
-model: fct_node_cpu_utilization
+model: fct_node_cpu_utilization_by_process
 network: mainnet
 spec: fusaka
 external_data:
     observoor_cpu_utilization:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_node_cpu_utilization_observoor_cpu_utilization.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_node_cpu_utilization_by_process_observoor_cpu_utilization.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization FINAL
+        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization_by_process FINAL
       assertions:
         - type: greater_than
           column: count
           value: 0
     - name: No null wallclock_slot values
       sql: |
-        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization FINAL WHERE wallclock_slot IS NULL
+        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization_by_process FINAL WHERE wallclock_slot IS NULL
       assertions:
         - type: equals
           column: count
           value: 0
     - name: Wallclock slot should be non-negative
       sql: |
-        SELECT MIN(wallclock_slot) AS min_slot FROM fct_node_cpu_utilization FINAL
+        SELECT MIN(wallclock_slot) AS min_slot FROM fct_node_cpu_utilization_by_process FINAL
       assertions:
         - type: greater_than_or_equal
           column: min_slot
           value: 0
     - name: System cores should be positive
       sql: |
-        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization FINAL WHERE system_cores <= 0
+        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization_by_process FINAL WHERE system_cores <= 0
       assertions:
         - type: equals
           column: count
           value: 0
     - name: Min core pct should not exceed mean core pct
       sql: |
-        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization FINAL WHERE min_core_pct > mean_core_pct
+        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization_by_process FINAL WHERE min_core_pct > mean_core_pct
       assertions:
         - type: equals
           column: count
           value: 0
     - name: Mean core pct should not exceed max core pct
       sql: |
-        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization FINAL WHERE mean_core_pct > max_core_pct
+        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization_by_process FINAL WHERE mean_core_pct > max_core_pct
       assertions:
         - type: equals
           column: count
           value: 0
     - name: CPU percentages should be non-negative
       sql: |
-        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization FINAL WHERE min_core_pct < 0 OR mean_core_pct < 0 OR max_core_pct < 0
+        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization_by_process FINAL WHERE min_core_pct < 0 OR mean_core_pct < 0 OR max_core_pct < 0
       assertions:
         - type: equals
           column: count
           value: 0
     - name: Node class should only contain valid values
       sql: |
-        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization FINAL WHERE node_class NOT IN ('eip7870', '')
+        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization_by_process FINAL WHERE node_class NOT IN ('eip7870', '')
       assertions:
         - type: equals
           column: count
           value: 0
     - name: No null meta_client_name values
       sql: |
-        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization FINAL WHERE meta_client_name IS NULL OR meta_client_name = ''
+        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization_by_process FINAL WHERE meta_client_name IS NULL OR meta_client_name = ''
       assertions:
         - type: equals
           column: count
           value: 0
     - name: Node class eip7870 matches meta_client_name containing 7870
       sql: |
-        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization FINAL WHERE node_class = 'eip7870' AND positionCaseInsensitive(meta_client_name, '7870') = 0
+        SELECT COUNT(*) AS count FROM fct_node_cpu_utilization_by_process FINAL WHERE node_class = 'eip7870' AND positionCaseInsensitive(meta_client_name, '7870') = 0
       assertions:
         - type: equals
           column: count

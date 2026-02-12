@@ -1,5 +1,5 @@
 ---
-table: fct_node_cpu_utilization
+table: fct_node_cpu_utilization_by_process
 type: incremental
 interval:
   type: slot

@@ -1,5 +1,5 @@
 -- Transformation output table for node CPU utilization with node_class enrichment
-CREATE TABLE `${NETWORK_NAME}`.fct_node_cpu_utilization_local ON CLUSTER '{cluster}' (
+CREATE TABLE `${NETWORK_NAME}`.fct_node_cpu_utilization_by_process_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `window_start` DateTime64(3) COMMENT 'Start of the sub-slot aggregation window' CODEC(DoubleDelta, ZSTD(1)),
     `wallclock_slot` UInt32 COMMENT 'The wallclock slot number' CODEC(DoubleDelta, ZSTD(1)),
@@ -24,9 +24,9 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Node CPU utilization per sub-slot window enriched with node classification';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_node_cpu_utilization ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_node_cpu_utilization_local ENGINE = Distributed(
+CREATE TABLE `${NETWORK_NAME}`.fct_node_cpu_utilization_by_process ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_node_cpu_utilization_by_process_local ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
-    fct_node_cpu_utilization_local,
+    fct_node_cpu_utilization_by_process_local,
     cityHash64(wallclock_slot_start_date_time, meta_client_name)
 );

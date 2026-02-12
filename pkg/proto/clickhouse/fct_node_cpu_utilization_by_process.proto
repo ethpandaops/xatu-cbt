@@ -11,7 +11,7 @@ import "clickhouse/annotations.proto";
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Node CPU utilization per sub-slot window enriched with node classification
 
-message FctNodeCpuUtilization {
+message FctNodeCpuUtilizationByProcess {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Start of the sub-slot aggregation window
@@ -40,8 +40,8 @@ message FctNodeCpuUtilization {
   string node_class = 23;
 }
 
-// Request for listing fct_node_cpu_utilization records
-message ListFctNodeCpuUtilizationRequest {
+// Request for listing fct_node_cpu_utilization_by_process records
+message ListFctNodeCpuUtilizationByProcessRequest {
   // Filter by wallclock_slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
   Int64Filter wallclock_slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
@@ -74,11 +74,11 @@ message ListFctNodeCpuUtilizationRequest {
   // Filter by node_class - Node classification for filtering (e.g. eip7870) (optional)
   StringFilter node_class = 13 [(google.api.field_behavior) = OPTIONAL];
 
-  // The maximum number of fct_node_cpu_utilization to return.
+  // The maximum number of fct_node_cpu_utilization_by_process to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 14 [(google.api.field_behavior) = OPTIONAL];
-  // A page token, received from a previous `ListFctNodeCpuUtilization` call.
+  // A page token, received from a previous `ListFctNodeCpuUtilizationByProcess` call.
   // Provide this to retrieve the subsequent page.
   string page_token = 15 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
@@ -87,38 +87,38 @@ message ListFctNodeCpuUtilizationRequest {
   string order_by = 16 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Response for listing fct_node_cpu_utilization records
-message ListFctNodeCpuUtilizationResponse {
-  // The list of fct_node_cpu_utilization.
-  repeated FctNodeCpuUtilization fct_node_cpu_utilization = 1;
+// Response for listing fct_node_cpu_utilization_by_process records
+message ListFctNodeCpuUtilizationByProcessResponse {
+  // The list of fct_node_cpu_utilization_by_process.
+  repeated FctNodeCpuUtilizationByProcess fct_node_cpu_utilization_by_process = 1;
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
 }
 
-// Request for getting a single fct_node_cpu_utilization record by primary key
-message GetFctNodeCpuUtilizationRequest {
+// Request for getting a single fct_node_cpu_utilization_by_process record by primary key
+message GetFctNodeCpuUtilizationByProcessRequest {
   // The wall clock time when the slot started
   int64 wallclock_slot_start_date_time = 1; // Primary key (required)
 }
 
-// Response for getting a single fct_node_cpu_utilization record
-message GetFctNodeCpuUtilizationResponse {
-  FctNodeCpuUtilization item = 1;
+// Response for getting a single fct_node_cpu_utilization_by_process record
+message GetFctNodeCpuUtilizationByProcessResponse {
+  FctNodeCpuUtilizationByProcess item = 1;
 }
 
-// Query fct_node_cpu_utilization data
-service FctNodeCpuUtilizationService {
+// Query fct_node_cpu_utilization_by_process data
+service FctNodeCpuUtilizationByProcessService {
   // List records | Retrieve paginated results with optional filtering
-  rpc List(ListFctNodeCpuUtilizationRequest) returns (ListFctNodeCpuUtilizationResponse) {
+  rpc List(ListFctNodeCpuUtilizationByProcessRequest) returns (ListFctNodeCpuUtilizationByProcessResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_node_cpu_utilization"
+      get: "/api/v1/fct_node_cpu_utilization_by_process"
     };
   }
   // Get record | Retrieve a single record by wallclock_slot_start_date_time
-  rpc Get(GetFctNodeCpuUtilizationRequest) returns (GetFctNodeCpuUtilizationResponse) {
+  rpc Get(GetFctNodeCpuUtilizationByProcessRequest) returns (GetFctNodeCpuUtilizationByProcessResponse) {
     option (google.api.http) = {
-      get: "/api/v1/fct_node_cpu_utilization/{wallclock_slot_start_date_time}"
+      get: "/api/v1/fct_node_cpu_utilization_by_process/{wallclock_slot_start_date_time}"
     };
   }
 }
