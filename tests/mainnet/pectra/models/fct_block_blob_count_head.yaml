@@ -78,7 +78,7 @@ assertions:
           value: 0
     - name: Blob count should not exceed max blobs per block
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE blob_count > 6
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL WHERE blob_count > 9
       assertions:
         - type: equals
           column: count
