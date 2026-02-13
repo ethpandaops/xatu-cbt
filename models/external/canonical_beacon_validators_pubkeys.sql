@@ -18,7 +18,7 @@ WHERE
     meta_network_name = '{{ .env.NETWORK }}'
 
     -- previous_max if incremental scan and is set, otherwise default/env
-    {{- $ts := default "0" .env.EXTERNAL_MODEL_MIN_TIMESTAMP -}}
+    {{- $ts := default (default "0" .env.EXTERNAL_MODEL_MIN_TIMESTAMP) .env.VALIDATORS_MIN_TIMESTAMP -}}
     {{- if .cache.is_incremental_scan -}}
       {{- if .cache.previous_max -}}
         {{- $ts = .cache.previous_max -}}
