@@ -17,7 +17,6 @@ dependencies:
   - "{{transformation}}.int_attestation_attested_canonical"
   - "{{transformation}}.fct_block_proposer"
   - "{{external}}.canonical_beacon_committee"
-  - "{{external}}.beacon_api_eth_v1_events_finalized_checkpoint"
   - "{{external}}.canonical_beacon_block"
 ---
 -- Per-slot attestation vote correctness by validator. One row per validator per slot
@@ -93,16 +92,17 @@ WITH
         LEFT JOIN epoch_blocks prev ON prev.epoch = curr.epoch - 1
     ),
 
-    -- Finalized checkpoints for source correctness
-    finalized_checkpoints AS (
+    -- Source checkpoints: epoch boundary block root (same derivation as target)
+    -- Attestations with incorrect source are rejected by process_attestation,
+    -- so included attestations always have correct source. This is a sanity check.
+    source_checkpoints AS (
         SELECT
-            epoch AS source_epoch,
-            argMax(block, event_date_time) AS finalized_root
-        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_finalized_checkpoint" "helpers" "from" }} FINAL
-        WHERE epoch_start_date_time >= fromUnixTimestamp({{ .bounds.start }}) - INTERVAL '1 DAY'
-          AND epoch_start_date_time <= fromUnixTimestamp({{ .bounds.end }})
-          AND meta_network_name = '{{ .env.NETWORK }}'
-        GROUP BY epoch
+            curr.epoch AS source_epoch,
+            if(curr.first_block_slot = curr.epoch * 32,
+               curr.first_block_root,
+               prev.last_block_root) AS canonical_source_root
+        FROM epoch_blocks curr
+        LEFT JOIN epoch_blocks prev ON prev.epoch = curr.epoch - 1
     )
 
 SELECT
@@ -129,8 +129,8 @@ SELECT
     -- Source correctness
     CASE
         WHEN attestations.source_root IS NULL THEN NULL
-        WHEN finalized_checkpoints.finalized_root IS NULL THEN NULL
-        WHEN attestations.source_root = finalized_checkpoints.finalized_root THEN true
+        WHEN source_checkpoints.canonical_source_root IS NULL THEN NULL
+        WHEN attestations.source_root = source_checkpoints.canonical_source_root THEN true
         ELSE false
     END AS source_correct,
     attestations.inclusion_distance AS inclusion_distance
@@ -144,7 +144,7 @@ LEFT JOIN blocks ON
 LEFT JOIN target_checkpoints ON
     attestations.target_epoch = target_checkpoints.target_epoch
     AND attestations.target_root IS NOT NULL
-LEFT JOIN finalized_checkpoints ON
-    attestations.source_epoch = finalized_checkpoints.source_epoch
+LEFT JOIN source_checkpoints ON
+    attestations.source_epoch = source_checkpoints.source_epoch
     AND attestations.source_root IS NOT NULL
 SETTINGS join_use_nulls = 1
