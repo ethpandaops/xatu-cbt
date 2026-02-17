@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Per-transaction resource gas totals including intrinsic gas decomposition.
+
+message IntTransactionResourceGas {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The block number containing the transaction
+  uint64 block_number = 12;
+  // The transaction hash (hex encoded with 0x prefix)
+  string transaction_hash = 13;
+  // The index of the transaction within the block
+  uint32 transaction_index = 14;
+  // Total compute gas (EVM execution + intrinsic compute)
+  uint64 gas_compute = 15;
+  // Total memory expansion gas
+  uint64 gas_memory = 16;
+  // Total cold address/storage access gas
+  uint64 gas_address_access = 17;
+  // Total state growth gas
+  uint64 gas_state_growth = 18;
+  // Total history/log data gas
+  uint64 gas_history = 19;
+  // Total bloom filter topic gas
+  uint64 gas_bloom_topics = 20;
+  // Total block size gas (from intrinsic calldata)
+  uint64 gas_block_size = 21;
+  // Gas refund from SSTORE operations
+  uint64 gas_refund = 22;
+  // The name of the network
+  string meta_network_name = 23;
+}
+
+// Request for listing int_transaction_resource_gas records
+message ListIntTransactionResourceGasRequest {
+  // Filter by block_number - The block number containing the transaction (PRIMARY KEY - required unless using alternatives: transaction_hash)
+  UInt64Filter block_number = 1;
+
+  // Filter by transaction_hash - The transaction hash (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
+  StringFilter transaction_hash = 2;
+
+  // Filter by meta_network_name - The name of the network (ORDER BY column 3 - optional)
+  StringFilter meta_network_name = 3;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4;
+  // Filter by transaction_index - The index of the transaction within the block (optional)
+  UInt32Filter transaction_index = 5;
+  // Filter by gas_compute - Total compute gas (EVM execution + intrinsic compute) (optional)
+  UInt64Filter gas_compute = 6;
+  // Filter by gas_memory - Total memory expansion gas (optional)
+  UInt64Filter gas_memory = 7;
+  // Filter by gas_address_access - Total cold address/storage access gas (optional)
+  UInt64Filter gas_address_access = 8;
+  // Filter by gas_state_growth - Total state growth gas (optional)
+  UInt64Filter gas_state_growth = 9;
+  // Filter by gas_history - Total history/log data gas (optional)
+  UInt64Filter gas_history = 10;
+  // Filter by gas_bloom_topics - Total bloom filter topic gas (optional)
+  UInt64Filter gas_bloom_topics = 11;
+  // Filter by gas_block_size - Total block size gas (from intrinsic calldata) (optional)
+  UInt64Filter gas_block_size = 12;
+  // Filter by gas_refund - Gas refund from SSTORE operations (optional)
+  UInt64Filter gas_refund = 13;
+
+  // The maximum number of int_transaction_resource_gas to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 14;
+  // A page token, received from a previous `ListIntTransactionResourceGas` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 15;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 16;
+}
+
+// Response for listing int_transaction_resource_gas records
+message ListIntTransactionResourceGasResponse {
+  // The list of int_transaction_resource_gas.
+  repeated IntTransactionResourceGas int_transaction_resource_gas = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_transaction_resource_gas record by primary key
+message GetIntTransactionResourceGasRequest {
+  // The block number containing the transaction
+  uint64 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single int_transaction_resource_gas record
+message GetIntTransactionResourceGasResponse {
+  IntTransactionResourceGas item = 1;
+}
+
+// Query int_transaction_resource_gas data
+service IntTransactionResourceGasService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntTransactionResourceGasRequest) returns (ListIntTransactionResourceGasResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntTransactionResourceGasRequest) returns (GetIntTransactionResourceGasResponse);
+}
