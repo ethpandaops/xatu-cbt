@@ -28,8 +28,20 @@ message IntTransactionCallFrameOpcodeGas {
   uint64 gas_cumulative = 19;
   // Number of times this opcode resulted in an error in this frame
   uint64 error_count = 20;
+  // SUM(ceil(memory_bytes/32)) before each opcode executes.
+  uint64 memory_words_sum_before = 21;
+  // SUM(ceil(memory_bytes/32)) after each opcode executes.
+  uint64 memory_words_sum_after = 22;
+  // SUM(words_before²).
+  uint64 memory_words_sq_sum_before = 23;
+  // SUM(words_after²).
+  uint64 memory_words_sq_sum_after = 24;
+  // SUM(memory_expansion_gas). Exact per-opcode memory expansion cost.
+  uint64 memory_expansion_gas = 25;
+  // Number of cold storage/account accesses (EIP-2929).
+  uint64 cold_access_count = 26;
   // The name of the network
-  string meta_network_name = 21;
+  string meta_network_name = 27;
 }
 
 // Request for listing int_transaction_call_frame_opcode_gas records
@@ -61,18 +73,30 @@ message ListIntTransactionCallFrameOpcodeGasRequest {
   UInt64Filter gas_cumulative = 10;
   // Filter by error_count - Number of times this opcode resulted in an error in this frame (optional)
   UInt64Filter error_count = 11;
+  // Filter by memory_words_sum_before - SUM(ceil(memory_bytes/32)) before each opcode executes. (optional)
+  UInt64Filter memory_words_sum_before = 12;
+  // Filter by memory_words_sum_after - SUM(ceil(memory_bytes/32)) after each opcode executes. (optional)
+  UInt64Filter memory_words_sum_after = 13;
+  // Filter by memory_words_sq_sum_before - SUM(words_before²). (optional)
+  UInt64Filter memory_words_sq_sum_before = 14;
+  // Filter by memory_words_sq_sum_after - SUM(words_after²). (optional)
+  UInt64Filter memory_words_sq_sum_after = 15;
+  // Filter by memory_expansion_gas - SUM(memory_expansion_gas). Exact per-opcode memory expansion cost. (optional)
+  UInt64Filter memory_expansion_gas = 16;
+  // Filter by cold_access_count - Number of cold storage/account accesses (EIP-2929). (optional)
+  UInt64Filter cold_access_count = 17;
 
   // The maximum number of int_transaction_call_frame_opcode_gas to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 12;
+  int32 page_size = 18;
   // A page token, received from a previous `ListIntTransactionCallFrameOpcodeGas` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 13;
+  string page_token = 19;
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 14;
+  string order_by = 20;
 }
 
 // Response for listing int_transaction_call_frame_opcode_gas records
