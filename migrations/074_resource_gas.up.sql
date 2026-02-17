@@ -74,20 +74,6 @@ ENGINE = Distributed(
     cityHash64(block_number, transaction_hash)
 );
 
--- Projection for frame-first queries (e.g., "resource breakdown for frame 15")
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_resource_gas_local ON CLUSTER '{cluster}'
-ADD PROJECTION p_by_frame (
-    SELECT *
-    ORDER BY (transaction_hash, call_frame_id, opcode)
-);
-
--- Projection for opcode-first queries (e.g., "how much memory gas did MLOAD use?")
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_resource_gas_local ON CLUSTER '{cluster}'
-ADD PROJECTION p_by_opcode (
-    SELECT *
-    ORDER BY (opcode, block_number)
-);
-
 -- =============================================================================
 -- int_transaction_resource_gas
 -- =============================================================================
@@ -133,13 +119,6 @@ ENGINE = Distributed(
     '${NETWORK_NAME}',
     int_transaction_resource_gas_local,
     cityHash64(block_number, transaction_hash)
-);
-
--- Projection for transaction lookups without block_number
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_resource_gas_local ON CLUSTER '{cluster}'
-ADD PROJECTION p_by_transaction (
-    SELECT *
-    ORDER BY (transaction_hash)
 );
 
 -- =============================================================================
