@@ -15,6 +15,7 @@ tags:
   - validator_performance
 dependencies:
   - "{{transformation}}.int_attestation_attested_canonical"
+  - "{{transformation}}.int_attestation_attested_head"
   - "{{transformation}}.fct_block_proposer"
   - "{{external}}.canonical_beacon_committee"
   - "{{external}}.canonical_beacon_block"
@@ -36,7 +37,7 @@ WITH
           AND meta_network_name = '{{ .env.NETWORK }}'
     ),
 
-    -- Attestation data with source/target roots for slots in bounds
+    -- Attestation data with source/target roots for slots in bounds (on-chain included)
     attestations AS (
         SELECT
             slot,
@@ -50,6 +51,19 @@ WITH
             attesting_validator_index,
             inclusion_distance
         FROM {{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "helpers" "from" }} FINAL
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    ),
+
+    -- Gossip-layer attestation data for source correctness checking.
+    -- On-chain attestations always have correct source (process_attestation rejects wrong source),
+    -- so we use gossip data to detect validators that broadcast with incorrect source.
+    gossip_attestations AS (
+        SELECT
+            slot,
+            attesting_validator_index,
+            source_epoch,
+            source_root
+        FROM {{ index .dep "{{transformation}}" "int_attestation_attested_head" "helpers" "from" }} FINAL
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     ),
 
@@ -92,9 +106,9 @@ WITH
         LEFT JOIN epoch_blocks prev ON prev.epoch = curr.epoch - 1
     ),
 
-    -- Source checkpoints: epoch boundary block root (same derivation as target)
-    -- Attestations with incorrect source are rejected by process_attestation,
-    -- so included attestations always have correct source. This is a sanity check.
+    -- Source checkpoints: epoch boundary block root (same derivation as target).
+    -- Joined against gossip-layer source data to detect incorrect source votes
+    -- that were rejected by process_attestation and never included on-chain.
     source_checkpoints AS (
         SELECT
             curr.epoch AS source_epoch,
@@ -126,11 +140,11 @@ SELECT
         WHEN attestations.target_root = target_checkpoints.canonical_target_root THEN true
         ELSE false
     END AS target_correct,
-    -- Source correctness
+    -- Source correctness (from gossip-layer data, not on-chain which is always correct)
     CASE
-        WHEN attestations.source_root IS NULL THEN NULL
+        WHEN gossip_attestations.source_root IS NULL THEN NULL
         WHEN source_checkpoints.canonical_source_root IS NULL THEN NULL
-        WHEN attestations.source_root = source_checkpoints.canonical_source_root THEN true
+        WHEN gossip_attestations.source_root = source_checkpoints.canonical_source_root THEN true
         ELSE false
     END AS source_correct,
     attestations.inclusion_distance AS inclusion_distance
@@ -138,6 +152,9 @@ FROM duties
 LEFT JOIN attestations ON
     duties.slot = attestations.slot
     AND duties.attesting_validator_index = attestations.attesting_validator_index
+LEFT JOIN gossip_attestations ON
+    duties.slot = gossip_attestations.slot
+    AND duties.attesting_validator_index = gossip_attestations.attesting_validator_index
 LEFT JOIN blocks ON
     attestations.head_root = blocks.block_root
     AND attestations.head_root IS NOT NULL
@@ -145,6 +162,6 @@ LEFT JOIN target_checkpoints ON
     attestations.target_epoch = target_checkpoints.target_epoch
     AND attestations.target_root IS NOT NULL
 LEFT JOIN source_checkpoints ON
-    attestations.source_epoch = source_checkpoints.source_epoch
-    AND attestations.source_root IS NOT NULL
+    gossip_attestations.source_epoch = source_checkpoints.source_epoch
+    AND gossip_attestations.source_root IS NOT NULL
 SETTINGS join_use_nulls = 1
