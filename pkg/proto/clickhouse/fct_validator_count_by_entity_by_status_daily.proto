@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily validator count by entity and status, derived from canonical_beacon_validators joined with dim_node
+
+message FctValidatorCountByEntityByStatusDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Entity name from dim_node mapping
+  string entity = 13;
+  // Validator status (active_ongoing, pending_queued, etc)
+  string status = 14;
+  // Number of validators with this status for this entity on this day
+  uint32 validator_count = 15;
+}
+
+// Request for listing fct_validator_count_by_entity_by_status_daily records
+message ListFctValidatorCountByEntityByStatusDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by entity - Entity name from dim_node mapping (ORDER BY column 2 - optional)
+  StringFilter entity = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by status - Validator status (active_ongoing, pending_queued, etc) (ORDER BY column 3 - optional)
+  StringFilter status = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by validator_count - Number of validators with this status for this entity on this day (optional)
+  UInt32Filter validator_count = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_validator_count_by_entity_by_status_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 6 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctValidatorCountByEntityByStatusDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 7 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 8 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_validator_count_by_entity_by_status_daily records
+message ListFctValidatorCountByEntityByStatusDailyResponse {
+  // The list of fct_validator_count_by_entity_by_status_daily.
+  repeated FctValidatorCountByEntityByStatusDaily fct_validator_count_by_entity_by_status_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_validator_count_by_entity_by_status_daily record by primary key
+message GetFctValidatorCountByEntityByStatusDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_validator_count_by_entity_by_status_daily record
+message GetFctValidatorCountByEntityByStatusDailyResponse {
+  FctValidatorCountByEntityByStatusDaily item = 1;
+}
+
+// Query fct_validator_count_by_entity_by_status_daily data
+service FctValidatorCountByEntityByStatusDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctValidatorCountByEntityByStatusDailyRequest) returns (ListFctValidatorCountByEntityByStatusDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_validator_count_by_entity_by_status_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctValidatorCountByEntityByStatusDailyRequest) returns (GetFctValidatorCountByEntityByStatusDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_validator_count_by_entity_by_status_daily/{day_start_date}"
+    };
+  }
+}
