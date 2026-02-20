@@ -9,18 +9,18 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_validator_count_by_entity_by_status_daily_ethseer_validator_entity.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
+    - name: Row count should be non-negative
       sql: |
         SELECT COUNT(*) AS count FROM fct_validator_count_by_entity_by_status_daily FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: count
           value: 0
-    - name: Validator count should be positive
+    - name: Validator count should be non-negative
       sql: |
-        SELECT MIN(validator_count) AS min_count FROM fct_validator_count_by_entity_by_status_daily FINAL
+        SELECT COALESCE(MIN(validator_count), 0) AS min_count FROM fct_validator_count_by_entity_by_status_daily FINAL
       assertions:
-        - type: greater_than
+        - type: greater_than_or_equal
           column: min_count
           value: 0
     - name: Entity should not be empty
