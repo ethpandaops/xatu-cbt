@@ -88,6 +88,7 @@ WITH
         FROM `{{ .self.database }}`.`{{ .self.table }}` AS e FINAL
         INNER JOIN target_days d
             ON e.day_start_date = d.day_start_date
+        WHERE e.reorg_count > 0
     ),
     depth_dim AS (
         SELECT depth FROM existing_depths
