@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Per-slot lifecycle metrics with birth/death blocks, touch counts, and interval statistics
+
+message IntStorageSlotLifecycle {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The contract address
+  string address = 12;
+  // The storage slot key
+  string slot_key = 13;
+  // Lifecycle sequence number (increments on slot recreation)
+  uint32 lifecycle_number = 14;
+  // Block number where the slot transitioned from zero to non-zero
+  uint32 birth_block = 15;
+  // Block number where the slot transitioned from non-zero to zero (NULL if still alive)
+  google.protobuf.UInt32Value death_block = 16;
+  // Number of blocks between birth and death (NULL if still alive)
+  google.protobuf.UInt32Value lifespan_blocks = 17;
+  // Total number of touches (reads + writes) during this lifecycle
+  uint32 touch_count = 18;
+  // Effective bytes at birth (from the birth diff)
+  uint32 effective_bytes_birth = 19;
+  // Peak effective bytes observed during this lifecycle
+  uint32 effective_bytes_peak = 20;
+  // Effective bytes at death (NULL if still alive)
+  google.protobuf.UInt32Value effective_bytes_death = 21;
+  // Block number of the most recent touch
+  uint32 last_touch_block = 22;
+  // Number of touch-to-touch intervals (touch_count - 1 for completed lifecycles)
+  uint32 interval_count = 23;
+  // Sum of all touch-to-touch intervals in blocks
+  uint64 interval_sum = 24;
+  // Maximum touch-to-touch interval in blocks
+  uint32 interval_max = 25;
+}
+
+// Request for listing int_storage_slot_lifecycle records
+message ListIntStorageSlotLifecycleRequest {
+  // Filter by address - The contract address (ORDER BY column 1 - required)
+  StringFilter address = 1;
+
+  // Filter by slot_key - The storage slot key (ORDER BY column 2 - optional)
+  StringFilter slot_key = 2;
+
+  // Filter by lifecycle_number - Lifecycle sequence number (ORDER BY column 3 - optional)
+  UInt32Filter lifecycle_number = 3;
+
+  // Filter by birth_block - Block number where the slot was born (optional)
+  UInt32Filter birth_block = 4;
+  // Filter by death_block - Block number where the slot died (optional)
+  NullableUInt32Filter death_block = 5;
+  // Filter by lifespan_blocks - Number of blocks between birth and death (optional)
+  NullableUInt32Filter lifespan_blocks = 6;
+  // Filter by touch_count - Total number of touches (optional)
+  UInt32Filter touch_count = 7;
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 8;
+
+  // The maximum number of int_storage_slot_lifecycle to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 9;
+  // A page token, received from a previous `ListIntStorageSlotLifecycle` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 10;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 11;
+}
+
+// Response for listing int_storage_slot_lifecycle records
+message ListIntStorageSlotLifecycleResponse {
+  // The list of int_storage_slot_lifecycle.
+  repeated IntStorageSlotLifecycle int_storage_slot_lifecycle = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_storage_slot_lifecycle record by primary key
+message GetIntStorageSlotLifecycleRequest {
+  // The contract address
+  string address = 1; // Primary key part 1 (required)
+  // The storage slot key
+  string slot_key = 2; // Primary key part 2 (required)
+  // Lifecycle sequence number
+  uint32 lifecycle_number = 3; // Primary key part 3 (required)
+}
+
+// Response for getting a single int_storage_slot_lifecycle record
+message GetIntStorageSlotLifecycleResponse {
+  IntStorageSlotLifecycle item = 1;
+}
+
+// Query int_storage_slot_lifecycle data
+service IntStorageSlotLifecycleService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntStorageSlotLifecycleRequest) returns (ListIntStorageSlotLifecycleResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntStorageSlotLifecycleRequest) returns (GetIntStorageSlotLifecycleResponse);
+}

@@ -1,0 +1,116 @@
+model: int_storage_slot_lifecycle
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_traces.parquet
+        network_column: meta_network_name
+    canonical_execution_contracts:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_contracts.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          MAX(position + interval) AS max,
+          MIN(position) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'int_storage_slot_lifecycle'
+      expected:
+        max: "22923437"
+        min: "22923418"
+    - name: All lifecycle numbers should be positive
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle FINAL
+        WHERE lifecycle_number = 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Completed lifecycles should have birth_block less than death_block
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle FINAL
+        WHERE death_block IS NOT NULL AND birth_block >= death_block
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Lifespan should equal death_block minus birth_block for completed lifecycles
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle FINAL
+        WHERE death_block IS NOT NULL
+          AND lifespan_blocks != death_block - birth_block
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Interval count should equal touch_count minus 1 for completed lifecycles
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle FINAL
+        WHERE death_block IS NOT NULL
+          AND touch_count > 1
+          AND interval_count != touch_count - 1
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Peak effective bytes should be at least as large as birth effective bytes
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle FINAL
+        WHERE effective_bytes_peak < effective_bytes_birth
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Touch count should be at least 1 for all lifecycles
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle FINAL
+        WHERE touch_count = 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Last touch block should be within lifecycle bounds
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle FINAL
+        WHERE last_touch_block < birth_block
+          OR (death_block IS NOT NULL AND last_touch_block > death_block)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Interval stats should be zero when interval count is zero
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle FINAL
+        WHERE interval_count = 0 AND (interval_sum > 0 OR interval_max > 0)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
