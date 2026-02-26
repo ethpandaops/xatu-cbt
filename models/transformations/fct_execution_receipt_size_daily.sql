@@ -8,7 +8,7 @@ fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
-  forwardfill: "@every 10s"
+  forwardfill: "@every 1h"
 tags:
   - daily
   - execution
