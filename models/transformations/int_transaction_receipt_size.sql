@@ -45,8 +45,10 @@ dependencies:
 -- Notes and assumptions:
 --   - Uses `success` as status (0/1) for the first receipt field.
 --   - Uses cumulative gas from running sum(gas_used) by block/tx index.
---   - Normalizes nullable legacy transaction_type to 0 (no typed prefix byte).
+--   - Normalizes legacy transaction_type to 0 (no typed prefix byte), including
+--     string-like representations such as '0x0'.
 --   - Uses the fixed RLP size of logsBloom (256-byte bloom => 259 bytes total).
+--   - Reads external ReplacingMergeTree sources with FINAL for deterministic rows.
 --
 -- =============================================================================
 -- DATA SOURCES
@@ -149,7 +151,7 @@ WITH
                     + rlp_list_size(33 * n_topics)              -- topics list: 32+1 bytes each
                     + rlp_bytes_size(data_bytes, data_first_byte) -- data bytes
                 ) AS log_rlp_size
-            FROM {{ index .dep "{{external}}" "canonical_execution_logs" "helpers" "from" }}
+            FROM {{ index .dep "{{external}}" "canonical_execution_logs" "helpers" "from" }} FINAL
             WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
                 AND meta_network_name = '{{ .env.NETWORK }}'
         )
@@ -163,17 +165,19 @@ WITH
             meta_network_name,
             transaction_index,
             transaction_hash,
-            -- Legacy transactions may arrive with nullable type in some sources.
-            -- Normalize NULL to 0 so we do not add a typed receipt prefix byte.
-            ifNull(transaction_type, toUInt32(0)) AS transaction_type,
+            -- Legacy transactions may arrive as NULL/0/'0'/'0x0'.
+            -- Normalize to a string key and resolve typed-prefix later.
+            toString(ifNull(transaction_type, toUInt32(0))) AS transaction_type_raw,
             toUInt64(success) AS status_u64,
             gas_used,
             sum(gas_used) OVER (
                 PARTITION BY block_number, meta_network_name
-                ORDER BY transaction_index
+                -- Include tx hash as a stable tie-breaker for equal indexes
+                -- (important while source deduplication is still converging).
+                ORDER BY transaction_index, transaction_hash
                 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
             ) AS cumulative_gas_used
-        FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }}
+        FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }} FINAL
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
             AND meta_network_name = '{{ .env.NETWORK }}'
     )
@@ -187,7 +191,7 @@ SELECT
     -- Type 0 (legacy): no type prefix
     -- Type > 0 (typed): 1 byte type prefix
     toUInt64(
-        if(tx.transaction_type = 0, 0, 1)
+        if(lower(tx.transaction_type_raw) IN ('0', '0x0', ''), 0, 1)
         + rlp_list_size(
             rlp_u64_size(tx.status_u64)
             + rlp_u64_size(tx.cumulative_gas_used)
