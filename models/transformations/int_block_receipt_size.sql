@@ -9,7 +9,6 @@ fill:
   allow_gap_skipping: false
 schedules:
   forwardfill: "@every 10s"
-  backfill: "@every 30s"
 tags:
   - execution
   - receipt
