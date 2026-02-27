@@ -1,0 +1,152 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Hourly aggregation of receipt size with standard statistics.
+
+message FctExecutionReceiptSizeHourly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The start time of the hour
+  uint32 hour_start_date_time = 12;
+  // Number of blocks in this hour
+  uint32 block_count = 13;
+  // Number of transactions in this hour
+  uint64 transaction_count = 14;
+  // Total receipt bytes across all blocks
+  uint64 total_receipt_bytes = 15;
+  // Average total receipt bytes per block
+  double avg_receipt_bytes_per_block = 16;
+  // Minimum total receipt bytes in a single block
+  uint64 min_receipt_bytes_per_block = 17;
+  // Maximum total receipt bytes in a single block
+  uint64 max_receipt_bytes_per_block = 18;
+  // 5th percentile of total receipt bytes per block
+  uint64 p05_receipt_bytes_per_block = 19;
+  // 50th percentile of total receipt bytes per block
+  uint64 p50_receipt_bytes_per_block = 20;
+  // 95th percentile of total receipt bytes per block
+  uint64 p95_receipt_bytes_per_block = 21;
+  // Standard deviation of total receipt bytes per block
+  double stddev_receipt_bytes_per_block = 22;
+  // Upper Bollinger band (avg + 2*stddev)
+  double upper_band_receipt_bytes_per_block = 23;
+  // Lower Bollinger band (avg - 2*stddev)
+  double lower_band_receipt_bytes_per_block = 24;
+  // 6-hour moving average of receipt bytes per block
+  double moving_avg_receipt_bytes_per_block = 25;
+  // Average receipt bytes per transaction
+  double avg_receipt_bytes_per_transaction = 26;
+  // 50th percentile of receipt bytes per transaction
+  uint64 p50_receipt_bytes_per_transaction = 27;
+  // 95th percentile of receipt bytes per transaction
+  uint64 p95_receipt_bytes_per_transaction = 28;
+  // Total logs emitted across all transactions
+  uint64 total_log_count = 29;
+  // Average logs per transaction
+  double avg_log_count_per_transaction = 30;
+  // Running total of receipt bytes since genesis
+  uint64 cumulative_receipt_bytes = 31;
+}
+
+// Request for listing fct_execution_receipt_size_hourly records
+message ListFctExecutionReceiptSizeHourlyRequest {
+  // Filter by hour_start_date_time - The start time of the hour (PRIMARY KEY - required)
+  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Number of blocks in this hour (optional)
+  UInt32Filter block_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by transaction_count - Number of transactions in this hour (optional)
+  UInt64Filter transaction_count = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_receipt_bytes - Total receipt bytes across all blocks (optional)
+  UInt64Filter total_receipt_bytes = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_receipt_bytes_per_block - Average total receipt bytes per block (optional)
+  google.protobuf.DoubleValue avg_receipt_bytes_per_block = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_receipt_bytes_per_block - Minimum total receipt bytes in a single block (optional)
+  UInt64Filter min_receipt_bytes_per_block = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_receipt_bytes_per_block - Maximum total receipt bytes in a single block (optional)
+  UInt64Filter max_receipt_bytes_per_block = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p05_receipt_bytes_per_block - 5th percentile of total receipt bytes per block (optional)
+  UInt64Filter p05_receipt_bytes_per_block = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_receipt_bytes_per_block - 50th percentile of total receipt bytes per block (optional)
+  UInt64Filter p50_receipt_bytes_per_block = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p95_receipt_bytes_per_block - 95th percentile of total receipt bytes per block (optional)
+  UInt64Filter p95_receipt_bytes_per_block = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by stddev_receipt_bytes_per_block - Standard deviation of total receipt bytes per block (optional)
+  google.protobuf.DoubleValue stddev_receipt_bytes_per_block = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by upper_band_receipt_bytes_per_block - Upper Bollinger band (avg + 2*stddev) (optional)
+  google.protobuf.DoubleValue upper_band_receipt_bytes_per_block = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by lower_band_receipt_bytes_per_block - Lower Bollinger band (avg - 2*stddev) (optional)
+  google.protobuf.DoubleValue lower_band_receipt_bytes_per_block = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by moving_avg_receipt_bytes_per_block - 6-hour moving average of receipt bytes per block (optional)
+  google.protobuf.DoubleValue moving_avg_receipt_bytes_per_block = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_receipt_bytes_per_transaction - Average receipt bytes per transaction (optional)
+  google.protobuf.DoubleValue avg_receipt_bytes_per_transaction = 16 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_receipt_bytes_per_transaction - 50th percentile of receipt bytes per transaction (optional)
+  UInt64Filter p50_receipt_bytes_per_transaction = 17 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p95_receipt_bytes_per_transaction - 95th percentile of receipt bytes per transaction (optional)
+  UInt64Filter p95_receipt_bytes_per_transaction = 18 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_log_count - Total logs emitted across all transactions (optional)
+  UInt64Filter total_log_count = 19 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_log_count_per_transaction - Average logs per transaction (optional)
+  google.protobuf.DoubleValue avg_log_count_per_transaction = 20 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by cumulative_receipt_bytes - Running total of receipt bytes since genesis (optional)
+  UInt64Filter cumulative_receipt_bytes = 21 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_execution_receipt_size_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 22 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctExecutionReceiptSizeHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 23 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 24 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_execution_receipt_size_hourly records
+message ListFctExecutionReceiptSizeHourlyResponse {
+  // The list of fct_execution_receipt_size_hourly.
+  repeated FctExecutionReceiptSizeHourly fct_execution_receipt_size_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_execution_receipt_size_hourly record by primary key
+message GetFctExecutionReceiptSizeHourlyRequest {
+  // The start time of the hour
+  uint32 hour_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_execution_receipt_size_hourly record
+message GetFctExecutionReceiptSizeHourlyResponse {
+  FctExecutionReceiptSizeHourly item = 1;
+}
+
+// Query fct_execution_receipt_size_hourly data
+service FctExecutionReceiptSizeHourlyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctExecutionReceiptSizeHourlyRequest) returns (ListFctExecutionReceiptSizeHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_receipt_size_hourly"
+    };
+  }
+  // Get record | Retrieve a single record by hour_start_date_time
+  rpc Get(GetFctExecutionReceiptSizeHourlyRequest) returns (GetFctExecutionReceiptSizeHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_execution_receipt_size_hourly/{hour_start_date_time}"
+    };
+  }
+}
