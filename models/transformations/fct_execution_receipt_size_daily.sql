@@ -8,6 +8,7 @@ fill:
   direction: "tail"
   allow_gap_skipping: false
 schedules:
+  backfill: "@every 1h"
   forwardfill: "@every 1h"
 tags:
   - daily
