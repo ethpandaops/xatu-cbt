@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Detect which test models are impacted by changes in a PR.
 # Outputs either "all" (run full suite) or a comma-separated list of model names.
@@ -31,7 +31,7 @@ if [[ -z "$SPEC" || -z "$NETWORK" ]]; then
     exit 1
 fi
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MODELS_DIR="$REPO_ROOT/models"
 TESTS_DIR="$REPO_ROOT/tests/$NETWORK/$SPEC/models"
 
