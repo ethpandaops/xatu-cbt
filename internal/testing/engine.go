@@ -408,9 +408,20 @@ func (e *CBTEngine) buildTestOverrides(models []string) map[string]*modelOverrid
 
 	transformationDir := filepath.Join(e.modelsDir, "transformations")
 
-	// Add default fast schedules for transformation models not in overrides file
+	// Add default overrides for models not in overrides file:
+	// - External models: set lag to 0 (test data covers limited slot ranges)
+	// - Transformation models: set fast schedules for quick test execution
 	for _, modelName := range models {
 		if allOverrides[modelName] != nil {
+			continue
+		}
+
+		externalPath := filepath.Join(e.externalDir, modelName+".sql")
+		if _, err := os.Stat(externalPath); err == nil {
+			lag := 0
+			allOverrides[modelName] = &modelOverrides{}
+			allOverrides[modelName].Config.Lag = &lag
+
 			continue
 		}
 
@@ -775,6 +786,15 @@ func (e *CBTEngine) waitForTransformations(ctx context.Context, dbName, external
 				modelsNeedingRetry := e.findModelsNeedingRetry(ctx, conn, dbName, externalDB, allModels)
 				if len(modelsNeedingRetry) > 0 && scheduledRetryCount < maxScheduledRetries {
 					scheduledRetryCount++
+
+					// Reset pending timers for retried models so the PendingModelTimeout
+					// escape hatch doesn't fire immediately on the next poll.
+					// Without this, models that exceeded PendingModelTimeout would instantly
+					// hit the "assuming 0 rows" path on every subsequent poll, burning through
+					// all retries without giving CBT time to re-execute the transformation.
+					for _, model := range modelsNeedingRetry {
+						delete(modelPendingSince, model)
+					}
 
 					e.log.WithFields(logrus.Fields{
 						"models": modelsNeedingRetry,

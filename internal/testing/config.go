@@ -72,7 +72,7 @@ func DefaultTestConfig() *TestConfig {
 		QueryTimeout:          5 * time.Minute,
 
 		// CBT containers
-		CBTConcurrency: 15, // Default to 15 concurrent CBT containers (max due to Redis DB limit)
+		CBTConcurrency: 5, // Reduced to limit ClickHouse contention under concurrent load
 
 		// Cache
 		MaxConcurrentDownloads: 10,
