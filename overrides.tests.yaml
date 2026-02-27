@@ -32,6 +32,9 @@ models:
     fct_data_column_availability_daily:
       config:
         schedule: "@every 5s"
+    int_transaction_call_frame_opcode_gas:
+      config:
+        schedule: "@every 5s"
     beacon_api_eth_v1_beacon_committee:
       config:
         lag: 0
@@ -147,5 +150,8 @@ models:
       config:
         lag: 0
     execution_engine_new_payload:
+      config:
+        lag: 0
+    canonical_execution_transaction_structlog_agg:
       config:
         lag: 0
