@@ -1,0 +1,95 @@
+model: int_transaction_receipt_size
+network: mainnet
+spec: fusaka
+external_data:
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_transaction_receipt_size_canonical_execution_logs.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_transaction_receipt_size_canonical_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_transaction_receipt_size FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Receipt bytes meets minimum RLP envelope size
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE receipt_bytes < 265
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null transaction hashes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE transaction_hash IS NULL OR transaction_hash = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null meta_network_name
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE meta_network_name IS NULL OR meta_network_name = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Log topic count does not exceed four per log
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE log_topic_count > log_count * 4
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Zero log count implies zero log data bytes and zero log topic count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE log_count = 0 AND (log_data_bytes != 0 OR log_topic_count != 0)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate transaction per block
+      sql: |
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+          SELECT block_number, transaction_hash, COUNT(*) AS cnt
+          FROM int_transaction_receipt_size FINAL
+          GROUP BY block_number, transaction_hash
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: Block number is positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE block_number <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Receipt bytes within reasonable upper bound
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE receipt_bytes > 10000000
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Transaction index is non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE transaction_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
