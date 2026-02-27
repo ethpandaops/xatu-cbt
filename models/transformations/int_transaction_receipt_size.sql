@@ -207,4 +207,3 @@ FROM tx
 LEFT JOIN logs_per_tx l
     ON l.block_number = tx.block_number
     AND l.transaction_hash = tx.transaction_hash
--- test
