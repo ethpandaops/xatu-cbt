@@ -43,3 +43,4 @@ WHERE t.block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
 GROUP BY
     t.block_number,
     t.meta_network_name
+-- test
