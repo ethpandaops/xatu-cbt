@@ -45,6 +45,7 @@ TRANSFORM_USER="${TRANSFORM_USER:-}"
 TRANSFORM_PASS="${TRANSFORM_PASS:-}"
 HASH_TIMEOUT="${HASH_TIMEOUT:-300}"
 HASH_OUTPUT="${HASH_OUTPUT:-/tmp/optimize-model.${SESSION_ID}.hash.json}"
+HASH_MISMATCH_FAIL="${HASH_MISMATCH_FAIL:-0}"
 SERVER_VERSION="${SERVER_VERSION:-$(python3 - <<'PY' "$PREP_OUTPUT"
 import json,sys
 with open(sys.argv[1], 'r', encoding='utf-8') as f:
@@ -69,6 +70,28 @@ if [ -n "$SERVER_VERSION" ]; then
   cmd+=(--server-version "$SERVER_VERSION")
 fi
 
+set +e
 "${cmd[@]}"
+rc=$?
+set -e
+
+if [ "$rc" -eq 0 ]; then
+  echo "HASH_OUTPUT=$HASH_OUTPUT"
+  echo "HASH_STATUS=match"
+  echo "HASH_MATCH=true"
+  exit 0
+fi
+
+if [ "$rc" -eq 3 ]; then
+  echo "HASH_OUTPUT=$HASH_OUTPUT"
+  echo "HASH_STATUS=mismatch"
+  echo "HASH_MATCH=false"
+  if [ "$HASH_MISMATCH_FAIL" = "1" ]; then
+    exit 3
+  fi
+  exit 0
+fi
 
 echo "HASH_OUTPUT=$HASH_OUTPUT"
+echo "HASH_STATUS=error"
+exit "$rc"

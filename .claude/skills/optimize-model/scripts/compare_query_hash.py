@@ -5,7 +5,7 @@ Method order:
 1. Detect server version.
 2. For ClickHouse >= 25.8, try `FORMAT Hash`.
 3. For ClickHouse < 25.8 (or on `UNKNOWN_FORMAT`), use deterministic binary hashing:
-   - `SELECT * FROM (...) ORDER BY tuple(*) FORMAT RowBinaryWithNamesAndTypes`
+   - `SELECT * FROM (...) ORDER BY tuple(*) FORMAT RowBinary`
    - SHA256 of full byte stream
 
 Exit codes:
@@ -141,7 +141,7 @@ def make_rowbinary_hash_sql(query: str) -> str:
         "SELECT * FROM ("
         + normalized
         + ") AS hash_query ORDER BY tuple(*) SETTINGS "
-        "use_query_cache = 0, use_query_condition_cache = 0 FORMAT RowBinaryWithNamesAndTypes"
+        "use_query_cache = 0, use_query_condition_cache = 0 FORMAT RowBinary"
     )
 
 
@@ -273,6 +273,8 @@ def compare_with_rowbinary_sha256(
     return {
         "method": "rowbinary_sha256_fallback",
         "fallback_reason": fallback_reason,
+        "comparison_semantics": "value_only",
+        "binary_format": "RowBinary",
         "order_applied": "ORDER BY tuple(*)",
         "baseline_count": baseline_count,
         "candidate_count": candidate_count,

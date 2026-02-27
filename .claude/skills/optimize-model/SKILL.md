@@ -125,18 +125,18 @@ SESSION_ID="$SESSION_ID" \
 
 - Only treat a candidate as valid when `hashes_match = true`.
 - If hash check fails, reject that candidate regardless of speed gains.
+- Wrapper exit semantics:
+  - Hash mismatches are reported via `HASH_STATUS=mismatch` and `HASH_MATCH=false` (non-fatal by default).
+  - Set `HASH_MISMATCH_FAIL=1` to make mismatches return exit code `3`.
+  - Execution/runtime failures still return non-zero and `HASH_STATUS=error`.
 - Hash check script behavior:
   - Uses a version gate first:
     - ClickHouse `>= 25.8`: tries `FORMAT Hash`.
     - ClickHouse `< 25.8`: skips `FORMAT Hash` and directly uses exact byte-level comparison.
   - If `FORMAT Hash` is attempted but returns `UNKNOWN_FORMAT`, automatically falls back to exact byte-level comparison using:
     - `ORDER BY tuple(*)`
-    - `FORMAT RowBinaryWithNamesAndTypes`
+    - `FORMAT RowBinary` (value-based fallback)
     - SHA256 over the response stream
-- Legacy hash caveat (manual compatibility checks only):
-  - `FORMAT Hash` is preferred and is not affected by this caveat.
-  - If using legacy row-hash checks (for example `SELECT cityHash64(*) FROM (...)`), `argMax(...)` outputs involving `LowCardinality` columns can produce false hash mismatches.
-  - For legacy checks, cast affected `LowCardinality` results to `String` consistently in both baseline and candidate query projections before hashing.
 - If both methods fail, report that explicitly and do not claim exact-result equivalence.
 
 8. Research-backed optimization pass
@@ -193,8 +193,8 @@ Provide exactly these sections:
 - Include a short applicability note per key source (why it matters for this version/workload).
 
 `Hash Correctness Check` requirements:
-- Include which method was used: `format_hash`, `rowbinary_sha256_fallback`, or legacy/manual hash method.
-- If a legacy/manual hash method was used, explicitly state whether `LowCardinality -> String` casting was applied for `argMax(...)` outputs.
+- Include which method was used: `format_hash` or `rowbinary_sha256_fallback`.
+- For `rowbinary_sha256_fallback`, report that comparison semantics are value-based (`FORMAT RowBinary`).
 
 `Optimization Comparison Table` requirements:
 - One row per candidate per window.

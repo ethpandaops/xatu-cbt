@@ -49,12 +49,9 @@ Use this checklist when reviewing benchmark results and query plans.
   - ClickHouse `< 25.8`: skip `FORMAT Hash` and go straight to exact fallback.
 - If `FORMAT Hash` is attempted and server returns `UNKNOWN_FORMAT`, fallback to:
   - `ORDER BY tuple(*)`
-  - `FORMAT RowBinaryWithNamesAndTypes`
+  - `FORMAT RowBinary`
   - SHA256 over the byte stream
-- Legacy hash caveat:
-  - This caveat applies to legacy/manual row-hash checks (for example `SELECT cityHash64(*) FROM (...)`), not to `FORMAT Hash`.
-  - With `argMax(...)`, `LowCardinality` outputs can cause false mismatches in legacy hash comparisons.
-  - Mitigation for legacy checks: cast affected outputs to `String` consistently in both baseline and candidate projections before hashing.
+- RowBinary fallback is value-based (not type-header-based), which avoids false mismatches from type-encoding differences.
 - Never claim exact-result equivalence without a successful hash comparison result (`hashes_match = true`).
 
 
@@ -74,7 +71,8 @@ Do not recommend noisy micro-optimizations that degrade readability.
 
 ## Reporting Contract
 - Include a `Research Evidence` section with detected version(s), search queries used, and consulted source links.
-- In `Hash Correctness Check`, report hash method used and whether legacy `LowCardinality -> String` casting was applied (if using legacy/manual hash checks).
+- In `Hash Correctness Check`, report hash method used and note value-based semantics when `rowbinary_sha256_fallback` is used.
+- When using `run_hash_check.sh`, treat `HASH_STATUS=mismatch` as candidate rejection even if shell exit is zero (default behavior). Use `HASH_MISMATCH_FAIL=1` for strict non-zero on mismatch.
 - Include a comparison table with one row per `candidate x window`.
 - Show baseline vs candidate metrics plus percent deltas for latency, read bytes, and peak memory.
 - Include `hashes_match` in the table and never recommend rows where it is false.
