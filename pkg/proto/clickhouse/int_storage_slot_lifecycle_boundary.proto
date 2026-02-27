@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Lifecycle boundaries per storage slot: birth/death blocks and effective bytes at each transition
+
+message IntStorageSlotLifecycleBoundary {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The contract address
+  string address = 12;
+  // The storage slot key
+  string slot_key = 13;
+  // Lifecycle sequence number (increments on slot recreation)
+  uint32 lifecycle_number = 14;
+  // Block number where the slot transitioned from zero to non-zero
+  uint32 birth_block = 15;
+  // Block number where the slot transitioned from non-zero to zero (NULL if still alive)
+  google.protobuf.UInt32Value death_block = 16;
+  // Effective bytes at birth
+  uint32 effective_bytes_birth = 17;
+  // Effective bytes at death (NULL if still alive)
+  google.protobuf.UInt32Value effective_bytes_death = 18;
+}
+
+// Request for listing int_storage_slot_lifecycle_boundary records
+message ListIntStorageSlotLifecycleBoundaryRequest {
+  // Filter by address - The contract address (ORDER BY column 1 - required)
+  StringFilter address = 1;
+
+  // Filter by slot_key - The storage slot key (ORDER BY column 2 - optional)
+  StringFilter slot_key = 2;
+
+  // Filter by lifecycle_number - Lifecycle sequence number (ORDER BY column 3 - optional)
+  UInt32Filter lifecycle_number = 3;
+
+  // Filter by birth_block - Block number where the slot was born (optional)
+  UInt32Filter birth_block = 4;
+  // Filter by death_block - Block number where the slot died (optional)
+  NullableUInt32Filter death_block = 5;
+
+  // The maximum number of records to return.
+  int32 page_size = 6;
+  // A page token for pagination.
+  string page_token = 7;
+  // The order of results.
+  string order_by = 8;
+}
+
+// Response for listing int_storage_slot_lifecycle_boundary records
+message ListIntStorageSlotLifecycleBoundaryResponse {
+  repeated IntStorageSlotLifecycleBoundary int_storage_slot_lifecycle_boundary = 1;
+  string next_page_token = 2;
+}
+
+// Request for getting a single record by primary key
+message GetIntStorageSlotLifecycleBoundaryRequest {
+  string address = 1;
+  string slot_key = 2;
+  uint32 lifecycle_number = 3;
+}
+
+// Response for getting a single record
+message GetIntStorageSlotLifecycleBoundaryResponse {
+  IntStorageSlotLifecycleBoundary item = 1;
+}
+
+// Query int_storage_slot_lifecycle_boundary data
+service IntStorageSlotLifecycleBoundaryService {
+  rpc List(ListIntStorageSlotLifecycleBoundaryRequest) returns (ListIntStorageSlotLifecycleBoundaryResponse);
+  rpc Get(GetIntStorageSlotLifecycleBoundaryRequest) returns (GetIntStorageSlotLifecycleBoundaryResponse);
+}

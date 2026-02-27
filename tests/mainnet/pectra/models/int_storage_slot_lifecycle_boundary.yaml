@@ -1,0 +1,95 @@
+model: int_storage_slot_lifecycle_boundary
+network: mainnet
+spec: pectra
+external_data:
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_traces.parquet
+        network_column: meta_network_name
+    canonical_execution_contracts:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_contracts.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/pectra/canonical_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle_boundary FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          MAX(position + interval) AS max,
+          MIN(position) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'int_storage_slot_lifecycle_boundary'
+      expected:
+        max: "22923437"
+        min: "22923418"
+    - name: All lifecycle numbers should be positive
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE lifecycle_number = 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Completed lifecycles should have birth_block less than death_block
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE death_block IS NOT NULL AND birth_block >= death_block
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Every lifecycle should have a valid birth_block
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE birth_block = 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Effective bytes at birth should be positive
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE effective_bytes_birth = 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Effective bytes at death should be positive for completed lifecycles
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE death_block IS NOT NULL AND effective_bytes_death = 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Lifecycle numbers should be unique per slot
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM (
+          SELECT address, slot_key, lifecycle_number, COUNT(*) as cnt
+          FROM int_storage_slot_lifecycle_boundary FINAL
+          GROUP BY address, slot_key, lifecycle_number
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
