@@ -14,7 +14,8 @@ jobs:
   run-tests:
     name: Test pectra/mainnet
     runs-on:
-      - ubuntu-latest
+      - self-hosted-ghr
+      - size-l-x64
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
