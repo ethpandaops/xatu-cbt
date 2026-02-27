@@ -5,7 +5,9 @@ The script:
 - Normalizes a transformation model path.
 - Extracts dependencies from frontmatter and dep helper calls.
 - Classifies dependencies as external/transformation using repo files.
-- Replaces {{ index .dep "{{external|transformation}}" "table" "helpers" "from" }}.
+- Replaces common dep index helpers, including:
+  - {{ index .dep "{{external|transformation}}" "table" "helpers" "from" }}
+  - {{ index .dep "{{external|transformation}}" "table" "database" }}
 - Substitutes common CBT template variables used in transformation models.
 - Optionally strips INSERT INTO to keep benchmarking read-only.
 - Reports unresolved template fragments so the caller can ask follow-up questions.
@@ -21,8 +23,8 @@ import re
 import sys
 from typing import Dict, List, Tuple
 
-DEP_TEMPLATE_RE = re.compile(
-    r"\{\{\s*index\s+\.dep\s+\"(\{\{(?:external|transformation)\}\})\"\s+\"([A-Za-z0-9_]+)\"\s+\"helpers\"\s+\"from\"\s*\}\}"
+DEP_INDEX_CALL_RE = re.compile(
+    r"\{\{\s*index\s+\.dep\s+\"(\{\{(?:external|transformation)\}\})\"\s+\"([A-Za-z0-9_]+)\"(?:\s+\"([A-Za-z0-9_]+)\"(?:\s+\"([A-Za-z0-9_]+)\")?)?\s*\}\}"
 )
 FRONTMATTER_DEP_RE = re.compile(
     r"^\s*-\s*[\"']?\{\{(external|transformation)\}\}\.([A-Za-z0-9_]+)[\"']?\s*$"
@@ -153,7 +155,7 @@ def parse_frontmatter_interval(frontmatter: str) -> Dict[str, object]:
 
 def parse_dep_template_calls(sql_body: str) -> List[Tuple[str, str]]:
     parsed: List[Tuple[str, str]] = []
-    for match in DEP_TEMPLATE_RE.finditer(sql_body):
+    for match in DEP_INDEX_CALL_RE.finditer(sql_body):
         dep_kind = "external" if "external" in match.group(1) else "transformation"
         table = match.group(2)
         parsed.append((table, dep_kind))
@@ -196,16 +198,40 @@ def replace_dep_helpers(
     def replacer(match: re.Match[str]) -> str:
         expected_kind = "external" if "external" in match.group(1) else "transformation"
         table = match.group(2)
+        key1 = match.group(3)
+        key2 = match.group(4)
         actual_kind = dep_kinds.get(table, expected_kind)
 
         # Keep the explicit kind from SQL call if classifier cannot resolve.
         chosen_kind = actual_kind if actual_kind != "unknown" else expected_kind
 
-        if chosen_kind == "external":
-            return render_external_ref(external_template, external_database, table)
-        return f"`{transformation_database}`.`{table}`"
+        # helpers.from => full table reference.
+        if key1 == "helpers" and key2 == "from":
+            if chosen_kind == "external":
+                return render_external_ref(external_template, external_database, table)
+            return f"`{transformation_database}`.`{table}`"
 
-    return DEP_TEMPLATE_RE.sub(replacer, sql_body)
+        # .database => database name only.
+        if key1 == "database":
+            if chosen_kind == "external":
+                return external_database
+            return transformation_database
+
+        # .table => table name only.
+        if key1 == "table":
+            if chosen_kind == "external":
+                uses_cluster_function = (
+                    re.search(r"\bcluster\s*\(", external_template, flags=re.IGNORECASE)
+                    is not None
+                )
+                if uses_cluster_function and not table.endswith("_local"):
+                    return f"{table}_local"
+            return table
+
+        # Unknown accessor: leave template unresolved for explicit follow-up.
+        return match.group(0)
+
+    return DEP_INDEX_CALL_RE.sub(replacer, sql_body)
 
 
 def replace_common_templates(
