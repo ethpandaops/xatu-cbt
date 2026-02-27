@@ -1,0 +1,67 @@
+name: test-mainnet
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      xatu_ref:
+        description: 'Xatu repository ref to checkout'
+        required: false
+        default: 'master'
+        type: string
+permissions:
+  contents: read
+jobs:
+  detect:
+    name: Detect impacted models
+    runs-on: ubuntu-latest
+    outputs:
+      models: ${{ steps.detect.outputs.models }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Detect impacted models
+        id: detect
+        run: |
+          IMPACTED=$(./.github/scripts/detect_impacted_models.sh --network mainnet --base origin/${{ github.base_ref || 'master' }})
+          echo "models=$IMPACTED" >> "$GITHUB_OUTPUT"
+          echo "Impacted models: $IMPACTED"
+  run-tests:
+    name: Test mainnet
+    needs: detect
+    if: needs.detect.outputs.models != 'none'
+    runs-on:
+      - self-hosted-ghr
+      - size-l-x64
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Set up env
+        run: |
+          cp example.env .env
+      - name: Checkout Xatu
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ethpandaops/xatu
+          ref: ${{ github.event.inputs.xatu_ref || 'master' }}
+          path: xatu
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: '1.24'
+      - name: Build xatu-cbt
+        run: make build
+      - name: Create cache directory
+        run: mkdir -p .parquet_cache
+      - name: Start infrastructure
+        id: start-infra
+        run: ./bin/xatu-cbt infra start
+      - name: Run mainnet tests (full suite)
+        if: needs.detect.outputs.models == 'all'
+        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 5
+      - name: Run mainnet tests (impacted only)
+        if: needs.detect.outputs.models != 'all'
+        run: |
+          echo "Running impacted models: ${{ needs.detect.outputs.models }}"
+          ./bin/xatu-cbt test models ${{ needs.detect.outputs.models }} --network mainnet --verbose --concurrency 5
+      - name: Stop infrastructure
+        if: always() && steps.start-infra.outcome != 'skipped'
+        run: ./bin/xatu-cbt infra stop

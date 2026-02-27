@@ -1,0 +1,40 @@
+model: fct_attestation_correctness_canonical
+network: mainnet
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot) AS min,
+          MAX(slot) AS max
+        FROM
+          fct_attestation_correctness_canonical FINAL
+      expected:
+        count: 21
+        max: "12145390"
+        min: "12145370"
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max,
+          fromUnixTimestamp(MIN(position)) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_attestation_correctness_canonical'
+      expected:
+        max: "2025-07-15T08:38:23Z"
+        min: "2025-07-15T08:34:23Z"

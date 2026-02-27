@@ -1,0 +1,95 @@
+model: fct_attestation_correctness_by_validator_head
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_head_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_head_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot values should be non-negative
+      sql: |
+        SELECT MIN(slot) AS min_slot FROM fct_attestation_correctness_by_validator_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 0
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT MIN(epoch) AS min_epoch FROM fct_attestation_correctness_by_validator_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_epoch
+          value: 0
+    - name: Validator indices should be non-negative
+      sql: |
+        SELECT MIN(attesting_validator_index) AS min_validator FROM fct_attestation_correctness_by_validator_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_validator
+          value: 0
+    - name: Slot distance should be non-negative when present
+      sql: |
+        SELECT MIN(slot_distance) AS min_slot_distance FROM fct_attestation_correctness_by_validator_head FINAL WHERE slot_distance IS NOT NULL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot_distance
+          value: 0
+    - name: Slot distance should be reasonable (attestations within 64 slots)
+      sql: |
+        SELECT MAX(slot_distance) AS max_slot_distance FROM fct_attestation_correctness_by_validator_head FINAL WHERE slot_distance IS NOT NULL
+      assertions:
+        - type: less_than_or_equal
+          column: max_slot_distance
+          value: 64
+    - name: Propagation distance should be non-negative when present
+      sql: |
+        SELECT MIN(propagation_distance) AS min_propagation FROM fct_attestation_correctness_by_validator_head FINAL WHERE propagation_distance IS NOT NULL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_propagation
+          value: 0
+    - name: Slot start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_attestation_correctness_by_validator_head FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: Epoch start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_attestation_correctness_by_validator_head FINAL WHERE epoch_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_attestation_correctness_by_validator_head FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0

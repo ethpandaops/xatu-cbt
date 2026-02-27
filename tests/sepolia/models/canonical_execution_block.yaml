@@ -1,0 +1,25 @@
+model: canonical_execution_block
+network: sepolia
+external_data:
+    canonical_execution_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/canonical_execution_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.canonical_execution_block)
+      expected:
+        count: 21
+    - name: Block number bounds should match test data range (123456-123476)
+      sql: |
+        SELECT
+          min(block_number) AS min_block_number,
+          max(block_number) AS max_block_number
+        FROM
+          cluster('{remote_cluster}', default.canonical_execution_block)
+      expected:
+        min_block_number: 123456
+        max_block_number: 123476

@@ -1,6 +1,6 @@
 ---
 name: create-new-test-data
-description: Guides you through the process of creating new test data for a specific network and spec (fork).
+description: Guides you through the process of creating new test data for a specific network.
 ---
 
 
@@ -8,7 +8,6 @@ description: Guides you through the process of creating new test data for a spec
 
 - Access to ethpandaops production Clickhouse via MCP tools
 - Understanding of the target network (mainnet, sepolia, holesky, etc.)
-- Understanding of the target spec/fork (deneb, electra, fusaka, etc.)
 - Credentials for Clickhouse (if using direct queries)
 
 ## Step 1: Understand Requirements
@@ -16,9 +15,8 @@ description: Guides you through the process of creating new test data for a spec
 Ask yourself or the user:
 
 1. **What network?** (e.g., sepolia, holesky, mainnet)
-2. **What spec/fork?** (e.g., fusaka, electra, deneb)
-3. **What external tables are required?** Check `tests/{network}/{spec}/data/` directory
-4. **Time range preference?** (recent data preferred, typically last 20-24 hours)
+2. **What external tables are required?** Check `tests/{network}/models/` directory
+3. **Time range preference?** (recent data preferred, typically last 20-24 hours)
 
 ## Step 2: Identify Fork-Specific Features
 
@@ -44,7 +42,7 @@ WHERE meta_network_name = '{network}'
 List all required external tables:
 
 ```bash
-ls tests/{network}/{spec}/data/*.yaml | xargs -I {} basename {} .yaml
+ls tests/{network}/models/*.yaml | xargs -I {} basename {} .yaml
 ```
 
 Common critical tables:
@@ -167,9 +165,9 @@ WHERE meta_network_name = '{network}'
 For slot-based tables, use slot range. For block-based tables, use block range.
 
 **Create a checklist** and mark each table:
-- ✅ Has data (count > 0)
-- ⚠️ No data (count = 0) - check if expected (e.g., blob_sidecar in Fusaka)
-- ❌ Missing unexpectedly - **BLOCKER**
+- Has data (count > 0)
+- No data (count = 0) - check if expected (e.g., blob_sidecar in Fusaka)
+- Missing unexpectedly - **BLOCKER**
 
 ## Step 7: Export Data
 
@@ -178,23 +176,19 @@ For slot-based tables, use slot range. For block-based tables, use block range.
 ```bash
 ./scripts/export_test_data.sh \
   --network {network} \
-  --spec {spec} \
   --slot-start {slot_start} \
   --slot-end {slot_end} \
   --block-start {block_start} \
   --block-end {block_end} \
-  --output output/{network}/{spec} \
+  --output output/{network} \
   --clickhouse-host "https://user:password@clickhouse.xatu.ethpandaops.io"
 ```
 
 ### Option B: Using export_parquet.sh
 
-For each table in `tests/{network}/{spec}/data/`:
+For each table in `tests/{network}/models/`:
 
 ```bash
-# Read YAML to get interval_type and primary_key
-# Then export accordingly
-
 # For slot-based tables:
 ./scripts/export_parquet.sh \
   -t "{table_name}" \
@@ -202,7 +196,7 @@ For each table in `tests/{network}/{spec}/data/`:
   -k slot \
   -s {slot_start} \
   -e {slot_end} \
-  -o output/{network}/{spec} \
+  -o output/{network} \
   -h 'https://user:password@clickhouse.xatu.ethpandaops.io'
 
 # For block-based tables:
@@ -212,7 +206,7 @@ For each table in `tests/{network}/{spec}/data/`:
   -k block_number \
   -s {block_start} \
   -e {block_end} \
-  -o output/{network}/{spec} \
+  -o output/{network} \
   -h 'https://user:password@clickhouse.xatu.ethpandaops.io'
 ```
 
@@ -224,14 +218,14 @@ Verify each parquet file has expected data:
 import pandas as pd
 import os
 
-for f in sorted(os.listdir('output/{network}/{spec}')):
+for f in sorted(os.listdir('output/{network}')):
     if f.endswith('.parquet'):
-        df = pd.read_parquet(f'output/{network}/{spec}/{f}')
+        df = pd.read_parquet(f'output/{network}/{f}')
         print(f"{f:60s} {len(df):8d} rows")
 ```
 
 **Check for**:
-- All tables present (32 files for typical Fusaka setup)
+- All tables present
 - No 0-row files (unless expected, like blob_sidecar in Fusaka)
 - Reasonable row counts (transactions should have many rows, etc.)
 
@@ -240,20 +234,20 @@ This is a manual step done by the user. You can give them an `open $OUTPUT_DIR` 
 
 ## Step 10: Update Test Data YAMLs
 
-For each table in `tests/{network}/{spec}/data/`, update the `url` field:
+For each model in `tests/{network}/models/`, update the `url` fields:
 
 ```yaml
-url: https://data.ethpandaops.io/xatu-cbt/{network}/{spec}/{table_name}.parquet
+url: https://data.ethpandaops.io/xatu-cbt/{network}/{model}_{table_name}.parquet
 ```
 
 ## Step 11: Run Tests and Update Assertions
 
 ```bash
 # Run tests to see which assertions fail
-make test NETWORK={network} SPEC={spec}
+xatu-cbt test all --network {network} --verbose
 ```
 
-Then update `tests/{network}/{spec}/assertions/*.yaml` with actual values. You can use the `make test` command to see which assertions fail, and then update the assertions file with the actual values.
+Then update `tests/{network}/models/*.yaml` with actual values. You can use the test command to see which assertions fail, and then update the assertions file with the actual values.
 
 ## Common Pitfalls
 
@@ -273,10 +267,10 @@ Then update `tests/{network}/{spec}/assertions/*.yaml` with actual values. You c
 
 ## Success Criteria
 
-✅ All external tables have data in the chosen range
-✅ Fork-specific features present (e.g., data_column_sidecars for Fusaka)
-✅ Fork-deprecated features absent (e.g., blob_sidecars in Fusaka)
-✅ Data is recent (< 24 hours old preferred)
-✅ All parquet files exported successfully
-✅ Files uploaded to R2
-✅ Tests pass after assertion updates
+- All external tables have data in the chosen range
+- Fork-specific features present (e.g., data_column_sidecars for Fusaka)
+- Fork-deprecated features absent (e.g., blob_sidecars in Fusaka)
+- Data is recent (< 24 hours old preferred)
+- All parquet files exported successfully
+- Files uploaded to R2
+- Tests pass after assertion updates

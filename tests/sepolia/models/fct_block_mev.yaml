@@ -1,0 +1,85 @@
+model: fct_block_mev
+network: sepolia
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_block_mev_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_block_mev_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_block_mev_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_block_mev_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_mev FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_mev FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_mev FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Gas used should not exceed gas limit
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_mev FINAL WHERE gas_used > gas_limit
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Transaction count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_mev FINAL WHERE transaction_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: MEV value should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_mev FINAL WHERE value < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Status should only be canonical or orphaned
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_mev FINAL WHERE status NOT IN ('canonical', 'orphaned')
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Block root should not be empty
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_mev FINAL WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_mev FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Canonical blocks should be the majority
+      sql: "SELECT \n  countIf(status = 'canonical') * 100.0 / COUNT(*) AS canonical_percentage \nFROM fct_block_mev FINAL\n"
+      assertions:
+        - type: greater_than
+          column: canonical_percentage
+          value: 90

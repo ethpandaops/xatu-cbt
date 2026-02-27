@@ -1,0 +1,95 @@
+model: fct_attestation_correctness_by_validator_head
+network: sepolia
+external_data:
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_attestation_correctness_by_validator_head_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_attestation_correctness_by_validator_head_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_attestation_correctness_by_validator_head_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Validator indices should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL WHERE attesting_validator_index < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot distance should be non-negative when present
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL WHERE slot_distance IS NOT NULL AND slot_distance < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Slot distance should be reasonable (less than 64 slots)
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL WHERE slot_distance IS NOT NULL AND slot_distance > 64
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Propagation distance should be non-negative when present
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL WHERE propagation_distance IS NOT NULL AND propagation_distance < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Block root should be valid hex when present
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL WHERE block_root IS NOT NULL AND length(block_root) != 66
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Epoch should be consistent with slot (slot / 32)
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0

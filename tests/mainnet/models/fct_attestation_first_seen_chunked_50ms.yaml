@@ -1,0 +1,80 @@
+model: fct_attestation_first_seen_chunked_50ms
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_first_seen_chunked_50ms_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_first_seen_chunked_50ms_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_first_seen_chunked_50ms FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Chunk slot start diff should be non-negative
+      sql: |
+        SELECT MIN(chunk_slot_start_diff) AS min_chunk FROM fct_attestation_first_seen_chunked_50ms FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_chunk
+          value: 0
+    - name: Chunk slot start diff should be less than 12000ms
+      sql: |
+        SELECT MAX(chunk_slot_start_diff) AS max_chunk FROM fct_attestation_first_seen_chunked_50ms FINAL
+      assertions:
+        - type: less_than
+          column: max_chunk
+          value: 12000
+    - name: Chunk slot start diff should be divisible by 50
+      sql: |
+        SELECT COUNT(*) AS invalid_chunks FROM fct_attestation_first_seen_chunked_50ms FINAL WHERE chunk_slot_start_diff % 50 != 0
+      assertions:
+        - type: equals
+          column: invalid_chunks
+          value: 0
+    - name: Attestation count should be greater than zero for all rows
+      sql: |
+        SELECT COUNT(*) AS zero_count_rows FROM fct_attestation_first_seen_chunked_50ms FINAL WHERE attestation_count <= 0
+      assertions:
+        - type: equals
+          column: zero_count_rows
+          value: 0
+    - name: Slot should be non-negative
+      sql: |
+        SELECT MIN(slot) AS min_slot FROM fct_attestation_first_seen_chunked_50ms FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 0
+    - name: Epoch should be non-negative
+      sql: |
+        SELECT MIN(epoch) AS min_epoch FROM fct_attestation_first_seen_chunked_50ms FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_epoch
+          value: 0
+    - name: Block root should not be empty
+      sql: |
+        SELECT COUNT(*) AS empty_block_roots FROM fct_attestation_first_seen_chunked_50ms FINAL WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: empty_block_roots
+          value: 0
+    - name: Slot start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_slot_times FROM fct_attestation_first_seen_chunked_50ms FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_slot_times
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_updated FROM fct_attestation_first_seen_chunked_50ms FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_updated
+          value: 0

@@ -1,0 +1,82 @@
+model: fct_block_blob_count_head
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_head_beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_head_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_head_libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_head_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: count
+          value: 0
+    - name: Blob count should be greater than zero
+      sql: |
+        SELECT countIf(blob_count <= 0) AS invalid_count FROM fct_block_blob_count_head FINAL
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Slot should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_block_blob_count_head FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Epoch should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_block_blob_count_head FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Block root should not be empty
+      sql: |
+        SELECT countIf(block_root = '') AS empty_count FROM fct_block_blob_count_head FINAL
+      assertions:
+        - type: equals
+          column: empty_count
+          value: 0
+    - name: No duplicate slot and block root combinations
+      sql: |
+        SELECT
+          COUNT(*) AS total_rows,
+          COUNT(DISTINCT (slot, block_root)) AS unique_rows
+        FROM fct_block_blob_count_head FINAL
+      assertions:
+        - type: equals
+          column: total_rows
+          value: unique_rows
+    - name: Slot start date time should not be in the future
+      sql: |
+        SELECT countIf(slot_start_date_time > now() + INTERVAL 1 DAY) AS future_count FROM fct_block_blob_count_head FINAL
+      assertions:
+        - type: equals
+          column: future_count
+          value: 0
+    - name: Epoch should be consistent with slot
+      sql: |
+        SELECT countIf(epoch != intDiv(slot, 32)) AS inconsistent_count FROM fct_block_blob_count_head FINAL
+      assertions:
+        - type: equals
+          column: inconsistent_count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT countIf(updated_date_time IS NULL) AS null_count FROM fct_block_blob_count_head FINAL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0

@@ -1,0 +1,98 @@
+model: fct_attestation_correctness_by_validator_canonical
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot should be non-negative
+      sql: |
+        SELECT MIN(slot) AS min_slot FROM fct_attestation_correctness_by_validator_canonical FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot
+          value: 0
+    - name: Epoch should be non-negative
+      sql: |
+        SELECT MIN(epoch) AS min_epoch FROM fct_attestation_correctness_by_validator_canonical FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_epoch
+          value: 0
+    - name: Attesting validator index should be non-negative
+      sql: |
+        SELECT MIN(attesting_validator_index) AS min_validator FROM fct_attestation_correctness_by_validator_canonical FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_validator
+          value: 0
+    - name: Slot distance should be non-negative when present
+      sql: |
+        SELECT MIN(slot_distance) AS min_slot_distance FROM fct_attestation_correctness_by_validator_canonical FINAL WHERE slot_distance IS NOT NULL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_slot_distance
+          value: 0
+    - name: Inclusion distance should be positive when present
+      sql: |
+        SELECT MIN(inclusion_distance) AS min_inclusion_distance FROM fct_attestation_correctness_by_validator_canonical FINAL WHERE inclusion_distance IS NOT NULL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_inclusion_distance
+          value: 1
+    - name: Status should only contain valid values
+      sql: |
+        SELECT COUNT(*) AS invalid_status_count FROM fct_attestation_correctness_by_validator_canonical FINAL WHERE status NOT IN ('missed', 'canonical', 'orphaned', 'unknown')
+      assertions:
+        - type: equals
+          column: invalid_status_count
+          value: 0
+    - name: Missed attestations should have null block_root
+      sql: |
+        SELECT COUNT(*) AS missed_with_block_root FROM fct_attestation_correctness_by_validator_canonical FINAL WHERE status = 'missed' AND block_root IS NOT NULL
+      assertions:
+        - type: equals
+          column: missed_with_block_root
+          value: 0
+    - name: Non-missed attestations should have block_root
+      sql: |
+        SELECT COUNT(*) AS non_missed_without_block_root FROM fct_attestation_correctness_by_validator_canonical FINAL WHERE status != 'missed' AND block_root IS NULL
+      assertions:
+        - type: equals
+          column: non_missed_without_block_root
+          value: 0
+    - name: Slot start date time should be consistent with slot
+      sql: |
+        SELECT COUNT(*) AS inconsistent_slot_time FROM fct_attestation_correctness_by_validator_canonical FINAL WHERE slot_start_date_time != epoch_start_date_time + INTERVAL (slot % 32) * 12 SECOND
+      assertions:
+        - type: equals
+          column: inconsistent_slot_time
+          value: 0

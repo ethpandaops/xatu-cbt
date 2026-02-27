@@ -1,0 +1,15 @@
+model: beacon_api_eth_v1_events_attestation
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/beacon_api_eth_v1_events_attestation_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.beacon_api_eth_v1_events_attestation)
+      expected:
+        count: 7102577

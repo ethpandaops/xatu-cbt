@@ -1,0 +1,90 @@
+model: fct_execution_gas_limit_signalling_hourly
+network: mainnet
+external_data:
+    mev_relay_validator_registration:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_execution_gas_limit_signalling_hourly_mev_relay_validator_registration.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_execution_gas_limit_signalling_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Hour start should be aligned to hour boundary
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_execution_gas_limit_signalling_hourly FINAL
+        WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Gas limit band counts map should not be empty
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_execution_gas_limit_signalling_hourly FINAL
+        WHERE length(mapKeys(gas_limit_band_counts)) = 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: All gas limit bands should be positive integers
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_execution_gas_limit_signalling_hourly FINAL
+        WHERE arrayExists(x -> toUInt64OrNull(x) IS NULL OR toUInt64(x) = 0, mapKeys(gas_limit_band_counts))
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: All validator counts should be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_execution_gas_limit_signalling_hourly FINAL
+        WHERE arrayExists(x -> x <= 0, mapValues(gas_limit_band_counts))
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Gas limit bands should be rounded to millions
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_execution_gas_limit_signalling_hourly FINAL
+        WHERE arrayExists(x -> toUInt64(x) % 1000000 != 0, mapKeys(gas_limit_band_counts))
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_execution_gas_limit_signalling_hourly FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Hour start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_execution_gas_limit_signalling_hourly FINAL
+        WHERE hour_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Each hour should have unique row
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT hour_start_date_time, COUNT(*) AS cnt
+          FROM fct_execution_gas_limit_signalling_hourly FINAL
+          GROUP BY hour_start_date_time
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Total validators per hour should be reasonable
+      sql: |
+        SELECT MIN(arraySum(mapValues(gas_limit_band_counts))) AS min_validators
+        FROM fct_execution_gas_limit_signalling_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: min_validators
+          value: 0

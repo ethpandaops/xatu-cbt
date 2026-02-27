@@ -1,0 +1,85 @@
+model: fct_missed_slot_rate_daily
+network: sepolia
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_missed_slot_rate_daily_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_missed_slot_rate_daily_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_missed_slot_rate_daily_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_missed_slot_rate_daily_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_missed_slot_rate_daily_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/sepolia/fct_missed_slot_rate_daily_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_daily FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot count should always be positive
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_daily FINAL WHERE slot_count <= 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Missed count should not exceed slot count
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_daily FINAL WHERE missed_count > slot_count
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Missed count should not be negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_daily FINAL WHERE missed_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Missed rate should be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_daily FINAL WHERE missed_rate < 0 OR missed_rate > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Moving average missed rate should be between 0 and 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_daily FINAL WHERE moving_avg_missed_rate < 0 OR moving_avg_missed_rate > 100
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Missed rate should equal missed_count divided by slot_count times 100
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_daily FINAL WHERE abs(missed_rate - (missed_count / slot_count * 100)) > 0.01
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: No null values in key columns
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_missed_slot_rate_daily FINAL WHERE day_start_date IS NULL OR slot_count IS NULL OR missed_count IS NULL OR missed_rate IS NULL OR moving_avg_missed_rate IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Each day should appear at most once
+      sql: |
+        SELECT max(row_count) AS max_dupes FROM (SELECT day_start_date, COUNT(*) AS row_count FROM fct_missed_slot_rate_daily FINAL GROUP BY day_start_date)
+      assertions:
+        - type: less_than_or_equal
+          column: max_dupes
+          value: 1

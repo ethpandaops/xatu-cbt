@@ -1,0 +1,70 @@
+model: fct_execution_gas_limit_signalling_daily
+network: mainnet
+external_data:
+    mev_relay_validator_registration:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_execution_gas_limit_signalling_daily_mev_relay_validator_registration.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_execution_gas_limit_signalling_daily FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_execution_gas_limit_signalling_daily FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: Day start date should not be null
+      sql: |
+        SELECT COUNT(*) AS null_count FROM fct_execution_gas_limit_signalling_daily FINAL WHERE day_start_date IS NULL
+      assertions:
+        - type: equals
+          column: null_count
+          value: 0
+    - name: Gas limit band counts map should not be empty
+      sql: |
+        SELECT COUNT(*) AS empty_count FROM fct_execution_gas_limit_signalling_daily FINAL WHERE length(gas_limit_band_counts) = 0
+      assertions:
+        - type: equals
+          column: empty_count
+          value: 0
+    - name: All validator counts in map should be positive
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_execution_gas_limit_signalling_daily FINAL WHERE arrayExists(x -> x <= 0, mapValues(gas_limit_band_counts))
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Gas limit bands should be valid million-aligned values
+      sql: |
+        SELECT COUNT(*) AS invalid_band_count FROM fct_execution_gas_limit_signalling_daily FINAL WHERE arrayExists(x -> toUInt64OrNull(x) IS NULL OR toUInt64(x) % 1000000 != 0, mapKeys(gas_limit_band_counts))
+      assertions:
+        - type: equals
+          column: invalid_band_count
+          value: 0
+    - name: Each day should have exactly one row
+      sql: |
+        SELECT max(day_count) AS max_duplicates FROM (SELECT day_start_date, COUNT(*) AS day_count FROM fct_execution_gas_limit_signalling_daily FINAL GROUP BY day_start_date)
+      assertions:
+        - type: equals
+          column: max_duplicates
+          value: 1
+    - name: Total validators per day should be reasonable
+      sql: |
+        SELECT MIN(arraySum(mapValues(gas_limit_band_counts))) AS min_validators FROM fct_execution_gas_limit_signalling_daily FINAL
+      assertions:
+        - type: greater_than
+          column: min_validators
+          value: 0
+    - name: Gas limit bands should be within reasonable range
+      sql: |
+        SELECT COUNT(*) AS out_of_range_count FROM fct_execution_gas_limit_signalling_daily FINAL WHERE arrayExists(x -> toUInt64(x) < 1000000 OR toUInt64(x) > 1000000000, mapKeys(gas_limit_band_counts))
+      assertions:
+        - type: equals
+          column: out_of_range_count
+          value: 0

@@ -1,0 +1,40 @@
+model: fct_block_mev
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Expected bounds and size
+      sql: |
+        SELECT
+          COUNT(*) AS count,
+          MIN(slot) AS min,
+          MAX(slot) AS max
+        FROM
+          fct_block_mev FINAL
+      expected:
+        count: 18
+        max: "12145389"
+        min: "12145370"
+    - name: Expected admin bounds
+      sql: |
+        SELECT
+          fromUnixTimestamp(MAX(position + interval)) AS max,
+          fromUnixTimestamp(MIN(position)) AS min
+        FROM
+          admin_cbt_incremental FINAL
+        WHERE
+          table = 'fct_block_mev'
+      expected:
+        max: "2025-07-15T08:38:11Z"
+        min: "2025-07-15T08:34:23Z"

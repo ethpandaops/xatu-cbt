@@ -1,0 +1,95 @@
+model: fct_attestation_correctness_head
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_head_beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_head_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_head_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_head_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_head_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_head_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_head_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_correctness_head FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Votes max should be non-negative
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE votes_max < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Votes head should be non-negative when not null
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE votes_head IS NOT NULL AND votes_head < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Votes other should be non-negative when not null
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE votes_other IS NOT NULL AND votes_other < 0
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Votes head should not exceed votes max
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE votes_head IS NOT NULL AND votes_head > votes_max
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Block root should not be empty
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE block_root = ''
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Slot start date time should not be null
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0
+    - name: Updated date time should not be null
+      sql: |
+        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0

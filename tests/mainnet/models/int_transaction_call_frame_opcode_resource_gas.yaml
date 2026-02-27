@@ -1,0 +1,110 @@
+model: int_transaction_call_frame_opcode_resource_gas
+network: mainnet
+external_data:
+    canonical_execution_transaction_structlog_agg:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_transaction_call_frame_opcode_resource_gas_canonical_execution_transaction_structlog_agg.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_transaction_call_frame_opcode_resource_gas FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Gas resources must sum to total gas
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_resource_gas FINAL
+        WHERE gas_compute + gas_memory + gas_address_access + gas_state_growth + gas_history + gas_bloom_topics + gas_block_size != gas
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: gas_block_size must always be zero at opcode level
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_resource_gas FINAL
+        WHERE gas_block_size != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with zero count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_resource_gas FINAL
+        WHERE count = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: gas_compute must not exceed total gas
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_resource_gas FINAL
+        WHERE gas_compute > gas
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Pure compute opcodes must have all non-compute resource columns zero
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_resource_gas FINAL
+        WHERE opcode IN (
+            'STOP', 'ADD', 'MUL', 'SUB', 'DIV', 'SDIV', 'MOD', 'SMOD',
+            'ADDMOD', 'MULMOD', 'EXP', 'SIGNEXTEND',
+            'LT', 'GT', 'SLT', 'SGT', 'EQ', 'ISZERO', 'AND', 'OR', 'XOR',
+            'NOT', 'BYTE', 'SHL', 'SHR', 'SAR',
+            'ADDRESS', 'ORIGIN', 'CALLER', 'CALLVALUE', 'CALLDATALOAD',
+            'CALLDATASIZE', 'CODESIZE', 'GASPRICE', 'RETURNDATASIZE',
+            'COINBASE', 'TIMESTAMP', 'NUMBER', 'PREVRANDAO', 'GASLIMIT',
+            'CHAINID', 'SELFBALANCE', 'BASEFEE', 'BLOBBASEFEE',
+            'POP', 'JUMP', 'JUMPI', 'PC', 'MSIZE', 'GAS', 'JUMPDEST',
+            'TLOAD', 'TSTORE', 'PUSH0', 'BLOBHASH',
+            'PUSH1', 'PUSH2', 'PUSH3', 'PUSH4', 'PUSH5', 'PUSH6', 'PUSH7',
+            'PUSH8', 'PUSH9', 'PUSH10', 'PUSH11', 'PUSH12', 'PUSH13',
+            'PUSH14', 'PUSH15', 'PUSH16', 'PUSH17', 'PUSH18', 'PUSH19',
+            'PUSH20', 'PUSH21', 'PUSH22', 'PUSH23', 'PUSH24', 'PUSH25',
+            'PUSH26', 'PUSH27', 'PUSH28', 'PUSH29', 'PUSH30', 'PUSH31', 'PUSH32',
+            'DUP1', 'DUP2', 'DUP3', 'DUP4', 'DUP5', 'DUP6', 'DUP7', 'DUP8',
+            'DUP9', 'DUP10', 'DUP11', 'DUP12', 'DUP13', 'DUP14', 'DUP15', 'DUP16',
+            'SWAP1', 'SWAP2', 'SWAP3', 'SWAP4', 'SWAP5', 'SWAP6', 'SWAP7', 'SWAP8',
+            'SWAP9', 'SWAP10', 'SWAP11', 'SWAP12', 'SWAP13', 'SWAP14', 'SWAP15', 'SWAP16',
+            'INVALID'
+        )
+        AND (gas_memory != 0 OR gas_address_access != 0 OR gas_state_growth != 0 OR gas_history != 0 OR gas_bloom_topics != 0)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: gas_bloom_topics must be zero for non-LOG opcodes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_resource_gas FINAL
+        WHERE opcode NOT IN ('LOG1', 'LOG2', 'LOG3', 'LOG4')
+        AND gas_bloom_topics != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No UInt64 underflow in gas_compute (values must not exceed 2^63)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_resource_gas FINAL
+        WHERE gas_compute > 9223372036854775807
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null transaction_hash values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_resource_gas FINAL
+        WHERE transaction_hash = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: gas_history must be zero for non-LOG and non-CREATE opcodes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_resource_gas FINAL
+        WHERE opcode NOT IN ('LOG0', 'LOG1', 'LOG2', 'LOG3', 'LOG4', 'CREATE', 'CREATE2')
+        AND gas_history != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

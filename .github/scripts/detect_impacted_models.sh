@@ -4,36 +4,34 @@
 # Outputs either "all" (run full suite) or a comma-separated list of model names.
 #
 # Usage:
-#   ./scripts/detect_impacted_models.sh --spec <spec> --network <network> [--base <base_ref>]
+#   ./scripts/detect_impacted_models.sh --network <network> [--base <base_ref>]
 #
 # Examples:
-#   ./scripts/detect_impacted_models.sh --spec pectra --network mainnet
-#   ./scripts/detect_impacted_models.sh --spec fusaka --network sepolia --base origin/master
+#   ./scripts/detect_impacted_models.sh --network mainnet
+#   ./scripts/detect_impacted_models.sh --network sepolia --base origin/master
 #
 
 set -euo pipefail
 
-SPEC=""
 NETWORK=""
 BASE_REF="origin/master"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --spec) SPEC="$2"; shift 2 ;;
         --network) NETWORK="$2"; shift 2 ;;
         --base) BASE_REF="$2"; shift 2 ;;
         *) echo "Unknown argument: $1" >&2; exit 1 ;;
     esac
 done
 
-if [[ -z "$SPEC" || -z "$NETWORK" ]]; then
-    echo "Usage: $0 --spec <spec> --network <network> [--base <base_ref>]" >&2
+if [[ -z "$NETWORK" ]]; then
+    echo "Usage: $0 --network <network> [--base <base_ref>]" >&2
     exit 1
 fi
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 MODELS_DIR="$REPO_ROOT/models"
-TESTS_DIR="$REPO_ROOT/tests/$NETWORK/$SPEC/models"
+TESTS_DIR="$REPO_ROOT/tests/$NETWORK/models"
 
 if [[ ! -d "$TESTS_DIR" ]]; then
     echo "all"
@@ -176,7 +174,7 @@ while [[ ${#queue[@]} -gt 0 ]]; do
     fi
 done
 
-# Filter to only models that have test files in the target spec/network
+# Filter to only models that have test files in the target network
 TESTABLE=()
 for model in "${!IMPACTED[@]}"; do
     if [[ -f "$TESTS_DIR/$model.yaml" ]]; then

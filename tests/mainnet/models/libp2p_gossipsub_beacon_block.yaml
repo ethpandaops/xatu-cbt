@@ -1,0 +1,15 @@
+model: libp2p_gossipsub_beacon_block
+network: mainnet
+external_data:
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/libp2p_gossipsub_beacon_block_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT
+          COUNT(*) AS count
+        FROM
+          cluster('{remote_cluster}', default.libp2p_gossipsub_beacon_block) FINAL
+      expected:
+        count: 294
