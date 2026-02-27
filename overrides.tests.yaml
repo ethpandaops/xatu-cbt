@@ -35,6 +35,21 @@ models:
     int_transaction_call_frame_opcode_gas:
       config:
         schedule: "@every 5s"
+    int_transaction_call_frame_opcode_resource_gas:
+      config:
+        schedule: "@every 5s"
+    int_transaction_resource_gas:
+      config:
+        schedule: "@every 5s"
+    int_block_resource_gas:
+      config:
+        schedule: "@every 5s"
+    int_block_receipt_size:
+      config:
+        schedule: "@every 5s"
+    int_transaction_receipt_size:
+      config:
+        schedule: "@every 5s"
     beacon_api_eth_v1_beacon_committee:
       config:
         lag: 0
@@ -153,5 +168,14 @@ models:
       config:
         lag: 0
     canonical_execution_transaction_structlog_agg:
+      config:
+        lag: 0
+    canonical_execution_traces:
+      config:
+        lag: 0
+    canonical_execution_transaction:
+      config:
+        lag: 0
+    canonical_execution_logs:
       config:
         lag: 0
