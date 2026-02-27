@@ -68,6 +68,7 @@ Only recommend changes when evidence suggests meaningful gain, such as:
 - Lower peak memory usage
 
 Do not recommend noisy micro-optimizations that degrade readability.
+Do not recommend materialized views or projections in this workflow.
 
 ## Reporting Contract
 - Include a `Research Evidence` section with detected version(s), search queries used, and consulted source links.

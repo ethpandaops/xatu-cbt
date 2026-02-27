@@ -157,7 +157,7 @@ SESSION_ID="$SESSION_ID" \
 
 - Never edit model SQL files.
 - Temporary candidate SQL rewrites in `/tmp` are allowed for experiments and benchmarking.
-- Never propose materialized views for this workflow.
+- Never propose materialized views or projections for this workflow.
 - Always use HTTP on port `8123` for ClickHouse access (`curl` style / HTTP API).
 - Never use `clickhouse-client` or any native-port (`9000`) workflow in this skill.
 - Wrapper shell scripts must remain Bash `3.2+` compatible (macOS default bash).
