@@ -57,6 +57,8 @@ while IFS= read -r file; do
         models/external/*|models/transformations/*) ;; # model files - handled below
         tests/*)                                       ;; # test files - handled below
         overrides*.yaml)                               ;; # overrides - handled below
+        .github/*)                                     ;; # CI files - don't affect models
+        *.md)                                          ;; # docs - don't affect models
         *)
             HAS_NON_MODEL_CHANGES=true
             break
