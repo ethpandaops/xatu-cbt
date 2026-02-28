@@ -56,12 +56,12 @@ jobs:
         run: ./bin/xatu-cbt infra start
       - name: Run mainnet tests (full suite)
         if: needs.detect.outputs.models == 'all'
-        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 15
+        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 10
       - name: Run mainnet tests (impacted only)
         if: needs.detect.outputs.models != 'all'
         run: |
           echo "Running impacted models: ${{ needs.detect.outputs.models }}"
-          ./bin/xatu-cbt test models ${{ needs.detect.outputs.models }} --network mainnet --verbose --concurrency 15
+          ./bin/xatu-cbt test models ${{ needs.detect.outputs.models }} --network mainnet --verbose --concurrency 10
       - name: Stop infrastructure
         if: always() && steps.start-infra.outcome != 'skipped'
         run: ./bin/xatu-cbt infra stop
