@@ -954,11 +954,15 @@ type tableTimeRange struct {
 	max    time.Time
 }
 
-// ValidateExternalData checks that all external tables have rows after parquet loading
-// and that their time ranges overlap. Non-overlapping time ranges cause CBT to silently
-// skip transformations because it cannot find a valid dependency intersection.
+// ValidateExternalData checks external tables after parquet loading.
+// It validates that at least one table has data (some may be legitimately empty,
+// e.g. pre-PeerDAS blob_sidecar tables in a post-PeerDAS time window) and that
+// tables with data have overlapping time ranges. Non-overlapping ranges cause CBT
+// to silently skip transformations because it cannot find a valid dependency intersection.
 func (m *DatabaseManager) ValidateExternalData(ctx context.Context, database string, tables []string) error {
 	ranges := make([]tableTimeRange, 0, len(tables))
+	emptyTables := make([]string, 0)
+	tablesWithData := 0
 
 	for _, tableName := range tables {
 		count, err := m.getExternalTableRowCount(ctx, database, tableName)
@@ -967,8 +971,16 @@ func (m *DatabaseManager) ValidateExternalData(ctx context.Context, database str
 		}
 
 		if count == 0 {
-			return fmt.Errorf("external table %s.%s has 0 rows after parquet load — test data is empty or broken", database, tableName) //nolint:err113 // Dynamic validation error
+			emptyTables = append(emptyTables, tableName)
+			m.log.WithFields(logrus.Fields{
+				"database": database,
+				"table":    tableName,
+			}).Warn("external table has 0 rows after parquet load")
+
+			continue
 		}
+
+		tablesWithData++
 
 		m.log.WithFields(logrus.Fields{
 			"database": database,
@@ -985,6 +997,21 @@ func (m *DatabaseManager) ValidateExternalData(ctx context.Context, database str
 		}
 
 		ranges = append(ranges, *tr)
+	}
+
+	if tablesWithData == 0 {
+		return fmt.Errorf( //nolint:err113 // Dynamic validation error
+			"all %d external tables have 0 rows after parquet load — test data is empty or broken: %s",
+			len(tables), strings.Join(tables, ", "),
+		)
+	}
+
+	if len(emptyTables) > 0 {
+		m.log.WithFields(logrus.Fields{
+			"empty_tables":     emptyTables,
+			"tables_with_data": tablesWithData,
+			"total_tables":     len(tables),
+		}).Warn("some external tables are empty — this is expected for era-dependent models (e.g. pre/post PeerDAS)")
 	}
 
 	return m.validateTimeRangeOverlap(ranges)

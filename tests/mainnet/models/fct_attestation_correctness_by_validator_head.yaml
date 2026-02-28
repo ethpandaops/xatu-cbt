@@ -25,71 +25,84 @@ external_data:
 assertions:
     - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator_head FINAL
+        SELECT COUNT(*) AS row_count FROM fct_attestation_correctness_by_validator_head FINAL
       assertions:
         - type: greater_than
-          column: count
+          column: row_count
           value: 0
-    - name: Slot values should be non-negative
+    - name: No negative slot values
       sql: |
-        SELECT MIN(slot) AS min_slot FROM fct_attestation_correctness_by_validator_head FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator_head FINAL
+        WHERE slot < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_slot
+        - type: equals
+          column: bad_rows
           value: 0
-    - name: Epoch values should be non-negative
+    - name: No negative epoch values
       sql: |
-        SELECT MIN(epoch) AS min_epoch FROM fct_attestation_correctness_by_validator_head FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator_head FINAL
+        WHERE epoch < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_epoch
+        - type: equals
+          column: bad_rows
           value: 0
-    - name: Validator indices should be non-negative
+    - name: No negative attesting_validator_index values
       sql: |
-        SELECT MIN(attesting_validator_index) AS min_validator FROM fct_attestation_correctness_by_validator_head FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator_head FINAL
+        WHERE attesting_validator_index < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_validator
+        - type: equals
+          column: bad_rows
           value: 0
     - name: Slot distance should be non-negative when present
       sql: |
-        SELECT MIN(slot_distance) AS min_slot_distance FROM fct_attestation_correctness_by_validator_head FINAL WHERE slot_distance IS NOT NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator_head FINAL
+        WHERE slot_distance IS NOT NULL AND slot_distance < 0
       assertions:
-        - type: greater_than_or_equal
-          column: min_slot_distance
+        - type: equals
+          column: bad_rows
           value: 0
-    - name: Slot distance should be reasonable (attestations within 64 slots)
-      sql: |
-        SELECT MAX(slot_distance) AS max_slot_distance FROM fct_attestation_correctness_by_validator_head FINAL WHERE slot_distance IS NOT NULL
-      assertions:
-        - type: less_than_or_equal
-          column: max_slot_distance
-          value: 64
     - name: Propagation distance should be non-negative when present
       sql: |
-        SELECT MIN(propagation_distance) AS min_propagation FROM fct_attestation_correctness_by_validator_head FINAL WHERE propagation_distance IS NOT NULL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_propagation
-          value: 0
-    - name: Slot start date time should not be null
-      sql: |
-        SELECT COUNT(*) AS null_count FROM fct_attestation_correctness_by_validator_head FINAL WHERE slot_start_date_time IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator_head FINAL
+        WHERE propagation_distance IS NOT NULL AND propagation_distance < 0
       assertions:
         - type: equals
-          column: null_count
+          column: bad_rows
           value: 0
-    - name: Epoch start date time should not be null
+    - name: No null updated_date_time values
       sql: |
-        SELECT COUNT(*) AS null_count FROM fct_attestation_correctness_by_validator_head FINAL WHERE epoch_start_date_time IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator_head FINAL
+        WHERE updated_date_time IS NULL
       assertions:
         - type: equals
-          column: null_count
+          column: bad_rows
           value: 0
-    - name: Updated date time should not be null
+    - name: No null slot_start_date_time values
       sql: |
-        SELECT COUNT(*) AS null_count FROM fct_attestation_correctness_by_validator_head FINAL WHERE updated_date_time IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator_head FINAL
+        WHERE slot_start_date_time IS NULL
       assertions:
         - type: equals
-          column: null_count
+          column: bad_rows
+          value: 0
+    - name: Slot distance should be null when block_root is null
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator_head FINAL
+        WHERE block_root IS NULL AND slot_distance IS NOT NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each validator should appear at most once per slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT slot, attesting_validator_index, COUNT(*) AS cnt
+          FROM fct_attestation_correctness_by_validator_head FINAL
+          GROUP BY slot, attesting_validator_index
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
           value: 0

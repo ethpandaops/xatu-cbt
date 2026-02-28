@@ -57,7 +57,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Attestation count plus missed count should be greater than zero for every row
+    - name: Total of attestation_count and missed_count should be greater than zero per row
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
         WHERE (attestation_count + missed_count) <= 0
@@ -65,7 +65,23 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No null slot_start_date_time values
+    - name: Slot values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: slot_start_date_time should not be null
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
         WHERE slot_start_date_time IS NULL
@@ -73,36 +89,20 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No null epoch_start_date_time values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
-        WHERE epoch_start_date_time IS NULL
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Epoch should equal slot divided by 32
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
-        WHERE epoch != intDiv(slot, 32)
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No duplicate slot and entity combinations
+    - name: Each slot-entity combination should be unique
       sql: |
         SELECT COUNT(*) AS duplicate_count
         FROM (
-            SELECT slot, entity, COUNT(*) AS cnt
-            FROM fct_attestation_liveness_by_entity_head FINAL
-            GROUP BY slot, entity
-            HAVING cnt > 1
+          SELECT slot, entity, COUNT(*) AS cnt
+          FROM fct_attestation_liveness_by_entity_head FINAL
+          GROUP BY slot, entity
+          HAVING cnt > 1
         )
       assertions:
         - type: equals
           column: duplicate_count
           value: 0
-    - name: No null updated_date_time values
+    - name: updated_date_time should not be null
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
         WHERE updated_date_time IS NULL

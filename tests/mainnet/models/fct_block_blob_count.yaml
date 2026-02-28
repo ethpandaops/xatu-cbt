@@ -17,78 +17,86 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_libp2p_gossipsub_data_column_sidecar.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be non-negative
+    - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL
+        SELECT COUNT(*) AS row_count FROM fct_block_blob_count FINAL
       assertions:
-        - type: greater_than_or_equal
-          column: count
+        - type: greater_than
+          column: row_count
           value: 0
-    - name: Blob count should be non-negative
+    - name: No null slot values
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE blob_count < 0
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count FINAL
+        WHERE slot IS NULL
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Status should only be canonical or orphaned
+    - name: No null block_root values
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE status NOT IN ('canonical', 'orphaned')
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count FINAL
+        WHERE block_root IS NULL OR block_root = ''
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: No null block roots
+    - name: No negative blob_count values
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE block_root = '' OR block_root IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count FINAL
+        WHERE blob_count < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Slot should be non-negative
+    - name: Status should only contain canonical or orphaned
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE slot < 0
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count FINAL
+        WHERE status NOT IN ('canonical', 'orphaned')
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
+          value: 0
+    - name: Slot start date time should not be in the future
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count FINAL
+        WHERE slot_start_date_time > now()
+      assertions:
+        - type: equals
+          column: bad_rows
           value: 0
     - name: Epoch should be consistent with slot
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE epoch != intDiv(slot, 32)
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count FINAL
+        WHERE epoch != intDiv(slot, 32)
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: No duplicate block_root and status combinations
+    - name: No duplicate block_root per slot and status
       sql: |
-        SELECT COUNT(*) AS count FROM (
-          SELECT block_root, status, COUNT(*) AS cnt
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT slot, block_root, status, COUNT(*) AS cnt
           FROM fct_block_blob_count FINAL
-          GROUP BY block_root, status
+          GROUP BY slot, block_root, status
           HAVING cnt > 1
         )
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
+          value: 0
+    - name: Blob count should not exceed max blobs per block
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count FINAL
+        WHERE blob_count > 6
+      assertions:
+        - type: equals
+          column: bad_rows
           value: 0
     - name: Updated date time should not be null
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE updated_date_time IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count FINAL
+        WHERE updated_date_time IS NULL
       assertions:
         - type: equals
-          column: count
-          value: 0
-    - name: Slot start date time should not be in the future
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE slot_start_date_time > now() + INTERVAL 1 DAY
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Canonical block count should be non-negative
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count FINAL WHERE status = 'canonical'
-      assertions:
-        - type: greater_than_or_equal
-          column: count
+          column: bad_rows
           value: 0

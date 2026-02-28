@@ -14,69 +14,87 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_head_libp2p_gossipsub_data_column_sidecar.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be non-negative
+    - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM fct_block_blob_count_head FINAL
+        SELECT COUNT(*) AS row_count FROM fct_block_blob_count_head FINAL
       assertions:
-        - type: greater_than_or_equal
-          column: count
+        - type: greater_than
+          column: row_count
           value: 0
-    - name: Blob count should be greater than zero
+    - name: No rows with negative or zero blob_count
       sql: |
-        SELECT countIf(blob_count <= 0) AS invalid_count FROM fct_block_blob_count_head FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count_head FINAL
+        WHERE blob_count <= 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Slot should be non-negative
+    - name: No rows with empty block_root
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_block_blob_count_head FINAL WHERE slot < 0
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count_head FINAL
+        WHERE block_root = ''
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Epoch should be non-negative
+    - name: No rows with negative slot values
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_block_blob_count_head FINAL WHERE epoch < 0
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count_head FINAL
+        WHERE slot < 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Block root should not be empty
+    - name: No rows with negative epoch values
       sql: |
-        SELECT countIf(block_root = '') AS empty_count FROM fct_block_blob_count_head FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count_head FINAL
+        WHERE epoch < 0
       assertions:
         - type: equals
-          column: empty_count
+          column: bad_rows
           value: 0
-    - name: No duplicate slot and block root combinations
+    - name: Epoch should be consistent with slot (slot div 32)
       sql: |
-        SELECT
-          COUNT(*) AS total_rows,
-          COUNT(DISTINCT (slot, block_root)) AS unique_rows
-        FROM fct_block_blob_count_head FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count_head FINAL
+        WHERE epoch != intDiv(slot, 32)
       assertions:
         - type: equals
-          column: total_rows
-          value: unique_rows
-    - name: Slot start date time should not be in the future
-      sql: |
-        SELECT countIf(slot_start_date_time > now() + INTERVAL 1 DAY) AS future_count FROM fct_block_blob_count_head FINAL
-      assertions:
-        - type: equals
-          column: future_count
+          column: bad_rows
           value: 0
-    - name: Epoch should be consistent with slot
+    - name: No rows with default zero slot_start_date_time
       sql: |
-        SELECT countIf(epoch != intDiv(slot, 32)) AS inconsistent_count FROM fct_block_blob_count_head FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count_head FINAL
+        WHERE slot_start_date_time = toDateTime('1970-01-01 00:00:00')
       assertions:
         - type: equals
-          column: inconsistent_count
+          column: bad_rows
           value: 0
-    - name: Updated date time should not be null
+    - name: No rows with default zero epoch_start_date_time
       sql: |
-        SELECT countIf(updated_date_time IS NULL) AS null_count FROM fct_block_blob_count_head FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count_head FINAL
+        WHERE epoch_start_date_time = toDateTime('1970-01-01 00:00:00')
       assertions:
         - type: equals
-          column: null_count
+          column: bad_rows
+          value: 0
+    - name: Each slot and block_root combination should be unique
+      sql: |
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+          SELECT slot, block_root, COUNT(*) AS cnt
+          FROM fct_block_blob_count_head FINAL
+          GROUP BY slot, block_root
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: No rows with default zero updated_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_count_head FINAL
+        WHERE updated_date_time = toDateTime('1970-01-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
           value: 0

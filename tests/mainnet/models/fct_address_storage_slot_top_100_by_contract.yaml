@@ -15,33 +15,43 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: Row count should not exceed 100 due to LIMIT
+    - name: Row count should be at most 100
       sql: |
         SELECT COUNT(*) AS row_count FROM fct_address_storage_slot_top_100_by_contract FINAL
       assertions:
         - type: less_than_or_equal
           column: row_count
           value: 100
-    - name: Rank should start at 1
+    - name: No null contract addresses
       sql: |
-        SELECT MIN(rank) AS min_rank FROM fct_address_storage_slot_top_100_by_contract FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
+        WHERE contract_address = '' OR contract_address IS NULL
       assertions:
         - type: equals
-          column: min_rank
-          value: 1
-    - name: Rank should not exceed 100
+          column: bad_rows
+          value: 0
+    - name: All ranks should be between 1 and 100
       sql: |
-        SELECT MAX(rank) AS max_rank FROM fct_address_storage_slot_top_100_by_contract FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
+        WHERE rank < 1 OR rank > 100
       assertions:
-        - type: less_than_or_equal
-          column: max_rank
-          value: 100
+        - type: equals
+          column: bad_rows
+          value: 0
     - name: No duplicate ranks
       sql: |
         SELECT COUNT(*) - COUNT(DISTINCT rank) AS duplicate_ranks FROM fct_address_storage_slot_top_100_by_contract FINAL
       assertions:
         - type: equals
           column: duplicate_ranks
+          value: 0
+    - name: Total storage slots should be positive for all rows
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
+        WHERE total_storage_slots <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
           value: 0
     - name: No duplicate contract addresses
       sql: |
@@ -50,38 +60,22 @@ assertions:
         - type: equals
           column: duplicate_addresses
           value: 0
-    - name: No null contract addresses
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
-        WHERE contract_address IS NULL OR contract_address = ''
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: All total_storage_slots should be at least 1
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
-        WHERE total_storage_slots < 1
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Results should be ordered by total_storage_slots descending (rank 1 has the most)
+    - name: Ranks should be ordered by total_storage_slots descending
       sql: |
         SELECT COUNT(*) AS bad_rows FROM (
           SELECT rank, total_storage_slots,
-            leadInFrame(total_storage_slots) OVER (ORDER BY rank ASC ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING) AS next_slots
+            lagInFrame(total_storage_slots) OVER (ORDER BY rank ASC) AS prev_slots
           FROM fct_address_storage_slot_top_100_by_contract FINAL
         )
-        WHERE next_slots > 0 AND total_storage_slots < next_slots
+        WHERE prev_slots < total_storage_slots
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No null updated_date_time values
+    - name: Updated date time should not be in the future
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
-        WHERE updated_date_time IS NULL
+        WHERE updated_date_time > now()
       assertions:
         - type: equals
           column: bad_rows

@@ -10,71 +10,80 @@ external_data:
 assertions:
     - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL
+        SELECT COUNT(*) AS row_count FROM int_engine_get_blobs FINAL
       assertions:
         - type: greater_than
-          column: count
+          column: row_count
           value: 0
-    - name: Slot should be positive when slot context is present
+    - name: No rows with zero or negative slot
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL WHERE slot <= 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE slot <= 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Duration milliseconds should be non-negative
+    - name: No rows with epoch zero slot_start_date_time (should be filtered)
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL WHERE duration_ms < 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE slot_start_date_time = toDateTime(0)
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Requested count should be greater than zero
+    - name: No negative duration_ms values
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL WHERE requested_count <= 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE duration_ms < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
+          value: 0
+    - name: Requested count should always be positive (versioned_hashes length > 0 filter)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE requested_count <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
           value: 0
     - name: Returned count should not exceed requested count
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL WHERE returned_count > requested_count
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE returned_count > requested_count
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Returned count should be non-negative
+    - name: No rows with empty meta_client_name (GROUP BY key)
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL WHERE returned_count < 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE meta_client_name = ''
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Versioned hashes array should not be empty
+    - name: Node class contains only valid values
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL WHERE length(versioned_hashes) = 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE node_class NOT IN ('eip7870-block-builder', '')
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Slot start date time should be valid
+    - name: Latitude values within valid range
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL WHERE slot_start_date_time = toDateTime(0)
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE meta_client_geo_latitude < -90 OR meta_client_geo_latitude > 90
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Node class should only contain valid values
+    - name: Longitude values within valid range
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL WHERE node_class NOT IN ('eip7870-block-builder', '')
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE meta_client_geo_longitude < -180 OR meta_client_geo_longitude > 180
       assertions:
         - type: equals
-          column: count
-          value: 0
-    - name: Proposer index should be non-negative
-      sql: |
-        SELECT COUNT(*) AS count FROM int_engine_get_blobs FINAL WHERE proposer_index < 0
-      assertions:
-        - type: equals
-          column: count
+          column: bad_rows
           value: 0

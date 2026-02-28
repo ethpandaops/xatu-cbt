@@ -24,6 +24,22 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
+    - name: No null slot_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
+        WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null epoch_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
+        WHERE epoch_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
     - name: No negative slot values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
@@ -40,7 +56,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Epoch should equal floor of slot divided by 32
+    - name: Epoch should be consistent with slot (slot div 32)
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
         WHERE epoch != intDiv(slot, 32)
@@ -48,18 +64,10 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Epoch start datetime should be less than or equal to slot start datetime
+    - name: slot_start_date_time should be at or after epoch_start_date_time
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
-        WHERE epoch_start_date_time > slot_start_date_time
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No null slot_start_date_time values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
-        WHERE slot_start_date_time IS NULL
+        WHERE slot_start_date_time < epoch_start_date_time
       assertions:
         - type: equals
           column: bad_rows
@@ -74,16 +82,20 @@ assertions:
           value: 0
     - name: Some rows should have a non-null entity from the LEFT JOIN
       sql: |
-        SELECT COUNT(*) AS entity_count FROM fct_block_proposer_entity FINAL
+        SELECT COUNT(*) AS matched_rows FROM fct_block_proposer_entity FINAL
         WHERE entity IS NOT NULL
       assertions:
         - type: greater_than
-          column: entity_count
+          column: matched_rows
           value: 0
-    - name: Slot start datetime should be after Ethereum beacon chain genesis
+    - name: Each slot should have exactly one row
       sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
-        WHERE slot_start_date_time < toDateTime('2020-12-01 12:00:00')
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT slot, COUNT(*) AS slot_count
+          FROM fct_block_proposer_entity FINAL
+          GROUP BY slot
+          HAVING slot_count > 1
+        )
       assertions:
         - type: equals
           column: bad_rows

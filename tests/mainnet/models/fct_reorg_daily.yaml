@@ -27,23 +27,15 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: No null updated_date_time values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
-        WHERE updated_date_time IS NULL
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
     - name: No null day_start_date values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
-        WHERE day_start_date IS NULL
+        WHERE day_start_date IS NULL OR day_start_date = '1970-01-01'
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Depth must be at least 1
+    - name: Depth should always be at least 1
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
         WHERE depth < 1
@@ -51,7 +43,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No negative reorg_count values
+    - name: Reorg count should never be negative
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
         WHERE reorg_count < 0
@@ -59,28 +51,27 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No duplicate day_start_date and depth combinations
+    - name: No null updated_date_time values
       sql: |
-        SELECT COUNT(*) AS bad_rows
-        FROM (
-          SELECT day_start_date, depth, COUNT(*) AS row_cnt
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
+        WHERE updated_date_time IS NULL OR updated_date_time = toDateTime('1970-01-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate day and depth combinations
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT day_start_date, depth, COUNT(*) AS cnt
           FROM fct_reorg_daily FINAL
           GROUP BY day_start_date, depth
-          HAVING row_cnt > 1
+          HAVING cnt > 1
         )
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: day_start_date should not be in the future
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
-        WHERE day_start_date > today()
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Depth should be a reasonable value (not exceeding 64 slot padding)
+    - name: Depth should be reasonable (no more than 64 given the padding window)
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
         WHERE depth > 64
@@ -88,11 +79,19 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: At least one row with non-zero reorg_count exists
+    - name: Day start date should not be in the future
       sql: |
-        SELECT COUNT(*) AS non_zero_rows FROM fct_reorg_daily FINAL
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
+        WHERE day_start_date > today()
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Most rows should have non-zero reorg count
+      sql: |
+        SELECT COUNT(*) AS rows_with_reorgs FROM fct_reorg_daily FINAL
         WHERE reorg_count > 0
       assertions:
         - type: greater_than
-          column: non_zero_rows
+          column: rows_with_reorgs
           value: 0

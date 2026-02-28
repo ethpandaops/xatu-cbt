@@ -25,71 +25,88 @@ external_data:
 assertions:
     - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM fct_attestation_correctness_head FINAL
+        SELECT COUNT(*) AS row_count FROM fct_attestation_correctness_head FINAL
       assertions:
         - type: greater_than
-          column: count
+          column: row_count
           value: 0
-    - name: Slot values should be non-negative
+    - name: No rows with negative or zero slot values
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE slot < 0
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_head FINAL
+        WHERE slot < 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Epoch values should be non-negative
+    - name: No rows with negative epoch values
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE epoch < 0
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_head FINAL
+        WHERE epoch < 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Votes max should be non-negative
+    - name: No rows with empty block_root
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE votes_max < 0
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_head FINAL
+        WHERE block_root = ''
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Votes head should be non-negative when not null
+    - name: votes_max should never be negative
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE votes_head IS NOT NULL AND votes_head < 0
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_head FINAL
+        WHERE votes_max < 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Votes other should be non-negative when not null
+    - name: votes_head when present should be greater than zero
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE votes_other IS NOT NULL AND votes_other < 0
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_head FINAL
+        WHERE votes_head IS NOT NULL AND votes_head <= 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Votes head should not exceed votes max
+    - name: votes_head should not exceed votes_max when both are present
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE votes_head IS NOT NULL AND votes_head > votes_max
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_head FINAL
+        WHERE votes_head IS NOT NULL AND votes_max > 0 AND votes_head > votes_max
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Block root should not be empty
+    - name: votes_head plus votes_other should not exceed votes_max
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE block_root = ''
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_head FINAL
+        WHERE votes_head IS NOT NULL
+          AND votes_other IS NOT NULL
+          AND votes_max > 0
+          AND (votes_head + votes_other) > votes_max
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Slot start date time should not be null
+    - name: slot_start_date_time should not be the zero timestamp
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE slot_start_date_time IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_head FINAL
+        WHERE slot_start_date_time = toDateTime('1970-01-01 00:00:00')
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Updated date time should not be null
+    - name: Each slot and block_root combination should be unique
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM fct_attestation_correctness_head FINAL WHERE updated_date_time IS NULL
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+          SELECT slot, block_root, COUNT(*) AS cnt
+          FROM fct_attestation_correctness_head FINAL
+          GROUP BY slot, block_root
+          HAVING cnt > 1
+        )
       assertions:
         - type: equals
-          column: invalid_count
+          column: duplicate_count
           value: 0
