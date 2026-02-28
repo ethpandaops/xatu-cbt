@@ -90,6 +90,7 @@ WITH
         FROM `{{ .self.database }}`.`{{ .self.table }}` AS e FINAL
         INNER JOIN target_hours h
             ON e.hour_start_date_time = h.hour_start_date_time
+        WHERE e.reorg_count > 0
     ),
     depth_dim AS (
         SELECT depth FROM existing_depths
