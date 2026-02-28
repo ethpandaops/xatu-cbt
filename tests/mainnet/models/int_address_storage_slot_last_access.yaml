@@ -8,27 +8,86 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_storage_slot_last_access_canonical_execution_storage_reads.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(block_number) AS min,
-          MAX(block_number) AS max
-        FROM
-          int_address_storage_slot_last_access FINAL
-      expected:
-        count: 16746
-        max: "22923437"
-        min: "22923418"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM int_address_storage_slot_last_access FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null addresses
       sql: |
-        SELECT
-          MAX(position + interval) AS max,
-          MIN(position) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_address_storage_slot_last_access'
-      expected:
-        max: "22923437"
-        min: "22923418"
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_last_access FINAL
+        WHERE address IS NULL OR address = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null slot_key values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_last_access FINAL
+        WHERE slot_key IS NULL OR slot_key = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null block numbers
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_last_access FINAL
+        WHERE block_number IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block numbers should be positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_last_access FINAL
+        WHERE block_number <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Addresses should be lowercase
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_last_access FINAL
+        WHERE address != lower(address)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each address and slot_key pair should be unique
+      sql: |
+        SELECT COUNT(*) - COUNT(DISTINCT (address, slot_key)) AS duplicate_count
+        FROM int_address_storage_slot_last_access FINAL
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: No null value column
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_last_access FINAL
+        WHERE value IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Addresses should have expected hex length
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_last_access FINAL
+        WHERE length(address) != 42
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block number argMax returns the maximum block for each group
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT address, slot_key, block_number,
+            max(block_number) OVER (PARTITION BY address, slot_key) AS max_bn
+          FROM int_address_storage_slot_last_access FINAL
+        )
+        WHERE block_number < max_bn
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

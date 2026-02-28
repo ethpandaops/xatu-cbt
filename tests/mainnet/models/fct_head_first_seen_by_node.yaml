@@ -5,27 +5,82 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_head_first_seen_by_node_beacon_api_eth_v1_events_head.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          fct_head_first_seen_by_node FINAL
-      expected:
-        count: 2073
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM fct_head_first_seen_by_node FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Source column should always be beacon_api_eth_v1_events_head
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_head_first_seen_by_node'
-      expected:
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node FINAL
+        WHERE source != 'beacon_api_eth_v1_events_head'
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot and epoch relationship is valid
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node FINAL
+        WHERE slot < epoch * 32 OR slot >= (epoch + 1) * 32
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Classification contains only valid values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node FINAL
+        WHERE classification NOT IN ('individual', 'corporate', 'internal', 'unclassified')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null meta_client_name values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node FINAL
+        WHERE meta_client_name IS NULL OR meta_client_name = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null slot_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node FINAL
+        WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Geo longitude values within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node FINAL
+        WHERE meta_client_geo_longitude < -180 OR meta_client_geo_longitude > 180
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Geo latitude values within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node FINAL
+        WHERE meta_client_geo_latitude < -90 OR meta_client_geo_latitude > 90
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

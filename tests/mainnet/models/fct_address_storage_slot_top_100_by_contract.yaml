@@ -8,29 +8,81 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_storage_slot_top_100_by_contract_canonical_execution_storage_reads.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          argMin(contract_address, rank) AS top_contract_address,
-          argMin(total_storage_slots, rank) AS top_total_storage_slots,
-          argMax(contract_address, rank) AS bottom_contract_address,
-          argMax(total_storage_slots, rank) AS bottom_total_storage_slots
-        FROM
-          fct_address_storage_slot_top_100_by_contract FINAL
-      expected:
-        bottom_contract_address: 0x03b59bd1c8b9f6c265ba0c3421923b93f15036fa
-        bottom_total_storage_slots: 22
-        count: 100
-        top_contract_address: 0xdac17f958d2ee523a2206206994597c13d831ec7
-        top_total_storage_slots: 1769
-    - name: Has been scheduled at least once
+        SELECT COUNT(*) AS row_count FROM fct_address_storage_slot_top_100_by_contract FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Row count should not exceed 100 due to LIMIT
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          admin_cbt_scheduled FINAL
-        WHERE
-          table = 'fct_address_storage_slot_top_100_by_contract'
-      expected:
-        count: 1
+        SELECT COUNT(*) AS row_count FROM fct_address_storage_slot_top_100_by_contract FINAL
+      assertions:
+        - type: less_than_or_equal
+          column: row_count
+          value: 100
+    - name: Rank should start at 1
+      sql: |
+        SELECT MIN(rank) AS min_rank FROM fct_address_storage_slot_top_100_by_contract FINAL
+      assertions:
+        - type: equals
+          column: min_rank
+          value: 1
+    - name: Rank should not exceed 100
+      sql: |
+        SELECT MAX(rank) AS max_rank FROM fct_address_storage_slot_top_100_by_contract FINAL
+      assertions:
+        - type: less_than_or_equal
+          column: max_rank
+          value: 100
+    - name: No duplicate ranks
+      sql: |
+        SELECT COUNT(*) - COUNT(DISTINCT rank) AS duplicate_ranks FROM fct_address_storage_slot_top_100_by_contract FINAL
+      assertions:
+        - type: equals
+          column: duplicate_ranks
+          value: 0
+    - name: No duplicate contract addresses
+      sql: |
+        SELECT COUNT(*) - COUNT(DISTINCT contract_address) AS duplicate_addresses FROM fct_address_storage_slot_top_100_by_contract FINAL
+      assertions:
+        - type: equals
+          column: duplicate_addresses
+          value: 0
+    - name: No null contract addresses
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
+        WHERE contract_address IS NULL OR contract_address = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: All total_storage_slots should be at least 1
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
+        WHERE total_storage_slots < 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Results should be ordered by total_storage_slots descending (rank 1 has the most)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT rank, total_storage_slots,
+            leadInFrame(total_storage_slots) OVER (ORDER BY rank ASC ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING) AS next_slots
+          FROM fct_address_storage_slot_top_100_by_contract FINAL
+        )
+        WHERE next_slots > 0 AND total_storage_slots < next_slots
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null updated_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

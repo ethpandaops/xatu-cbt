@@ -28,71 +28,85 @@ external_data:
 assertions:
     - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM fct_attestation_liveness_by_entity_head FINAL
+        SELECT COUNT(*) AS row_count FROM fct_attestation_liveness_by_entity_head FINAL
       assertions:
         - type: greater_than
-          column: count
+          column: row_count
           value: 0
-    - name: Slot should be non-negative
+    - name: No null entity values
       sql: |
-        SELECT MIN(slot) AS min_slot FROM fct_attestation_liveness_by_entity_head FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_slot
-          value: 0
-    - name: Epoch should be non-negative
-      sql: |
-        SELECT MIN(epoch) AS min_epoch FROM fct_attestation_liveness_by_entity_head FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_epoch
-          value: 0
-    - name: Attestation count should be non-negative
-      sql: |
-        SELECT MIN(attestation_count) AS min_attestation_count FROM fct_attestation_liveness_by_entity_head FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_attestation_count
-          value: 0
-    - name: Missed count should be non-negative
-      sql: |
-        SELECT MIN(missed_count) AS min_missed_count FROM fct_attestation_liveness_by_entity_head FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_missed_count
-          value: 0
-    - name: Entity should not be null
-      sql: |
-        SELECT COUNT(*) AS null_entity_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE entity IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE entity IS NULL OR entity = ''
       assertions:
         - type: equals
-          column: null_entity_count
+          column: bad_rows
           value: 0
-    - name: Slot start date time should not be null
+    - name: No negative attestation_count values
       sql: |
-        SELECT COUNT(*) AS null_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE slot_start_date_time IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE attestation_count < 0
       assertions:
         - type: equals
-          column: null_count
+          column: bad_rows
           value: 0
-    - name: Epoch start date time should not be null
+    - name: No negative missed_count values
       sql: |
-        SELECT COUNT(*) AS null_count FROM fct_attestation_liveness_by_entity_head FINAL WHERE epoch_start_date_time IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE missed_count < 0
       assertions:
         - type: equals
-          column: null_count
+          column: bad_rows
           value: 0
-    - name: At least one of attestation or missed count should be positive per row
+    - name: Attestation count plus missed count should be greater than zero for every row
       sql: |
-        SELECT COUNT(*) AS zero_activity_rows FROM fct_attestation_liveness_by_entity_head FINAL WHERE attestation_count = 0 AND missed_count = 0
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE (attestation_count + missed_count) <= 0
       assertions:
         - type: equals
-          column: zero_activity_rows
+          column: bad_rows
           value: 0
-    - name: Updated date time should be recent and not in the future
+    - name: No null slot_start_date_time values
       sql: |
-        SELECT COUNT(*) AS future_rows FROM fct_attestation_liveness_by_entity_head FINAL WHERE updated_date_time > now()
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE slot_start_date_time IS NULL
       assertions:
         - type: equals
-          column: future_rows
+          column: bad_rows
+          value: 0
+    - name: No null epoch_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE epoch_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should equal slot divided by 32
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate slot and entity combinations
+      sql: |
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+            SELECT slot, entity, COUNT(*) AS cnt
+            FROM fct_attestation_liveness_by_entity_head FINAL
+            GROUP BY slot, entity
+            HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: No null updated_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
           value: 0

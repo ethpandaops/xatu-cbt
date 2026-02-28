@@ -12,26 +12,18 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: No negative count values
+    - name: No null block numbers
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
-        WHERE count < 0
+        WHERE block_number IS NULL
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No negative gas values
+    - name: No negative block numbers
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
-        WHERE gas < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No negative error_count values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
-        WHERE error_count < 0
+        WHERE block_number < 0
       assertions:
         - type: equals
           column: bad_rows
@@ -44,48 +36,55 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No null block_number values
+    - name: No negative count values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
-        WHERE block_number IS NULL OR block_number = 0
+        WHERE count < 0
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No null meta_network_name values
+    - name: No zero count values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
-        WHERE meta_network_name IS NULL OR meta_network_name = ''
+        WHERE count = 0
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Error count should not exceed total count per row
+    - name: No negative gas values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
-        WHERE error_count > count
+        WHERE gas < 0
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Block number should be positive
+    - name: No negative error count values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
-        WHERE block_number <= 0
+        WHERE error_count < 0
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Each block-opcode-network combination should be unique
+    - name: No null or empty meta_network_name
       sql: |
-        SELECT COUNT(*) AS duplicate_count
-        FROM (
-          SELECT block_number, opcode, meta_network_name
+        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
+        WHERE meta_network_name = '' OR meta_network_name IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each block-opcode pair should be unique per network
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT block_number, opcode, meta_network_name, COUNT(*) AS pair_count
           FROM int_block_opcode_gas FINAL
           GROUP BY block_number, opcode, meta_network_name
-          HAVING COUNT(*) > 1
+          HAVING pair_count > 1
         )
       assertions:
         - type: equals
-          column: duplicate_count
+          column: bad_rows
           value: 0

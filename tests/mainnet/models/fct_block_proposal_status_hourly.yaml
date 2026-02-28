@@ -93,7 +93,7 @@ assertions:
                 toInt64(SUM(h.slot_count)) -
                 toInt64((SELECT COUNT(*) FROM fct_block_proposer FINAL WHERE slot_start_date_time >= (SELECT MIN(hour_start_date_time) FROM fct_block_proposal_status_hourly FINAL) AND slot_start_date_time < (SELECT MAX(hour_start_date_time) FROM fct_block_proposal_status_hourly FINAL) + INTERVAL 1 HOUR))
             ) AS diff
-        FROM fct_block_proposal_status_hourly FINAL AS h
+        FROM fct_block_proposal_status_hourly AS h FINAL
       assertions:
         - type: equals
           column: diff

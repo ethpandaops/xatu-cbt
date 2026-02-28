@@ -20,64 +20,79 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_reorg_daily_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be non-negative
+    - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL
+        SELECT COUNT(*) AS row_count FROM fct_reorg_daily FINAL
       assertions:
-        - type: greater_than_or_equal
-          column: count
-          value: 0
-    - name: Reorg count should never be negative
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE reorg_count < 0
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Depth should always be at least 1
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE depth < 1
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: No null day_start_date values
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE day_start_date IS NULL
-      assertions:
-        - type: equals
-          column: count
+        - type: greater_than
+          column: row_count
           value: 0
     - name: No null updated_date_time values
       sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE updated_date_time IS NULL
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
+        WHERE updated_date_time IS NULL
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: No duplicate day and depth combinations
+    - name: No null day_start_date values
       sql: |
-        SELECT COUNT(*) AS count FROM (
-          SELECT day_start_date, depth, COUNT(*) AS cnt
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
+        WHERE day_start_date IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Depth must be at least 1
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
+        WHERE depth < 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative reorg_count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
+        WHERE reorg_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate day_start_date and depth combinations
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (
+          SELECT day_start_date, depth, COUNT(*) AS row_cnt
           FROM fct_reorg_daily FINAL
           GROUP BY day_start_date, depth
-          HAVING cnt > 1
+          HAVING row_cnt > 1
         )
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Total reorg count should be consistent with distinct reorg events
+    - name: day_start_date should not be in the future
       sql: |
-        SELECT SUM(reorg_count) AS total_reorg_count FROM fct_reorg_daily FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: total_reorg_count
-          value: 0
-    - name: Depth should be within a reasonable range
-      sql: |
-        SELECT COUNT(*) AS count FROM fct_reorg_daily FINAL WHERE depth > 1000
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
+        WHERE day_start_date > today()
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
+          value: 0
+    - name: Depth should be a reasonable value (not exceeding 64 slot padding)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_daily FINAL
+        WHERE depth > 64
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: At least one row with non-zero reorg_count exists
+      sql: |
+        SELECT COUNT(*) AS non_zero_rows FROM fct_reorg_daily FINAL
+        WHERE reorg_count > 0
+      assertions:
+        - type: greater_than
+          column: non_zero_rows
           value: 0

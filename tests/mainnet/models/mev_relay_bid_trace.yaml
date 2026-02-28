@@ -2,14 +2,12 @@ model: mev_relay_bid_trace
 network: mainnet
 external_data:
     mev_relay_bid_trace:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/mev_relay_bid_trace_mev_relay_bid_trace.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/mev_relay_bid_trace.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.mev_relay_bid_trace) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.mev_relay_bid_trace)
       expected:
-        count: 329038
+        count: 1000

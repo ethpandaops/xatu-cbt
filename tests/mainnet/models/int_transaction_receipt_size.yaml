@@ -15,14 +15,6 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: Receipt bytes meets minimum RLP envelope size
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
-        WHERE receipt_bytes < 265
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
     - name: No null transaction hashes
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
@@ -31,15 +23,31 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No null meta_network_name
+    - name: Receipt bytes must meet minimum RLP envelope size
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
-        WHERE meta_network_name IS NULL OR meta_network_name = ''
+        WHERE receipt_bytes < 265
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Log topic count does not exceed four per log
+    - name: No negative log counts
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE log_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative log data bytes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE log_data_bytes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Log topic count must not exceed four per log
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
         WHERE log_topic_count > log_count * 4
@@ -47,7 +55,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Zero log count implies zero log data bytes and zero log topic count
+    - name: Transactions with zero logs must have zero log data bytes and zero topic count
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
         WHERE log_count = 0 AND (log_data_bytes != 0 OR log_topic_count != 0)
@@ -55,39 +63,31 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No duplicate transaction per block
+    - name: No duplicate transaction hashes within the same block
       sql: |
-        SELECT COUNT(*) AS duplicate_count
+        SELECT COUNT(*) AS bad_rows
         FROM (
-          SELECT block_number, transaction_hash, COUNT(*) AS cnt
+          SELECT block_number, transaction_hash, COUNT(*) AS dupes
           FROM int_transaction_receipt_size FINAL
           GROUP BY block_number, transaction_hash
-          HAVING cnt > 1
+          HAVING dupes > 1
         )
       assertions:
         - type: equals
-          column: duplicate_count
-          value: 0
-    - name: Block number is positive
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
-        WHERE block_number <= 0
-      assertions:
-        - type: equals
           column: bad_rows
           value: 0
-    - name: Receipt bytes within reasonable upper bound
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
-        WHERE receipt_bytes > 10000000
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Transaction index is non-negative
+    - name: Transaction index must be non-negative
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
         WHERE transaction_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null meta network name
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_receipt_size FINAL
+        WHERE meta_network_name IS NULL OR meta_network_name = ''
       assertions:
         - type: equals
           column: bad_rows

@@ -5,27 +5,88 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_mev_bid_count_by_relay_mev_relay_bid_trace.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_mev_bid_count_by_relay FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No non-positive bid_total values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_relay FINAL
+        WHERE bid_total <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_relay FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_relay FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null relay_name values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_relay FINAL
+        WHERE relay_name IS NULL OR relay_name = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null slot_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_relay FINAL
+        WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null epoch_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_relay FINAL
+        WHERE epoch_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot and epoch relationship is valid (slot divided by 32 should equal epoch)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_relay FINAL
+        WHERE intDiv(slot, 32) != epoch
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each slot-relay combination is unique (no duplicate groupings)
       sql: |
         SELECT
-          COUNT(*) AS count,
-          MIN(slot) AS min,
-          MAX(slot) AS max
-        FROM
-          fct_mev_bid_count_by_relay FINAL
-      expected:
-        count: 95
-        max: "12145389"
-        min: "12145370"
-    - name: Expected admin bounds
+          total_rows - distinct_rows AS duplicate_rows
+        FROM (
+          SELECT
+            COUNT(*) AS total_rows,
+            COUNT(DISTINCT (slot, relay_name)) AS distinct_rows
+          FROM fct_mev_bid_count_by_relay FINAL
+        )
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: updated_date_time should not be in the future
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_mev_bid_count_by_relay'
-      expected:
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_relay FINAL
+        WHERE updated_date_time > now() + INTERVAL 1 DAY
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

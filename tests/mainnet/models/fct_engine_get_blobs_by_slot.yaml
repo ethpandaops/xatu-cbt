@@ -2,15 +2,94 @@ model: fct_engine_get_blobs_by_slot
 network: mainnet
 external_data:
     beacon_api_eth_v1_beacon_blob:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_get_blobs_beacon_api_eth_v1_beacon_blob.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_get_blobs_by_slot_beacon_api_eth_v1_beacon_blob.parquet
         network_column: meta_network_name
     execution_engine_get_blobs:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_get_blobs_execution_engine_get_blobs.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_get_blobs_by_slot_execution_engine_get_blobs.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
-      sql: SELECT COUNT(*) AS count FROM fct_engine_get_blobs_by_slot FINAL
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_engine_get_blobs_by_slot FINAL
       assertions:
         - type: greater_than
-          column: count
+          column: row_count
+          value: 0
+    - name: No rows with zero or negative observation count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_slot FINAL
+        WHERE observation_count <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with zero or negative unique node count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_slot FINAL
+        WHERE unique_node_count <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative duration values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_slot FINAL
+        WHERE min_duration_ms < 0
+           OR avg_duration_ms < 0
+           OR median_duration_ms < 0
+           OR max_duration_ms < 0
+           OR p95_duration_ms < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Min duration should not exceed max duration
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_slot FINAL
+        WHERE min_duration_ms > max_duration_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Median duration should be between min and max duration
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_slot FINAL
+        WHERE median_duration_ms < min_duration_ms
+           OR median_duration_ms > max_duration_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Full return percentage should be between 0 and 100 or null
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_slot FINAL
+        WHERE full_return_pct < 0
+           OR full_return_pct > 100
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with zero slot (should be filtered by WHERE clause)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_slot FINAL
+        WHERE slot <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Unique node count should not exceed observation count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_slot FINAL
+        WHERE unique_node_count > observation_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with empty block root
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_slot FINAL
+        WHERE block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
           value: 0

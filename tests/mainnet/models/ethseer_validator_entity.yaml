@@ -2,14 +2,12 @@ model: ethseer_validator_entity
 network: mainnet
 external_data:
     ethseer_validator_entity:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/ethseer_validator_entity_ethseer_validator_entity.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/ethseer_validator_entity.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.ethseer_validator_entity) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.ethseer_validator_entity)
       expected:
-        count: 1
+        count: 10000

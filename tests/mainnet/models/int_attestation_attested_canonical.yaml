@@ -8,27 +8,83 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_canonical_canonical_beacon_elaborated_attestation.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          int_attestation_attested_canonical FINAL
-      expected:
-        count: 717659
-        max: "2025-07-15T08:38:23Z"
-        min: "2025-07-15T08:34:23Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM int_attestation_attested_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No negative slot values
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_attestation_attested_canonical'
-      expected:
-        max: "2025-07-15T08:38:23Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_canonical FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_canonical FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative attesting validator index values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_canonical FINAL
+        WHERE attesting_validator_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Inclusion distance should be at least 1
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_canonical FINAL
+        WHERE inclusion_distance < 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Source epoch should be less than or equal to target epoch
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_canonical FINAL
+        WHERE source_epoch > target_epoch
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null block root values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_canonical FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null slot start date time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_canonical FINAL
+        WHERE slot_start_date_time IS NULL OR slot_start_date_time = toDateTime('1970-01-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should be consistent with slot (slot div 32)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_canonical FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null source or target root values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_canonical FINAL
+        WHERE source_root = '' OR source_root IS NULL
+           OR target_root = '' OR target_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

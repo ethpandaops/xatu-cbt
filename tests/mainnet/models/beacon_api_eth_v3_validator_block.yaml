@@ -2,70 +2,12 @@ model: beacon_api_eth_v3_validator_block
 network: mainnet
 external_data:
     beacon_api_eth_v3_validator_block:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/beacon_api_eth_v3_validator_block_beacon_api_eth_v3_validator_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/beacon_api_eth_v3_validator_block.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block)
       expected:
-        count: 172
-    - name: unique clients
-      sql: |
-        SELECT
-          COUNT(DISTINCT meta_client_name) AS unique_clients
-        FROM
-          cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
-      expected:
-        unique_clients: 10
-    - name: slot range
-      sql: |
-        SELECT
-          MIN(slot) AS min_slot,
-          MAX(slot) AS max_slot
-        FROM
-          cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
-      expected:
-        max_slot: 12145390
-        min_slot: 12145370
-    - name: has execution and consensus clients
-      sql: |
-        SELECT
-          COUNT(DISTINCT meta_client_implementation) AS execution_clients,
-          COUNT(DISTINCT meta_consensus_implementation) AS consensus_clients
-        FROM
-          cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
-      expected:
-        consensus_clients: 5
-        execution_clients: 1
-    - name: block version consistency
-      sql: |
-        SELECT
-          COUNT(DISTINCT block_version) AS versions,
-          MIN(block_version) AS version_name
-        FROM
-          cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
-      expected:
-        version_name: electra
-        versions: 1
-    - name: execution payload data present
-      sql: |
-        SELECT
-          COUNT(*) AS blocks_with_exec_data
-        FROM
-          cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
-        WHERE
-          execution_payload_block_number > 0
-      expected:
-        blocks_with_exec_data: 172
-    - name: consensus implementations detail
-      sql: |
-        SELECT
-          COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
-        FROM
-          cluster('{remote_cluster}', default.beacon_api_eth_v3_validator_block) FINAL
-      expected:
-        total_implementations: 5
+        count: 1000

@@ -2,14 +2,12 @@ model: canonical_execution_nonce_diffs
 network: mainnet
 external_data:
     canonical_execution_nonce_diffs:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_nonce_diffs_canonical_execution_nonce_diffs.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_nonce_diffs.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.canonical_execution_nonce_diffs) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_nonce_diffs)
       expected:
-        count: 4157
+        count: 1000

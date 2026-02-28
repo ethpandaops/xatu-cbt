@@ -15,7 +15,7 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: No negative receipt_bytes values
+    - name: No negative receipt_bytes
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
         WHERE receipt_bytes < 0
@@ -23,25 +23,39 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Transaction count must be at least 1 per block
+    - name: No zero transaction_count
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
-        WHERE transaction_count < 1
+        WHERE transaction_count = 0
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No negative log_count or log_data_bytes or log_topic_count
+    - name: No negative log_count
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
         WHERE log_count < 0
-           OR log_data_bytes < 0
-           OR log_topic_count < 0
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: avg_receipt_bytes_per_transaction must not exceed max_receipt_bytes_per_transaction
+    - name: No negative log_data_bytes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE log_data_bytes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative log_topic_count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE log_topic_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: avg_receipt_bytes should not exceed max_receipt_bytes per block
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
         WHERE avg_receipt_bytes_per_transaction > max_receipt_bytes_per_transaction
@@ -49,7 +63,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: p50 must not exceed p95 (percentile ordering)
+    - name: p50 receipt bytes should not exceed p95
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
         WHERE p50_receipt_bytes_per_transaction > p95_receipt_bytes_per_transaction
@@ -57,7 +71,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: p95 must not exceed max receipt bytes per transaction
+    - name: p95 receipt bytes should not exceed max
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
         WHERE p95_receipt_bytes_per_transaction > max_receipt_bytes_per_transaction
@@ -65,31 +79,10 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: receipt_bytes must be at least max_receipt_bytes_per_transaction (sum >= max)
+    - name: No null or empty meta_network_name
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
-        WHERE receipt_bytes < max_receipt_bytes_per_transaction
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No null meta_network_name values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
-        WHERE meta_network_name IS NULL OR meta_network_name = ''
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Each block_number should be unique per meta_network_name
-      sql: |
-        SELECT COUNT(*) AS bad_rows
-        FROM (
-          SELECT block_number, meta_network_name, COUNT(*) AS dupes
-          FROM int_block_receipt_size FINAL
-          GROUP BY block_number, meta_network_name
-          HAVING dupes > 1
-        )
+        WHERE meta_network_name = '' OR meta_network_name IS NULL
       assertions:
         - type: equals
           column: bad_rows

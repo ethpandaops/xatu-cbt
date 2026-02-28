@@ -13,71 +13,84 @@ external_data:
 assertions:
     - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM int_attestation_attested_head FINAL
+        SELECT COUNT(*) AS row_count FROM int_attestation_attested_head FINAL
       assertions:
         - type: greater_than
-          column: count
+          column: row_count
           value: 0
-    - name: Slot should be non-negative
+    - name: No null attesting validator indices
       sql: |
-        SELECT MIN(slot) AS min_slot FROM int_attestation_attested_head FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_slot
-          value: 0
-    - name: Epoch should be non-negative
-      sql: |
-        SELECT MIN(epoch) AS min_epoch FROM int_attestation_attested_head FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_epoch
-          value: 0
-    - name: Propagation distance should be non-negative
-      sql: |
-        SELECT MIN(propagation_distance) AS min_propagation_distance FROM int_attestation_attested_head FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_propagation_distance
-          value: 0
-    - name: Attesting validator index should be non-negative
-      sql: |
-        SELECT MIN(attesting_validator_index) AS min_validator_index FROM int_attestation_attested_head FINAL
-      assertions:
-        - type: greater_than_or_equal
-          column: min_validator_index
-          value: 0
-    - name: Source epoch should be less than or equal to target epoch
-      sql: |
-        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE source_epoch > target_epoch
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_head FINAL
+        WHERE attesting_validator_index IS NULL
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Target epoch should be less than or equal to epoch
+    - name: No negative attesting validator indices
       sql: |
-        SELECT COUNT(*) AS invalid_count FROM int_attestation_attested_head FINAL WHERE target_epoch > epoch
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_head FINAL
+        WHERE attesting_validator_index < 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: No null block roots
+    - name: No negative propagation distance
       sql: |
-        SELECT COUNT(*) AS null_count FROM int_attestation_attested_head FINAL WHERE block_root IS NULL OR block_root = ''
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_head FINAL
+        WHERE propagation_distance < 0
       assertions:
         - type: equals
-          column: null_count
+          column: bad_rows
           value: 0
-    - name: No null source roots
+    - name: No null slot start date time
       sql: |
-        SELECT COUNT(*) AS null_count FROM int_attestation_attested_head FINAL WHERE source_root IS NULL OR source_root = ''
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_head FINAL
+        WHERE slot_start_date_time IS NULL
       assertions:
         - type: equals
-          column: null_count
+          column: bad_rows
           value: 0
-    - name: No null target roots
+    - name: Epoch should equal floor of slot divided by 32
       sql: |
-        SELECT COUNT(*) AS null_count FROM int_attestation_attested_head FINAL WHERE target_root IS NULL OR target_root = ''
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_head FINAL
+        WHERE epoch != intDiv(slot, 32)
       assertions:
         - type: equals
-          column: null_count
+          column: bad_rows
+          value: 0
+    - name: Target epoch should be greater than or equal to source epoch
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_head FINAL
+        WHERE target_epoch < source_epoch
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null block root
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_head FINAL
+        WHERE block_root IS NULL OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate rows per slot validator and block root
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT slot, attesting_validator_index, block_root, COUNT(*) AS dupes
+          FROM int_attestation_attested_head FINAL
+          GROUP BY slot, attesting_validator_index, block_root
+          HAVING dupes > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Propagation distance should be reasonable
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_attestation_attested_head FINAL
+        WHERE propagation_distance > 64
+      assertions:
+        - type: equals
+          column: bad_rows
           value: 0

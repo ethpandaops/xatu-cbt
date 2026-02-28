@@ -5,27 +5,82 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_mev_bid_highest_value_by_builder_chunked_50ms_mev_relay_bid_trace.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot) AS min,
-          MAX(slot) AS max
-        FROM
-          fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
-      expected:
-        count: 28883
-        max: "12145389"
-        min: "12145370"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null slot values
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_mev_bid_highest_value_by_builder_chunked_50ms'
-      expected:
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+        WHERE slot = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+        WHERE epoch = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: chunk_slot_start_diff is a multiple of 50
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+        WHERE chunk_slot_start_diff % 50 != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: chunk_slot_start_diff within expected range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+        WHERE chunk_slot_start_diff < -12000 OR chunk_slot_start_diff >= 12000
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No empty block_hash values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+        WHERE block_hash = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No empty builder_pubkey values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+        WHERE builder_pubkey = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: relay_names array should have at least one element per row
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+        WHERE length(relay_names) = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Value should not be negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+        WHERE value < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should be consistent with slot (slot div 32)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_highest_value_by_builder_chunked_50ms FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

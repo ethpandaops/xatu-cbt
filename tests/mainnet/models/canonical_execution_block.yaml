@@ -2,14 +2,12 @@ model: canonical_execution_block
 network: mainnet
 external_data:
     canonical_execution_block:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_block_canonical_execution_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_block.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.canonical_execution_block) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_block)
       expected:
-        count: 20
+        count: 1000

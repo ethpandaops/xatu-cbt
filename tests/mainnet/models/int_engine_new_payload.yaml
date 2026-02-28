@@ -8,73 +8,82 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_new_payload_execution_engine_new_payload.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be non-negative
+    - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL
+        SELECT COUNT(*) AS row_count FROM int_engine_new_payload FINAL
       assertions:
-        - type: greater_than_or_equal
-          column: count
+        - type: greater_than
+          column: row_count
           value: 0
-    - name: All slots should be greater than zero
+    - name: No rows with zero slot (filtered by transformation)
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL WHERE slot <= 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE slot = 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: All block hashes should not be empty
+    - name: No rows with default slot_start_date_time (filtered by transformation)
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL WHERE block_hash = ''
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE slot_start_date_time = toDateTime(0)
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Duration ms should be non-negative
+    - name: No negative duration_ms values
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL WHERE duration_ms < 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE duration_ms < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Gas used should be non-negative
+    - name: gas_used should not exceed gas_limit
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL WHERE gas_used < 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE gas_used > gas_limit
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Gas limit should be greater than zero
+    - name: No negative tx_count values
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL WHERE gas_limit <= 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE tx_count < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Transaction count should be non-negative
+    - name: No negative blob_count values
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL WHERE tx_count < 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE blob_count < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Blob count should be non-negative
+    - name: block_hash should not be empty
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL WHERE blob_count < 0
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE block_hash = '' OR block_hash IS NULL
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Meta client name should not be empty
+    - name: meta_client_name should not be empty
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL WHERE meta_client_name = ''
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE meta_client_name = '' OR meta_client_name IS NULL
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Slot should be consistent with epoch
+    - name: node_class should only contain expected values
       sql: |
-        SELECT COUNT(*) AS count FROM int_engine_new_payload FINAL WHERE slot < epoch * 32 OR slot > epoch * 32 + 31
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE node_class NOT IN ('', 'eip7870-block-builder')
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0

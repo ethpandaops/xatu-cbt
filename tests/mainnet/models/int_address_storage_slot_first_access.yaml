@@ -8,27 +8,85 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_storage_slot_first_access_canonical_execution_storage_reads.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(block_number) AS min,
-          MAX(block_number) AS max
-        FROM
-          int_address_storage_slot_first_access FINAL
-      expected:
-        count: 16746
-        max: "22923437"
-        min: "22923418"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM int_address_storage_slot_first_access FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null addresses
       sql: |
-        SELECT
-          MAX(position + interval) AS max,
-          MIN(position) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_address_storage_slot_first_access'
-      expected:
-        max: "22923437"
-        min: "22923418"
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_first_access FINAL
+        WHERE address IS NULL OR address = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: All addresses should be lowercase
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_first_access FINAL
+        WHERE address != lower(address)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null slot_key values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_first_access FINAL
+        WHERE slot_key IS NULL OR slot_key = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block number should be positive for all rows
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_first_access FINAL
+        WHERE block_number <= 0 OR block_number IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each address-slot_key pair should be unique
+      sql: |
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+          SELECT address, slot_key, COUNT(*) AS cnt
+          FROM int_address_storage_slot_first_access FINAL
+          GROUP BY address, slot_key
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: Version should be correctly computed from block number
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_first_access FINAL
+        WHERE version != 4294967295 - block_number
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Value column should not be null
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_storage_slot_first_access FINAL
+        WHERE value IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block number is within a reasonable range
+      sql: |
+        SELECT MIN(block_number) AS min_block FROM int_address_storage_slot_first_access FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_block
+          value: 0
+    - name: Distinct address count should be greater than zero
+      sql: |
+        SELECT COUNT(DISTINCT address) AS addr_count FROM int_address_storage_slot_first_access FINAL
+      assertions:
+        - type: greater_than
+          column: addr_count
+          value: 0

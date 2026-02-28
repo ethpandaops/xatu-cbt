@@ -5,27 +5,85 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_canonical_canonical_beacon_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          int_block_canonical FINAL
-      expected:
-        count: 20
-        max: "2025-07-15T08:38:23Z"
-        min: "2025-07-15T08:34:23Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM int_block_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null block roots
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_block_canonical'
-      expected:
-        max: "2025-07-15T08:38:23Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Execution payload gas used should not exceed gas limit
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE execution_payload_gas_used > execution_payload_gas_limit
+        AND execution_payload_gas_limit > 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative block total bytes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE block_total_bytes < 0
+        OR block_total_bytes_compressed < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative transaction counts
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE execution_payload_transactions_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Compressed bytes should not exceed total bytes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE block_total_bytes_compressed > block_total_bytes
+        AND block_total_bytes > 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative base fee per gas
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE execution_payload_base_fee_per_gas < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null proposer index
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE proposer_index IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

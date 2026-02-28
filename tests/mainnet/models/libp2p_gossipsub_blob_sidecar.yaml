@@ -2,14 +2,12 @@ model: libp2p_gossipsub_blob_sidecar
 network: mainnet
 external_data:
     libp2p_gossipsub_blob_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/libp2p_gossipsub_blob_sidecar_libp2p_gossipsub_blob_sidecar.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/libp2p_gossipsub_blob_sidecar.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.libp2p_gossipsub_blob_sidecar) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.libp2p_gossipsub_blob_sidecar)
       expected:
-        count: 882
+        count: 1000

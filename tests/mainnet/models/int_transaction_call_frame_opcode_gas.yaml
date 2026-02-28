@@ -7,88 +7,80 @@ external_data:
 assertions:
     - name: Row count should be greater than zero
       sql: |
-        SELECT COUNT(*) AS count FROM int_transaction_call_frame_opcode_gas FINAL
+        SELECT COUNT(*) AS row_count FROM int_transaction_call_frame_opcode_gas FINAL
       assertions:
         - type: greater_than
-          column: count
+          column: row_count
           value: 0
-    - name: Opcode count should always be positive
+    - name: No null or empty opcode values
       sql: |
-        SELECT COUNT(*) AS invalid_count
-        FROM int_transaction_call_frame_opcode_gas FINAL
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_gas FINAL
+        WHERE opcode = '' OR opcode IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No non-positive opcode count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_gas FINAL
         WHERE count <= 0
       assertions:
         - type: equals
-          column: invalid_count
+          column: bad_rows
           value: 0
-    - name: Gas should be non-negative
+    - name: No negative gas values
       sql: |
-        SELECT COUNT(*) AS count
-        FROM int_transaction_call_frame_opcode_gas FINAL
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_gas FINAL
         WHERE gas < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Gas cumulative should be greater than or equal to gas
+    - name: No negative gas_cumulative values
       sql: |
-        SELECT COUNT(*) AS count
-        FROM int_transaction_call_frame_opcode_gas FINAL
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_gas FINAL
+        WHERE gas_cumulative < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: gas_cumulative should be greater than or equal to gas
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_gas FINAL
         WHERE gas_cumulative < gas
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Opcode should never be empty
+    - name: No negative error_count values
       sql: |
-        SELECT COUNT(*) AS count
-        FROM int_transaction_call_frame_opcode_gas FINAL
-        WHERE opcode = ''
-      assertions:
-        - type: equals
-          column: count
-          value: 0
-    - name: Error count should be non-negative
-      sql: |
-        SELECT COUNT(*) AS count
-        FROM int_transaction_call_frame_opcode_gas FINAL
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_gas FINAL
         WHERE error_count < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Block number should be positive
+    - name: No negative call_frame_id values
       sql: |
-        SELECT MIN(block_number) AS min_block
-        FROM int_transaction_call_frame_opcode_gas FINAL
-      assertions:
-        - type: greater_than
-          column: min_block
-          value: 0
-    - name: Call frame ID should be non-negative
-      sql: |
-        SELECT COUNT(*) AS count
-        FROM int_transaction_call_frame_opcode_gas FINAL
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_gas FINAL
         WHERE call_frame_id < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Memory expansion gas should be non-negative
+    - name: No negative memory_expansion_gas values
       sql: |
-        SELECT COUNT(*) AS count
-        FROM int_transaction_call_frame_opcode_gas FINAL
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_gas FINAL
         WHERE memory_expansion_gas < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0
-    - name: Cold access count should be non-negative
+    - name: No negative cold_access_count values
       sql: |
-        SELECT COUNT(*) AS count
-        FROM int_transaction_call_frame_opcode_gas FINAL
+        SELECT COUNT(*) AS bad_rows FROM int_transaction_call_frame_opcode_gas FINAL
         WHERE cold_access_count < 0
       assertions:
         - type: equals
-          column: count
+          column: bad_rows
           value: 0

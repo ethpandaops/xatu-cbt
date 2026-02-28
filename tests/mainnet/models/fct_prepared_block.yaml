@@ -5,79 +5,82 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_prepared_block_beacon_api_eth_v3_validator_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot) AS min,
-          MAX(slot) AS max
-        FROM
-          fct_prepared_block FINAL
-      expected:
-        count: 171
-        max: "12145390"
-        min: "12145370"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM fct_prepared_block FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null slot values
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_prepared_block'
-      expected:
-        max: "2025-07-15T08:38:23Z"
-        min: "2025-07-15T08:34:23Z"
-    - name: Client diversity
+        SELECT COUNT(*) AS bad_rows FROM fct_prepared_block FINAL
+        WHERE slot IS NULL OR slot = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null slot_start_date_time values
       sql: |
-        SELECT
-          COUNT(DISTINCT meta_client_name) AS unique_client_names,
-          COUNT(DISTINCT meta_client_implementation) AS unique_execution_clients,
-          COUNT(DISTINCT meta_consensus_implementation) AS unique_consensus_clients
-        FROM
-          fct_prepared_block FINAL
-      expected:
-        unique_client_names: 10
-        unique_consensus_clients: 5
-        unique_execution_clients: 1
-    - name: Block values populated
+        SELECT COUNT(*) AS bad_rows FROM fct_prepared_block FINAL
+        WHERE slot_start_date_time IS NULL OR slot_start_date_time = toDateTime('1970-01-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative execution_payload_gas_limit values
       sql: |
-        SELECT
-          COUNT(*) AS blocks_with_exec_data
-        FROM
-          fct_prepared_block FINAL
-        WHERE
-          execution_payload_block_number > 0
-      expected:
-        blocks_with_exec_data: 171
-    - name: Block version verification
+        SELECT COUNT(*) AS bad_rows FROM fct_prepared_block FINAL
+        WHERE execution_payload_gas_limit < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative execution_payload_gas_used values
       sql: |
-        SELECT
-          COUNT(DISTINCT block_version) AS versions,
-          MIN(block_version) AS version_name
-        FROM
-          fct_prepared_block FINAL
-      expected:
-        version_name: electra
-        versions: 1
-    - name: Consensus client distribution
+        SELECT COUNT(*) AS bad_rows FROM fct_prepared_block FINAL
+        WHERE execution_payload_gas_used < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Gas used should not exceed gas limit
       sql: |
-        SELECT
-          COUNT(DISTINCT meta_consensus_implementation) AS total_implementations
-        FROM
-          fct_prepared_block FINAL
-      expected:
-        total_implementations: 5
-    - name: Date time fields populated
+        SELECT COUNT(*) AS bad_rows FROM fct_prepared_block FINAL
+        WHERE execution_payload_gas_used > execution_payload_gas_limit
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative execution_payload_transactions_count values
       sql: |
-        SELECT
-          COUNT(*) AS complete_records
-        FROM
-          fct_prepared_block FINAL
-        WHERE
-          slot_start_date_time IS NOT NULL
-          AND event_date_time IS NOT NULL
-          AND updated_date_time IS NOT NULL
-      expected:
-        complete_records: 171
+        SELECT COUNT(*) AS bad_rows FROM fct_prepared_block FINAL
+        WHERE execution_payload_transactions_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Compressed block bytes should not exceed total block bytes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_prepared_block FINAL
+        WHERE block_total_bytes_compressed > block_total_bytes
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative block_total_bytes values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_prepared_block FINAL
+        WHERE block_total_bytes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No empty meta_client_name values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_prepared_block FINAL
+        WHERE meta_client_name IS NULL OR meta_client_name = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -2,14 +2,12 @@ model: canonical_execution_balance_diffs
 network: mainnet
 external_data:
     canonical_execution_balance_diffs:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_balance_diffs_canonical_execution_balance_diffs.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_balance_diffs.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.canonical_execution_balance_diffs) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_balance_diffs)
       expected:
-        count: 10626
+        count: 1000

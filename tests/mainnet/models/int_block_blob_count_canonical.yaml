@@ -5,27 +5,87 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_blob_count_canonical_canonical_beacon_blob_sidecar.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          int_block_blob_count_canonical FINAL
-      expected:
-        count: 10
-        max: "2025-07-15T08:38:23Z"
-        min: "2025-07-15T08:34:35Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM int_block_blob_count_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No rows with blob_count less than one
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_block_blob_count_canonical'
-      expected:
-        max: "2025-07-15T08:38:23Z"
-        min: "2025-07-15T08:34:35Z"
+        SELECT COUNT(*) AS bad_rows FROM int_block_blob_count_canonical FINAL
+        WHERE blob_count < 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_blob_count_canonical FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_blob_count_canonical FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with empty block_root
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_blob_count_canonical FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with null slot_start_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_blob_count_canonical FINAL
+        WHERE slot_start_date_time IS NULL OR slot_start_date_time = toDateTime('1970-01-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blob count should not exceed max blobs per block (21)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_blob_count_canonical FINAL
+        WHERE blob_count > 21
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each slot and block_root combination should be unique
+      sql: |
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+          SELECT slot, block_root, COUNT(*) AS cnt
+          FROM int_block_blob_count_canonical FINAL
+          GROUP BY slot, block_root
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: Epoch should be consistent with slot (slot / 32)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_blob_count_canonical FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with null updated_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_blob_count_canonical FINAL
+        WHERE updated_date_time IS NULL OR updated_date_time = toDateTime('1970-01-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -2,14 +2,12 @@ model: beacon_api_eth_v1_events_head
 network: mainnet
 external_data:
     beacon_api_eth_v1_events_head:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/beacon_api_eth_v1_events_head_beacon_api_eth_v1_events_head.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/beacon_api_eth_v1_events_head.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.beacon_api_eth_v1_events_head) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.beacon_api_eth_v1_events_head)
       expected:
-        count: 2178
+        count: 1000

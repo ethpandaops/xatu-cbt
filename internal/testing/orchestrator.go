@@ -611,6 +611,20 @@ func (o *Orchestrator) executeTestWithDBs(
 		}
 	}
 
+	// Step 2.5: Validate external data has rows after parquet load.
+	// Catches broken/empty parquets early before wasting time on CBT transformations.
+	if len(standardURLs) > 0 {
+		tables := make([]string, 0, len(standardURLs))
+		for tableName := range standardURLs {
+			tables = append(tables, tableName)
+		}
+
+		if validateErr := o.dbManager.ValidateExternalData(ctx, extDB, tables); validateErr != nil {
+			result.Error = validateErr
+			return result
+		}
+	}
+
 	// Step 3: Run transformations (reads extDB, writes cbtDB)
 	if transformErr := o.runTestTransformations(ctx, network, cbtDB, extDB, deps); transformErr != nil {
 		result.Error = transformErr

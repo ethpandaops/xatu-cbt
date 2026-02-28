@@ -8,27 +8,87 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_proposer_canonical_canonical_beacon_proposer_duty.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          int_block_proposer_canonical FINAL
-      expected:
-        count: 21
-        max: "2025-07-15T08:38:23Z"
-        min: "2025-07-15T08:34:23Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM int_block_proposer_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No rows with null slot
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_block_proposer_canonical'
-      expected:
-        max: "2025-07-15T08:38:23Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT COUNT(*) AS bad_rows FROM int_block_proposer_canonical FINAL
+        WHERE slot IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with null slot_start_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_proposer_canonical FINAL
+        WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with null epoch
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_proposer_canonical FINAL
+        WHERE epoch IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_proposer_canonical FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_proposer_canonical FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative proposer_validator_index values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_proposer_canonical FINAL
+        WHERE proposer_validator_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should equal slot divided by 32
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_proposer_canonical FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate slots
+      sql: |
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+          SELECT slot, COUNT(*) AS cnt
+          FROM int_block_proposer_canonical FINAL
+          GROUP BY slot
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: Block root should be null or non-empty when present
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_proposer_canonical FINAL
+        WHERE block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

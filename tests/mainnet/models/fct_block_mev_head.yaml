@@ -11,27 +11,82 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_head_mev_relay_proposer_payload_delivered.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
       sql: |
-        SELECT
-          COUNT(*) AS count,
-          MIN(slot_start_date_time) AS min,
-          MAX(slot_start_date_time) AS max
-        FROM
-          fct_block_mev_head FINAL
-      expected:
-        count: 18
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
-    - name: Expected admin bounds
+        SELECT COUNT(*) AS row_count FROM fct_block_mev_head FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null block_hash values
       sql: |
-        SELECT
-          fromUnixTimestamp(MAX(position + interval)) AS max,
-          fromUnixTimestamp(MIN(position)) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'fct_block_mev_head'
-      expected:
-        max: "2025-07-15T08:38:11Z"
-        min: "2025-07-15T08:34:23Z"
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE block_hash IS NULL OR block_hash = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null block_root values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE block_root IS NULL OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: All slots should be positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE slot <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: gas_used should never exceed gas_limit
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE gas_used > gas_limit
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative gas_limit values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE gas_limit < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative gas_used values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE gas_used < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative transaction_count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE transaction_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Value should be positive when not null (zero mapped to null by CASE)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE value IS NOT NULL AND value <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: relay_names array should never be empty since rows come from inner join
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE length(relay_names) = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

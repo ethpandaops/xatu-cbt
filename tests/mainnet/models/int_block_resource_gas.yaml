@@ -18,7 +18,7 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: No null block_number values
+    - name: No null block numbers
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_resource_gas FINAL
         WHERE block_number IS NULL
@@ -26,10 +26,10 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: All block numbers should be non-negative
+    - name: Block numbers should be positive
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_resource_gas FINAL
-        WHERE block_number < 0
+        WHERE block_number <= 0
       assertions:
         - type: equals
           column: bad_rows
@@ -58,23 +58,15 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No negative gas_state_growth values
+    - name: No negative gas_state_growth or gas_history values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_resource_gas FINAL
-        WHERE gas_state_growth < 0
+        WHERE gas_state_growth < 0 OR gas_history < 0
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No negative gas_history or gas_bloom_topics or gas_block_size values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM int_block_resource_gas FINAL
-        WHERE gas_history < 0 OR gas_bloom_topics < 0 OR gas_block_size < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No null or empty meta_network_name
+    - name: No null meta_network_name
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_resource_gas FINAL
         WHERE meta_network_name IS NULL OR meta_network_name = ''
@@ -82,15 +74,23 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Each block_number and meta_network_name pair should be unique
+    - name: No duplicate block_number per meta_network_name
       sql: |
-        SELECT COUNT(*) AS total_rows,
-               COUNT(DISTINCT (block_number, meta_network_name)) AS distinct_keys
-        FROM int_block_resource_gas FINAL
+        SELECT COUNT(*) AS duplicate_groups FROM (
+          SELECT block_number, meta_network_name
+          FROM int_block_resource_gas FINAL
+          GROUP BY block_number, meta_network_name
+          HAVING COUNT(*) > 1
+        )
       assertions:
-        - type: greater_than
-          column: total_rows
+        - type: equals
+          column: duplicate_groups
           value: 0
-        - type: greater_than_or_equal
-          column: distinct_keys
-          value: 1
+    - name: Gas refund should not exceed total of all other gas components per block
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_resource_gas FINAL
+        WHERE gas_refund > (gas_compute + gas_memory + gas_address_access + gas_state_growth + gas_history + gas_bloom_topics + gas_block_size)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

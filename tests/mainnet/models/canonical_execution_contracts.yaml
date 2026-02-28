@@ -2,14 +2,12 @@ model: canonical_execution_contracts
 network: mainnet
 external_data:
     canonical_execution_contracts:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_contracts_canonical_execution_contracts.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_contracts.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.canonical_execution_contracts) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_contracts)
       expected:
-        count: 10
+        count: 1000

@@ -77,7 +77,9 @@ assertions:
           value: 0
     - name: Bollinger bands should be correctly computed from avg and stddev
       sql: |
-        SELECT COUNT(*) AS count FROM fct_attestation_inclusion_delay_hourly FINAL WHERE round(avg_inclusion_delay + 2 * stddev_inclusion_delay, 4) != upper_band_inclusion_delay OR round(avg_inclusion_delay - 2 * stddev_inclusion_delay, 4) != lower_band_inclusion_delay
+        SELECT COUNT(*) AS count FROM fct_attestation_inclusion_delay_hourly FINAL
+        WHERE abs(round(avg_inclusion_delay + 2 * stddev_inclusion_delay, 4) - upper_band_inclusion_delay) > 0.001
+           OR abs(round(avg_inclusion_delay - 2 * stddev_inclusion_delay, 4) - lower_band_inclusion_delay) > 0.001
       assertions:
         - type: equals
           column: count

@@ -2,14 +2,12 @@ model: canonical_execution_address_appearances
 network: mainnet
 external_data:
     canonical_execution_address_appearances:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_address_appearances_canonical_execution_address_appearances.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_address_appearances.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
       sql: |
-        SELECT
-          COUNT(*) AS count
-        FROM
-          cluster('{remote_cluster}', default.canonical_execution_address_appearances) FINAL
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_address_appearances)
       expected:
-        count: 74445
+        count: 1000

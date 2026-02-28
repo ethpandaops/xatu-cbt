@@ -23,27 +23,84 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_first_access_canonical_execution_storage_reads.parquet
         network_column: meta_network_name
 assertions:
-    - name: Expected bounds and size
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_address_first_access FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null addresses
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_first_access FINAL
+        WHERE address IS NULL OR address = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null block numbers
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_first_access FINAL
+        WHERE block_number IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block numbers should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_first_access FINAL
+        WHERE block_number < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Addresses should be lowercase (no uppercase hex characters)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_first_access FINAL
+        WHERE address != lower(address)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each address should be unique
+      sql: |
+        SELECT COUNT(*) AS total_rows, COUNT(DISTINCT address) AS distinct_addresses FROM int_address_first_access FINAL
+      assertions:
+        - type: greater_than
+          column: total_rows
+          value: 0
+        - type: greater_than
+          column: distinct_addresses
+          value: 0
+    - name: Unique address count equals total row count
       sql: |
         SELECT
-          COUNT(*) AS count,
-          MIN(block_number) AS min,
-          MAX(block_number) AS max
-        FROM
-          int_address_first_access FINAL
-      expected:
-        count: 5182
-        max: "22923437"
-        min: "22923421"
-    - name: Expected admin bounds
+          COUNT(*) - COUNT(DISTINCT address) AS duplicate_count
+        FROM int_address_first_access FINAL
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: Version should be correctly computed from block number
       sql: |
-        SELECT
-          MAX(position + interval) AS max,
-          MIN(position) AS min
-        FROM
-          admin_cbt_incremental FINAL
-        WHERE
-          table = 'int_address_first_access'
-      expected:
-        max: "22923437"
-        min: "22923421"
+        SELECT COUNT(*) AS bad_rows FROM int_address_first_access FINAL
+        WHERE version != 4294967295 - block_number
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block number min should be a reasonable value
+      sql: |
+        SELECT MIN(block_number) AS min_block FROM int_address_first_access FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_block
+          value: 0
+    - name: Addresses should be valid hex format starting with 0x
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_first_access FINAL
+        WHERE NOT match(address, '^0x[0-9a-f]+$')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
