@@ -34,7 +34,7 @@ MODELS_DIR="$REPO_ROOT/models"
 TESTS_DIR="$REPO_ROOT/tests/$NETWORK/models"
 
 if [[ ! -d "$TESTS_DIR" ]]; then
-    echo "all"
+    echo "none"
     exit 0
 fi
 
