@@ -4,18 +4,23 @@ external_data:
     beacon_api_eth_v1_events_blob_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_beacon_api_eth_v1_events_blob_sidecar.parquet
         network_column: meta_network_name
+        optional: true
     beacon_api_eth_v1_events_data_column_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_beacon_api_eth_v1_events_data_column_sidecar.parquet
         network_column: meta_network_name
+        optional: true
     canonical_beacon_blob_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_canonical_beacon_blob_sidecar.parquet
         network_column: meta_network_name
+        optional: true
     libp2p_gossipsub_blob_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_libp2p_gossipsub_blob_sidecar.parquet
         network_column: meta_network_name
+        optional: true
     libp2p_gossipsub_data_column_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_libp2p_gossipsub_data_column_sidecar.parquet
         network_column: meta_network_name
+        optional: true
 assertions:
     - name: Row count should be greater than zero
       sql: |

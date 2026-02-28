@@ -42,6 +42,7 @@ type TestDefinition struct {
 type ExternalTable struct {
 	URL           string `yaml:"url"`
 	NetworkColumn string `yaml:"network_column"`
+	Optional      bool   `yaml:"optional,omitempty"`
 }
 
 // Assertion represents a single SQL test.

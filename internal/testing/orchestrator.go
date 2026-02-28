@@ -615,11 +615,17 @@ func (o *Orchestrator) executeTestWithDBs(
 	// Catches broken/empty parquets early before wasting time on CBT transformations.
 	if len(standardURLs) > 0 {
 		tables := make([]string, 0, len(standardURLs))
+		optionalTables := make(map[string]bool)
+
 		for tableName := range standardURLs {
 			tables = append(tables, tableName)
+
+			if ext, ok := testConfig.ExternalData[tableName]; ok && ext.Optional {
+				optionalTables[tableName] = true
+			}
 		}
 
-		if validateErr := o.dbManager.ValidateExternalData(ctx, extDB, tables); validateErr != nil {
+		if validateErr := o.dbManager.ValidateExternalData(ctx, extDB, tables, optionalTables); validateErr != nil {
 			result.Error = validateErr
 			return result
 		}

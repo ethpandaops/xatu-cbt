@@ -14,81 +14,13 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_storage_slot_total_canonical_execution_storage_reads.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
-      sql: |
-        SELECT COUNT(*) AS row_count FROM fct_address_storage_slot_total FINAL
-      assertions:
-        - type: greater_than
-          column: row_count
-          value: 0
-    - name: Should have exactly one row after deduplication
-      sql: |
-        SELECT COUNT(*) AS row_count FROM fct_address_storage_slot_total FINAL
-      assertions:
-        - type: equals
-          column: row_count
-          value: 1
-    - name: No null updated_date_time values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_total FINAL
-        WHERE updated_date_time IS NULL
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Total storage slots should be non-negative
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_total FINAL
-        WHERE total_storage_slots < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Expired storage slots should be non-negative
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_total FINAL
-        WHERE expired_storage_slots < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Expired storage slots should not exceed total storage slots
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_total FINAL
-        WHERE expired_storage_slots > total_storage_slots
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No null total_storage_slots values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_total FINAL
-        WHERE total_storage_slots IS NULL
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No null expired_storage_slots values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_total FINAL
-        WHERE expired_storage_slots IS NULL
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Total storage slots should be greater than zero
-      sql: |
-        SELECT min(total_storage_slots) AS min_total FROM fct_address_storage_slot_total FINAL
-      assertions:
-        - type: greater_than
-          column: min_total
-          value: 0
-    - name: Updated date time should be a reasonable timestamp
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_total FINAL
-        WHERE updated_date_time < toDateTime('2020-01-01 00:00:00')
-           OR updated_date_time > now() + INTERVAL 1 DAY
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
+  - name: Expected bounds and size
+    sql: |
+      SELECT
+        total_storage_slots,
+        expired_storage_slots
+      FROM
+        fct_address_storage_slot_total FINAL
+    expected:
+      total_storage_slots: 8771
+      expired_storage_slots: 0

@@ -291,6 +291,7 @@ func (e *CBTEngine) generateConfig(network, dbName, externalDB string, models []
 		"EXTERNAL_MODEL_MIN_BLOCK":               "0",
 		"DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS": "3650", // 10 years for tests.
 		"EXTERNAL_DATABASE":                      externalDB,
+		"GENESIS_TIMESTAMP":                      genesisTimestampForNetwork(network),
 	}
 
 	// Configure for fast test execution
@@ -765,4 +766,18 @@ func (e *CBTEngine) tableExists(ctx context.Context, conn *sql.DB, dbName, table
 	}
 
 	return count > 0, nil
+}
+
+// genesisTimestampForNetwork returns the beacon chain genesis timestamp for a given network.
+func genesisTimestampForNetwork(network string) string {
+	switch network {
+	case "mainnet":
+		return "1606824023"
+	case "sepolia":
+		return "1655733600"
+	case "hoodi":
+		return "1742213400"
+	default:
+		return "0"
+	}
 }

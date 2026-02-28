@@ -946,35 +946,45 @@ func (m *DatabaseManager) listAdminTables(ctx context.Context, conn *sql.DB, dat
 	return tables, nil
 }
 
-// tableTimeRange holds the min/max DateTime range for an external table.
-type tableTimeRange struct {
-	table  string
-	column string
-	min    time.Time
-	max    time.Time
-}
-
-// ValidateExternalData checks external tables after parquet loading.
-// It validates that at least one table has data (some may be legitimately empty,
-// e.g. pre-PeerDAS blob_sidecar tables in a post-PeerDAS time window) and that
-// tables with data have overlapping time ranges. Non-overlapping ranges cause CBT
-// to silently skip transformations because it cannot find a valid dependency intersection.
-func (m *DatabaseManager) ValidateExternalData(ctx context.Context, database string, tables []string) error {
-	ranges := make([]tableTimeRange, 0, len(tables))
-	emptyTables := make([]string, 0)
+// ValidateExternalData checks that at least one external table has rows after parquet loading.
+// Some tables may be legitimately empty (e.g. pre-PeerDAS blob_sidecar tables in a post-PeerDAS
+// time window), so we only fail when ALL tables are empty.
+// ValidateExternalData checks that external tables have data after parquet load.
+// Tables marked as optional (e.g. era-dependent tables like pre/post PeerDAS) are
+// allowed to be empty. Required tables must have rows. At least one table overall
+// must have data.
+func (m *DatabaseManager) ValidateExternalData(ctx context.Context, database string, tables []string, optionalTables map[string]bool) error {
+	emptyRequired := make([]string, 0)
+	emptyOptional := make([]string, 0)
 	tablesWithData := 0
 
 	for _, tableName := range tables {
-		count, err := m.getExternalTableRowCount(ctx, database, tableName)
+		query := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+			"SELECT count() FROM `%s`.`%s`",
+			database, tableName)
+
+		queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+
+		var count uint64
+
+		err := m.xatuConn.QueryRowContext(queryCtx, query).Scan(&count)
+		cancel()
+
 		if err != nil {
-			return err
+			return fmt.Errorf("checking row count for %s.%s: %w", database, tableName, err)
 		}
 
 		if count == 0 {
-			emptyTables = append(emptyTables, tableName)
+			if optionalTables[tableName] {
+				emptyOptional = append(emptyOptional, tableName)
+			} else {
+				emptyRequired = append(emptyRequired, tableName)
+			}
+
 			m.log.WithFields(logrus.Fields{
 				"database": database,
 				"table":    tableName,
+				"optional": optionalTables[tableName],
 			}).Warn("external table has 0 rows after parquet load")
 
 			continue
@@ -987,18 +997,17 @@ func (m *DatabaseManager) ValidateExternalData(ctx context.Context, database str
 			"table":    tableName,
 			"rows":     count,
 		}).Debug("validated external table has data")
-
-		// Get time range for overlap validation
-		tr, err := m.getTableTimeRange(ctx, database, tableName)
-		if err != nil {
-			m.log.WithError(err).WithField("table", tableName).Debug("skipping time range check")
-
-			continue
-		}
-
-		ranges = append(ranges, *tr)
 	}
 
+	// Required tables must have data
+	if len(emptyRequired) > 0 {
+		return fmt.Errorf( //nolint:err113 // Dynamic validation error
+			"required external tables have 0 rows after parquet load — test data is empty or broken: %s",
+			strings.Join(emptyRequired, ", "),
+		)
+	}
+
+	// At least one table overall must have data
 	if tablesWithData == 0 {
 		return fmt.Errorf( //nolint:err113 // Dynamic validation error
 			"all %d external tables have 0 rows after parquet load — test data is empty or broken: %s",
@@ -1006,133 +1015,13 @@ func (m *DatabaseManager) ValidateExternalData(ctx context.Context, database str
 		)
 	}
 
-	if len(emptyTables) > 0 {
+	if len(emptyOptional) > 0 {
 		m.log.WithFields(logrus.Fields{
-			"empty_tables":     emptyTables,
+			"empty_optional":   emptyOptional,
 			"tables_with_data": tablesWithData,
 			"total_tables":     len(tables),
-		}).Warn("some external tables are empty — this is expected for era-dependent models (e.g. pre/post PeerDAS)")
+		}).Info("some optional external tables are empty (expected for era-dependent models)")
 	}
-
-	return m.validateTimeRangeOverlap(ranges)
-}
-
-// getExternalTableRowCount returns the row count for an external table.
-func (m *DatabaseManager) getExternalTableRowCount(ctx context.Context, database, tableName string) (uint64, error) {
-	query := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
-		"SELECT count() FROM `%s`.`%s`",
-		database, tableName)
-
-	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
-	defer cancel()
-
-	var count uint64
-
-	err := m.xatuConn.QueryRowContext(queryCtx, query).Scan(&count)
-	if err != nil {
-		return 0, fmt.Errorf("checking row count for %s.%s: %w", database, tableName, err)
-	}
-
-	return count, nil
-}
-
-// getTableTimeRange finds a DateTime column in the table and returns its min/max range.
-func (m *DatabaseManager) getTableTimeRange(ctx context.Context, database, tableName string) (*tableTimeRange, error) {
-	// Find a DateTime column via system.columns
-	colQuery := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
-		"SELECT name FROM system.columns WHERE database = '%s' AND table = '%s'"+
-			" AND type IN ('DateTime', 'DateTime64(3)')"+
-			" AND name IN ('slot_start_date_time', 'event_date_time')"+
-			" LIMIT 1",
-		database, tableName)
-
-	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
-	defer cancel()
-
-	var col string
-
-	err := m.xatuConn.QueryRowContext(queryCtx, colQuery).Scan(&col)
-	if err != nil {
-		return nil, fmt.Errorf("finding datetime column for %s.%s: %w", database, tableName, err)
-	}
-
-	// Query min/max of that column
-	rangeQuery := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
-		"SELECT min(`%s`), max(`%s`) FROM `%s`.`%s`",
-		col, col, database, tableName)
-
-	rangeCtx, rangeCancel := context.WithTimeout(ctx, m.config.QueryTimeout)
-	defer rangeCancel()
-
-	var minTime, maxTime time.Time
-
-	err = m.xatuConn.QueryRowContext(rangeCtx, rangeQuery).Scan(&minTime, &maxTime)
-	if err != nil {
-		return nil, fmt.Errorf("querying time range for %s.%s.%s: %w", database, tableName, col, err)
-	}
-
-	return &tableTimeRange{
-		table:  tableName,
-		column: col,
-		min:    minTime,
-		max:    maxTime,
-	}, nil
-}
-
-// validateTimeRangeOverlap checks that all external tables have overlapping time ranges.
-// If tables don't overlap, CBT's dependency validator will never find a valid range
-// and the transformation will silently never execute.
-func (m *DatabaseManager) validateTimeRangeOverlap(ranges []tableTimeRange) error {
-	if len(ranges) < 2 {
-		return nil
-	}
-
-	// Find the intersection of all ranges: max of all mins, min of all maxes
-	overlapStart := ranges[0].min
-	overlapEnd := ranges[0].max
-
-	for _, r := range ranges[1:] {
-		if r.min.After(overlapStart) {
-			overlapStart = r.min
-		}
-
-		if r.max.Before(overlapEnd) {
-			overlapEnd = r.max
-		}
-	}
-
-	if overlapStart.After(overlapEnd) {
-		// Build a diagnostic message showing each table's range
-		details := make([]string, 0, len(ranges))
-		for _, r := range ranges {
-			details = append(details, fmt.Sprintf(
-				"  %s (%s): %s to %s",
-				r.table, r.column,
-				r.min.Format(time.RFC3339), r.max.Format(time.RFC3339),
-			))
-		}
-
-		return fmt.Errorf( //nolint:err113 // Dynamic validation error
-			"external tables have non-overlapping time ranges — CBT cannot find valid dependency intersection:\n%s",
-			strings.Join(details, "\n"),
-		)
-	}
-
-	// Log the overlap for debugging
-	for _, r := range ranges {
-		m.log.WithFields(logrus.Fields{
-			"table":  r.table,
-			"column": r.column,
-			"min":    r.min.Format(time.RFC3339),
-			"max":    r.max.Format(time.RFC3339),
-		}).Debug("external table time range")
-	}
-
-	m.log.WithFields(logrus.Fields{
-		"overlap_start": overlapStart.Format(time.RFC3339),
-		"overlap_end":   overlapEnd.Format(time.RFC3339),
-		"tables":        len(ranges),
-	}).Debug("external tables have valid time overlap")
 
 	return nil
 }

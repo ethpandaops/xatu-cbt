@@ -8,75 +8,19 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_storage_slot_top_100_by_contract_canonical_execution_storage_reads.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
-      sql: |
-        SELECT COUNT(*) AS row_count FROM fct_address_storage_slot_top_100_by_contract FINAL
-      assertions:
-        - type: greater_than
-          column: row_count
-          value: 0
-    - name: Row count should be at most 100
-      sql: |
-        SELECT COUNT(*) AS row_count FROM fct_address_storage_slot_top_100_by_contract FINAL
-      assertions:
-        - type: less_than_or_equal
-          column: row_count
-          value: 100
-    - name: No null contract addresses
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
-        WHERE contract_address = '' OR contract_address IS NULL
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: All ranks should be between 1 and 100
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
-        WHERE rank < 1 OR rank > 100
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No duplicate ranks
-      sql: |
-        SELECT COUNT(*) - COUNT(DISTINCT rank) AS duplicate_ranks FROM fct_address_storage_slot_top_100_by_contract FINAL
-      assertions:
-        - type: equals
-          column: duplicate_ranks
-          value: 0
-    - name: Total storage slots should be positive for all rows
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
-        WHERE total_storage_slots <= 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No duplicate contract addresses
-      sql: |
-        SELECT COUNT(*) - COUNT(DISTINCT contract_address) AS duplicate_addresses FROM fct_address_storage_slot_top_100_by_contract FINAL
-      assertions:
-        - type: equals
-          column: duplicate_addresses
-          value: 0
-    - name: Ranks should be ordered by total_storage_slots descending
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM (
-          SELECT rank, total_storage_slots,
-            lagInFrame(total_storage_slots) OVER (ORDER BY rank ASC) AS prev_slots
-          FROM fct_address_storage_slot_top_100_by_contract FINAL
-        )
-        WHERE prev_slots < total_storage_slots
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Updated date time should not be in the future
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_top_100_by_contract FINAL
-        WHERE updated_date_time > now()
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
+  - name: Expected bounds and size
+    sql: |
+      SELECT
+        COUNT(*) AS count,
+        argMin(contract_address, rank) AS top_contract_address,
+        argMin(total_storage_slots, rank) AS top_total_storage_slots,
+        argMax(contract_address, rank) AS bottom_contract_address,
+        argMax(total_storage_slots, rank) AS bottom_total_storage_slots
+      FROM
+        fct_address_storage_slot_top_100_by_contract FINAL
+    expected:
+      bottom_contract_address: 0x1715a3e4a142d8b698131108995174f37aeba10d
+      bottom_total_storage_slots: 42
+      count: 100
+      top_contract_address: 0xdac17f958d2ee523a2206206994597c13d831ec7
+      top_total_storage_slots: 7503

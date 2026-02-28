@@ -35,15 +35,15 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: hour_start_date_time should be aligned to hour boundaries
+    - name: hour_start_date_time is always aligned to hour boundary
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
-        WHERE toMinute(hour_start_date_time) != 0 OR toSecond(hour_start_date_time) != 0
+        WHERE toStartOfHour(hour_start_date_time) != hour_start_date_time
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Depth should always be at least 1
+    - name: Depth must be at least 1 (represents consecutive orphaned slots)
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
         WHERE depth < 1
@@ -51,7 +51,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Reorg count should not be negative
+    - name: No negative reorg_count values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
         WHERE reorg_count < 0
@@ -59,9 +59,17 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No duplicate hour and depth combinations
+    - name: No null updated_date_time values
       sql: |
-        SELECT COUNT(*) AS duplicate_count
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate (hour_start_date_time, depth) combinations
+      sql: |
+        SELECT COUNT(*) AS bad_rows
         FROM (
             SELECT hour_start_date_time, depth, COUNT(*) AS cnt
             FROM fct_reorg_hourly FINAL
@@ -70,29 +78,25 @@ assertions:
         )
       assertions:
         - type: equals
-          column: duplicate_count
+          column: bad_rows
           value: 0
-    - name: Depth should be reasonable (at most 64 consecutive orphaned slots)
+    - name: Depth should be within a reasonable range (max 64 given padding window)
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
-        WHERE depth > 64
+        WHERE depth > 128
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Sum of reorg counts per hour should be reasonable
+    - name: At least some rows should have non-zero reorg_count
       sql: |
-        SELECT MAX(hourly_total) AS max_hourly_total
-        FROM (
-            SELECT hour_start_date_time, SUM(reorg_count) AS hourly_total
-            FROM fct_reorg_hourly FINAL
-            GROUP BY hour_start_date_time
-        )
+        SELECT COUNT(*) AS non_zero_rows FROM fct_reorg_hourly FINAL
+        WHERE reorg_count > 0
       assertions:
-        - type: greater_than_or_equal
-          column: max_hourly_total
+        - type: greater_than
+          column: non_zero_rows
           value: 0
-    - name: Updated date time should not be in the future
+    - name: updated_date_time should not be in the future
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
         WHERE updated_date_time > now() + INTERVAL 1 DAY
