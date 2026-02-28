@@ -257,33 +257,50 @@ func (m *DatabaseManager) CreateCBTTemplate(ctx context.Context, migrationDir st
 
 // isCBTTemplateReady checks if CBT template database exists with migrations applied.
 func (m *DatabaseManager) isCBTTemplateReady(ctx context.Context) bool {
+	// First check the actual database exists (may be lost after infra restart)
+	dbCtx, dbCancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer dbCancel()
+
+	var dbCount int
+
+	dbSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+		"SELECT COUNT(*) FROM system.databases WHERE name = '%s'",
+		config.CBTTemplateDatabase)
+	if err := m.cbtConn.QueryRowContext(dbCtx, dbSQL).Scan(&dbCount); err != nil || dbCount == 0 {
+		return false
+	}
+
+	// Check schema migrations table exists
 	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel()
 
 	var count int
+
 	checkSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
 		`SELECT COUNT(*)
 		FROM system.tables
 		WHERE database = 'default'
 		AND name = '%s%s'`,
 		config.SchemaMigrationsPrefix, config.CBTTemplateDatabase)
-	err := m.cbtConn.QueryRowContext(queryCtx, checkSQL).Scan(&count)
-
-	if err != nil || count == 0 {
+	if err := m.cbtConn.QueryRowContext(queryCtx, checkSQL).Scan(&count); err != nil || count == 0 {
 		return false
 	}
 
+	// Check migrations have been applied
 	queryCtx2, cancel2 := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel2()
 
 	var migrationCount int
+
 	countSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
 		`SELECT COUNT(*)
 		FROM default.%s%s`,
 		config.SchemaMigrationsPrefix, config.CBTTemplateDatabase)
-	err = m.cbtConn.QueryRowContext(queryCtx2, countSQL).Scan(&migrationCount)
+	if err := m.cbtConn.QueryRowContext(queryCtx2, countSQL).Scan(&migrationCount); err != nil {
+		return false
+	}
 
-	return err == nil && migrationCount > 0
+	return migrationCount > 0
 }
 
 // clearCBTTemplateTables drops all tables in CBT template database for force rebuild.

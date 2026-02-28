@@ -265,6 +265,14 @@ func (c *ModelCache) GetExternalModel(name string) *ModelMetadata {
 	return c.externalModels[name]
 }
 
+// GetTransformationModel returns the metadata for a transformation model, or nil if not found.
+func (c *ModelCache) GetTransformationModel(name string) *ModelMetadata {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return c.transformationModels[name]
+}
+
 // IsTransformationModel checks if a model exists in the transformations.
 func (c *ModelCache) IsTransformationModel(name string) bool {
 	c.mu.RLock()

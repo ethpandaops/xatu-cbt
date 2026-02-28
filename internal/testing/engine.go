@@ -373,13 +373,51 @@ func (e *CBTEngine) templateConfig(cfg *cbtConfig, dbName string) {
 	}
 }
 
-// buildTestOverrides creates test-optimized overrides by loading overrides.tests.yaml
+// buildTestOverrides creates test-optimized overrides for all models.
+// Auto-generates sensible defaults using the model cache:
+//   - External models: lag=0 (test data covers limited ranges)
+//   - Scheduled transformations: schedule="@every 5s"
+//   - Incremental transformations: forwardfill/backfill="@every 5s"
+//
+// If overrides.tests.yaml exists, those entries take precedence over auto-generated defaults.
 func (e *CBTEngine) buildTestOverrides(models []string) map[string]*modelOverrides {
+	allOverrides := make(map[string]*modelOverrides, len(models))
+
+	// Auto-generate defaults from model cache
+	for _, modelName := range models {
+		if e.modelCache.GetExternalModel(modelName) != nil {
+			lag := 0
+			allOverrides[modelName] = &modelOverrides{}
+			allOverrides[modelName].Config.Lag = &lag
+
+			continue
+		}
+
+		if tm := e.modelCache.GetTransformationModel(modelName); tm != nil {
+			override := &modelOverrides{}
+
+			switch tm.ExecutionType {
+			case "scheduled":
+				override.Config.Schedule = "@every 5s"
+			default: // incremental or anything else
+				override.Config.Schedules = map[string]string{
+					"forwardfill": "@every 5s",
+					"backfill":    "@every 5s",
+				}
+			}
+
+			allOverrides[modelName] = override
+		}
+	}
+
+	e.log.WithField("auto_generated", len(allOverrides)).Debug("generated test overrides from model cache")
+
+	// Apply overrides.tests.yaml on top (if it exists)
 	overridesPath := "overrides.tests.yaml"
-	data, err := os.ReadFile(overridesPath)
+
+	data, err := os.ReadFile(overridesPath) //nolint:gosec // G304: Trusted path for test overrides
 	if err != nil {
-		e.log.WithError(err).Warn("failed to read overrides.tests.yaml, using default test overrides")
-		return e.buildDefaultTestOverrides(models)
+		return allOverrides
 	}
 
 	var overridesConfig struct {
@@ -389,77 +427,22 @@ func (e *CBTEngine) buildTestOverrides(models []string) map[string]*modelOverrid
 	}
 
 	if err := yaml.Unmarshal(data, &overridesConfig); err != nil {
-		e.log.WithError(err).Warn("failed to parse overrides.tests.yaml, using default test overrides")
-		return e.buildDefaultTestOverrides(models)
+		e.log.WithError(err).Warn("failed to parse overrides.tests.yaml, using auto-generated overrides only")
+
+		return allOverrides
 	}
 
-	e.log.WithFields(logrus.Fields{
-		"from_file": len(overridesConfig.Models.Overrides),
-	}).Info("applying overrides.tests.yaml")
-
-	allOverrides := make(map[string]*modelOverrides)
+	// File overrides win over auto-generated defaults
 	for modelName, override := range overridesConfig.Models.Overrides {
 		allOverrides[modelName] = override
 	}
 
-	transformationDir := filepath.Join(e.modelsDir, "transformations")
-
-	// Add default overrides for models not in overrides file:
-	// - External models: set lag to 0 (test data covers limited slot ranges)
-	// - Transformation models: set fast schedules for quick test execution
-	for _, modelName := range models {
-		if allOverrides[modelName] != nil {
-			continue
-		}
-
-		externalPath := filepath.Join(e.externalDir, modelName+".sql")
-		if _, err := os.Stat(externalPath); err == nil {
-			lag := 0
-			allOverrides[modelName] = &modelOverrides{}
-			allOverrides[modelName].Config.Lag = &lag
-
-			continue
-		}
-
-		transformPath := filepath.Join(transformationDir, modelName+".sql")
-		if _, err := os.Stat(transformPath); err == nil {
-			allOverrides[modelName] = &modelOverrides{}
-			allOverrides[modelName].Config.Schedules = map[string]string{
-				"forwardfill": "@every 5s",
-				"backfill":    "@every 5s",
-			}
-		}
-	}
+	e.log.WithFields(logrus.Fields{
+		"from_file":      len(overridesConfig.Models.Overrides),
+		"auto_generated": len(allOverrides) - len(overridesConfig.Models.Overrides),
+	}).Info("applied overrides.tests.yaml on top of auto-generated defaults")
 
 	return allOverrides
-}
-
-// buildDefaultTestOverrides creates fallback overrides
-func (e *CBTEngine) buildDefaultTestOverrides(models []string) map[string]*modelOverrides {
-	overrides := make(map[string]*modelOverrides)
-
-	transformationDir := filepath.Join(e.modelsDir, "transformations")
-
-	for _, modelName := range models {
-		externalPath := filepath.Join(e.externalDir, modelName+".sql")
-		if _, err := os.Stat(externalPath); err == nil {
-			lag := 0
-			overrides[modelName] = &modelOverrides{}
-			overrides[modelName].Config.Lag = &lag
-			continue
-		}
-
-		transformPath := filepath.Join(transformationDir, modelName+".sql")
-		if _, err := os.Stat(transformPath); err == nil {
-			overrides[modelName] = &modelOverrides{}
-			overrides[modelName].Config.Schedule = "@every 5s"
-			continue
-		}
-	}
-
-	e.log.WithField("count", len(overrides)).Debug("generated default test overrides")
-
-	return overrides
 }
 
 // runDockerCBT runs CBT in a docker container

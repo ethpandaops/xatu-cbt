@@ -73,15 +73,12 @@ assertions:
           value: 0
     - name: chunk_start_block_number values should be unique
       sql: |
-        SELECT COUNT(*) AS total_rows, COUNT(DISTINCT chunk_start_block_number) AS distinct_chunks
+        SELECT COUNT(*) - COUNT(DISTINCT chunk_start_block_number) AS duplicate_chunks
         FROM fct_address_storage_slot_chunked_10000 FINAL
       assertions:
-        - type: greater_than
-          column: total_rows
-          value: 0
         - type: equals
-          column: total_rows
-          value: null
+          column: duplicate_chunks
+          value: 0
     - name: All rows should share a single updated_date_time
       sql: |
         SELECT COUNT(DISTINCT updated_date_time) AS distinct_timestamps

@@ -64,12 +64,12 @@ assertions:
           value: 0
     - name: Each address should be unique (one row per address)
       sql: |
-        SELECT COUNT(*) AS total_rows, COUNT(DISTINCT address) AS distinct_addresses
+        SELECT COUNT(*) - COUNT(DISTINCT address) AS duplicate_addresses
         FROM int_address_last_access FINAL
       assertions:
         - type: equals
-          column: total_rows
-          value: null
+          column: duplicate_addresses
+          value: 0
     - name: Minimum block number should be non-negative
       sql: |
         SELECT min(block_number) AS min_block FROM int_address_last_access FINAL
