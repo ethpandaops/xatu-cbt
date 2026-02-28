@@ -1,0 +1,112 @@
+model: fct_attestation_liveness_by_entity_head
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_liveness_by_entity_head_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_liveness_by_entity_head_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_liveness_by_entity_head_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_liveness_by_entity_head_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_attestation_liveness_by_entity_head FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null entity values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE entity IS NULL OR entity = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative attestation_count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE attestation_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative missed_count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE missed_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Total of attestation_count and missed_count should be greater than zero per row
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE (attestation_count + missed_count) <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: slot_start_date_time should not be null
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each slot-entity combination should be unique
+      sql: |
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+          SELECT slot, entity, COUNT(*) AS cnt
+          FROM fct_attestation_liveness_by_entity_head FINAL
+          GROUP BY slot, entity
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: updated_date_time should not be null
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_liveness_by_entity_head FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

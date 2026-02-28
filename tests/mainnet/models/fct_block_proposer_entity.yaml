@@ -1,0 +1,102 @@
+model: fct_block_proposer_entity
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_entity_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_entity_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_entity_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_entity_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_entity_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_proposer_entity FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null slot_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
+        WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null epoch_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
+        WHERE epoch_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should be consistent with slot (slot div 32)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: slot_start_date_time should be at or after epoch_start_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
+        WHERE slot_start_date_time < epoch_start_date_time
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null updated_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_proposer_entity FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Some rows should have a non-null entity from the LEFT JOIN
+      sql: |
+        SELECT COUNT(*) AS matched_rows FROM fct_block_proposer_entity FINAL
+        WHERE entity IS NOT NULL
+      assertions:
+        - type: greater_than
+          column: matched_rows
+          value: 0
+    - name: Each slot should have exactly one row
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT slot, COUNT(*) AS slot_count
+          FROM fct_block_proposer_entity FINAL
+          GROUP BY slot
+          HAVING slot_count > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

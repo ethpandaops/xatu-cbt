@@ -1,0 +1,26 @@
+model: fct_address_storage_slot_total
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_storage_slot_total_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_storage_slot_total_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_storage_slot_total_canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_storage_slot_total_canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+  - name: Expected bounds and size
+    sql: |
+      SELECT
+        total_storage_slots,
+        expired_storage_slots
+      FROM
+        fct_address_storage_slot_total FINAL
+    expected:
+      total_storage_slots: 8771
+      expired_storage_slots: 0

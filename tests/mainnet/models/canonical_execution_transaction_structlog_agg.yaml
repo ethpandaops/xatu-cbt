@@ -1,0 +1,13 @@
+model: canonical_execution_transaction_structlog_agg
+network: mainnet
+external_data:
+    canonical_execution_transaction_structlog_agg:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_execution_transaction_structlog_agg.parquet
+        network_column: meta_network_name
+assertions:
+    - name: total count
+      sql: |
+        SELECT COUNT(*) AS count
+        FROM cluster('{remote_cluster}', default.canonical_execution_transaction_structlog_agg)
+      expected:
+        count: 1000

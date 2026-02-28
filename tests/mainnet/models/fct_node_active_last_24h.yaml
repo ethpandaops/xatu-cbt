@@ -1,0 +1,86 @@
+model: fct_node_active_last_24h
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_node_active_last_24h_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_node_active_last_24h FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null meta_client_name values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_node_active_last_24h FINAL
+        WHERE meta_client_name IS NULL OR meta_client_name = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Classification contains only valid values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_node_active_last_24h FINAL
+        WHERE classification NOT IN ('individual', 'corporate', 'internal', 'unclassified')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null username values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_node_active_last_24h FINAL
+        WHERE username IS NULL OR username = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null node_id values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_node_active_last_24h FINAL
+        WHERE node_id IS NULL OR node_id = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: last_seen_date_time should be within the last 24 hours
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_node_active_last_24h FINAL
+        WHERE last_seen_date_time < NOW() - INTERVAL '24 HOUR'
+           OR last_seen_date_time > NOW()
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Longitude values are within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_node_active_last_24h FINAL
+        WHERE meta_client_geo_longitude < -180 OR meta_client_geo_longitude > 180
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Latitude values are within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_node_active_last_24h FINAL
+        WHERE meta_client_geo_latitude < -90 OR meta_client_geo_latitude > 90
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: All rows share a single updated_date_time value
+      sql: |
+        SELECT COUNT(DISTINCT updated_date_time) AS distinct_timestamps FROM fct_node_active_last_24h FINAL
+      assertions:
+        - type: equals
+          column: distinct_timestamps
+          value: 1
+    - name: Each meta_client_name is unique (one row per client)
+      sql: |
+        SELECT COUNT(*) - COUNT(DISTINCT meta_client_name) AS duplicate_count
+        FROM fct_node_active_last_24h FINAL
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0

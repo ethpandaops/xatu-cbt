@@ -1,0 +1,90 @@
+model: int_block_opcode_gas
+network: mainnet
+external_data:
+    canonical_execution_transaction_structlog_agg:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_opcode_gas_canonical_execution_transaction_structlog_agg.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_block_opcode_gas FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null block numbers
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
+        WHERE block_number IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative block numbers
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
+        WHERE block_number < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No empty opcode values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
+        WHERE opcode = '' OR opcode IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
+        WHERE count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No zero count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
+        WHERE count = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative gas values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
+        WHERE gas < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative error count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
+        WHERE error_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null or empty meta_network_name
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_opcode_gas FINAL
+        WHERE meta_network_name = '' OR meta_network_name IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each block-opcode pair should be unique per network
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT block_number, opcode, meta_network_name, COUNT(*) AS pair_count
+          FROM int_block_opcode_gas FINAL
+          GROUP BY block_number, opcode, meta_network_name
+          HAVING pair_count > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -17,7 +17,6 @@ import (
 var (
 	errModelNameRequired                 = errors.New("model name is required")
 	errNetworkRequired                   = errors.New("network is required")
-	errSpecRequired                      = errors.New("spec is required")
 	errExternalTableMissingURL           = errors.New("external table missing URL")
 	errExternalTableMissingNetworkColumn = errors.New("external table missing network_column")
 	errAssertionMissingName              = errors.New("assertion missing name")
@@ -35,7 +34,6 @@ var (
 type TestDefinition struct {
 	Model        string                    `yaml:"model"`
 	Network      string                    `yaml:"network"`
-	Spec         string                    `yaml:"spec"`
 	ExternalData map[string]*ExternalTable `yaml:"external_data"`
 	Assertions   []*Assertion              `yaml:"assertions"`
 }
@@ -44,6 +42,7 @@ type TestDefinition struct {
 type ExternalTable struct {
 	URL           string `yaml:"url"`
 	NetworkColumn string `yaml:"network_column"`
+	Optional      bool   `yaml:"optional,omitempty"`
 }
 
 // Assertion represents a single SQL test.
@@ -66,9 +65,9 @@ type TypedCheck struct {
 
 // Loader loads test definition files.
 type Loader interface {
-	LoadForModel(spec, network, modelName string) (*TestDefinition, error)
-	LoadForSpec(spec, network string) (map[string]*TestDefinition, error)
-	LoadForModels(spec, network string, modelNames []string) (map[string]*TestDefinition, error)
+	LoadForModel(network, modelName string) (*TestDefinition, error)
+	LoadAll(network string) (map[string]*TestDefinition, error)
+	LoadForModels(network string, modelNames []string) (map[string]*TestDefinition, error)
 }
 
 type loader struct {
@@ -85,11 +84,10 @@ func NewLoader(log logrus.FieldLogger, baseDir string) Loader {
 }
 
 // LoadForModel loads a single model's test definition.
-func (l *loader) LoadForModel(spec, network, modelName string) (*TestDefinition, error) {
-	path := l.buildPath(network, spec, modelName)
+func (l *loader) LoadForModel(network, modelName string) (*TestDefinition, error) {
+	path := l.buildPath(network, modelName)
 
 	l.log.WithFields(logrus.Fields{
-		"spec":    spec,
 		"network": network,
 		"model":   modelName,
 		"path":    path,
@@ -107,9 +105,9 @@ func (l *loader) LoadForModel(spec, network, modelName string) (*TestDefinition,
 	return config, nil
 }
 
-// LoadForSpec loads all model test definitions for a spec.
-func (l *loader) LoadForSpec(spec, network string) (map[string]*TestDefinition, error) {
-	dir := filepath.Join(l.baseDir, network, spec, "models")
+// LoadAll loads all model test definitions for a network.
+func (l *loader) LoadAll(network string) (map[string]*TestDefinition, error) {
+	dir := filepath.Join(l.baseDir, network, "models")
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -144,9 +142,8 @@ func (l *loader) LoadForSpec(spec, network string) (map[string]*TestDefinition, 
 }
 
 // LoadForModels loads test definitions for specific models.
-func (l *loader) LoadForModels(spec, network string, modelNames []string) (map[string]*TestDefinition, error) {
+func (l *loader) LoadForModels(network string, modelNames []string) (map[string]*TestDefinition, error) {
 	l.log.WithFields(logrus.Fields{
-		"spec":    spec,
 		"network": network,
 		"models":  modelNames,
 	}).Debug("loading test definitions for specific models")
@@ -154,7 +151,7 @@ func (l *loader) LoadForModels(spec, network string, modelNames []string) (map[s
 	configs := make(map[string]*TestDefinition, len(modelNames))
 
 	for _, modelName := range modelNames {
-		config, err := l.LoadForModel(spec, network, modelName)
+		config, err := l.LoadForModel(network, modelName)
 		if err != nil {
 			return nil, fmt.Errorf("loading config for %s: %w", modelName, err)
 		}
@@ -190,10 +187,6 @@ func (l *loader) validateDefinition(definition *TestDefinition) error {
 
 	if definition.Network == "" {
 		return errNetworkRequired
-	}
-
-	if definition.Spec == "" {
-		return errSpecRequired
 	}
 
 	// Validate external data if present
@@ -282,6 +275,6 @@ func (l *loader) validateTypedChecks(assertionName string, checks []*TypedCheck)
 }
 
 // buildPath constructs the file path for a model's test definition
-func (l *loader) buildPath(network, spec, modelName string) string {
-	return filepath.Join(l.baseDir, network, spec, "models", modelName+".yaml")
+func (l *loader) buildPath(network, modelName string) string {
+	return filepath.Join(l.baseDir, network, "models", modelName+".yaml")
 }

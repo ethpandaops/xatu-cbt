@@ -1,0 +1,96 @@
+model: fct_attestation_correctness_canonical
+network: mainnet
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_attestation_correctness_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_canonical FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_canonical FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: votes_max should never be negative (COALESCE with 0)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_canonical FINAL
+        WHERE votes_max < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: votes_head should be positive when not null (from COUNT aggregation)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_canonical FINAL
+        WHERE votes_head IS NOT NULL AND votes_head <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: votes_head should not exceed votes_max when both are present
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_canonical FINAL
+        WHERE votes_head IS NOT NULL AND votes_max > 0 AND votes_head > votes_max
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: votes_other should not be negative when present
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_canonical FINAL
+        WHERE votes_other IS NOT NULL AND votes_other < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: block_root should never be null or empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_canonical FINAL
+        WHERE block_root IS NULL OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: slot_start_date_time should never be null
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_canonical FINAL
+        WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: votes_head plus votes_other should equal total votes when both are present
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_canonical FINAL
+        WHERE votes_head IS NOT NULL AND votes_other IS NOT NULL
+          AND (votes_head + votes_other) > votes_max
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

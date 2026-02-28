@@ -1,0 +1,106 @@
+model: fct_reorg_hourly
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_reorg_hourly_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_reorg_hourly_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_reorg_hourly_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_reorg_hourly_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_reorg_hourly_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_reorg_hourly_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_reorg_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null hour_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
+        WHERE hour_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: hour_start_date_time is always aligned to hour boundary
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
+        WHERE toStartOfHour(hour_start_date_time) != hour_start_date_time
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Depth must be at least 1 (represents consecutive orphaned slots)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
+        WHERE depth < 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative reorg_count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
+        WHERE reorg_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null updated_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate (hour_start_date_time, depth) combinations
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (
+            SELECT hour_start_date_time, depth, COUNT(*) AS cnt
+            FROM fct_reorg_hourly FINAL
+            GROUP BY hour_start_date_time, depth
+            HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Depth should be within a reasonable range (max 64 given padding window)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
+        WHERE depth > 128
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: At least some rows should have non-zero reorg_count
+      sql: |
+        SELECT COUNT(*) AS non_zero_rows FROM fct_reorg_hourly FINAL
+        WHERE reorg_count > 0
+      assertions:
+        - type: greater_than
+          column: non_zero_rows
+          value: 0
+    - name: updated_date_time should not be in the future
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_reorg_hourly FINAL
+        WHERE updated_date_time > now() + INTERVAL 1 DAY
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

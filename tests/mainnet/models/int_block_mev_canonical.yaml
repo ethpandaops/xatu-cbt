@@ -1,0 +1,92 @@
+model: int_block_mev_canonical
+network: mainnet
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_mev_canonical_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_mev_canonical_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_mev_canonical_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_block_mev_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_mev_canonical FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_mev_canonical FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative block_number values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_mev_canonical FINAL
+        WHERE block_number < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: gas_used should not exceed gas_limit
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_mev_canonical FINAL
+        WHERE gas_used > gas_limit
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative gas_limit values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_mev_canonical FINAL
+        WHERE gas_limit < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative gas_used values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_mev_canonical FINAL
+        WHERE gas_used < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Value must be positive when not null (zeroes are mapped to NULL)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_mev_canonical FINAL
+        WHERE value IS NOT NULL AND value <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative transaction_count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_mev_canonical FINAL
+        WHERE transaction_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: relay_names array should never be empty since rows come from inner join with relay payloads
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_mev_canonical FINAL
+        WHERE length(relay_names) = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

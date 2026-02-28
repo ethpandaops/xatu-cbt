@@ -1,0 +1,95 @@
+model: fct_block_mev
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_mev FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null block_root values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev FINAL
+        WHERE block_root IS NULL OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative transaction_count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev FINAL
+        WHERE transaction_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: gas_used should not exceed gas_limit
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev FINAL
+        WHERE gas_used > gas_limit
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative gas_used values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev FINAL
+        WHERE gas_used < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative gas_limit values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev FINAL
+        WHERE gas_limit < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Status should only be canonical or orphaned
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev FINAL
+        WHERE status NOT IN ('canonical', 'orphaned')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative value (MEV bid value)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev FINAL
+        WHERE value < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot should be greater than or equal to zero
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should be consistent with slot (32 slots per epoch)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

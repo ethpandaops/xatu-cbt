@@ -257,33 +257,50 @@ func (m *DatabaseManager) CreateCBTTemplate(ctx context.Context, migrationDir st
 
 // isCBTTemplateReady checks if CBT template database exists with migrations applied.
 func (m *DatabaseManager) isCBTTemplateReady(ctx context.Context) bool {
+	// First check the actual database exists (may be lost after infra restart)
+	dbCtx, dbCancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer dbCancel()
+
+	var dbCount int
+
+	dbSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+		"SELECT COUNT(*) FROM system.databases WHERE name = '%s'",
+		config.CBTTemplateDatabase)
+	if err := m.cbtConn.QueryRowContext(dbCtx, dbSQL).Scan(&dbCount); err != nil || dbCount == 0 {
+		return false
+	}
+
+	// Check schema migrations table exists
 	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel()
 
 	var count int
+
 	checkSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
 		`SELECT COUNT(*)
 		FROM system.tables
 		WHERE database = 'default'
 		AND name = '%s%s'`,
 		config.SchemaMigrationsPrefix, config.CBTTemplateDatabase)
-	err := m.cbtConn.QueryRowContext(queryCtx, checkSQL).Scan(&count)
-
-	if err != nil || count == 0 {
+	if err := m.cbtConn.QueryRowContext(queryCtx, checkSQL).Scan(&count); err != nil || count == 0 {
 		return false
 	}
 
+	// Check migrations have been applied
 	queryCtx2, cancel2 := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel2()
 
 	var migrationCount int
+
 	countSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
 		`SELECT COUNT(*)
 		FROM default.%s%s`,
 		config.SchemaMigrationsPrefix, config.CBTTemplateDatabase)
-	err = m.cbtConn.QueryRowContext(queryCtx2, countSQL).Scan(&migrationCount)
+	if err := m.cbtConn.QueryRowContext(queryCtx2, countSQL).Scan(&migrationCount); err != nil {
+		return false
+	}
 
-	return err == nil && migrationCount > 0
+	return migrationCount > 0
 }
 
 // clearCBTTemplateTables drops all tables in CBT template database for force rebuild.
@@ -944,6 +961,86 @@ func (m *DatabaseManager) listAdminTables(ctx context.Context, conn *sql.DB, dat
 	}
 
 	return tables, nil
+}
+
+// ValidateExternalData checks that at least one external table has rows after parquet loading.
+// Some tables may be legitimately empty (e.g. pre-PeerDAS blob_sidecar tables in a post-PeerDAS
+// time window), so we only fail when ALL tables are empty.
+// ValidateExternalData checks that external tables have data after parquet load.
+// Tables marked as optional (e.g. era-dependent tables like pre/post PeerDAS) are
+// allowed to be empty. Required tables must have rows. At least one table overall
+// must have data.
+func (m *DatabaseManager) ValidateExternalData(ctx context.Context, database string, tables []string, optionalTables map[string]bool) error {
+	emptyRequired := make([]string, 0)
+	emptyOptional := make([]string, 0)
+	tablesWithData := 0
+
+	for _, tableName := range tables {
+		query := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
+			"SELECT count() FROM `%s`.`%s`",
+			database, tableName)
+
+		queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+
+		var count uint64
+
+		err := m.xatuConn.QueryRowContext(queryCtx, query).Scan(&count)
+		cancel()
+
+		if err != nil {
+			return fmt.Errorf("checking row count for %s.%s: %w", database, tableName, err)
+		}
+
+		if count == 0 {
+			if optionalTables[tableName] {
+				emptyOptional = append(emptyOptional, tableName)
+			} else {
+				emptyRequired = append(emptyRequired, tableName)
+			}
+
+			m.log.WithFields(logrus.Fields{
+				"database": database,
+				"table":    tableName,
+				"optional": optionalTables[tableName],
+			}).Warn("external table has 0 rows after parquet load")
+
+			continue
+		}
+
+		tablesWithData++
+
+		m.log.WithFields(logrus.Fields{
+			"database": database,
+			"table":    tableName,
+			"rows":     count,
+		}).Debug("validated external table has data")
+	}
+
+	// Required tables must have data
+	if len(emptyRequired) > 0 {
+		return fmt.Errorf( //nolint:err113 // Dynamic validation error
+			"required external tables have 0 rows after parquet load — test data is empty or broken: %s",
+			strings.Join(emptyRequired, ", "),
+		)
+	}
+
+	// At least one table overall must have data
+	if tablesWithData == 0 {
+		return fmt.Errorf( //nolint:err113 // Dynamic validation error
+			"all %d external tables have 0 rows after parquet load — test data is empty or broken: %s",
+			len(tables), strings.Join(tables, ", "),
+		)
+	}
+
+	if len(emptyOptional) > 0 {
+		m.log.WithFields(logrus.Fields{
+			"empty_optional":   emptyOptional,
+			"tables_with_data": tablesWithData,
+			"total_tables":     len(tables),
+		}).Info("some optional external tables are empty (expected for era-dependent models)")
+	}
+
+	return nil
 }
 
 // LoadParquetData loads parquet files into the specified database in xatu cluster.

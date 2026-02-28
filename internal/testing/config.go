@@ -20,7 +20,6 @@ type TestConfig struct {
 	// Execution timeouts
 	ExecutionTimeout          time.Duration
 	TransformationWaitTimeout time.Duration
-	PendingModelTimeout       time.Duration
 
 	// Database configuration
 	MaxParquetLoadWorkers int
@@ -65,14 +64,12 @@ func DefaultTestConfig() *TestConfig {
 		// Execution timeouts
 		ExecutionTimeout:          30 * time.Minute,
 		TransformationWaitTimeout: 10 * time.Minute,
-		PendingModelTimeout:       90 * time.Second,
-
 		// Database
 		MaxParquetLoadWorkers: 10,
 		QueryTimeout:          5 * time.Minute,
 
 		// CBT containers
-		CBTConcurrency: 15, // Default to 15 concurrent CBT containers (max due to Redis DB limit)
+		CBTConcurrency: 15, // Reduced to limit ClickHouse contention under concurrent load
 
 		// Cache
 		MaxConcurrentDownloads: 10,

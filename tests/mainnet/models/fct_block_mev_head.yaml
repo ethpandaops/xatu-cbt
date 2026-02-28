@@ -1,0 +1,92 @@
+model: fct_block_mev_head
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_head_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_head_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_mev_head_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_mev_head FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null block_hash values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE block_hash IS NULL OR block_hash = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null block_root values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE block_root IS NULL OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: All slots should be positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE slot <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: gas_used should never exceed gas_limit
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE gas_used > gas_limit
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative gas_limit values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE gas_limit < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative gas_used values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE gas_used < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative transaction_count values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE transaction_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Value should be positive when not null (zero mapped to null by CASE)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE value IS NOT NULL AND value <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: relay_names array should never be empty since rows come from inner join
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
+        WHERE length(relay_names) = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

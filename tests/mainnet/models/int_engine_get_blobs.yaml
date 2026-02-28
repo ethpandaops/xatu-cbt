@@ -1,0 +1,89 @@
+model: int_engine_get_blobs
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_blob:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_get_blobs_beacon_api_eth_v1_beacon_blob.parquet
+        network_column: meta_network_name
+    execution_engine_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_get_blobs_execution_engine_get_blobs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_engine_get_blobs FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No rows with zero or negative slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE slot <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with epoch zero slot_start_date_time (should be filtered)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE slot_start_date_time = toDateTime(0)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative duration_ms values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE duration_ms < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Requested count should always be positive (versioned_hashes length > 0 filter)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE requested_count <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Returned count should not exceed requested count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE returned_count > requested_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with empty meta_client_name (GROUP BY key)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE meta_client_name = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Node class contains only valid values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE node_class NOT IN ('eip7870-block-builder', '')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Latitude values within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE meta_client_geo_latitude < -90 OR meta_client_geo_latitude > 90
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Longitude values within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE meta_client_geo_longitude < -180 OR meta_client_geo_longitude > 180
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

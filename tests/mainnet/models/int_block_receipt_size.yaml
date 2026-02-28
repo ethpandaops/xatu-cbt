@@ -1,0 +1,89 @@
+model: int_block_receipt_size
+network: mainnet
+external_data:
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_receipt_size_canonical_execution_logs.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_receipt_size_canonical_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_block_receipt_size FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No negative receipt_bytes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE receipt_bytes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No zero transaction_count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE transaction_count = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative log_count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE log_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative log_data_bytes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE log_data_bytes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative log_topic_count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE log_topic_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: avg_receipt_bytes should not exceed max_receipt_bytes per block
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE avg_receipt_bytes_per_transaction > max_receipt_bytes_per_transaction
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: p50 receipt bytes should not exceed p95
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE p50_receipt_bytes_per_transaction > p95_receipt_bytes_per_transaction
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: p95 receipt bytes should not exceed max
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE p95_receipt_bytes_per_transaction > max_receipt_bytes_per_transaction
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null or empty meta_network_name
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_receipt_size FINAL
+        WHERE meta_network_name = '' OR meta_network_name IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
