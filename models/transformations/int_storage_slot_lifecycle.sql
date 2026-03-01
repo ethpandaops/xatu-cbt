@@ -80,15 +80,15 @@ prev_stats AS (
 -- Join touches with diffs + boundaries + prev_stats
 touches_enriched AS (
     SELECT
-        t.block_number,
-        t.address,
-        t.slot_key,
-        d.effective_bytes_to,
-        b.lifecycle_number,
-        b.birth_block,
-        b.death_block,
-        b.effective_bytes_birth,
-        b.effective_bytes_death,
+        t.block_number as block_number,
+        t.address as address,
+        t.slot_key as slot_key,
+        d.effective_bytes_to as effective_bytes_to,
+        b.lifecycle_number as lifecycle_number,
+        b.birth_block as birth_block,
+        b.death_block as death_block,
+        b.effective_bytes_birth as effective_bytes_birth,
+        b.effective_bytes_death as effective_bytes_death,
         ifNull(ps.touch_count, toUInt32(0)) as prev_tc,
         ifNull(ps.effective_bytes_peak, toUInt8(0)) as prev_eb_peak,
         ifNull(ps.last_touch_block, toUInt32(0)) as prev_ltb,
@@ -111,9 +111,25 @@ touches_enriched AS (
         AND b.lifecycle_number = ps.lifecycle_number
 ),
 -- Compute touch-to-touch intervals via LAG window function
+-- NOTE: Explicit column aliases in touches_enriched and unqualified references here
+-- avoid ClickHouse resolving names like t.block_number and failing in CTE scope.
 touches_with_intervals AS (
     SELECT
-        *,
+        block_number,
+        address,
+        slot_key,
+        effective_bytes_to,
+        lifecycle_number,
+        birth_block,
+        death_block,
+        effective_bytes_birth,
+        effective_bytes_death,
+        prev_tc,
+        prev_eb_peak,
+        prev_ltb,
+        prev_ic,
+        prev_isum,
+        prev_imax,
         COALESCE(
             nullIf(
                 toUInt32(
