@@ -433,7 +433,16 @@ func (r *runner) evaluateTypedChecks(checks []*testdef.TypedCheck, actual map[st
 			continue
 		}
 
-		passed, err := r.evaluateComparison(check.Type, actualVal, check.Value)
+		// Resolve column references: if value is a string matching another column name,
+		// use that column's value instead of the literal string.
+		expectedVal := check.Value
+		if colRef, ok := check.Value.(string); ok {
+			if resolvedVal, found := actual[colRef]; found {
+				expectedVal = resolvedVal
+			}
+		}
+
+		passed, err := r.evaluateComparison(check.Type, actualVal, expectedVal)
 		if err != nil {
 			return false, fmt.Errorf("evaluating check for column %s: %w", check.Column, err)
 		}

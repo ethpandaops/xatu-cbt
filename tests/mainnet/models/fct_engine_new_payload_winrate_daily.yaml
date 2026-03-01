@@ -1,0 +1,83 @@
+model: fct_engine_new_payload_winrate_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_winrate_daily_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    execution_engine_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_winrate_daily_execution_engine_new_payload.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_daily FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: win_count should never be negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_daily FINAL WHERE win_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: win_count should never be NULL
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_daily FINAL WHERE win_count IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: node_class should never be NULL
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_daily FINAL WHERE node_class IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: meta_execution_implementation should never be NULL
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_daily FINAL WHERE meta_execution_implementation IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: day_start_date should never be NULL
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_daily FINAL WHERE day_start_date IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: updated_date_time should never be NULL
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_daily FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Each day-node_class-implementation combination should be unique
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT day_start_date, node_class, meta_execution_implementation, COUNT(*) AS n
+          FROM fct_engine_new_payload_winrate_daily FINAL
+          GROUP BY day_start_date, node_class, meta_execution_implementation
+          HAVING n > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Total win_count per day per node_class should not exceed slot count for that day
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT day_start_date, node_class, COALESCE(SUM(win_count), 0) AS total_wins
+          FROM fct_engine_new_payload_winrate_daily FINAL
+          GROUP BY day_start_date, node_class
+          HAVING total_wins > 7200
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0

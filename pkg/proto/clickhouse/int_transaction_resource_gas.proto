@@ -38,7 +38,7 @@ message IntTransactionResourceGas {
 
 // Request for listing int_transaction_resource_gas records
 message ListIntTransactionResourceGasRequest {
-  // Filter by block_number - The block number containing the transaction (PRIMARY KEY - required unless using alternatives: transaction_hash)
+  // Filter by block_number - The block number containing the transaction (PRIMARY KEY - required)
   UInt64Filter block_number = 1;
 
   // Filter by transaction_hash - The transaction hash (hex encoded with 0x prefix) (ORDER BY column 2 - optional)

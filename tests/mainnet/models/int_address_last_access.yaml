@@ -1,0 +1,87 @@
+model: int_address_last_access
+network: mainnet
+external_data:
+    canonical_execution_balance_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_last_access_canonical_execution_balance_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_balance_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_last_access_canonical_execution_balance_reads.parquet
+        network_column: meta_network_name
+    canonical_execution_contracts:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_last_access_canonical_execution_contracts.parquet
+        network_column: meta_network_name
+    canonical_execution_nonce_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_last_access_canonical_execution_nonce_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_nonce_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_last_access_canonical_execution_nonce_reads.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_last_access_canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_address_last_access_canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_address_last_access FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null addresses
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_last_access FINAL
+        WHERE address IS NULL OR address = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: All addresses should be lowercase
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_last_access FINAL
+        WHERE address != lower(address)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null block numbers
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_last_access FINAL
+        WHERE block_number IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: All block numbers should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_last_access FINAL
+        WHERE block_number < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each address should be unique (one row per address)
+      sql: |
+        SELECT COUNT(*) - COUNT(DISTINCT address) AS duplicate_addresses
+        FROM int_address_last_access FINAL
+      assertions:
+        - type: equals
+          column: duplicate_addresses
+          value: 0
+    - name: Minimum block number should be non-negative
+      sql: |
+        SELECT min(block_number) AS min_block FROM int_address_last_access FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: min_block
+          value: 0
+    - name: Addresses should look like valid hex strings
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_address_last_access FINAL
+        WHERE length(address) < 2 OR NOT match(address, '^0x[0-9a-f]+$')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

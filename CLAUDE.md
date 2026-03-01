@@ -9,30 +9,38 @@ Xatu CBT contains the models and tests for the [xatu](https://github.com/ethpand
 - Models are defined once but reused for multiple ethereum networks.
 - We template `${NETWORK_NAME}` as the database in the [migrations](./migrations).
 - Models must just reference tables in the same database, as we want to be able to reuse the models across many networks.
-- Tests run against a spec, not a specific network.
+- Tests run against a network, not a specific fork.
 
 ## File Organisation
 
 - `models/external` - contains the external models in a flat file structure where the file name is the table name.
 - `models/transformations` - contains the transformations models in a flat file structure where the file name is the table name.
 - `migrations` - database agnostic [go-migrate](https://github.com/golang-migrate/migrate) migrations that are run against the database.
-- `tests/${spec}` - contains the tests for the models for a spec, typically an ethereum fork.
+- `tests/${network}/models` - contains the test definitions for models per network.
 
 ## Testing
 
-The following structure is expected for each test spec:
+The following structure is expected for each network:
 
 ```
 tests/
-├── ${spec}/
-│   ├── data/                      # Parquet data configuration
-│   │   └── canonical_beacon_block.yaml
-│   └── assertions/                # SQL assertions
+├── ${network}/
+│   └── models/                    # Test definitions
 │       └── canonical_beacon_block.yaml
 ```
 
-- Each test spec **MUST** have a file for every external model in the data directory.
-- Each test spec **MUST** have a file for every model (external and transformations) in the assertions directory.
+- Each network **MUST** have a file for every model being tested in the models directory.
+
+### CLI
+
+```bash
+# Test all models for a network
+xatu-cbt test all --network mainnet
+
+# Test specific models
+xatu-cbt test models fct_block --network mainnet
+xatu-cbt test models fct_block,fct_attestation --network mainnet
+```
 
 ## Models
 
@@ -52,14 +60,14 @@ cache:
   incremental_scan_interval: 5s
   full_scan_interval: 24h
 ---
-SELECT 
+SELECT
     toUnixTimestamp(min(slot_start_date_time)) as min,
     toUnixTimestamp(max(slot_start_date_time)) as max
 -- Use the default database as predicate pushdown does not work with views.
 -- This gives 2-3x the performance.
 -- Once we move the data into the mainnet database, we no longer need this.
 FROM `default`.`{{ .self.table }}`
-WHERE 
+WHERE
     meta_network_name = 'mainnet'
 {{ if .cache.is_incremental_scan }}
     AND (

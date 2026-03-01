@@ -1,0 +1,86 @@
+model: fct_block_head
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_head_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_head FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_head FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_head FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot should be consistent with epoch (32 slots per epoch)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_head FINAL
+        WHERE toUInt64(slot / 32) != epoch
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with zero or negative block total bytes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_head FINAL
+        WHERE block_total_bytes <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Compressed bytes should not exceed total bytes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_head FINAL
+        WHERE block_total_bytes_compressed > block_total_bytes
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative execution payload gas used
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_head FINAL
+        WHERE execution_payload_gas_used < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Gas used should not exceed gas limit
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_head FINAL
+        WHERE execution_payload_gas_used > execution_payload_gas_limit
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative execution payload transactions count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_head FINAL
+        WHERE execution_payload_transactions_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null block root values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_head FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

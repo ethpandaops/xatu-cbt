@@ -1,0 +1,109 @@
+model: fct_address_access_total
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_total_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_total_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_execution_balance_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_total_canonical_execution_balance_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_balance_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_total_canonical_execution_balance_reads.parquet
+        network_column: meta_network_name
+    canonical_execution_contracts:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_total_canonical_execution_contracts.parquet
+        network_column: meta_network_name
+    canonical_execution_nonce_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_total_canonical_execution_nonce_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_nonce_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_total_canonical_execution_nonce_reads.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_total_canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_total_canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_address_access_total FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Should have exactly one row after cleanup
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_address_access_total FINAL
+      assertions:
+        - type: equals
+          column: row_count
+          value: 1
+    - name: No null updated_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_access_total FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative total_accounts values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_access_total FINAL
+        WHERE total_accounts < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative expired_accounts values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_access_total FINAL
+        WHERE expired_accounts < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative total_contract_accounts values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_access_total FINAL
+        WHERE total_contract_accounts < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative expired_contracts values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_access_total FINAL
+        WHERE expired_contracts < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Expired accounts should not exceed total accounts
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_access_total FINAL
+        WHERE expired_accounts > total_accounts
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Expired contracts should not exceed total contract accounts
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_access_total FINAL
+        WHERE expired_contracts > total_contract_accounts
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Expired contracts should not exceed expired accounts
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_access_total FINAL
+        WHERE expired_contracts > expired_accounts
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

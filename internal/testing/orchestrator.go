@@ -22,7 +22,6 @@ import (
 type TestResult struct {
 	Model            string
 	Network          string
-	Spec             string
 	ExternalTables   []string
 	ParquetURLs      map[string]string
 	Transformations  []string
@@ -257,16 +256,15 @@ func (o *Orchestrator) Stop() error {
 }
 
 // TestModels tests multiple models using grouped execution.
-// All tests for the same (network, spec) share one database and one CBT container.
+// All tests for the same network share one database and one CBT container.
 func (o *Orchestrator) TestModels(
 	ctx context.Context,
-	network, spec string,
+	network string,
 	modelNames []string,
 	concurrency int,
 ) ([]*TestResult, error) {
 	o.log.WithFields(logrus.Fields{
 		"network":     network,
-		"spec":        spec,
 		"models":      modelNames,
 		"concurrency": concurrency,
 	}).Info("testing models")
@@ -278,7 +276,7 @@ func (o *Orchestrator) TestModels(
 	// Load test configs for all models
 	testConfigs := make([]*testdef.TestDefinition, 0, len(modelNames))
 	for _, modelName := range modelNames {
-		testConfig, err := o.configLoader.LoadForModel(spec, network, modelName)
+		testConfig, err := o.configLoader.LoadForModel(network, modelName)
 		if err != nil {
 			return nil, fmt.Errorf("loading test config for %s: %w", modelName, err)
 		}
@@ -286,20 +284,19 @@ func (o *Orchestrator) TestModels(
 		testConfigs = append(testConfigs, testConfig)
 	}
 
-	return o.executeTestGroup(ctx, network, spec, testConfigs, concurrency)
+	return o.executeTestGroup(ctx, network, testConfigs, concurrency)
 }
 
-// TestSpec tests all models in a spec using grouped execution.
-// All tests for a (network, spec) share one database and one CBT container.
-func (o *Orchestrator) TestSpec(ctx context.Context, network, spec string, concurrency int) ([]*TestResult, error) {
+// TestAll tests all models for a network using grouped execution.
+// All tests for a network share one database and one CBT container.
+func (o *Orchestrator) TestAll(ctx context.Context, network string, concurrency int) ([]*TestResult, error) {
 	o.log.WithFields(logrus.Fields{
 		"network":     network,
-		"spec":        spec,
 		"concurrency": concurrency,
-	}).Info("testing spec")
+	}).Info("testing all models")
 
-	// Load all test configs for spec
-	configs, err := o.configLoader.LoadForSpec(spec, network)
+	// Load all test configs for network
+	configs, err := o.configLoader.LoadAll(network)
 	if err != nil {
 		return nil, fmt.Errorf("loading test configs: %w", err)
 	}
@@ -314,7 +311,7 @@ func (o *Orchestrator) TestSpec(ctx context.Context, network, spec string, concu
 		testConfigs = append(testConfigs, cfg)
 	}
 
-	return o.executeTestGroup(ctx, network, spec, testConfigs, concurrency)
+	return o.executeTestGroup(ctx, network, testConfigs, concurrency)
 }
 
 // preclonedDBs holds pre-cloned database names and resolved dependencies for a test.
@@ -328,7 +325,7 @@ type preclonedDBs struct {
 // Each test gets its own cloned databases to prevent data conflicts.
 func (o *Orchestrator) executeTestGroup(
 	ctx context.Context,
-	network, spec string,
+	network string,
 	testConfigs []*testdef.TestDefinition,
 	concurrency int,
 ) ([]*TestResult, error) {
@@ -336,7 +333,6 @@ func (o *Orchestrator) executeTestGroup(
 
 	o.log.WithFields(logrus.Fields{
 		"network":     network,
-		"spec":        spec,
 		"tests":       len(testConfigs),
 		"concurrency": concurrency,
 	}).Info("starting test group with per-test isolation")
@@ -384,7 +380,7 @@ func (o *Orchestrator) executeTestGroup(
 			dbs := testDBs[cfg.Model]
 
 			// Execute test with pre-cloned databases and pre-resolved deps
-			result := o.executeTestWithDBs(ctx, network, spec, cfg, dbs.extDB, dbs.cbtDB, dbs.deps)
+			result := o.executeTestWithDBs(ctx, network, cfg, dbs.extDB, dbs.cbtDB, dbs.deps)
 			resultChan <- result
 		}(testCfg)
 	}
@@ -402,7 +398,6 @@ func (o *Orchestrator) executeTestGroup(
 
 	o.log.WithFields(logrus.Fields{
 		"network":  network,
-		"spec":     spec,
 		"tests":    len(results),
 		"duration": time.Since(start),
 	}).Info("all tests completed")
@@ -557,7 +552,7 @@ func (o *Orchestrator) cleanupPreclonedDatabases(ctx context.Context, testDBs ma
 // Cleanup is handled at the group level, not per-test.
 func (o *Orchestrator) executeTestWithDBs(
 	ctx context.Context,
-	network, spec string,
+	network string,
 	testConfig *testdef.TestDefinition,
 	extDB, cbtDB string,
 	deps *Dependencies,
@@ -574,7 +569,6 @@ func (o *Orchestrator) executeTestWithDBs(
 	result := &TestResult{
 		Model:   testConfig.Model,
 		Network: network,
-		Spec:    spec,
 	}
 
 	// Ensure metrics are recorded for ALL cases (including early errors)
@@ -613,6 +607,26 @@ func (o *Orchestrator) executeTestWithDBs(
 	for sourceDB, sourceURLs := range crossDBLoads {
 		if loadErr := o.fetchAndLoadParquetData(ctx, sourceDB, sourceURLs); loadErr != nil {
 			result.Error = loadErr
+			return result
+		}
+	}
+
+	// Step 2.5: Validate external data has rows after parquet load.
+	// Catches broken/empty parquets early before wasting time on CBT transformations.
+	if len(standardURLs) > 0 {
+		tables := make([]string, 0, len(standardURLs))
+		optionalTables := make(map[string]bool)
+
+		for tableName := range standardURLs {
+			tables = append(tables, tableName)
+
+			if ext, ok := testConfig.ExternalData[tableName]; ok && ext.Optional {
+				optionalTables[tableName] = true
+			}
+		}
+
+		if validateErr := o.dbManager.ValidateExternalData(ctx, extDB, tables, optionalTables); validateErr != nil {
+			result.Error = validateErr
 			return result
 		}
 	}

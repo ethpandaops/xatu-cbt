@@ -1,0 +1,100 @@
+model: fct_block_first_seen_by_node
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_first_seen_by_node FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No negative slot values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative epoch values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should equal slot divided by 32
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Source must be one of the four valid event sources
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE source NOT IN (
+          'beacon_api_eth_v1_events_block',
+          'beacon_api_eth_v1_events_block_gossip',
+          'beacon_api_eth_v1_events_head',
+          'libp2p_gossipsub_beacon_block'
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Classification must be one of the four valid categories
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE classification NOT IN ('individual', 'corporate', 'internal', 'unclassified')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No empty block_root values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No empty meta_client_name values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE meta_client_name = '' OR meta_client_name IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Longitude values must be within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE meta_client_geo_longitude < -180 OR meta_client_geo_longitude > 180
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Latitude values must be within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE meta_client_geo_latitude < -90 OR meta_client_geo_latitude > 90
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

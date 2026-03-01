@@ -1,0 +1,37 @@
+model: fct_address_access_chunked_10000
+network: mainnet
+external_data:
+    canonical_execution_balance_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_chunked_10000_canonical_execution_balance_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_balance_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_chunked_10000_canonical_execution_balance_reads.parquet
+        network_column: meta_network_name
+    canonical_execution_contracts:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_chunked_10000_canonical_execution_contracts.parquet
+        network_column: meta_network_name
+    canonical_execution_nonce_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_chunked_10000_canonical_execution_nonce_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_nonce_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_chunked_10000_canonical_execution_nonce_reads.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_chunked_10000_canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_access_chunked_10000_canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+  - name: Expected bounds and size
+    sql: |
+      SELECT
+        chunk_start_block_number,
+        first_accessed_accounts,
+        last_accessed_accounts
+      FROM
+        fct_address_access_chunked_10000 FINAL
+    expected:
+      chunk_start_block_number: 24540000
+      first_accessed_accounts: 3326
+      last_accessed_accounts: 3326

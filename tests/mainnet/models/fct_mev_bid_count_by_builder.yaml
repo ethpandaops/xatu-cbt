@@ -1,0 +1,90 @@
+model: fct_mev_bid_count_by_builder
+network: mainnet
+external_data:
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_mev_bid_count_by_builder_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_mev_bid_count_by_builder FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No rows with non-positive bid_total
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_builder FINAL
+        WHERE bid_total <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with null builder_pubkey
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_builder FINAL
+        WHERE builder_pubkey IS NULL OR builder_pubkey = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with null slot_start_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_builder FINAL
+        WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with non-positive slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_builder FINAL
+        WHERE slot <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with non-positive epoch
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_builder FINAL
+        WHERE epoch <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should be consistent with slot (slot div 32)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_builder FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate slot and builder_pubkey combinations per updated_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT slot, builder_pubkey, updated_date_time, COUNT(*) AS dupes
+          FROM fct_mev_bid_count_by_builder FINAL
+          GROUP BY slot, builder_pubkey, updated_date_time
+          HAVING dupes > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with null updated_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_builder FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: slot_start_date_time should not be in the future
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_mev_bid_count_by_builder FINAL
+        WHERE slot_start_date_time > now() + INTERVAL 1 DAY
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

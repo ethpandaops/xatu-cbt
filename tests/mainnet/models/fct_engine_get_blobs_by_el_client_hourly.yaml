@@ -1,0 +1,106 @@
+model: fct_engine_get_blobs_by_el_client_hourly
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_blob:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_get_blobs_by_el_client_hourly_beacon_api_eth_v1_beacon_blob.parquet
+        network_column: meta_network_name
+    execution_engine_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_get_blobs_by_el_client_hourly_execution_engine_get_blobs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Status counts should sum to observation_count
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+        WHERE success_count + partial_count + empty_count + unsupported_count + error_count != observation_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative observation counts
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+        WHERE observation_count <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Observation count should be greater than or equal to slot count
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+        WHERE observation_count < slot_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Observation count should be greater than or equal to unique node count
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+        WHERE observation_count < unique_node_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: p50 duration should not exceed p95 duration when both are positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+        WHERE p50_duration_ms > 0 AND p95_duration_ms > 0 AND p50_duration_ms > p95_duration_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: min duration should not exceed max duration when both are positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+        WHERE min_duration_ms > 0 AND max_duration_ms > 0 AND min_duration_ms > max_duration_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative duration values
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+        WHERE avg_duration_ms < 0
+          OR p50_duration_ms < 0
+          OR p95_duration_ms < 0
+          OR min_duration_ms < 0
+          OR max_duration_ms < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No empty meta_execution_implementation values
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+        WHERE meta_execution_implementation = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative status counts
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_engine_get_blobs_by_el_client_hourly FINAL
+        WHERE success_count < 0
+          OR partial_count < 0
+          OR empty_count < 0
+          OR unsupported_count < 0
+          OR error_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

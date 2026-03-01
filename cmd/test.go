@@ -21,7 +21,6 @@ import (
 var (
 	errTestsFailed    = fmt.Errorf("some tests failed")
 	testNetwork       string
-	testSpec          string
 	testTimeout       time.Duration
 	testVerbose       bool
 	testCacheDir      string
@@ -63,26 +62,26 @@ Models are specified as a comma-separated list. Each model test:
 - Cleans up database
 
 Example:
-  xatu-cbt test models fct_block --spec pectra --network mainnet
-  xatu-cbt test models fct_block,fct_attestation --spec pectra`,
+  xatu-cbt test models fct_block --network mainnet
+  xatu-cbt test models fct_block,fct_attestation --network mainnet`,
 	Args:         cobra.ExactArgs(1),
 	RunE:         runTestModels,
 	SilenceUsage: true,
 }
 
-// testSpecCmd tests all models in a spec
-var testSpecCmd = &cobra.Command{
-	Use:   "spec",
-	Short: "Test all models in a spec",
-	Long: `Test all models in a specification.
+// testAllCmd tests all models for a network
+var testAllCmd = &cobra.Command{
+	Use:   "all",
+	Short: "Test all models for a network",
+	Long: `Test all models for a network.
 
-Loads all model test configs from tests/{network}/{spec}/models/ and executes
-them sequentially. Results are aggregated at the end.
+Loads all model test configs from tests/{network}/models/ and executes
+them with concurrency. Results are aggregated at the end.
 
 Example:
-  xatu-cbt test spec --spec pectra --network mainnet
-  xatu-cbt test spec --spec fusaka --network sepolia`,
-	RunE:         runTestSpec,
+  xatu-cbt test all --network mainnet
+  xatu-cbt test all --network sepolia`,
+	RunE:         runTestAll,
 	SilenceUsage: true,
 }
 
@@ -125,9 +124,8 @@ func runTestsWithConfig(
 
 func init() {
 	testCmd.AddCommand(testModelsCmd)
-	testCmd.AddCommand(testSpecCmd)
+	testCmd.AddCommand(testAllCmd)
 	testCmd.PersistentFlags().StringVar(&testNetwork, "network", "mainnet", "Network name (mainnet, sepolia)")
-	testCmd.PersistentFlags().StringVar(&testSpec, "spec", "pectra", "Spec name (pectra, fusaka)")
 	testCmd.PersistentFlags().DurationVar(&testTimeout, "timeout", 30*time.Minute, "Test timeout")
 	testCmd.PersistentFlags().BoolVar(&testVerbose, "verbose", false, "Verbose output")
 	testCmd.PersistentFlags().StringVar(&testCacheDir, "cache-dir", getDefaultCacheDir(), "Parquet cache directory")
@@ -152,16 +150,16 @@ func runTestModels(cmd *cobra.Command, args []string) error {
 	}
 
 	return runTestsWithConfig(ctx, cmd, len(modelNames), func(orchestrator *testing.Orchestrator) ([]*testing.TestResult, error) {
-		return orchestrator.TestModels(ctx, testNetwork, testSpec, modelNames, testConcurrency)
+		return orchestrator.TestModels(ctx, testNetwork, modelNames, testConcurrency)
 	})
 }
 
-func runTestSpec(cmd *cobra.Command, _ []string) error {
+func runTestAll(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout)
 	defer cancel()
 
 	return runTestsWithConfig(ctx, cmd, 0, func(orchestrator *testing.Orchestrator) ([]*testing.TestResult, error) {
-		return orchestrator.TestSpec(ctx, testNetwork, testSpec, testConcurrency)
+		return orchestrator.TestAll(ctx, testNetwork, testConcurrency)
 	})
 }
 

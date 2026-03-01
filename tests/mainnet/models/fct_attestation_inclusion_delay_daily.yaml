@@ -1,0 +1,114 @@
+model: fct_attestation_inclusion_delay_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_inclusion_delay_daily_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_inclusion_delay_daily_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_inclusion_delay_daily_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_inclusion_delay_daily_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_inclusion_delay_daily_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_inclusion_delay_daily_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_inclusion_delay_daily_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_inclusion_delay_daily_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_attestation_inclusion_delay_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No days with zero slot count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_inclusion_delay_daily FINAL
+        WHERE slot_count <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Avg inclusion delay should be at least 1
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_inclusion_delay_daily FINAL
+        WHERE avg_inclusion_delay < 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Min inclusion delay should be at least 1
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_inclusion_delay_daily FINAL
+        WHERE min_inclusion_delay < 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Min should not exceed avg and avg should not exceed max
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_inclusion_delay_daily FINAL
+        WHERE min_inclusion_delay > avg_inclusion_delay
+           OR avg_inclusion_delay > max_inclusion_delay
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Percentiles should be ordered p05 <= p50 <= p95
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_inclusion_delay_daily FINAL
+        WHERE p05_inclusion_delay > p50_inclusion_delay
+           OR p50_inclusion_delay > p95_inclusion_delay
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Standard deviation should not be negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_inclusion_delay_daily FINAL
+        WHERE stddev_inclusion_delay < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Upper Bollinger band should be greater than or equal to lower band
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_inclusion_delay_daily FINAL
+        WHERE upper_band_inclusion_delay < lower_band_inclusion_delay
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Moving average inclusion delay should be at least 1
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_inclusion_delay_daily FINAL
+        WHERE moving_avg_inclusion_delay < 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null values in key metric columns
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_inclusion_delay_daily FINAL
+        WHERE avg_inclusion_delay IS NULL
+           OR min_inclusion_delay IS NULL
+           OR max_inclusion_delay IS NULL
+           OR p50_inclusion_delay IS NULL
+           OR stddev_inclusion_delay IS NULL
+           OR moving_avg_inclusion_delay IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

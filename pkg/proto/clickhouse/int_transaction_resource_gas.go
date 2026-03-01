@@ -8,49 +8,42 @@ import (
 )
 
 // BuildListIntTransactionResourceGasQuery constructs a parameterized SQL query from a ListIntTransactionResourceGasRequest
-//
-// Available projections:
-//   - p_by_transaction (primary key: transaction_hash)
-//
-// Use WithProjection() option to select a specific projection.
 func BuildListIntTransactionResourceGasQuery(req *ListIntTransactionResourceGasRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate that at least one primary key is provided
 	// Primary keys can come from base table or projections
-	if req.BlockNumber == nil && req.TransactionHash == nil {
-		return SQLQuery{}, fmt.Errorf("at least one primary key field is required: block_number, transaction_hash")
+	if req.BlockNumber == nil {
+		return SQLQuery{}, fmt.Errorf("primary key field block_number is required")
 	}
 
 	// Build query using QueryBuilder
 	qb := NewQueryBuilder()
 
 	// Add primary key filter
-	if req.BlockNumber != nil {
-		switch filter := req.BlockNumber.Filter.(type) {
-		case *UInt64Filter_Eq:
-			qb.AddCondition("block_number", "=", filter.Eq)
-		case *UInt64Filter_Ne:
-			qb.AddCondition("block_number", "!=", filter.Ne)
-		case *UInt64Filter_Lt:
-			qb.AddCondition("block_number", "<", filter.Lt)
-		case *UInt64Filter_Lte:
-			qb.AddCondition("block_number", "<=", filter.Lte)
-		case *UInt64Filter_Gt:
-			qb.AddCondition("block_number", ">", filter.Gt)
-		case *UInt64Filter_Gte:
-			qb.AddCondition("block_number", ">=", filter.Gte)
-		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("block_number", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt64Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("block_number", UInt64SliceToInterface(filter.In.Values))
-			}
-		case *UInt64Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("block_number", UInt64SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
+	switch filter := req.BlockNumber.Filter.(type) {
+	case *UInt64Filter_Eq:
+		qb.AddCondition("block_number", "=", filter.Eq)
+	case *UInt64Filter_Ne:
+		qb.AddCondition("block_number", "!=", filter.Ne)
+	case *UInt64Filter_Lt:
+		qb.AddCondition("block_number", "<", filter.Lt)
+	case *UInt64Filter_Lte:
+		qb.AddCondition("block_number", "<=", filter.Lte)
+	case *UInt64Filter_Gt:
+		qb.AddCondition("block_number", ">", filter.Gt)
+	case *UInt64Filter_Gte:
+		qb.AddCondition("block_number", ">=", filter.Gte)
+	case *UInt64Filter_Between:
+		qb.AddBetweenCondition("block_number", filter.Between.Min, filter.Between.Max.GetValue())
+	case *UInt64Filter_In:
+		if len(filter.In.Values) > 0 {
+			qb.AddInCondition("block_number", UInt64SliceToInterface(filter.In.Values))
 		}
+	case *UInt64Filter_NotIn:
+		if len(filter.NotIn.Values) > 0 {
+			qb.AddNotInCondition("block_number", UInt64SliceToInterface(filter.NotIn.Values))
+		}
+	default:
+		// Unsupported filter type
 	}
 
 	// Add filter for column: updated_date_time

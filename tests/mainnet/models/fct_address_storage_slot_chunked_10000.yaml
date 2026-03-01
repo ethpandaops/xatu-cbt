@@ -1,0 +1,89 @@
+model: fct_address_storage_slot_chunked_10000
+network: mainnet
+external_data:
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_storage_slot_chunked_10000_canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_reads:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_address_storage_slot_chunked_10000_canonical_execution_storage_reads.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_address_storage_slot_chunked_10000 FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No negative first_accessed_slots
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_chunked_10000 FINAL
+        WHERE first_accessed_slots < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative last_accessed_slots
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_chunked_10000 FINAL
+        WHERE last_accessed_slots < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: chunk_start_block_number should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_chunked_10000 FINAL
+        WHERE chunk_start_block_number < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: chunk_start_block_number should be a multiple of 10000
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_chunked_10000 FINAL
+        WHERE chunk_start_block_number % 10000 != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null values in chunk_start_block_number
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_chunked_10000 FINAL
+        WHERE chunk_start_block_number IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null values in first_accessed_slots or last_accessed_slots
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_chunked_10000 FINAL
+        WHERE first_accessed_slots IS NULL OR last_accessed_slots IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Every chunk should have at least one accessed slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_address_storage_slot_chunked_10000 FINAL
+        WHERE first_accessed_slots = 0 AND last_accessed_slots = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: chunk_start_block_number values should be unique
+      sql: |
+        SELECT COUNT(*) - COUNT(DISTINCT chunk_start_block_number) AS duplicate_chunks
+        FROM fct_address_storage_slot_chunked_10000 FINAL
+      assertions:
+        - type: equals
+          column: duplicate_chunks
+          value: 0
+    - name: All rows should share a single updated_date_time
+      sql: |
+        SELECT COUNT(DISTINCT updated_date_time) AS distinct_timestamps
+        FROM fct_address_storage_slot_chunked_10000 FINAL
+      assertions:
+        - type: equals
+          column: distinct_timestamps
+          value: 1

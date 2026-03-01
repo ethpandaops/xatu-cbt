@@ -1,0 +1,75 @@
+model: fct_engine_new_payload_winrate_hourly
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_winrate_hourly_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    execution_engine_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_winrate_hourly_execution_engine_new_payload.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_hourly FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: count
+          value: 0
+    - name: win_count should never be negative
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_hourly FINAL WHERE win_count < 0
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: hour_start_date_time should be aligned to start of hour
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_hourly FINAL WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: meta_execution_implementation should not be empty
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_hourly FINAL WHERE meta_execution_implementation = '' OR meta_execution_implementation IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: updated_date_time should not be null
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_hourly FINAL WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Each hour-node_class-implementation combination should be unique
+      sql: |
+        SELECT COUNT(*) AS count FROM (
+          SELECT hour_start_date_time, node_class, meta_execution_implementation, COUNT(*) AS cnt
+          FROM fct_engine_new_payload_winrate_hourly FINAL
+          GROUP BY hour_start_date_time, node_class, meta_execution_implementation
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: count
+          value: 0
+    - name: Sum of win_count per hour per node_class should not exceed slots in an hour (3600/12 = 300)
+      sql: |
+        SELECT COALESCE(MAX(total_wins), 0) AS max_wins_per_hour FROM (
+          SELECT hour_start_date_time, node_class, SUM(win_count) AS total_wins
+          FROM fct_engine_new_payload_winrate_hourly FINAL
+          GROUP BY hour_start_date_time, node_class
+        )
+      assertions:
+        - type: less_than_or_equal
+          column: max_wins_per_hour
+          value: 300
+    - name: hour_start_date_time should not be in the future
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_hourly FINAL WHERE hour_start_date_time > now()
+      assertions:
+        - type: equals
+          column: count
+          value: 0

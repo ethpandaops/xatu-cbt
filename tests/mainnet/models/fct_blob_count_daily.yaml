@@ -1,0 +1,103 @@
+model: fct_blob_count_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    canonical_beacon_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_canonical_beacon_blob_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    libp2p_gossipsub_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_blob_count_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No rows with zero or negative block count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_daily FINAL
+        WHERE block_count <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No rows with negative total blobs
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_daily FINAL
+        WHERE total_blobs < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Min blob count should not exceed max blob count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_daily FINAL
+        WHERE min_blob_count > max_blob_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Average blob count should be between min and max
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_daily FINAL
+        WHERE avg_blob_count < min_blob_count OR avg_blob_count > max_blob_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Percentiles should be in order p05 <= p50 <= p95
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_daily FINAL
+        WHERE p05_blob_count > p50_blob_count OR p50_blob_count > p95_blob_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Standard deviation should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_daily FINAL
+        WHERE stddev_blob_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Upper Bollinger band should be greater than or equal to lower band
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_daily FINAL
+        WHERE upper_band_blob_count < lower_band_blob_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Moving average blob count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_daily FINAL
+        WHERE moving_avg_blob_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null day_start_date values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_daily FINAL
+        WHERE day_start_date IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
