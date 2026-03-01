@@ -497,8 +497,8 @@ func (o *Orchestrator) precloneAllDatabases(
 			cloneSem <- struct{}{}
 			defer func() { <-cloneSem }()
 
-			// Extract table names from transformation models
-			cbtTables := extractModelNames(transformations)
+			// Extract table names from transformation models + helper tables
+			cbtTables := extractCloneTableNames(transformations)
 
 			cbtDB, err := o.dbManager.CloneCBTDatabase(ctx, id, cbtTables)
 			if err != nil {
@@ -808,6 +808,27 @@ func extractModelNames(models []*ModelMetadata) []string {
 	names := make([]string, 0, len(models))
 	for _, model := range models {
 		names = append(names, model.Name)
+	}
+
+	return names
+}
+
+// extractCloneTableNames returns CBT tables to clone for tests.
+// Includes helper tables that are required at runtime but are not models.
+func extractCloneTableNames(models []*ModelMetadata) []string {
+	nameSet := make(map[string]struct{}, len(models)+2)
+	for _, model := range models {
+		nameSet[model.Name] = struct{}{}
+	}
+
+	// int_storage_slot_next_touch relies on a helper table that is not a model.
+	if _, ok := nameSet["int_storage_slot_next_touch"]; ok {
+		nameSet["helper_storage_slot_next_touch_latest_state"] = struct{}{}
+	}
+
+	names := make([]string, 0, len(nameSet))
+	for name := range nameSet {
+		names = append(names, name)
 	}
 
 	return names
