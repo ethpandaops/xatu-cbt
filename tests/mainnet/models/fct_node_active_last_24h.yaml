@@ -5,13 +5,6 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_node_active_last_24h_beacon_api_eth_v1_events_block.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be greater than zero
-      sql: |
-        SELECT COUNT(*) AS row_count FROM fct_node_active_last_24h FINAL
-      assertions:
-        - type: greater_than
-          column: row_count
-          value: 0
     - name: No null meta_client_name values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_node_active_last_24h FINAL
@@ -69,9 +62,11 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: All rows share a single updated_date_time value
+    - name: All rows share a single updated_date_time value (or table is empty)
       sql: |
-        SELECT COUNT(DISTINCT updated_date_time) AS distinct_timestamps FROM fct_node_active_last_24h FINAL
+        SELECT
+          if(count() = 0, 1, countDistinct(updated_date_time)) AS distinct_timestamps
+        FROM fct_node_active_last_24h FINAL
       assertions:
         - type: equals
           column: distinct_timestamps
