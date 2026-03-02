@@ -56,6 +56,7 @@ prev_state AS (
         argMax(effective_bytes_birth, (lifecycle_number, updated_date_time)) as eb_birth
     FROM `{{ .self.database }}`.`{{ .self.table }}`
     WHERE (address, slot_key) IN (SELECT address, slot_key FROM event_slots)
+        AND birth_block <= {{ .bounds.end }}
     GROUP BY address, slot_key
 ),
 -- Assign lifecycle_number = prev_lnum + cumulative births in batch

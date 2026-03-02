@@ -55,11 +55,15 @@ boundaries AS (
         argMax(death_block, updated_date_time) as death_block,
         argMax(effective_bytes_birth, updated_date_time) as effective_bytes_birth,
         argMax(effective_bytes_death, updated_date_time) as effective_bytes_death
-    FROM `{{ .self.database }}`.int_storage_slot_lifecycle_boundary
-    WHERE (address, slot_key) IN (SELECT address, slot_key FROM touched_slots)
+    FROM (
+        SELECT address, slot_key, lifecycle_number, birth_block, death_block,
+               effective_bytes_birth, effective_bytes_death, updated_date_time
+        FROM `{{ .self.database }}`.int_storage_slot_lifecycle_boundary
+        WHERE (address, slot_key) IN (SELECT address, slot_key FROM touched_slots)
+            AND birth_block <= {{ .bounds.end }}
+    )
     GROUP BY address, slot_key, lifecycle_number
-    HAVING birth_block <= {{ .bounds.end }}
-        AND (death_block IS NULL OR death_block >= {{ .bounds.start }})
+    HAVING (death_block IS NULL OR death_block >= {{ .bounds.start }})
 ),
 -- Self-query: previous stats for continuing lifecycles
 prev_stats AS (
@@ -75,6 +79,7 @@ prev_stats AS (
         argMax(interval_max, updated_date_time) as interval_max
     FROM `{{ .self.database }}`.`{{ .self.table }}`
     WHERE (address, slot_key) IN (SELECT address, slot_key FROM touched_slots)
+        AND birth_block <= {{ .bounds.end }}
     GROUP BY address, slot_key, lifecycle_number
 ),
 -- Join touches with diffs + boundaries + prev_stats
