@@ -75,20 +75,24 @@ fi
 
 # Collect directly changed model names
 declare -A CHANGED_MODELS
+CHANGED_MODELS_COUNT=0
 
 while IFS= read -r file; do
     case "$file" in
         models/external/*)
             model=$(basename "$file" | sed 's/\.[^.]*$//')
             CHANGED_MODELS["$model"]=1
+            CHANGED_MODELS_COUNT=$((CHANGED_MODELS_COUNT + 1))
             ;;
         models/transformations/*)
             model=$(basename "$file" | sed 's/\.[^.]*$//')
             CHANGED_MODELS["$model"]=1
+            CHANGED_MODELS_COUNT=$((CHANGED_MODELS_COUNT + 1))
             ;;
         tests/*/models/*)
             model=$(basename "$file" | sed 's/\.[^.]*$//')
             CHANGED_MODELS["$model"]=1
+            CHANGED_MODELS_COUNT=$((CHANGED_MODELS_COUNT + 1))
             ;;
         overrides*.yaml)
             # Parse overrides to find which models are affected
@@ -99,7 +103,7 @@ while IFS= read -r file; do
     esac
 done <<< "$CHANGED_FILES"
 
-if [[ -z "${!CHANGED_MODELS[*]:-}" ]]; then
+if [[ "$CHANGED_MODELS_COUNT" -eq 0 ]]; then
     echo "none"
     exit 0
 fi
