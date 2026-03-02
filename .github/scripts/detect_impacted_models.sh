@@ -99,7 +99,7 @@ while IFS= read -r file; do
     esac
 done <<< "$CHANGED_FILES"
 
-if [[ ${#CHANGED_MODELS[@]} -eq 0 ]]; then
+if [[ -z "${!CHANGED_MODELS[*]:-}" ]]; then
     echo "none"
     exit 0
 fi
