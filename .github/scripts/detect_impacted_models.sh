@@ -44,7 +44,7 @@ CHANGED_FILES=$(git -C "$REPO_ROOT" diff --name-only "$BASE_REF"...HEAD 2>/dev/n
                 echo "")
 
 if [[ -z "$CHANGED_FILES" ]]; then
-    echo "all"
+    echo "none"
     exit 0
 fi
 
@@ -99,8 +99,8 @@ while IFS= read -r file; do
     esac
 done <<< "$CHANGED_FILES"
 
-if [[ ${#CHANGED_MODELS[@]} -eq 0 ]]; then
-    echo "all"
+if [[ -z "${!CHANGED_MODELS[*]:-}" ]]; then
+    echo "none"
     exit 0
 fi
 
