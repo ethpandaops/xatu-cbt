@@ -289,6 +289,7 @@ func (e *CBTEngine) generateConfig(network, dbName, externalDB string, models []
 		"NETWORK":                                network,
 		"EXTERNAL_MODEL_MIN_TIMESTAMP":           "0",
 		"EXTERNAL_MODEL_MIN_BLOCK":               "0",
+		"EXTERNAL_MODEL_SCAN_SIZE_BLOCK":         "50000000",
 		"DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS": "3650", // 10 years for tests.
 		"EXTERNAL_DATABASE":                      externalDB,
 		"GENESIS_TIMESTAMP":                      genesisTimestampForNetwork(network),
