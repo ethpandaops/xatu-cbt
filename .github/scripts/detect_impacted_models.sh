@@ -44,7 +44,7 @@ CHANGED_FILES=$(git -C "$REPO_ROOT" diff --name-only "$BASE_REF"...HEAD 2>/dev/n
                 echo "")
 
 if [[ -z "$CHANGED_FILES" ]]; then
-    echo "all"
+    echo "none"
     exit 0
 fi
 
@@ -55,8 +55,12 @@ while IFS= read -r file; do
         models/external/*|models/transformations/*) ;; # model files - handled below
         tests/*)                                       ;; # test files - handled below
         overrides*.yaml)                               ;; # overrides - handled below
+        migrations/*)                                  ;; # migrations - tied to specific models
+        pkg/proto/*)                                   ;; # generated proto code for models
         .github/*)                                     ;; # CI files - don't affect models
         *.md)                                          ;; # docs - don't affect models
+        go.mod|go.sum)                                 ;; # dependency files - don't affect models
+        Makefile)                                      ;; # build tooling - don't affect models
         *)
             HAS_NON_MODEL_CHANGES=true
             break
@@ -71,20 +75,24 @@ fi
 
 # Collect directly changed model names
 declare -A CHANGED_MODELS
+CHANGED_MODELS_COUNT=0
 
 while IFS= read -r file; do
     case "$file" in
         models/external/*)
             model=$(basename "$file" | sed 's/\.[^.]*$//')
             CHANGED_MODELS["$model"]=1
+            CHANGED_MODELS_COUNT=$((CHANGED_MODELS_COUNT + 1))
             ;;
         models/transformations/*)
             model=$(basename "$file" | sed 's/\.[^.]*$//')
             CHANGED_MODELS["$model"]=1
+            CHANGED_MODELS_COUNT=$((CHANGED_MODELS_COUNT + 1))
             ;;
         tests/*/models/*)
             model=$(basename "$file" | sed 's/\.[^.]*$//')
             CHANGED_MODELS["$model"]=1
+            CHANGED_MODELS_COUNT=$((CHANGED_MODELS_COUNT + 1))
             ;;
         overrides*.yaml)
             # Parse overrides to find which models are affected
@@ -95,8 +103,8 @@ while IFS= read -r file; do
     esac
 done <<< "$CHANGED_FILES"
 
-if [[ ${#CHANGED_MODELS[@]} -eq 0 ]]; then
-    echo "all"
+if [[ "$CHANGED_MODELS_COUNT" -eq 0 ]]; then
+    echo "none"
     exit 0
 fi
 

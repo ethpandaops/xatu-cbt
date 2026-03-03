@@ -4,6 +4,10 @@
 BINARY_NAME=xatu-cbt
 BINARY_PATH=./bin/$(BINARY_NAME)
 
+# Test parameters
+NETWORK ?= mainnet
+VERBOSE ?= --verbose
+
 # Go parameters
 GOCMD=go
 GOBUILD=$(GOCMD) build
@@ -155,6 +159,69 @@ docker:
 		exit 1; \
 	fi
 
+# Smart model test runner
+# Usage:
+#   make test-models                          # changed models, mainnet
+#   make test-models NETWORK=sepolia          # changed models, sepolia
+#   make test-models ALL=1                    # all models, mainnet
+#   make test-models MODELS=fct_block,fct_tx  # specific models
+.PHONY: test-models
+test-models: build
+	@echo "Starting infrastructure..."
+	@$(BINARY_PATH) infra start
+	@echo ""
+	@echo "\033[33m=== PARQUET CACHE ===\033[0m"
+	@echo "\033[33mIf your test seed data has changed, you may need to clear stale parquet cache.\033[0m"
+	@echo "\033[33mLocal:  make clear-parquet-cache\033[0m"
+	@echo "\033[33mR2:     Purge via Cloudflare dashboard\033[0m"
+	@echo ""
+	@echo "Press Enter to continue or Ctrl+C to abort..."
+	@read _dummy
+	@if [ -n "$(ALL)" ]; then \
+		echo "Running ALL model tests for $(NETWORK)..."; \
+		$(BINARY_PATH) test all --network $(NETWORK) $(VERBOSE); \
+	elif [ -n "$(MODELS)" ]; then \
+		echo "Running tests for models: $(MODELS)..."; \
+		$(BINARY_PATH) test models $(MODELS) --network $(NETWORK) $(VERBOSE); \
+	else \
+		echo "Detecting changed models..."; \
+		IMPACTED=$$(./.github/scripts/detect_impacted_models.sh --network $(NETWORK)); \
+		if [ "$$IMPACTED" = "all" ]; then \
+			echo "Broad changes detected — running full test suite..."; \
+			$(BINARY_PATH) test all --network $(NETWORK) $(VERBOSE); \
+		elif [ "$$IMPACTED" = "none" ]; then \
+			echo ""; \
+			echo "\033[33m✓ No impacted models detected for $(NETWORK). Nothing to test.\033[0m"; \
+			echo ""; \
+			echo "  To run all tests:          make test-models ALL=1"; \
+			echo "  To run specific models:    make test-models MODELS=fct_block,fct_tx"; \
+			echo ""; \
+		else \
+			echo "Testing impacted models: $$IMPACTED"; \
+			$(BINARY_PATH) test models $$IMPACTED --network $(NETWORK) $(VERBOSE); \
+		fi; \
+	fi
+
+# Clear local parquet cache and warn about R2
+.PHONY: clear-parquet-cache
+clear-parquet-cache:
+	@echo "Clearing local parquet cache (.parquet_cache/)..."
+	@rm -rf .parquet_cache
+	@echo ""
+	@echo "=== WARNING ==="
+	@echo "Local cache cleared. If you regenerated seed data, the Cloudflare R2"
+	@echo "parquet cache may also be stale."
+	@echo ""
+	@echo "To purge R2 parquet cache:"
+	@echo "  Purge via Cloudflare dashboard"
+	@echo ""
+	@echo "Press Enter to continue or Ctrl+C to abort..."
+	@read _dummy
+
+# Clear parquet cache then run test-models
+.PHONY: test-models-clean
+test-models-clean: clear-parquet-cache test-models
+
 # Catch-all targets for docker compose commands
 compose:
 	@:
@@ -177,9 +244,20 @@ help:
 	@echo "  make deps    - Download and tidy dependencies"
 	@echo "  make fmt     - Format Go code"
 	@echo "  make proto   - Generate protobuf files from ClickHouse tables"
+	@echo "  make test-models             - Test changed models (auto-detect via git diff)"
+	@echo "  make test-models ALL=1       - Test all models"
+	@echo "  make test-models MODELS=x,y  - Test specific models"
+	@echo "  make clear-parquet-cache      - Clear local .parquet_cache/ (with R2 warning)"
+	@echo "  make test-models-clean        - Clear parquet cache then run test-models"
 	@echo "  make docker compose up <network>   - Start CBT for specified network"
 	@echo "  make docker compose down <network> - Stop CBT for specified network"
 	@echo "  make help    - Show this help message"
+	@echo ""
+	@echo "Test variables:"
+	@echo "  NETWORK=mainnet  - Target network (default: mainnet)"
+	@echo "  ALL=1            - Run all model tests"
+	@echo "  MODELS=x,y       - Run specific model tests"
+	@echo "  VERBOSE=         - Disable verbose output"
 	@echo ""
 	@echo "Usage:"
 	@echo "  ./bin/xatu-cbt              # Launch interactive TUI"
