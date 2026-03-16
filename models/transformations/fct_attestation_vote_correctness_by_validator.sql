@@ -80,6 +80,18 @@ WITH
           AND slot_start_date_time <= fromUnixTimestamp({{ .bounds.end }})
     ),
 
+    -- Expected head block for each duty slot. For slots with a canonical block,
+    -- the expected head is that block. For missed slots, the expected head is
+    -- the most recent canonical block before that slot.
+    expected_head AS (
+        SELECT
+            d.slot AS duty_slot,
+            argMax(b.block_root, b.slot) AS block_root
+        FROM (SELECT DISTINCT slot FROM duties) d
+        INNER JOIN blocks b ON b.slot <= d.slot AND b.status = 'canonical'
+        GROUP BY d.slot
+    ),
+
     -- Canonical target blocks: the block at the epoch boundary (first slot of epoch),
     -- or if that slot is missed, the last block from the previous epoch
     epoch_blocks AS (
@@ -126,11 +138,14 @@ SELECT
     duties.attesting_validator_index AS validator_index,
     -- Whether attested (not missed)
     attestations.head_root IS NOT NULL AS attested,
-    -- Head correctness: slot_distance = 0 means correct head vote
+    -- Head correctness: validator voted for the expected head block.
+    -- For missed slots, the expected head is the most recent canonical block.
     CASE
         WHEN attestations.head_root IS NULL THEN NULL
-        WHEN blocks.slot IS NOT NULL AND duties.slot = blocks.slot THEN true
-        WHEN blocks.slot IS NOT NULL AND duties.slot != blocks.slot THEN false
+        WHEN expected_head.block_root IS NOT NULL
+             AND attestations.head_root = expected_head.block_root THEN true
+        WHEN expected_head.block_root IS NOT NULL
+             AND attestations.head_root != expected_head.block_root THEN false
         ELSE NULL
     END AS head_correct,
     -- Target correctness
@@ -155,8 +170,8 @@ LEFT JOIN attestations ON
 LEFT JOIN gossip_attestations ON
     duties.slot = gossip_attestations.slot
     AND duties.attesting_validator_index = gossip_attestations.attesting_validator_index
-LEFT JOIN blocks ON
-    attestations.head_root = blocks.block_root
+LEFT JOIN expected_head ON
+    duties.slot = expected_head.duty_slot
     AND attestations.head_root IS NOT NULL
 LEFT JOIN target_checkpoints ON
     attestations.target_epoch = target_checkpoints.target_epoch

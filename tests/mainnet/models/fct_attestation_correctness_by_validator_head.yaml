@@ -106,3 +106,48 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    - name: Validators voting for expected head at missed slots should have slot_distance zero
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          WITH missed AS (
+            SELECT slot FROM fct_block_proposer_head FINAL WHERE block_root IS NULL
+          ),
+          expected AS (
+            SELECT m.slot AS missed_slot, argMax(bp.block_root, bp.slot) AS expected_root
+            FROM missed m
+            INNER JOIN fct_block_proposer_head FINAL bp ON bp.slot < m.slot AND bp.block_root IS NOT NULL
+            GROUP BY m.slot
+          )
+          SELECT h.slot, h.attesting_validator_index
+          FROM fct_attestation_correctness_by_validator_head FINAL h
+          INNER JOIN expected e ON h.slot = e.missed_slot
+          WHERE h.block_root = e.expected_root
+            AND h.slot_distance != 0
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot distance at missed slots should not exceed distance to expected head
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          WITH missed AS (
+            SELECT slot FROM fct_block_proposer_head FINAL WHERE block_root IS NULL
+          ),
+          expected AS (
+            SELECT m.slot AS missed_slot, argMax(bp.slot, bp.slot) AS expected_slot
+            FROM missed m
+            INNER JOIN fct_block_proposer_head FINAL bp ON bp.slot < m.slot AND bp.block_root IS NOT NULL
+            GROUP BY m.slot
+          )
+          SELECT h.slot, h.attesting_validator_index, h.slot_distance
+          FROM fct_attestation_correctness_by_validator_head FINAL h
+          INNER JOIN expected e ON h.slot = e.missed_slot
+          WHERE h.block_root IS NOT NULL
+            AND h.slot_distance IS NOT NULL
+            AND h.slot_distance < 0
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

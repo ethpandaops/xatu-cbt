@@ -1,0 +1,129 @@
+model: fct_attestation_vote_correctness_by_validator
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/pectra/fct_attestation_vote_correctness_by_validator_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_attestation_vote_correctness_by_validator FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null updated_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_vote_correctness_by_validator FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null slot_start_date_time values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_vote_correctness_by_validator FINAL
+        WHERE slot_start_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each validator should appear at most once per slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT slot, validator_index, COUNT(*) AS cnt
+          FROM fct_attestation_vote_correctness_by_validator FINAL
+          GROUP BY slot, validator_index
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Missed attestations should have null correctness fields
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_vote_correctness_by_validator FINAL
+        WHERE attested = false
+          AND (head_correct IS NOT NULL OR target_correct IS NOT NULL OR source_correct IS NOT NULL OR inclusion_distance IS NOT NULL)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Inclusion distance should be at least 1 when present
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_vote_correctness_by_validator FINAL
+        WHERE inclusion_distance IS NOT NULL AND inclusion_distance < 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Attested validators should have non-null head_correct
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_vote_correctness_by_validator FINAL
+        WHERE attested = true AND head_correct IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Attested validators should have non-null target_correct
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_attestation_vote_correctness_by_validator FINAL
+        WHERE attested = true AND target_correct IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Validators voting for expected head at missed slots should have head_correct true
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          WITH missed AS (
+            SELECT slot FROM fct_block_proposer FINAL WHERE status = 'missed'
+          ),
+          expected AS (
+            SELECT m.slot AS missed_slot, argMax(bp.block_root, bp.slot) AS expected_root
+            FROM missed m
+            INNER JOIN fct_block_proposer FINAL bp ON bp.slot < m.slot AND bp.status = 'canonical'
+            GROUP BY m.slot
+          )
+          SELECT vc.slot, vc.validator_index
+          FROM fct_attestation_vote_correctness_by_validator FINAL vc
+          INNER JOIN expected e ON vc.slot = e.missed_slot
+          INNER JOIN int_attestation_attested_canonical FINAL a
+            ON vc.slot = a.slot AND vc.validator_index = a.attesting_validator_index
+          WHERE a.block_root = e.expected_root
+            AND vc.head_correct = false
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
