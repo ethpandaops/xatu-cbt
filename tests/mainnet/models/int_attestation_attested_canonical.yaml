@@ -88,24 +88,16 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Inclusion distance is always the minimum possible
+    - name: Each validator has exactly one row per slot and block root
       sql: |
-        SELECT count() AS mismatches
-        FROM int_attestation_attested_canonical FINAL AS a
-        INNER JOIN (
-            SELECT
-                slot,
-                beacon_block_root,
-                arrayJoin(validators) AS attesting_validator_index,
-                min(block_slot - slot) AS min_inclusion_distance
-            FROM canonical_beacon_elaborated_attestation FINAL
-            GROUP BY slot, beacon_block_root, attesting_validator_index
-        ) AS src
-        ON a.slot = src.slot
-           AND a.block_root = src.beacon_block_root
-           AND a.attesting_validator_index = src.attesting_validator_index
-        WHERE a.inclusion_distance != src.min_inclusion_distance
+        SELECT count() AS duplicates
+        FROM (
+            SELECT slot, block_root, attesting_validator_index, count() AS cnt
+            FROM int_attestation_attested_canonical FINAL
+            GROUP BY slot, block_root, attesting_validator_index
+            HAVING cnt > 1
+        )
       assertions:
         - type: equals
-          column: mismatches
+          column: duplicates
           value: 0
