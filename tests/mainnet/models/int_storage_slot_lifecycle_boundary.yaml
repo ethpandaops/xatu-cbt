@@ -1,0 +1,129 @@
+model: int_storage_slot_lifecycle_boundary
+network: mainnet
+external_data:
+    canonical_execution_contracts:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_storage_slot_lifecycle_boundary_canonical_execution_contracts.parquet
+        network_column: meta_network_name
+    canonical_execution_storage_diffs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_storage_slot_lifecycle_boundary_canonical_execution_storage_diffs.parquet
+        network_column: meta_network_name
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_storage_slot_lifecycle_boundary_canonical_execution_traces.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_storage_slot_lifecycle_boundary_canonical_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_storage_slot_lifecycle_boundary FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: All lifecycle numbers must be positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE lifecycle_number <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null addresses
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE address IS NULL OR address = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null slot keys
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE slot_key IS NULL OR slot_key = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Birth block must always be populated
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE birth_block IS NULL OR birth_block = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Effective bytes at birth must be positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE effective_bytes_birth <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Effective bytes at birth must be within 1-32
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE effective_bytes_birth > 32
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Death block must be at or after birth block when present
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE death_block IS NOT NULL AND death_block < birth_block
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Effective bytes at death must be positive when death occurs
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE death_block IS NOT NULL AND (effective_bytes_death IS NULL OR effective_bytes_death <= 0)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Effective bytes at death must be within 1-32 when death occurs
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE death_block IS NOT NULL AND effective_bytes_death > 32
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each address-slot-lifecycle combination must be unique
+      sql: |
+        SELECT COUNT(*) AS duplicate_count
+        FROM (
+          SELECT address, slot_key, lifecycle_number, COUNT(*) AS cnt
+          FROM int_storage_slot_lifecycle_boundary FINAL
+          GROUP BY address, slot_key, lifecycle_number
+          HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
+    - name: Lifecycle numbers should be consecutive per slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (
+          SELECT address, slot_key, max(lifecycle_number) AS max_lnum, count() AS lnum_count
+          FROM int_storage_slot_lifecycle_boundary FINAL
+          GROUP BY address, slot_key
+          HAVING max_lnum != lnum_count
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Death info must be null when no death block exists
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_storage_slot_lifecycle_boundary FINAL
+        WHERE death_block IS NULL AND effective_bytes_death IS NOT NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
