@@ -13,43 +13,46 @@ tags:
   - balance
   - validator_performance
 dependencies:
-  - "{{external}}.canonical_beacon_validators"
+  - "{{transformation}}.fct_validator_balance"
 ---
 -- This query expands the epoch range to complete hour boundaries to handle partial
 -- hour aggregations at the head of incremental processing. The ReplacingMergeTree
 -- will merge duplicates keeping the latest row.
+--
+-- Sources from the per-epoch table rather than raw external data.
+-- Uses argMax dedup instead of FINAL so the p_by_epoch_start_date_time projection is used.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
-    -- Find the hour boundaries for the current epoch range using epoch timestamps
+    -- Find the hour boundaries for the current epoch range
+    -- No dedup needed: duplicates have identical epoch_start_date_time so min/max is unaffected
     hour_bounds AS (
         SELECT
             toStartOfHour(min(epoch_start_date_time)) AS min_hour,
             toStartOfHour(max(epoch_start_date_time)) AS max_hour
-        FROM {{ index .dep "{{external}}" "canonical_beacon_validators" "helpers" "from" }} FINAL
+        FROM {{ index .dep "{{transformation}}" "fct_validator_balance" "helpers" "from" }}
         WHERE epoch_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-          AND meta_network_name = '{{ .env.NETWORK }}'
     ),
 
-    -- Validator data for all epochs within the hour boundaries
-    hourly_validators AS (
+    -- Deduplicated per-epoch data within the expanded hour boundaries
+    -- Uses argMax instead of FINAL so the projection on epoch_start_date_time is used
+    per_epoch AS (
         SELECT
-            toStartOfHour(epoch_start_date_time) AS hour_start_date_time,
-            `index` AS validator_index,
+            validator_index,
             epoch,
             epoch_start_date_time,
-            balance,
-            effective_balance,
-            status,
-            slashed
-        FROM {{ index .dep "{{external}}" "canonical_beacon_validators" "helpers" "from" }} FINAL
+            argMax(balance, updated_date_time) AS balance,
+            argMax(effective_balance, updated_date_time) AS effective_balance,
+            argMax(status, updated_date_time) AS status,
+            argMax(slashed, updated_date_time) AS slashed
+        FROM {{ index .dep "{{transformation}}" "fct_validator_balance" "helpers" "from" }}
         WHERE epoch_start_date_time >= (SELECT min_hour FROM hour_bounds)
           AND epoch_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
-          AND meta_network_name = '{{ .env.NETWORK }}'
+        GROUP BY validator_index, epoch, epoch_start_date_time
     )
 
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
-    hour_start_date_time,
+    toStartOfHour(epoch_start_date_time) AS hour_start_date_time,
     validator_index,
     -- Epoch range for the hour
     min(epoch) AS start_epoch,
@@ -65,5 +68,5 @@ SELECT
     argMax(effective_balance, epoch) AS effective_balance,
     argMax(status, epoch) AS status,
     argMax(slashed, epoch) AS slashed
-FROM hourly_validators
+FROM per_epoch
 GROUP BY hour_start_date_time, validator_index
