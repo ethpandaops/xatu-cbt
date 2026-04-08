@@ -52,6 +52,18 @@ duties AS (
         arrayJoin(validators) AS attesting_validator_index
     FROM {{ index .dep "{{transformation}}" "int_beacon_committee_head" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+),
+
+-- Expected head block for each duty slot. For slots with a block, the expected
+-- head is that block. For missed slots (block_root IS NULL), the expected head
+-- is the most recent block before that slot.
+expected_head AS (
+    SELECT
+        d.slot AS duty_slot,
+        argMax(b.slot, b.slot) AS slot
+    FROM (SELECT DISTINCT slot FROM duties) d
+    INNER JOIN blocks b ON b.slot <= d.slot AND b.block_root IS NOT NULL
+    GROUP BY d.slot
 )
 
 -- We need a row for every `duties` row
@@ -65,15 +77,18 @@ SELECT
   duties.epoch_start_date_time AS epoch_start_date_time,
   duties.attesting_validator_index AS attesting_validator_index,
   attestations.block_root AS block_root,
-  if(attestations.block_root IS NOT NULL AND blocks.slot IS NOT NULL, 
-     duties.slot - blocks.slot, 
+  if(attestations.block_root IS NOT NULL AND blocks.slot IS NOT NULL AND expected_head.slot IS NOT NULL,
+     expected_head.slot - blocks.slot,
      NULL) AS slot_distance,
   attestations.propagation_distance
 FROM duties
 LEFT JOIN attestations ON 
     duties.slot = attestations.slot 
     AND duties.attesting_validator_index = attestations.attesting_validator_index
-LEFT JOIN blocks ON 
+LEFT JOIN blocks ON
     attestations.block_root = blocks.block_root
+    AND attestations.block_root IS NOT NULL
+LEFT JOIN expected_head ON
+    duties.slot = expected_head.duty_slot
     AND attestations.block_root IS NOT NULL
 SETTINGS join_use_nulls = 1
