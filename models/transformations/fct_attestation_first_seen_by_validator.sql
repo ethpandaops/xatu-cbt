@@ -37,10 +37,14 @@ WITH raw AS (
         target_root
     FROM {{ index .dep "{{transformation}}" "int_attestation_first_seen" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        -- Skip rows that predate migration 077 (source/target roots not yet backfilled).
-        -- Those rows will reappear here once CBT re-processes the range with the full schema.
-        AND source_root != ''
-        AND target_root != ''
+        -- Hard-fail if any raw row predates migration 077 (source/target roots not yet
+        -- backfilled). Silently filtering would let CBT mark this range complete and never
+        -- recover. Throwing forces the task to fail until int_attestation_first_seen is
+        -- re-processed for the range, at which point CBT retries and this passes.
+        AND throwIf(
+            source_root = '' OR target_root = '',
+            'int_attestation_first_seen has rows with empty source_root/target_root in this range (pre-migration-077 data). Re-process int_attestation_first_seen before running fct_attestation_first_seen_by_validator.'
+        ) = 0
 ),
 agg AS (
     SELECT
