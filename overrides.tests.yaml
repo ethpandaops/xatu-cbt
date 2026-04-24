@@ -12,16 +12,6 @@ models:
         schedules:
           forwardfill: "@every 2s"
           backfill: "@every 2s"
-    int_attestation_first_seen_aggregate:
-      config:
-        schedules:
-          forwardfill: "@every 5s"
-          backfill: "@every 5s"
-    fct_attestation_first_seen_by_validator:
-      config:
-        schedules:
-          forwardfill: "@every 10s"
-          backfill: "@every 10s"
     fct_attestation_observation_by_node:
       config:
         schedules:
