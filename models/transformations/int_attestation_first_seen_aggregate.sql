@@ -28,7 +28,7 @@ WITH aggregates AS (
         epoch_start_date_time,
         committee_index,
         aggregation_bits,
-        MIN(propagation_slot_start_diff) AS seen_slot_start_diff,
+        MIN(propagation_slot_start_diff) AS agg_seen,
         argMin(source, propagation_slot_start_diff) AS source,
         argMin(beacon_block_root, propagation_slot_start_diff) AS beacon_block_root,
         argMin(source_epoch, propagation_slot_start_diff) AS source_epoch,
@@ -73,8 +73,9 @@ committees AS (
 ),
 
 -- Explode each distinct aggregate into one row per attesting validator by decoding
--- the SSZ aggregation_bits bitlist. Bits are LSB-first within each byte; we only iterate
--- positions [0, committee_size) so the SSZ length-sentinel bit is never interpreted as an attester.
+-- the SSZ aggregation_bits bitlist. Bits are LSB-first within each byte and we only
+-- iterate positions [0, committee_size) so the SSZ length-sentinel bit is never
+-- interpreted as an attester.
 exploded AS (
     SELECT
         a.slot,
@@ -83,7 +84,7 @@ exploded AS (
         a.epoch_start_date_time,
         a.committee_index,
         c.validators[p + 1] AS attesting_validator_index,
-        a.seen_slot_start_diff,
+        a.agg_seen,
         a.source,
         a.beacon_block_root,
         a.source_epoch,
@@ -104,18 +105,18 @@ exploded AS (
 
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
-    argMin(slot, seen_slot_start_diff) AS slot,
+    argMin(slot, agg_seen) AS slot,
     slot_start_date_time,
-    argMin(epoch, seen_slot_start_diff) AS epoch,
-    argMin(epoch_start_date_time, seen_slot_start_diff) AS epoch_start_date_time,
+    argMin(epoch, agg_seen) AS epoch,
+    argMin(epoch_start_date_time, agg_seen) AS epoch_start_date_time,
     attesting_validator_index,
-    argMin(committee_index, seen_slot_start_diff) AS committee_index,
-    MIN(seen_slot_start_diff) AS seen_slot_start_diff,
-    argMin(source, seen_slot_start_diff) AS source,
-    argMin(beacon_block_root, seen_slot_start_diff) AS block_root,
-    argMin(source_epoch, seen_slot_start_diff) AS source_epoch,
-    argMin(source_root, seen_slot_start_diff) AS source_root,
-    argMin(target_epoch, seen_slot_start_diff) AS target_epoch,
-    argMin(target_root, seen_slot_start_diff) AS target_root
+    argMin(committee_index, agg_seen) AS committee_index,
+    MIN(agg_seen) AS seen_slot_start_diff,
+    argMin(source, agg_seen) AS source,
+    argMin(beacon_block_root, agg_seen) AS block_root,
+    argMin(source_epoch, agg_seen) AS source_epoch,
+    argMin(source_root, agg_seen) AS source_root,
+    argMin(target_epoch, agg_seen) AS target_epoch,
+    argMin(target_root, agg_seen) AS target_root
 FROM exploded
 GROUP BY slot_start_date_time, attesting_validator_index
