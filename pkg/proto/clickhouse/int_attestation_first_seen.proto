@@ -61,6 +61,14 @@ message IntAttestationFirstSeen {
   string meta_consensus_version = 35;
   // Ethereum consensus client implementation
   string meta_consensus_implementation = 36;
+  // Source checkpoint epoch of the attestation
+  uint32 source_epoch = 37;
+  // Source checkpoint root of the attestation
+  string source_root = 38;
+  // Target checkpoint epoch of the attestation
+  uint32 target_epoch = 39;
+  // Target checkpoint root of the attestation
+  string target_root = 40;
 }
 
 // Request for listing int_attestation_first_seen records
@@ -119,18 +127,26 @@ message ListIntAttestationFirstSeenRequest {
   StringFilter meta_consensus_version = 25;
   // Filter by meta_consensus_implementation - Ethereum consensus client implementation (optional)
   StringFilter meta_consensus_implementation = 26;
+  // Filter by source_epoch - Source checkpoint epoch of the attestation (optional)
+  UInt32Filter source_epoch = 27;
+  // Filter by source_root - Source checkpoint root of the attestation (optional)
+  StringFilter source_root = 28;
+  // Filter by target_epoch - Target checkpoint epoch of the attestation (optional)
+  UInt32Filter target_epoch = 29;
+  // Filter by target_root - Target checkpoint root of the attestation (optional)
+  StringFilter target_root = 30;
 
   // The maximum number of int_attestation_first_seen to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 27;
+  int32 page_size = 31;
   // A page token, received from a previous `ListIntAttestationFirstSeen` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 28;
+  string page_token = 32;
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 29;
+  string order_by = 33;
 }
 
 // Response for listing int_attestation_first_seen records
