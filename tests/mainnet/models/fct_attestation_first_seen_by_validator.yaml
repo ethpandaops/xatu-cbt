@@ -59,21 +59,29 @@ assertions:
         - type: equals
           column: invalid_agg_source
           value: 0
-    - name: Raw timing requires populated raw vote fields
+    - name: Raw timing implies non-empty raw source
       sql: |
         SELECT COUNT(*) AS mismatched FROM fct_attestation_first_seen_by_validator FINAL
-        WHERE raw_seen_slot_start_diff IS NOT NULL AND (raw_source = '' OR raw_block_root = '')
+        WHERE raw_seen_slot_start_diff IS NOT NULL AND raw_source = ''
       assertions:
         - type: equals
           column: mismatched
           value: 0
-    - name: Aggregate timing requires populated aggregate vote fields
+    - name: Aggregate timing implies non-empty agg source
       sql: |
         SELECT COUNT(*) AS mismatched FROM fct_attestation_first_seen_by_validator FINAL
-        WHERE agg_seen_slot_start_diff IS NOT NULL AND (agg_source = '' OR agg_block_root = '')
+        WHERE agg_seen_slot_start_diff IS NOT NULL AND agg_source = ''
       assertions:
         - type: equals
           column: mismatched
+          value: 0
+    - name: Every row must have a populated block_root
+      sql: |
+        SELECT COUNT(*) AS empty_block_roots FROM fct_attestation_first_seen_by_validator FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: empty_block_roots
           value: 0
     - name: Seen diffs should be non-negative when set
       sql: |
@@ -84,12 +92,15 @@ assertions:
         - type: equals
           column: negative_diffs
           value: 0
-    - name: (slot_start_date_time, validator_index) should be unique
+    - name: (slot_start_date_time, validator_index, vote) should be unique
       sql: |
         SELECT COUNT(*) AS dupes FROM (
-          SELECT slot_start_date_time, validator_index, COUNT(*) AS n
+          SELECT slot_start_date_time, validator_index,
+                 block_root, source_epoch, source_root, target_epoch, target_root,
+                 COUNT(*) AS n
           FROM fct_attestation_first_seen_by_validator FINAL
-          GROUP BY slot_start_date_time, validator_index
+          GROUP BY slot_start_date_time, validator_index,
+                   block_root, source_epoch, source_root, target_epoch, target_root
           HAVING n > 1
         )
       assertions:

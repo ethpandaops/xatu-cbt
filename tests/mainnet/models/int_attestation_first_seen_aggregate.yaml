@@ -67,12 +67,15 @@ assertions:
         - type: equals
           column: empty_target_roots
           value: 0
-    - name: (slot_start_date_time, validator_index) should be unique
+    - name: (slot_start_date_time, validator_index, vote) should be unique
       sql: |
         SELECT COUNT(*) AS dupes FROM (
-          SELECT slot_start_date_time, attesting_validator_index, COUNT(*) AS n
+          SELECT slot_start_date_time, attesting_validator_index,
+                 block_root, source_epoch, source_root, target_epoch, target_root,
+                 COUNT(*) AS n
           FROM int_attestation_first_seen_aggregate FINAL
-          GROUP BY slot_start_date_time, attesting_validator_index
+          GROUP BY slot_start_date_time, attesting_validator_index,
+                   block_root, source_epoch, source_root, target_epoch, target_root
           HAVING n > 1
         )
       assertions:

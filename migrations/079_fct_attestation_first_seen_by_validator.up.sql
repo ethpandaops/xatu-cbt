@@ -6,30 +6,25 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_by_validator_local on 
     `epoch_start_date_time` DateTime COMMENT 'The wall clock time when the epoch started' CODEC(DoubleDelta, ZSTD(1)),
     `validator_index` UInt32 COMMENT 'The validator index' CODEC(ZSTD(1)),
     `committee_index` LowCardinality(String) COMMENT 'The committee the validator was assigned to for this slot',
-    `raw_seen_slot_start_diff` Nullable(UInt32) COMMENT 'Earliest time (ms after slot start) the unaggregated attestation from this validator was seen. NULL if never seen raw.' CODEC(ZSTD(1)),
-    `raw_source` LowCardinality(String) COMMENT 'Source the raw attestation was first observed from (beacon_api, libp2p, or empty if never seen raw)' CODEC(ZSTD(1)),
-    `raw_block_root` String COMMENT 'Head vote from the earliest raw attestation (empty if never seen raw)' CODEC(ZSTD(1)),
-    `raw_source_epoch` UInt32 COMMENT 'Source checkpoint epoch from the earliest raw attestation' CODEC(DoubleDelta, ZSTD(1)),
-    `raw_source_root` String COMMENT 'Source checkpoint root from the earliest raw attestation' CODEC(ZSTD(1)),
-    `raw_target_epoch` UInt32 COMMENT 'Target checkpoint epoch from the earliest raw attestation' CODEC(DoubleDelta, ZSTD(1)),
-    `raw_target_root` String COMMENT 'Target checkpoint root from the earliest raw attestation' CODEC(ZSTD(1)),
-    `agg_seen_slot_start_diff` Nullable(UInt32) COMMENT 'Earliest time (ms after slot start) the validator was seen inside an aggregate. NULL if never seen in an aggregate.' CODEC(ZSTD(1)),
-    `agg_source` LowCardinality(String) COMMENT 'Source the earliest aggregate was observed from (beacon_api, libp2p, or empty if never seen)' CODEC(ZSTD(1)),
-    `agg_block_root` String COMMENT 'Head vote from the earliest aggregate containing this validator' CODEC(ZSTD(1)),
-    `agg_source_epoch` UInt32 COMMENT 'Source checkpoint epoch from the earliest aggregate containing this validator' CODEC(DoubleDelta, ZSTD(1)),
-    `agg_source_root` String COMMENT 'Source checkpoint root from the earliest aggregate containing this validator' CODEC(ZSTD(1)),
-    `agg_target_epoch` UInt32 COMMENT 'Target checkpoint epoch from the earliest aggregate containing this validator' CODEC(DoubleDelta, ZSTD(1)),
-    `agg_target_root` String COMMENT 'Target checkpoint root from the earliest aggregate containing this validator' CODEC(ZSTD(1))
+    `block_root` String COMMENT 'Head vote (beacon block root) for this attestation' CODEC(ZSTD(1)),
+    `source_epoch` UInt32 COMMENT 'Source checkpoint epoch for this attestation' CODEC(DoubleDelta, ZSTD(1)),
+    `source_root` String COMMENT 'Source checkpoint root for this attestation' CODEC(ZSTD(1)),
+    `target_epoch` UInt32 COMMENT 'Target checkpoint epoch for this attestation' CODEC(DoubleDelta, ZSTD(1)),
+    `target_root` String COMMENT 'Target checkpoint root for this attestation' CODEC(ZSTD(1)),
+    `raw_seen_slot_start_diff` Nullable(UInt32) COMMENT 'Earliest time (ms after slot start) this (validator, vote) was seen as an unaggregated attestation. NULL if never seen raw.' CODEC(ZSTD(1)),
+    `raw_source` LowCardinality(String) COMMENT 'Source the raw attestation was first observed from (beacon_api_eth_v1_events_attestation, libp2p_gossipsub_beacon_attestation, or empty)' CODEC(ZSTD(1)),
+    `agg_seen_slot_start_diff` Nullable(UInt32) COMMENT 'Earliest time (ms after slot start) this (validator, vote) was seen inside an aggregate. NULL if never seen in an aggregate.' CODEC(ZSTD(1)),
+    `agg_source` LowCardinality(String) COMMENT 'Source the earliest aggregate was observed from (beacon_api_eth_v1_events_attestation, libp2p_gossipsub_aggregate_and_proof, or empty)' CODEC(ZSTD(1))
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',
     `updated_date_time`
 ) PARTITION BY toStartOfMonth(slot_start_date_time)
 ORDER BY
-    (`slot_start_date_time`, `validator_index`)
+    (`slot_start_date_time`, `validator_index`, `block_root`, `source_epoch`, `source_root`, `target_epoch`, `target_root`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Per-(slot, validator) first-seen timings for both the unaggregated attestation and the earliest aggregate that included the validator, with the attested votes from each source.';
+COMMENT 'One row per (slot, validator, vote) carrying raw and aggregate first-seen times. ORDER BY includes vote fields so slashable double votes stay as separate rows instead of being collapsed by the ReplacingMergeTree.';
 
 CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_by_validator ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_first_seen_by_validator_local ENGINE = Distributed(
     '{cluster}',

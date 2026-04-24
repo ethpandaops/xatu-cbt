@@ -250,66 +250,6 @@ func BuildListIntAttestationFirstSeenAggregateQuery(req *ListIntAttestationFirst
 		}
 	}
 
-	// Add filter for column: seen_slot_start_diff
-	if req.SeenSlotStartDiff != nil {
-		switch filter := req.SeenSlotStartDiff.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("seen_slot_start_diff", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("seen_slot_start_diff", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("seen_slot_start_diff", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("seen_slot_start_diff", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("seen_slot_start_diff", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("seen_slot_start_diff", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("seen_slot_start_diff", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("seen_slot_start_diff", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("seen_slot_start_diff", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: source
-	if req.Source != nil {
-		switch filter := req.Source.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("source", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("source", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("source", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("source", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("source", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("source", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("source", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("source", StringSliceToInterface(filter.In.Values))
-			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("source", StringSliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
 	// Add filter for column: block_root
 	if req.BlockRoot != nil {
 		switch filter := req.BlockRoot.Filter.(type) {
@@ -460,6 +400,66 @@ func BuildListIntAttestationFirstSeenAggregateQuery(req *ListIntAttestationFirst
 		}
 	}
 
+	// Add filter for column: seen_slot_start_diff
+	if req.SeenSlotStartDiff != nil {
+		switch filter := req.SeenSlotStartDiff.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("seen_slot_start_diff", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("seen_slot_start_diff", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("seen_slot_start_diff", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("seen_slot_start_diff", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("seen_slot_start_diff", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("seen_slot_start_diff", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("seen_slot_start_diff", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("seen_slot_start_diff", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("seen_slot_start_diff", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: source
+	if req.Source != nil {
+		switch filter := req.Source.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("source", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("source", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("source", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("source", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("source", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("source", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("source", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("source", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("source", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -485,7 +485,7 @@ func BuildListIntAttestationFirstSeenAggregateQuery(req *ListIntAttestationFirst
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "attesting_validator_index", "committee_index", "seen_slot_start_diff", "source", "block_root", "source_epoch", "source_root", "target_epoch", "target_root"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "attesting_validator_index", "committee_index", "block_root", "source_epoch", "source_root", "target_epoch", "target_root", "seen_slot_start_diff", "source"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -493,11 +493,11 @@ func BuildListIntAttestationFirstSeenAggregateQuery(req *ListIntAttestationFirst
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", attesting_validator_index"
+		orderByClause = " ORDER BY slot_start_date_time" + ", attesting_validator_index" + ", block_root" + ", source_epoch" + ", source_root" + ", target_epoch" + ", target_root"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "attesting_validator_index", "committee_index", "seen_slot_start_diff", "source", "block_root", "source_epoch", "source_root", "target_epoch", "target_root"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "attesting_validator_index", "committee_index", "block_root", "source_epoch", "source_root", "target_epoch", "target_root", "seen_slot_start_diff", "source"}
 
 	return BuildParameterizedQuery("int_attestation_first_seen_aggregate", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -514,10 +514,10 @@ func BuildGetIntAttestationFirstSeenAggregateQuery(req *GetIntAttestationFirstSe
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, attesting_validator_index"
+	orderByClause := " ORDER BY slot_start_date_time, attesting_validator_index, block_root, source_epoch, source_root, target_epoch, target_root"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "attesting_validator_index", "committee_index", "seen_slot_start_diff", "source", "block_root", "source_epoch", "source_root", "target_epoch", "target_root"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "attesting_validator_index", "committee_index", "block_root", "source_epoch", "source_root", "target_epoch", "target_root", "seen_slot_start_diff", "source"}
 
 	// Return single record
 	return BuildParameterizedQuery("int_attestation_first_seen_aggregate", columns, qb, orderByClause, 1, 0, options...)

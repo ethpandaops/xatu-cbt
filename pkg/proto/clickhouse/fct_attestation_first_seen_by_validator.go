@@ -257,6 +257,156 @@ func BuildListFctAttestationFirstSeenByValidatorQuery(req *ListFctAttestationFir
 		}
 	}
 
+	// Add filter for column: block_root
+	if req.BlockRoot != nil {
+		switch filter := req.BlockRoot.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("block_root", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("block_root", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("block_root", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("block_root", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("block_root", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("block_root", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("block_root", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("block_root", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("block_root", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: source_epoch
+	if req.SourceEpoch != nil {
+		switch filter := req.SourceEpoch.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("source_epoch", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("source_epoch", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("source_epoch", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("source_epoch", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("source_epoch", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("source_epoch", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("source_epoch", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("source_epoch", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("source_epoch", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: source_root
+	if req.SourceRoot != nil {
+		switch filter := req.SourceRoot.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("source_root", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("source_root", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("source_root", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("source_root", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("source_root", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("source_root", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("source_root", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("source_root", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("source_root", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: target_epoch
+	if req.TargetEpoch != nil {
+		switch filter := req.TargetEpoch.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("target_epoch", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("target_epoch", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("target_epoch", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("target_epoch", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("target_epoch", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("target_epoch", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("target_epoch", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("target_epoch", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("target_epoch", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: target_root
+	if req.TargetRoot != nil {
+		switch filter := req.TargetRoot.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("target_root", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("target_root", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("target_root", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("target_root", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("target_root", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("target_root", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("target_root", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("target_root", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("target_root", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: raw_seen_slot_start_diff
 	if req.RawSeenSlotStartDiff != nil {
 		switch filter := req.RawSeenSlotStartDiff.Filter.(type) {
@@ -315,156 +465,6 @@ func BuildListFctAttestationFirstSeenByValidatorQuery(req *ListFctAttestationFir
 		case *StringFilter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
 				qb.AddNotInCondition("raw_source", StringSliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: raw_block_root
-	if req.RawBlockRoot != nil {
-		switch filter := req.RawBlockRoot.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("raw_block_root", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("raw_block_root", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("raw_block_root", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("raw_block_root", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("raw_block_root", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("raw_block_root", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("raw_block_root", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("raw_block_root", StringSliceToInterface(filter.In.Values))
-			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("raw_block_root", StringSliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: raw_source_epoch
-	if req.RawSourceEpoch != nil {
-		switch filter := req.RawSourceEpoch.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("raw_source_epoch", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("raw_source_epoch", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("raw_source_epoch", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("raw_source_epoch", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("raw_source_epoch", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("raw_source_epoch", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("raw_source_epoch", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("raw_source_epoch", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("raw_source_epoch", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: raw_source_root
-	if req.RawSourceRoot != nil {
-		switch filter := req.RawSourceRoot.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("raw_source_root", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("raw_source_root", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("raw_source_root", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("raw_source_root", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("raw_source_root", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("raw_source_root", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("raw_source_root", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("raw_source_root", StringSliceToInterface(filter.In.Values))
-			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("raw_source_root", StringSliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: raw_target_epoch
-	if req.RawTargetEpoch != nil {
-		switch filter := req.RawTargetEpoch.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("raw_target_epoch", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("raw_target_epoch", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("raw_target_epoch", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("raw_target_epoch", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("raw_target_epoch", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("raw_target_epoch", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("raw_target_epoch", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("raw_target_epoch", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("raw_target_epoch", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: raw_target_root
-	if req.RawTargetRoot != nil {
-		switch filter := req.RawTargetRoot.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("raw_target_root", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("raw_target_root", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("raw_target_root", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("raw_target_root", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("raw_target_root", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("raw_target_root", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("raw_target_root", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("raw_target_root", StringSliceToInterface(filter.In.Values))
-			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("raw_target_root", StringSliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -535,156 +535,6 @@ func BuildListFctAttestationFirstSeenByValidatorQuery(req *ListFctAttestationFir
 		}
 	}
 
-	// Add filter for column: agg_block_root
-	if req.AggBlockRoot != nil {
-		switch filter := req.AggBlockRoot.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("agg_block_root", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("agg_block_root", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("agg_block_root", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("agg_block_root", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("agg_block_root", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("agg_block_root", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("agg_block_root", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("agg_block_root", StringSliceToInterface(filter.In.Values))
-			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("agg_block_root", StringSliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: agg_source_epoch
-	if req.AggSourceEpoch != nil {
-		switch filter := req.AggSourceEpoch.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("agg_source_epoch", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("agg_source_epoch", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("agg_source_epoch", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("agg_source_epoch", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("agg_source_epoch", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("agg_source_epoch", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("agg_source_epoch", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("agg_source_epoch", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("agg_source_epoch", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: agg_source_root
-	if req.AggSourceRoot != nil {
-		switch filter := req.AggSourceRoot.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("agg_source_root", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("agg_source_root", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("agg_source_root", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("agg_source_root", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("agg_source_root", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("agg_source_root", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("agg_source_root", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("agg_source_root", StringSliceToInterface(filter.In.Values))
-			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("agg_source_root", StringSliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: agg_target_epoch
-	if req.AggTargetEpoch != nil {
-		switch filter := req.AggTargetEpoch.Filter.(type) {
-		case *UInt32Filter_Eq:
-			qb.AddCondition("agg_target_epoch", "=", filter.Eq)
-		case *UInt32Filter_Ne:
-			qb.AddCondition("agg_target_epoch", "!=", filter.Ne)
-		case *UInt32Filter_Lt:
-			qb.AddCondition("agg_target_epoch", "<", filter.Lt)
-		case *UInt32Filter_Lte:
-			qb.AddCondition("agg_target_epoch", "<=", filter.Lte)
-		case *UInt32Filter_Gt:
-			qb.AddCondition("agg_target_epoch", ">", filter.Gt)
-		case *UInt32Filter_Gte:
-			qb.AddCondition("agg_target_epoch", ">=", filter.Gte)
-		case *UInt32Filter_Between:
-			qb.AddBetweenCondition("agg_target_epoch", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt32Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("agg_target_epoch", UInt32SliceToInterface(filter.In.Values))
-			}
-		case *UInt32Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("agg_target_epoch", UInt32SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
-	// Add filter for column: agg_target_root
-	if req.AggTargetRoot != nil {
-		switch filter := req.AggTargetRoot.Filter.(type) {
-		case *StringFilter_Eq:
-			qb.AddCondition("agg_target_root", "=", filter.Eq)
-		case *StringFilter_Ne:
-			qb.AddCondition("agg_target_root", "!=", filter.Ne)
-		case *StringFilter_Contains:
-			qb.AddLikeCondition("agg_target_root", "%" + filter.Contains + "%")
-		case *StringFilter_StartsWith:
-			qb.AddLikeCondition("agg_target_root", filter.StartsWith + "%")
-		case *StringFilter_EndsWith:
-			qb.AddLikeCondition("agg_target_root", "%" + filter.EndsWith)
-		case *StringFilter_Like:
-			qb.AddLikeCondition("agg_target_root", filter.Like)
-		case *StringFilter_NotLike:
-			qb.AddNotLikeCondition("agg_target_root", filter.NotLike)
-		case *StringFilter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("agg_target_root", StringSliceToInterface(filter.In.Values))
-			}
-		case *StringFilter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("agg_target_root", StringSliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -710,7 +560,7 @@ func BuildListFctAttestationFirstSeenByValidatorQuery(req *ListFctAttestationFir
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "validator_index", "committee_index", "raw_seen_slot_start_diff", "raw_source", "raw_block_root", "raw_source_epoch", "raw_source_root", "raw_target_epoch", "raw_target_root", "agg_seen_slot_start_diff", "agg_source", "agg_block_root", "agg_source_epoch", "agg_source_root", "agg_target_epoch", "agg_target_root"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "validator_index", "committee_index", "block_root", "source_epoch", "source_root", "target_epoch", "target_root", "raw_seen_slot_start_diff", "raw_source", "agg_seen_slot_start_diff", "agg_source"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -718,11 +568,11 @@ func BuildListFctAttestationFirstSeenByValidatorQuery(req *ListFctAttestationFir
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", validator_index"
+		orderByClause = " ORDER BY slot_start_date_time" + ", validator_index" + ", block_root" + ", source_epoch" + ", source_root" + ", target_epoch" + ", target_root"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "validator_index", "committee_index", "raw_seen_slot_start_diff", "raw_source", "raw_block_root", "raw_source_epoch", "raw_source_root", "raw_target_epoch", "raw_target_root", "agg_seen_slot_start_diff", "agg_source", "agg_block_root", "agg_source_epoch", "agg_source_root", "agg_target_epoch", "agg_target_root"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "validator_index", "committee_index", "block_root", "source_epoch", "source_root", "target_epoch", "target_root", "raw_seen_slot_start_diff", "raw_source", "agg_seen_slot_start_diff", "agg_source"}
 
 	return BuildParameterizedQuery("fct_attestation_first_seen_by_validator", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -739,10 +589,10 @@ func BuildGetFctAttestationFirstSeenByValidatorQuery(req *GetFctAttestationFirst
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, validator_index"
+	orderByClause := " ORDER BY slot_start_date_time, validator_index, block_root, source_epoch, source_root, target_epoch, target_root"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "validator_index", "committee_index", "raw_seen_slot_start_diff", "raw_source", "raw_block_root", "raw_source_epoch", "raw_source_root", "raw_target_epoch", "raw_target_root", "agg_seen_slot_start_diff", "agg_source", "agg_block_root", "agg_source_epoch", "agg_source_root", "agg_target_epoch", "agg_target_root"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "validator_index", "committee_index", "block_root", "source_epoch", "source_root", "target_epoch", "target_root", "raw_seen_slot_start_diff", "raw_source", "agg_seen_slot_start_diff", "agg_source"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_attestation_first_seen_by_validator", columns, qb, orderByClause, 1, 0, options...)

@@ -105,18 +105,19 @@ exploded AS (
 
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
-    argMin(slot, agg_seen) AS slot,
+    any(slot) AS slot,
     slot_start_date_time,
-    argMin(epoch, agg_seen) AS epoch,
-    argMin(epoch_start_date_time, agg_seen) AS epoch_start_date_time,
+    any(epoch) AS epoch,
+    any(epoch_start_date_time) AS epoch_start_date_time,
     attesting_validator_index,
-    argMin(committee_index, agg_seen) AS committee_index,
+    any(committee_index) AS committee_index,
+    beacon_block_root AS block_root,
+    source_epoch,
+    source_root,
+    target_epoch,
+    target_root,
     MIN(agg_seen) AS seen_slot_start_diff,
-    argMin(source, agg_seen) AS source,
-    argMin(beacon_block_root, agg_seen) AS block_root,
-    argMin(source_epoch, agg_seen) AS source_epoch,
-    argMin(source_root, agg_seen) AS source_root,
-    argMin(target_epoch, agg_seen) AS target_epoch,
-    argMin(target_root, agg_seen) AS target_root
+    argMin(source, agg_seen) AS source
 FROM exploded
-GROUP BY slot_start_date_time, attesting_validator_index
+GROUP BY slot_start_date_time, attesting_validator_index,
+         beacon_block_root, source_epoch, source_root, target_epoch, target_root

@@ -12,39 +12,57 @@ tags:
   - attestation
   - validator
 dependencies:
-  - "{{transformation}}.int_attestation_first_seen"
+  - "{{external}}.beacon_api_eth_v1_events_attestation"
+  - "{{external}}.libp2p_gossipsub_beacon_attestation"
   - "{{transformation}}.int_attestation_first_seen_aggregate"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
--- FULL OUTER JOIN so a validator appears if seen via EITHER raw or aggregate (or both).
--- Raw-only = validator's unaggregated attestation was seen but the aggregate form wasn't yet.
--- Agg-only = we never saw the single attestation, only the aggregate that included them.
+-- One row per (slot, validator, vote) with raw and aggregate first-seen times.
+-- FULL OUTER JOIN on the vote key preserves slashable double votes as separate rows.
 WITH raw AS (
     SELECT
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
-        attesting_validator_index,
+        attesting_validator_index AS validator_index,
         attesting_validator_committee_index AS committee_index,
-        seen_slot_start_diff,
-        source,
-        block_root,
+        beacon_block_root AS block_root,
         source_epoch,
         source_root,
         target_epoch,
-        target_root
-    FROM {{ index .dep "{{transformation}}" "int_attestation_first_seen" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        -- Hard-fail if any raw row predates migration 077 (source/target roots not yet
-        -- backfilled). Silently filtering would let CBT mark this range complete and never
-        -- recover. Throwing forces the task to fail until int_attestation_first_seen is
-        -- re-processed for the range, at which point CBT retries and this passes.
-        AND throwIf(
-            source_root = '' OR target_root = '',
-            'int_attestation_first_seen has rows with empty source_root/target_root in this range (pre-migration-077 data). Re-process int_attestation_first_seen before running fct_attestation_first_seen_by_validator.'
-        ) = 0
+        target_root,
+        MIN(propagation_slot_start_diff) AS seen,
+        argMin(source, propagation_slot_start_diff) AS source
+    FROM (
+        SELECT 'beacon_api_eth_v1_events_attestation' AS source,
+               slot, slot_start_date_time, epoch, epoch_start_date_time,
+               attesting_validator_index, attesting_validator_committee_index,
+               beacon_block_root, source_epoch, source_root, target_epoch, target_root,
+               propagation_slot_start_diff
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_attestation" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+            AND aggregation_bits = ''
+            AND attesting_validator_index IS NOT NULL
+
+        UNION ALL
+
+        SELECT 'libp2p_gossipsub_beacon_attestation' AS source,
+               slot, slot_start_date_time, epoch, epoch_start_date_time,
+               attesting_validator_index, attesting_validator_committee_index,
+               beacon_block_root, source_epoch, source_root, target_epoch, target_root,
+               propagation_slot_start_diff
+        FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_attestation" "helpers" "from" }} FINAL
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+            AND aggregation_bits = ''
+            AND attesting_validator_index IS NOT NULL
+    )
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time,
+             attesting_validator_index, attesting_validator_committee_index,
+             beacon_block_root, source_epoch, source_root, target_epoch, target_root
 ),
 agg AS (
     SELECT
@@ -52,15 +70,15 @@ agg AS (
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
-        attesting_validator_index,
+        attesting_validator_index AS validator_index,
         committee_index,
-        seen_slot_start_diff,
-        source,
         block_root,
         source_epoch,
         source_root,
         target_epoch,
-        target_root
+        target_root,
+        seen_slot_start_diff AS seen,
+        source
     FROM {{ index .dep "{{transformation}}" "int_attestation_first_seen_aggregate" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 )
@@ -70,24 +88,24 @@ SELECT
     coalesce(r.slot_start_date_time, a.slot_start_date_time) AS slot_start_date_time,
     coalesce(r.epoch, a.epoch) AS epoch,
     coalesce(r.epoch_start_date_time, a.epoch_start_date_time) AS epoch_start_date_time,
-    coalesce(r.attesting_validator_index, a.attesting_validator_index) AS validator_index,
+    coalesce(r.validator_index, a.validator_index) AS validator_index,
     coalesce(r.committee_index, a.committee_index) AS committee_index,
-    r.seen_slot_start_diff AS raw_seen_slot_start_diff,
+    coalesce(r.block_root, a.block_root) AS block_root,
+    coalesce(r.source_epoch, a.source_epoch) AS source_epoch,
+    coalesce(r.source_root, a.source_root) AS source_root,
+    coalesce(r.target_epoch, a.target_epoch) AS target_epoch,
+    coalesce(r.target_root, a.target_root) AS target_root,
+    r.seen AS raw_seen_slot_start_diff,
     ifNull(r.source, '') AS raw_source,
-    ifNull(r.block_root, '') AS raw_block_root,
-    ifNull(r.source_epoch, 0) AS raw_source_epoch,
-    ifNull(r.source_root, '') AS raw_source_root,
-    ifNull(r.target_epoch, 0) AS raw_target_epoch,
-    ifNull(r.target_root, '') AS raw_target_root,
-    a.seen_slot_start_diff AS agg_seen_slot_start_diff,
-    ifNull(a.source, '') AS agg_source,
-    ifNull(a.block_root, '') AS agg_block_root,
-    ifNull(a.source_epoch, 0) AS agg_source_epoch,
-    ifNull(a.source_root, '') AS agg_source_root,
-    ifNull(a.target_epoch, 0) AS agg_target_epoch,
-    ifNull(a.target_root, '') AS agg_target_root
+    a.seen AS agg_seen_slot_start_diff,
+    ifNull(a.source, '') AS agg_source
 FROM raw r
 FULL OUTER JOIN agg a
     ON r.slot_start_date_time = a.slot_start_date_time
-   AND r.attesting_validator_index = a.attesting_validator_index
+   AND r.validator_index = a.validator_index
+   AND r.block_root = a.block_root
+   AND r.source_epoch = a.source_epoch
+   AND r.source_root = a.source_root
+   AND r.target_epoch = a.target_epoch
+   AND r.target_root = a.target_root
 SETTINGS join_use_nulls = 1
