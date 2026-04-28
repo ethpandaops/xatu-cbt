@@ -59,7 +59,7 @@ while IFS= read -r file; do
         pkg/proto/*)                                   ;; # generated proto code for models
         .github/*)                                     ;; # CI files - don't affect models
         *.md)                                          ;; # docs - don't affect models
-        go.mod|go.sum)                                 ;; # dependency files - don't affect models
+        go.mod|go.sum|buf.lock)                        ;; # dependency files - don't affect models
         Makefile)                                      ;; # build tooling - don't affect models
         *)
             HAS_NON_MODEL_CHANGES=true

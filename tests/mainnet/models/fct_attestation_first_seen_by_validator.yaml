@@ -1,0 +1,109 @@
+model: fct_attestation_first_seen_by_validator
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_attestation_first_seen_by_validator_beacon_api_eth_v1_events_attestation_v2.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_attestation_first_seen_by_validator_libp2p_gossipsub_beacon_attestation_v2.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_aggregate_and_proof:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_attestation_first_seen_by_validator_libp2p_gossipsub_aggregate_and_proof_v2.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_attestation_first_seen_by_validator_canonical_beacon_committee_v2.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_attestation_first_seen_by_validator FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0
+    - name: Slot should be non-negative
+      sql: |
+        SELECT COUNT(*) AS negative_slots FROM fct_attestation_first_seen_by_validator FINAL WHERE slot < 0
+      assertions:
+        - type: equals
+          column: negative_slots
+          value: 0
+    - name: Validator index should be non-negative
+      sql: |
+        SELECT COUNT(*) AS negative_validators FROM fct_attestation_first_seen_by_validator FINAL WHERE validator_index < 0
+      assertions:
+        - type: equals
+          column: negative_validators
+          value: 0
+    - name: Every row must have at least one timing populated
+      sql: |
+        SELECT COUNT(*) AS empty_rows FROM fct_attestation_first_seen_by_validator FINAL
+        WHERE raw_seen_slot_start_diff IS NULL AND agg_seen_slot_start_diff IS NULL
+      assertions:
+        - type: equals
+          column: empty_rows
+          value: 0
+    - name: Raw source must be valid or empty when no raw observation
+      sql: |
+        SELECT COUNT(*) AS invalid_raw_source FROM fct_attestation_first_seen_by_validator FINAL
+        WHERE raw_source NOT IN ('beacon_api_eth_v1_events_attestation', 'libp2p_gossipsub_beacon_attestation', '')
+      assertions:
+        - type: equals
+          column: invalid_raw_source
+          value: 0
+    - name: Agg source must be valid or empty when no aggregate observation
+      sql: |
+        SELECT COUNT(*) AS invalid_agg_source FROM fct_attestation_first_seen_by_validator FINAL
+        WHERE agg_source NOT IN ('beacon_api_eth_v1_events_attestation', 'libp2p_gossipsub_aggregate_and_proof', '')
+      assertions:
+        - type: equals
+          column: invalid_agg_source
+          value: 0
+    - name: Raw timing implies non-empty raw source
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM fct_attestation_first_seen_by_validator FINAL
+        WHERE raw_seen_slot_start_diff IS NOT NULL AND raw_source = ''
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Aggregate timing implies non-empty agg source
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM fct_attestation_first_seen_by_validator FINAL
+        WHERE agg_seen_slot_start_diff IS NOT NULL AND agg_source = ''
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Every row must have a populated block_root
+      sql: |
+        SELECT COUNT(*) AS empty_block_roots FROM fct_attestation_first_seen_by_validator FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: empty_block_roots
+          value: 0
+    - name: Seen diffs should be non-negative when set
+      sql: |
+        SELECT COUNT(*) AS negative_diffs FROM fct_attestation_first_seen_by_validator FINAL
+        WHERE (raw_seen_slot_start_diff IS NOT NULL AND raw_seen_slot_start_diff < 0)
+           OR (agg_seen_slot_start_diff IS NOT NULL AND agg_seen_slot_start_diff < 0)
+      assertions:
+        - type: equals
+          column: negative_diffs
+          value: 0
+    - name: (slot_start_date_time, validator_index, vote) should be unique
+      sql: |
+        SELECT COUNT(*) AS dupes FROM (
+          SELECT slot_start_date_time, validator_index,
+                 block_root, source_epoch, source_root, target_epoch, target_root,
+                 COUNT(*) AS n
+          FROM fct_attestation_first_seen_by_validator FINAL
+          GROUP BY slot_start_date_time, validator_index,
+                   block_root, source_epoch, source_root, target_epoch, target_root
+          HAVING n > 1
+        )
+      assertions:
+        - type: equals
+          column: dupes
+          value: 0
