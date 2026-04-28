@@ -51,10 +51,10 @@ assertions:
         - type: equals
           column: invalid_raw_source
           value: 0
-    - name: Agg source must be valid or empty when no aggregate observation
+    - name: Agg source must be libp2p_gossipsub_aggregate_and_proof or empty
       sql: |
         SELECT COUNT(*) AS invalid_agg_source FROM fct_attestation_first_seen_by_validator FINAL
-        WHERE agg_source NOT IN ('beacon_api_eth_v1_events_attestation', 'libp2p_gossipsub_aggregate_and_proof', '')
+        WHERE agg_source NOT IN ('libp2p_gossipsub_aggregate_and_proof', '')
       assertions:
         - type: equals
           column: invalid_agg_source
@@ -106,4 +106,16 @@ assertions:
       assertions:
         - type: equals
           column: dupes
+          value: 0
+    - name: A validator should not appear with >1 distinct vote per slot (catches misdecoded multi-committee aggregates)
+      sql: |
+        SELECT COUNT(*) AS slashable_pairs FROM (
+          SELECT slot, validator_index
+          FROM fct_attestation_first_seen_by_validator FINAL
+          GROUP BY slot, validator_index
+          HAVING count(DISTINCT (block_root, source_epoch, source_root, target_epoch, target_root)) > 1
+        )
+      assertions:
+        - type: equals
+          column: slashable_pairs
           value: 0

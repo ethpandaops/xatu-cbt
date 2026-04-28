@@ -12,7 +12,6 @@ tags:
   - attestation
   - aggregate
 dependencies:
-  - "{{external}}.beacon_api_eth_v1_events_attestation"
   - "{{external}}.libp2p_gossipsub_aggregate_and_proof"
   - "{{external}}.canonical_beacon_committee"
 ---
@@ -20,6 +19,9 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 -- Dedup aggregates by (slot, committee_index, aggregation_bits) first. Many sentries see
 -- the same aggregate — decoding every copy would be 50-100x slower.
+-- Source is libp2p_gossipsub_aggregate_and_proof only. The beacon_api aggregate stream
+-- mixes per-committee aggregates with EIP-7549 (post-Electra) multi-committee aggregates
+-- whose bit layout cannot be decoded without committee_bits, which xatu does not expose.
 WITH aggregates AS (
     SELECT
         slot,
@@ -29,34 +31,14 @@ WITH aggregates AS (
         committee_index,
         aggregation_bits,
         MIN(propagation_slot_start_diff) AS agg_seen,
-        argMin(source, propagation_slot_start_diff) AS source,
         argMin(beacon_block_root, propagation_slot_start_diff) AS beacon_block_root,
         argMin(source_epoch, propagation_slot_start_diff) AS source_epoch,
         argMin(source_root, propagation_slot_start_diff) AS source_root,
         argMin(target_epoch, propagation_slot_start_diff) AS target_epoch,
         argMin(target_root, propagation_slot_start_diff) AS target_root
-    FROM (
-        SELECT
-            'beacon_api_eth_v1_events_attestation' AS source,
-            slot, slot_start_date_time, epoch, epoch_start_date_time,
-            committee_index, aggregation_bits, propagation_slot_start_diff,
-            beacon_block_root, source_epoch, source_root, target_epoch, target_root
-        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_attestation" "helpers" "from" }}
-        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-            AND meta_network_name = '{{ .env.NETWORK }}'
-            AND aggregation_bits != ''
-
-        UNION ALL
-
-        SELECT
-            'libp2p_gossipsub_aggregate_and_proof' AS source,
-            slot, slot_start_date_time, epoch, epoch_start_date_time,
-            committee_index, aggregation_bits, propagation_slot_start_diff,
-            beacon_block_root, source_epoch, source_root, target_epoch, target_root
-        FROM {{ index .dep "{{external}}" "libp2p_gossipsub_aggregate_and_proof" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-            AND meta_network_name = '{{ .env.NETWORK }}'
-    )
+    FROM {{ index .dep "{{external}}" "libp2p_gossipsub_aggregate_and_proof" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time,
              committee_index, aggregation_bits
 ),
@@ -85,7 +67,6 @@ exploded AS (
         a.committee_index,
         c.validators[p + 1] AS attesting_validator_index,
         a.agg_seen,
-        a.source,
         a.beacon_block_root,
         a.source_epoch,
         a.source_root,
@@ -117,7 +98,7 @@ SELECT
     target_epoch,
     target_root,
     MIN(agg_seen) AS seen_slot_start_diff,
-    argMin(source, agg_seen) AS source
+    'libp2p_gossipsub_aggregate_and_proof' AS source
 FROM exploded
 GROUP BY slot_start_date_time, attesting_validator_index,
          beacon_block_root, source_epoch, source_root, target_epoch, target_root
