@@ -1,9 +1,6 @@
 model: int_attestation_first_seen_aggregate
 network: mainnet
 external_data:
-    beacon_api_eth_v1_events_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_attestation_first_seen_aggregate_beacon_api_eth_v1_events_attestation.parquet
-        network_column: meta_network_name
     libp2p_gossipsub_aggregate_and_proof:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_attestation_first_seen_aggregate_libp2p_gossipsub_aggregate_and_proof.parquet
         network_column: meta_network_name
@@ -39,9 +36,9 @@ assertions:
         - type: equals
           column: negative_validators
           value: 0
-    - name: Source should only contain valid values
+    - name: Source should only contain libp2p_gossipsub_aggregate_and_proof
       sql: |
-        SELECT COUNT(*) AS invalid_source_count FROM int_attestation_first_seen_aggregate FINAL WHERE source NOT IN ('beacon_api_eth_v1_events_attestation', 'libp2p_gossipsub_aggregate_and_proof')
+        SELECT COUNT(*) AS invalid_source_count FROM int_attestation_first_seen_aggregate FINAL WHERE source != 'libp2p_gossipsub_aggregate_and_proof'
       assertions:
         - type: equals
           column: invalid_source_count
