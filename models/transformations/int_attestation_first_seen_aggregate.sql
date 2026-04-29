@@ -22,6 +22,10 @@ INSERT INTO
 -- Source is libp2p_gossipsub_aggregate_and_proof only. The beacon_api aggregate stream
 -- mixes per-committee aggregates with EIP-7549 (post-Electra) multi-committee aggregates
 -- whose bit layout cannot be decoded without committee_bits, which xatu does not expose.
+-- We also require >= 2 attesting bits set: single-bit aggregates often correspond to
+-- malformed/multi-committee Electra aggregates whose committee assignment we can't
+-- determine, and decoding them against canonical's view of `committee_index` produces
+-- false validator attributions (manifesting as duplicate "slashable" votes).
 WITH aggregates AS (
     SELECT
         slot,
@@ -39,6 +43,10 @@ WITH aggregates AS (
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_aggregate_and_proof" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND arraySum(arrayMap(
+            i -> bitCount(reinterpretAsUInt8(substring(unhex(substring(aggregation_bits, 3)), i + 1, 1))),
+            range(0, intDiv(length(aggregation_bits) - 2, 2))
+        )) >= 2
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time,
              committee_index, aggregation_bits
 ),
