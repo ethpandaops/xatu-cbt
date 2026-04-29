@@ -14,6 +14,7 @@ tags:
 dependencies:
   - "{{external}}.libp2p_gossipsub_aggregate_and_proof"
   - "{{external}}.canonical_beacon_committee"
+  - "{{external}}.canonical_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -54,6 +55,21 @@ committees AS (
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
+-- Restrict aggregates to those whose beacon_block_root is a canonical block within ~1 epoch
+-- of the attestation slot. Without this filter, aggregates pointing at very-stale or
+-- non-canonical block roots get bit-decoded against canonical's committee and produce
+-- false validator attributions (xatu doesn't expose committee_bits, so post-Electra
+-- multi-committee aggregates can't be reliably decoded). 32 slots is generous for
+-- legitimate stalled-BN votes; older block roots are essentially always misattributions.
+canonical_blocks AS (
+    SELECT
+        block_root,
+        slot AS block_slot
+    FROM {{ index .dep "{{external}}" "canonical_beacon_block" "helpers" "from" }}
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }} - 384) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+),
+
 -- Explode each distinct aggregate into one row per attesting validator by decoding
 -- the SSZ aggregation_bits bitlist. Bits are LSB-first within each byte and we only
 -- iterate positions [0, committee_size) so the SSZ length-sentinel bit is never
@@ -75,6 +91,8 @@ exploded AS (
     FROM aggregates a
     INNER JOIN committees c
         ON a.slot = c.slot AND a.committee_index = c.committee_index
+    INNER JOIN canonical_blocks cb
+        ON a.beacon_block_root = cb.block_root AND cb.block_slot >= a.slot - 32
     ARRAY JOIN arrayFilter(
         pos -> bitTest(
             reinterpretAsUInt8(substring(unhex(substring(a.aggregation_bits, 3)), intDiv(pos, 8) + 1, 1)),
