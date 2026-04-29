@@ -8,7 +8,7 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_attestation_first_seen_aggregate_canonical_beacon_committee.parquet
         network_column: meta_network_name
     canonical_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_attestation_first_seen_aggregate_canonical_beacon_block_v2.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_attestation_first_seen_aggregate_canonical_beacon_block_v3.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero

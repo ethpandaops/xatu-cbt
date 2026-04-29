@@ -14,7 +14,7 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_attestation_first_seen_by_validator_canonical_beacon_committee_v2.parquet
         network_column: meta_network_name
     canonical_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_attestation_first_seen_by_validator_canonical_beacon_block_v2.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_attestation_first_seen_by_validator_canonical_beacon_block_v3.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
