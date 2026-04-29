@@ -14,7 +14,6 @@ tags:
 dependencies:
   - "{{external}}.libp2p_gossipsub_aggregate_and_proof"
   - "{{external}}.canonical_beacon_committee"
-  - "{{external}}.canonical_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -23,6 +22,10 @@ INSERT INTO
 -- Source is libp2p_gossipsub_aggregate_and_proof only. The beacon_api aggregate stream
 -- mixes per-committee aggregates with EIP-7549 (post-Electra) multi-committee aggregates
 -- whose bit layout cannot be decoded without committee_bits, which xatu does not expose.
+-- We also require >= 2 attesting bits set: single-bit aggregates often correspond to
+-- malformed/multi-committee Electra aggregates whose committee assignment we can't
+-- determine, and decoding them against canonical's view of `committee_index` produces
+-- false validator attributions (manifesting as duplicate "slashable" votes).
 WITH aggregates AS (
     SELECT
         slot,
@@ -40,6 +43,10 @@ WITH aggregates AS (
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_aggregate_and_proof" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND arraySum(arrayMap(
+            i -> bitCount(reinterpretAsUInt8(substring(unhex(substring(aggregation_bits, 3)), i + 1, 1))),
+            range(0, intDiv(length(aggregation_bits) - 2, 2))
+        )) >= 2
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time,
              committee_index, aggregation_bits
 ),
@@ -52,21 +59,6 @@ committees AS (
         length(validators) AS committee_size
     FROM {{ index .dep "{{external}}" "canonical_beacon_committee" "helpers" "from" }}
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
-),
-
--- Restrict aggregates to those whose beacon_block_root is a canonical block within ~1 epoch
--- of the attestation slot. Without this filter, aggregates pointing at very-stale or
--- non-canonical block roots get bit-decoded against canonical's committee and produce
--- false validator attributions (xatu doesn't expose committee_bits, so post-Electra
--- multi-committee aggregates can't be reliably decoded). 32 slots is generous for
--- legitimate stalled-BN votes; older block roots are essentially always misattributions.
-canonical_blocks AS (
-    SELECT
-        block_root,
-        slot AS block_slot
-    FROM {{ index .dep "{{external}}" "canonical_beacon_block" "helpers" "from" }}
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }} - 384) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
@@ -91,8 +83,6 @@ exploded AS (
     FROM aggregates a
     INNER JOIN committees c
         ON a.slot = c.slot AND a.committee_index = c.committee_index
-    INNER JOIN canonical_blocks cb
-        ON a.beacon_block_root = cb.block_root AND cb.block_slot >= a.slot - 32
     ARRAY JOIN arrayFilter(
         pos -> bitTest(
             reinterpretAsUInt8(substring(unhex(substring(a.aggregation_bits, 3)), intDiv(pos, 8) + 1, 1)),
