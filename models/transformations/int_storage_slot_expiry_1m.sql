@@ -15,7 +15,9 @@ tags:
   - expiry
   - 1m
 dependencies:
+  - "{{external}}.canonical_execution_storage_reads"
   - "{{transformation}}.int_storage_slot_diff_by_address_slot"
+  - "{{transformation}}.int_storage_slot_diff"
   - "{{transformation}}.int_storage_slot_next_touch"
   - "{{transformation}}.int_execution_block_by_date"
   - "{{external}}.canonical_execution_block"
@@ -65,11 +67,6 @@ old_touches_with_next AS (
     WHERE block_number BETWEEN (SELECT min_old_block FROM old_block_range) AND (SELECT max_old_block FROM old_block_range)
     GROUP BY block_number, address, slot_key
 ),
--- Unique address/slot pairs for efficient lookups
-unique_pairs AS (
-    SELECT DISTINCT address, slot_key
-    FROM old_touches_with_next
-),
 -- Block metadata for old window
 -- Use GROUP BY with argMax to properly deduplicate across shards when using cluster()
 -- FINAL only deduplicates locally within each shard, not across the distributed result
@@ -94,35 +91,56 @@ touches_with_metadata AS (
     INNER JOIN old_block_metadata bm
         ON t.block_number = bm.block_number
 ),
--- Lookup effective_bytes at the time of each touch from historical diffs
--- Uses int_storage_slot_diff_by_address_slot which is ordered by (address, slot_key, block_number)
--- for efficient filtering and argMax aggregation
-latest_diffs_for_candidates AS (
+-- Compute effective_bytes from the touch event itself:
+-- writes use end-of-block effective_bytes_to, reads use the value read.
+touch_value_events AS (
     SELECT
+        block_number,
         address,
         slot_key,
-        argMax(block_number, block_number) as diff_block,
-        argMax(effective_bytes_to, block_number) as effective_bytes
-    FROM {{ index .dep "{{transformation}}" "int_storage_slot_diff_by_address_slot" "helpers" "from" }}
-    WHERE block_number <= (SELECT max_old_block FROM old_block_range)
-        AND (address, slot_key) IN (SELECT address, slot_key FROM unique_pairs)
-    GROUP BY address, slot_key
+        2 as priority,
+        argMax(effective_bytes_to, updated_date_time) as effective_bytes
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_diff" "helpers" "from" }}
+    WHERE block_number BETWEEN (SELECT min_old_block FROM old_block_range) AND (SELECT max_old_block FROM old_block_range)
+    GROUP BY block_number, address, slot_key
+
+    UNION ALL
+
+    SELECT
+        block_number,
+        contract_address as address,
+        slot as slot_key,
+        1 as priority,
+        toUInt8((length(trimLeft(substring(argMax(value, (transaction_index, internal_index)), 3), '0')) + 1) / 2) as effective_bytes
+    FROM {{ index .dep "{{external}}" "canonical_execution_storage_reads" "helpers" "from" }}
+    WHERE block_number BETWEEN (SELECT min_old_block FROM old_block_range) AND (SELECT max_old_block FROM old_block_range)
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    GROUP BY block_number, address, slot_key
 ),
--- Candidate expiries: touches with valid effective_bytes at touch time
-candidate_expiries AS (
+touch_effective_bytes AS (
+    SELECT
+        block_number,
+        address,
+        slot_key,
+        argMax(effective_bytes, priority) as effective_bytes
+    FROM touch_value_events
+    GROUP BY block_number, address, slot_key
+),
+-- Candidate expiries from touch values before enforcing original historical-diff semantics.
+pre_candidate_expiries AS (
     SELECT
         t.touch_block,
         t.touch_time,
         t.address,
         t.slot_key,
         t.next_touch_block,
-        d.effective_bytes as effective_bytes
+        e.effective_bytes as effective_bytes
     FROM touches_with_metadata t
-    LEFT JOIN latest_diffs_for_candidates d
-        ON t.address = d.address
-        AND t.slot_key = d.slot_key
-    WHERE d.diff_block <= t.touch_block
-        AND d.effective_bytes > 0
+    INNER JOIN touch_effective_bytes e
+        ON t.touch_block = e.block_number
+        AND t.address = e.address
+        AND t.slot_key = e.slot_key
+    WHERE e.effective_bytes > 0
 ),
 -- Map touch_time to the GLOBAL first block where it becomes 1 month old
 -- Only include if that block falls within current bounds (deterministic per touch)
@@ -130,24 +148,56 @@ first_expiry_block_map AS (
     SELECT
         c.touch_time,
         min(b.block_number) as first_expiry_block
-    FROM (SELECT DISTINCT touch_time FROM candidate_expiries) c
+    FROM (SELECT DISTINCT touch_time FROM pre_candidate_expiries) c
     INNER JOIN expiry_block_candidates b
         ON b.block_date_time >= c.touch_time + INTERVAL 1 MONTH
     GROUP BY c.touch_time
     HAVING first_expiry_block BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+),
+candidate_rows AS (
+    SELECT
+        fromUnixTimestamp({{ .task.start }}) as updated_date_time,
+        f.first_expiry_block as block_number,
+        c.address,
+        c.slot_key,
+        c.touch_block,
+        c.effective_bytes
+    FROM pre_candidate_expiries c
+    INNER JOIN first_expiry_block_map f ON c.touch_time = f.touch_time
+    WHERE
+        -- No touch between original touch and expiry
+        (c.next_touch_block IS NULL OR c.next_touch_block > f.first_expiry_block)
+),
+candidate_pairs AS (
+    SELECT DISTINCT address, slot_key
+    FROM candidate_rows
+),
+-- Preserve the original historical-diff semantics, but only for rows that survived
+-- the cheaper touch-value and expiry-block filters.
+latest_diffs_for_candidate_rows AS (
+    SELECT
+        address,
+        slot_key,
+        argMax(block_number, block_number) as diff_block,
+        argMax(effective_bytes_to, block_number) as effective_bytes
+    FROM {{ index .dep "{{transformation}}" "int_storage_slot_diff_by_address_slot" "helpers" "from" }}
+    WHERE block_number <= (SELECT max_old_block FROM old_block_range)
+        AND (address, slot_key) IN (SELECT address, slot_key FROM candidate_pairs)
+    GROUP BY address, slot_key
 )
 SELECT
-    fromUnixTimestamp({{ .task.start }}) as updated_date_time,
-    f.first_expiry_block as block_number,
+    c.updated_date_time,
+    c.block_number,
     c.address,
     c.slot_key,
     c.touch_block,  -- CRITICAL: propagates through waterfall chain for matching reactivations
-    c.effective_bytes
-FROM candidate_expiries c
-INNER JOIN first_expiry_block_map f ON c.touch_time = f.touch_time
-WHERE
-    -- No touch between original touch and expiry
-    (c.next_touch_block IS NULL OR c.next_touch_block > f.first_expiry_block)
+    d.effective_bytes
+FROM candidate_rows c
+INNER JOIN latest_diffs_for_candidate_rows d
+    ON c.address = d.address
+    AND c.slot_key = d.slot_key
+WHERE d.diff_block <= c.touch_block
+    AND d.effective_bytes > 0
 SETTINGS
     max_bytes_before_external_group_by = 10000000000,
     max_bytes_before_external_sort = 10000000000,
