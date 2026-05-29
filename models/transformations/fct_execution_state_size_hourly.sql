@@ -87,6 +87,8 @@ FROM (
             b.block_date_time
         FROM {{ index .dep "{{external}}" "execution_state_size" "helpers" "from" }} AS s FINAL
         GLOBAL INNER JOIN blocks_in_hours AS b ON s.block_number = b.block_number
+        WHERE s.meta_network_name = '{{ .env.NETWORK }}'
+          AND s.block_number BETWEEN (SELECT min(block_number) FROM blocks_in_hours) AND (SELECT max(block_number) FROM blocks_in_hours)
     )
     GROUP BY hour_start_date_time
 )
