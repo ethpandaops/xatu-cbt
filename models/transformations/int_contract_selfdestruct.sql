@@ -39,7 +39,7 @@ traces_with_tx_status AS (
         action_type,
         error,
         coalesce(action_to, '') as beneficiary,
-        reinterpretAsUInt256(reverse(unhex(substring(action_value, 3)))) as value_transferred,
+        action_value as value_transferred,
         -- Flag if this tx has a failed root trace (root = trace_address IS NULL or empty)
         maxIf(1, (trace_address IS NULL OR trace_address = '') AND error IS NOT NULL AND error != '')
             OVER (PARTITION BY block_number, transaction_hash) as tx_failed
