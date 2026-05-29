@@ -100,7 +100,7 @@ latest_state_for_addresses AS (
         argMax(effective_bytes, block_number) as effective_bytes
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_state_by_address" "helpers" "from" }}
     WHERE block_number <= (SELECT max_old_block FROM old_block_range)
-        AND address IN (SELECT address FROM unique_addresses)
+        AND address GLOBAL IN (SELECT address FROM unique_addresses)
     GROUP BY address
 ),
 -- Candidate expiries: touches with valid slots/bytes at touch time

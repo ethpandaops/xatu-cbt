@@ -148,7 +148,7 @@ all_block_addresses AS (
     ASOF LEFT JOIN (
         SELECT block_number, address, active_slots, effective_bytes
         FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} FINAL
-        WHERE address IN (SELECT address FROM unique_expiry_addresses)
+        WHERE address GLOBAL IN (SELECT address FROM unique_expiry_addresses)
           AND block_number <= {{ .bounds.end }}
     ) s ON e.address = s.address AND e.block_number >= s.block_number
     LEFT JOIN base_activity b ON e.block_number = b.block_number AND e.address = b.address
@@ -181,7 +181,7 @@ prev_cumulative_state AS (
         argMax(cumulative_net_slots, (block_number, updated_date_time)) as prev_cumulative_net_slots,
         argMax(cumulative_net_bytes, (block_number, updated_date_time)) as prev_cumulative_net_bytes
     FROM `{{ .self.database }}`.`{{ .self.table }}`
-    WHERE address IN (SELECT address FROM all_active_addresses)
+    WHERE address GLOBAL IN (SELECT address FROM all_active_addresses)
         AND block_number < {{ .bounds.start }}
     GROUP BY address, expiry_policy
 ),

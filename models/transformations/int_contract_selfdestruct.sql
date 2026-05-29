@@ -108,7 +108,7 @@ contract_creations AS (
         transaction_index as creation_transaction_index,
         internal_index as creation_internal_index
     FROM {{ index .dep "{{transformation}}" "int_contract_creation" "helpers" "from" }}
-    WHERE contract_address IN (SELECT address FROM selfdestruct_traces)
+    WHERE contract_address GLOBAL IN (SELECT address FROM selfdestruct_traces)
         -- Partition pruning: contracts can only be created before/at selfdestruct block
         AND block_number <= {{ .bounds.end }}
     GROUP BY contract_address, block_number, transaction_hash, transaction_index, internal_index

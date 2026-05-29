@@ -40,7 +40,7 @@ expiry_state AS (
         argMax(active_slots, block_number) as active_slots,
         argMax(effective_bytes, block_number) as effective_bytes
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_state_with_expiry_by_address" "helpers" "from" }} FINAL
-    WHERE address IN (SELECT contract_address FROM top_100_raw)
+    WHERE address GLOBAL IN (SELECT contract_address FROM top_100_raw)
     GROUP BY address, expiry_policy
 )
 -- Insert raw state rows (NULL expiry_policy)
