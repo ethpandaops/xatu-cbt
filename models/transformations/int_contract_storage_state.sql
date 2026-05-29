@@ -57,7 +57,7 @@ SELECT
     COALESCE(p.effective_bytes, 0)
         + SUM(bytes_delta) OVER (PARTITION BY d.address ORDER BY block_number ROWS UNBOUNDED PRECEDING) as effective_bytes
 FROM address_deltas d
-LEFT JOIN prev_state p ON d.address = p.address
+GLOBAL LEFT JOIN prev_state p ON d.address = p.address
 ORDER BY block_number, address
 SETTINGS
     join_algorithm = 'hash',

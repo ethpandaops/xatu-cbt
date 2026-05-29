@@ -57,7 +57,7 @@ SELECT
     dim.factory_contract,
     dim.labels
 FROM top_100_raw AS state
-LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
+GLOBAL LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
     ON state.contract_address = dim.contract_address
 UNION ALL
 -- Insert expiry policy rows
@@ -74,8 +74,8 @@ SELECT
     dim.factory_contract,
     dim.labels
 FROM top_100_raw AS r
-INNER JOIN expiry_state AS e ON r.contract_address = e.address
-LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
+GLOBAL INNER JOIN expiry_state AS e ON r.contract_address = e.address
+GLOBAL LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
     ON r.contract_address = dim.contract_address
 ORDER BY expiry_policy, rank ASC;
 

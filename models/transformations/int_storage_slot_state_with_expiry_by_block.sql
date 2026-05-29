@@ -68,7 +68,7 @@ FROM (
         ) b
         CROSS JOIN (SELECT arrayJoin(['1m', '6m', '12m', '18m', '24m']) as expiry_policy) p
     ) bp
-    LEFT JOIN (
+    GLOBAL LEFT JOIN (
         -- Aggregate net deltas from int_storage_slot_state_with_expiry per block per policy
         SELECT
             block_number as bd_block_number,
@@ -79,7 +79,7 @@ FROM (
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
         GROUP BY block_number, expiry_policy
     ) bd ON bp.block_number = bd.bd_block_number AND bp.expiry_policy = bd.bd_expiry_policy
-    LEFT JOIN (
+    GLOBAL LEFT JOIN (
         -- Previous state per policy (UNION ALL with LIMIT is 5-7x faster than row_number window function)
         SELECT '1m' as ps_expiry_policy, cumulative_net_slots as prev_cumulative_net_slots, cumulative_net_bytes as prev_cumulative_net_bytes
         FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL

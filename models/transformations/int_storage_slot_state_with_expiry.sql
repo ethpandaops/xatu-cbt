@@ -145,13 +145,13 @@ all_block_addresses AS (
         COALESCE(s.active_slots, toInt64(0)) as base_active_slots,
         COALESCE(s.effective_bytes, toInt64(0)) as base_effective_bytes
     FROM expiry_reactivation_keys e
-    ASOF LEFT JOIN (
+    GLOBAL ASOF LEFT JOIN (
         SELECT block_number, address, active_slots, effective_bytes
         FROM {{ index .dep "{{transformation}}" "int_storage_slot_state" "helpers" "from" }} FINAL
         WHERE address GLOBAL IN (SELECT address FROM unique_expiry_addresses)
           AND block_number <= {{ .bounds.end }}
     ) s ON e.address = s.address AND e.block_number >= s.block_number
-    LEFT JOIN base_activity b ON e.block_number = b.block_number AND e.address = b.address
+    GLOBAL LEFT JOIN base_activity b ON e.block_number = b.block_number AND e.address = b.address
     WHERE b.address = ''  -- ClickHouse uses '' not NULL for unmatched String columns
 ),
 -- Join deltas to all_block_addresses
@@ -166,7 +166,7 @@ with_deltas AS (
         COALESCE(d.net_slots_delta, toInt64(0)) as net_slots_delta,
         COALESCE(d.net_bytes_delta, toInt64(0)) as net_bytes_delta
     FROM all_block_addresses a
-    LEFT JOIN combined_deltas d ON a.block_number = d.block_number AND a.address = d.address AND a.expiry_policy = d.expiry_policy
+    GLOBAL LEFT JOIN combined_deltas d ON a.block_number = d.block_number AND a.address = d.address AND a.expiry_policy = d.expiry_policy
 ),
 -- All unique addresses from current chunk (for filtering prev_cumulative_state)
 all_active_addresses AS (
@@ -198,7 +198,7 @@ joined AS (
         COALESCE(ps.prev_cumulative_net_slots, toInt64(0)) as prev_cumulative_net_slots,
         COALESCE(ps.prev_cumulative_net_bytes, toInt64(0)) as prev_cumulative_net_bytes
     FROM with_deltas w
-    LEFT JOIN prev_cumulative_state ps ON w.address = ps.ps_address AND w.expiry_policy = ps.ps_expiry_policy
+    GLOBAL LEFT JOIN prev_cumulative_state ps ON w.address = ps.ps_address AND w.expiry_policy = ps.ps_expiry_policy
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,

@@ -87,7 +87,7 @@ SELECT
     argMax(e.touch_block, e.block_number) as touch_block,
     argMax(e.effective_bytes, e.block_number) as effective_bytes
 FROM reactivation_candidates r
-INNER JOIN filtered_expiry e
+GLOBAL INNER JOIN filtered_expiry e
     ON r.address = e.address
     AND r.slot_key = e.slot_key
     AND e.block_number < r.reactivation_block

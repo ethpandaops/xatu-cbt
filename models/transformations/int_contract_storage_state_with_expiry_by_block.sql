@@ -82,5 +82,5 @@ SELECT
             ROWS UNBOUNDED PRECEDING
         ) as active_contracts
 FROM block_deltas d
-LEFT JOIN prev_state p ON d.expiry_policy = p.ps_expiry_policy
+GLOBAL LEFT JOIN prev_state p ON d.expiry_policy = p.ps_expiry_policy
 ORDER BY d.expiry_policy, d.block_number;

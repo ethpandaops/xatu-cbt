@@ -90,7 +90,7 @@ selfdestruct_traces AS (
         c.beneficiary,
         c.value_transferred
     FROM candidate_selfdestructs c
-    LEFT JOIN errored_ancestors ea
+    GLOBAL LEFT JOIN errored_ancestors ea
         ON c.block_number = ea.block_number
         AND c.transaction_hash = ea.transaction_hash
         AND startsWith(c.trace_address, concat(ea.trace_address, '_'))
@@ -137,7 +137,7 @@ latest_creation AS (
                 c.creation_internal_index, 0))
         ).2 as creation_transaction_hash
     FROM selfdestruct_traces s
-    LEFT JOIN contract_creations c
+    GLOBAL LEFT JOIN contract_creations c
         ON s.address = c.contract_address
         AND (c.creation_block < s.block_number
              OR (c.creation_block = s.block_number
@@ -173,7 +173,7 @@ SELECT
     lc.creation_block,
     lc.creation_transaction_hash
 FROM selfdestruct_traces s
-LEFT JOIN latest_creation lc
+GLOBAL LEFT JOIN latest_creation lc
     ON s.block_number = lc.block_number
     AND s.transaction_hash = lc.transaction_hash
     AND s.transaction_index = lc.transaction_index

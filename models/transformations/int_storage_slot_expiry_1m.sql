@@ -88,7 +88,7 @@ touches_with_metadata AS (
         t.next_touch_block as next_touch_block,
         bm.block_date_time as touch_time
     FROM old_touches_with_next t
-    INNER JOIN old_block_metadata bm
+    GLOBAL INNER JOIN old_block_metadata bm
         ON t.block_number = bm.block_number
 ),
 -- Compute effective_bytes from the touch event itself:
@@ -136,7 +136,7 @@ pre_candidate_expiries AS (
         t.next_touch_block,
         e.effective_bytes as effective_bytes
     FROM touches_with_metadata t
-    INNER JOIN touch_effective_bytes e
+    GLOBAL INNER JOIN touch_effective_bytes e
         ON t.touch_block = e.block_number
         AND t.address = e.address
         AND t.slot_key = e.slot_key
@@ -149,7 +149,7 @@ first_expiry_block_map AS (
         c.touch_time,
         min(b.block_number) as first_expiry_block
     FROM (SELECT DISTINCT touch_time FROM pre_candidate_expiries) c
-    INNER JOIN expiry_block_candidates b
+    GLOBAL INNER JOIN expiry_block_candidates b
         ON b.block_date_time >= c.touch_time + INTERVAL 1 MONTH
     GROUP BY c.touch_time
     HAVING first_expiry_block BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
@@ -163,7 +163,7 @@ candidate_rows AS (
         c.touch_block,
         c.effective_bytes
     FROM pre_candidate_expiries c
-    INNER JOIN first_expiry_block_map f ON c.touch_time = f.touch_time
+    GLOBAL INNER JOIN first_expiry_block_map f ON c.touch_time = f.touch_time
     WHERE
         -- No touch between original touch and expiry
         (c.next_touch_block IS NULL OR c.next_touch_block > f.first_expiry_block)
@@ -193,7 +193,7 @@ SELECT
     c.touch_block,  -- CRITICAL: propagates through waterfall chain for matching reactivations
     d.effective_bytes
 FROM candidate_rows c
-INNER JOIN latest_diffs_for_candidate_rows d
+GLOBAL INNER JOIN latest_diffs_for_candidate_rows d
     ON c.address = d.address
     AND c.slot_key = d.slot_key
 WHERE d.diff_block <= c.touch_block

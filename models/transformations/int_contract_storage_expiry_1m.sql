@@ -88,7 +88,7 @@ touches_with_metadata AS (
         t.next_touch_block as next_touch_block,
         bm.block_date_time as touch_time
     FROM old_touches_with_next t
-    INNER JOIN old_block_metadata bm
+    GLOBAL INNER JOIN old_block_metadata bm
         ON t.block_number = bm.block_number
 ),
 -- Lookup active_slots and effective_bytes at the time of each touch from int_storage_slot_state_by_address
@@ -113,7 +113,7 @@ candidate_expiries AS (
         COALESCE(s.active_slots, 0) as active_slots,
         COALESCE(s.effective_bytes, 0) as effective_bytes
     FROM touches_with_metadata t
-    LEFT JOIN latest_state_for_addresses s
+    GLOBAL LEFT JOIN latest_state_for_addresses s
         ON t.address = s.address
     WHERE COALESCE(s.active_slots, 0) > 0  -- Contract has storage
 ),
@@ -124,7 +124,7 @@ first_expiry_block_map AS (
         c.touch_time,
         min(b.block_number) as first_expiry_block
     FROM (SELECT DISTINCT touch_time FROM candidate_expiries) c
-    INNER JOIN expiry_block_candidates b
+    GLOBAL INNER JOIN expiry_block_candidates b
         ON b.block_date_time >= c.touch_time + INTERVAL 1 MONTH
     GROUP BY c.touch_time
     HAVING first_expiry_block BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
@@ -137,7 +137,7 @@ SELECT
     c.active_slots,
     c.effective_bytes
 FROM candidate_expiries c
-INNER JOIN first_expiry_block_map f ON c.touch_time = f.touch_time
+GLOBAL INNER JOIN first_expiry_block_map f ON c.touch_time = f.touch_time
 WHERE
     -- No touch between original touch and expiry
     (c.next_touch_block IS NULL OR c.next_touch_block > f.first_expiry_block)
