@@ -182,7 +182,7 @@ latest_diffs_for_candidate_rows AS (
         argMax(effective_bytes_to, block_number) as effective_bytes
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_diff_by_address_slot" "helpers" "from" }}
     WHERE block_number <= (SELECT max_old_block FROM old_block_range)
-        AND (address, slot_key) IN (SELECT address, slot_key FROM candidate_pairs)
+        AND (address, slot_key) GLOBAL IN (SELECT address, slot_key FROM candidate_pairs)
     GROUP BY address, slot_key
 )
 SELECT

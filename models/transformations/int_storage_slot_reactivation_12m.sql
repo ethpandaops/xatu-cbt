@@ -74,7 +74,7 @@ filtered_expiry AS (
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_expiry_12m" "helpers" "from" }}
     WHERE block_number > (SELECT min_prev FROM expiry_bounds)
         AND block_number < (SELECT max_react FROM expiry_bounds)
-        AND (address, slot_key) IN (SELECT address, slot_key FROM unique_pairs)
+        AND (address, slot_key) GLOBAL IN (SELECT address, slot_key FROM unique_pairs)
     GROUP BY address, slot_key, block_number, touch_block
 )
 -- Join with filtered expiry table to get effective_bytes from the expiry record
