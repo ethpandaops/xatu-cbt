@@ -35,3 +35,4 @@ SELECT
     END AS node_class
 FROM {{ index .dep "observoor" "net_io" "helpers" "from" }} FINAL
 WHERE wallclock_slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
