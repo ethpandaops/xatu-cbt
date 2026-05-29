@@ -98,7 +98,7 @@ def get_new_selectors(ch_url, target_db, target_table, batch_size, block_lookbac
     )
     SELECT DISTINCT cf.function_selector as selector
     FROM `{target_db}`.int_transaction_call_frame cf
-    LEFT JOIN (
+    GLOBAL LEFT JOIN (
         SELECT selector, name, updated_date_time
         FROM `{target_db}`.`{target_table}`
     ) sig ON cf.function_selector = sig.selector

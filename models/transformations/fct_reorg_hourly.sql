@@ -88,7 +88,7 @@ WITH
         SELECT DISTINCT
             e.depth AS depth
         FROM `{{ .self.database }}`.`{{ .self.table }}` AS e FINAL
-        INNER JOIN target_hours h
+        GLOBAL INNER JOIN target_hours h
             ON e.hour_start_date_time = h.hour_start_date_time
     ),
     depth_dim AS (
@@ -101,7 +101,7 @@ WITH
             h.hour_start_date_time,
             d.depth
         FROM target_hours h
-        CROSS JOIN depth_dim d
+        GLOBAL CROSS JOIN depth_dim d
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -109,6 +109,6 @@ SELECT
     c.depth,
     toUInt32(coalesce(r.reorg_count, toUInt32(0))) AS reorg_count
 FROM candidate_rows c
-LEFT JOIN reorg_counts r
+GLOBAL LEFT JOIN reorg_counts r
     ON c.hour_start_date_time = r.hour_start_date_time
     AND c.depth = r.depth
