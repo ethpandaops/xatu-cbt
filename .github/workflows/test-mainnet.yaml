@@ -61,7 +61,7 @@ jobs:
         run: ./bin/xatu-cbt infra start
       - name: Run mainnet tests (full suite)
         if: needs.detect.outputs.models == 'all'
-        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 10
+        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 5
       - name: Run mainnet tests (impacted only)
         if: needs.detect.outputs.models != 'all'
         run: |
