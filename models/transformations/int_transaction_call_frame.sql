@@ -164,7 +164,7 @@ simple_transfers AS (
     t.input,
     t.success
   FROM all_transactions t
-  LEFT JOIN structlog_tx_keys s
+  GLOBAL LEFT JOIN structlog_tx_keys s
     ON t.block_number = s.block_number
     AND t.transaction_hash = s.transaction_hash
   WHERE s.transaction_hash IS NULL  -- No structlog data

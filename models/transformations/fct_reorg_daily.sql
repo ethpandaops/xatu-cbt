@@ -86,7 +86,7 @@ WITH
         SELECT DISTINCT
             e.depth AS depth
         FROM `{{ .self.database }}`.`{{ .self.table }}` AS e FINAL
-        INNER JOIN target_days d
+        GLOBAL INNER JOIN target_days d
             ON e.day_start_date = d.day_start_date
     ),
     depth_dim AS (
@@ -99,7 +99,7 @@ WITH
             d.day_start_date,
             dd.depth
         FROM target_days d
-        CROSS JOIN depth_dim dd
+        GLOBAL CROSS JOIN depth_dim dd
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -107,6 +107,6 @@ SELECT
     c.depth,
     toUInt32(coalesce(r.reorg_count, toUInt32(0))) AS reorg_count
 FROM candidate_rows c
-LEFT JOIN reorg_counts r
+GLOBAL LEFT JOIN reorg_counts r
     ON c.day_start_date = r.day_start_date
     AND c.depth = r.depth

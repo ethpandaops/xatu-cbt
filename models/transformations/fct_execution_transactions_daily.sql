@@ -71,7 +71,7 @@ WITH
             b.block_timestamp,
             COALESCE(t.txn_count, 0) AS txn_count
         FROM expanded_blocks b
-        LEFT JOIN tx_per_block t ON b.block_number = t.block_number
+        GLOBAL LEFT JOIN tx_per_block t ON b.block_number = t.block_number
     ),
     -- Calculate 7-day moving average for each block
     blocks_with_ma AS (

@@ -55,7 +55,7 @@ SELECT
     round(avg(o.gas), 4) AS avg_gas_per_block,
     round(if(sum(o.count) > 0, sum(o.gas) / sum(o.count), 0), 4) AS avg_gas_per_execution
 FROM (SELECT * FROM {{ index .dep "{{transformation}}" "int_block_opcode_gas" "helpers" "from" }} FINAL) AS o
-INNER JOIN blocks_in_days AS b ON o.block_number = b.block_number
+GLOBAL INNER JOIN blocks_in_days AS b ON o.block_number = b.block_number
 GROUP BY
     toDate(b.block_date_time),
     o.opcode

@@ -68,7 +68,7 @@ filtered_events AS (
         a.attesting_validator_index,
         a.inclusion_distance
     FROM attestations AS a
-    INNER JOIN validator_indices vi ON a.slot = vi.slot AND a.attesting_validator_index = vi.validator_index
+    GLOBAL INNER JOIN validator_indices vi ON a.slot = vi.slot AND a.attesting_validator_index = vi.validator_index
 )
 
 SELECT

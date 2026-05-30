@@ -166,12 +166,12 @@ enriched_probes AS (
         h.remote_geo_autonomous_system_number AS meta_peer_geo_autonomous_system_number,
         h.remote_geo_autonomous_system_organization AS meta_peer_geo_autonomous_system_organization
     FROM filtered_probes AS p
-    LEFT JOIN heartbeat_data AS h
+    GLOBAL LEFT JOIN heartbeat_data AS h
         ON p.peer_id_unique_key = h.remote_peer_id_unique_key
         AND p.meta_network_name = h.meta_network_name
-    LEFT JOIN beacon_blocks AS bb
+    GLOBAL LEFT JOIN beacon_blocks AS bb
         ON p.slot_start_date_time = bb.slot_start_date_time
-    LEFT JOIN blob_submitters AS bs
+    GLOBAL LEFT JOIN blob_submitters AS bs
         ON bb.execution_payload_block_number = bs.block_number
 )
 

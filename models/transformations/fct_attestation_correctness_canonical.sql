@@ -82,18 +82,18 @@ votes_per_slot AS (
             ELSE toUInt64(tv.total_votes - v.votes_head)
         END as votes_other
     FROM slots s
-    LEFT JOIN votes_per_block_root v 
+    GLOBAL LEFT JOIN votes_per_block_root v 
         ON s.slot = v.slot 
         AND s.slot_start_date_time = v.slot_start_date_time
         AND s.epoch = v.epoch
         AND s.epoch_start_date_time = v.epoch_start_date_time
         AND s.block_root = v.block_root
-    LEFT JOIN votes_max vm 
+    GLOBAL LEFT JOIN votes_max vm 
         ON s.slot = vm.slot 
         AND s.slot_start_date_time = vm.slot_start_date_time
         AND s.epoch = vm.epoch
         AND s.epoch_start_date_time = vm.epoch_start_date_time
-    LEFT JOIN total_votes_per_slot tv
+    GLOBAL LEFT JOIN total_votes_per_slot tv
         ON s.slot = tv.slot 
         AND s.slot_start_date_time = tv.slot_start_date_time
         AND s.epoch = tv.epoch

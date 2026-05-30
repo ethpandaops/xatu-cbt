@@ -81,7 +81,7 @@ exploded AS (
         a.target_epoch,
         a.target_root
     FROM aggregates a
-    INNER JOIN committees c
+    GLOBAL INNER JOIN committees c
         ON a.slot = c.slot AND a.committee_index = c.committee_index
     ARRAY JOIN arrayFilter(
         pos -> bitTest(

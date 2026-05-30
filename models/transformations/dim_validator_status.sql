@@ -54,4 +54,4 @@ SELECT
     st.withdrawable_epoch,
     st.slashed
 FROM status_transitions st
-LEFT JOIN pubkeys p ON st.validator_index = p.validator_index
+GLOBAL LEFT JOIN pubkeys p ON st.validator_index = p.validator_index

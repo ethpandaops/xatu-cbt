@@ -60,6 +60,6 @@ SELECT
     c.status,
     toUInt32(coalesce(sc.slot_count, toUInt32(0))) AS slot_count
 FROM candidate_rows c
-LEFT JOIN status_counts sc
+GLOBAL LEFT JOIN status_counts sc
     ON c.day_start_date = sc.day_start_date
     AND c.status = sc.status

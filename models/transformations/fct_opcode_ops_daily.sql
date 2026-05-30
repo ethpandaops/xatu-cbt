@@ -84,7 +84,7 @@ WITH
                toFloat32(COALESCE(o.opcode_count, 0)) / toFloat32(b.block_time_seconds),
                0) AS ops
         FROM blocks_with_time b
-        LEFT JOIN opcode_per_block o ON b.block_number = o.block_number
+        GLOBAL LEFT JOIN opcode_per_block o ON b.block_number = o.block_number
         WHERE b.block_time_seconds IS NOT NULL  -- Skip first block (no previous to calculate gap)
           AND b.block_time_seconds > 0          -- Skip zero-time blocks
     ),

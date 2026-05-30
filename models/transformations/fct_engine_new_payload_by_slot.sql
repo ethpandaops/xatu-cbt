@@ -75,7 +75,7 @@ enriched AS (
         ep.meta_client_implementation,
         ep.meta_execution_implementation
     FROM engine_payloads ep
-    LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
+    GLOBAL LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,

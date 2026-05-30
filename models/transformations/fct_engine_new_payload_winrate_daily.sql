@@ -60,7 +60,7 @@ WITH
             dm.node_class,
             dm.meta_execution_implementation
         FROM target_days d
-        CROSS JOIN dim dm
+        GLOBAL CROSS JOIN dim dm
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -69,7 +69,7 @@ SELECT
     c.meta_execution_implementation,
     toUInt32(coalesce(wc.win_count, toUInt32(0))) AS win_count
 FROM candidate_rows c
-LEFT JOIN win_counts wc
+GLOBAL LEFT JOIN win_counts wc
     ON c.day_start_date = wc.day_start_date
     AND c.node_class = wc.node_class
     AND c.meta_execution_implementation = wc.meta_execution_implementation

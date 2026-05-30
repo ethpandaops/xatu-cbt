@@ -100,7 +100,7 @@ SELECT
     a.seen AS agg_seen_slot_start_diff,
     ifNull(a.source, '') AS agg_source
 FROM raw r
-FULL OUTER JOIN agg a
+GLOBAL FULL OUTER JOIN agg a
     ON r.slot_start_date_time = a.slot_start_date_time
    AND r.validator_index = a.validator_index
    AND r.block_root = a.block_root

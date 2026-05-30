@@ -204,10 +204,10 @@ SELECT
     '{{ .env.NETWORK }}' AS meta_network_name
 
 FROM intrinsic i
-LEFT JOIN opcode_resources o
+GLOBAL LEFT JOIN opcode_resources o
     ON i.block_number = o.block_number
     AND i.transaction_hash = o.transaction_hash
-LEFT JOIN precompile_gas p
+GLOBAL LEFT JOIN precompile_gas p
     ON i.block_number = p.block_number
     AND i.transaction_hash = p.transaction_hash
 SETTINGS

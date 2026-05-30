@@ -62,7 +62,7 @@ enriched AS (
         COALESCE(any(bc.epoch_start_date_time), toDateTime(0)) AS epoch_start_date_time,
         COALESCE(any(bc.block_root), '') AS block_root
     FROM engine_get_blobs eg
-    LEFT JOIN blob_context bc ON eg.vh = bc.versioned_hash
+    GLOBAL LEFT JOIN blob_context bc ON eg.vh = bc.versioned_hash
     GROUP BY
         eg.event_date_time,
         eg.duration_ms,

@@ -82,7 +82,7 @@ WITH
                toFloat32(COALESCE(t.tx_count, 0)) / toFloat32(b.block_time_seconds),
                0) AS tps
         FROM blocks_with_time b
-        LEFT JOIN tx_per_block t ON b.block_number = t.block_number
+        GLOBAL LEFT JOIN tx_per_block t ON b.block_number = t.block_number
         WHERE b.block_time_seconds IS NOT NULL  -- Skip first block (no previous to calculate gap)
           AND b.block_time_seconds > 0          -- Skip zero-time blocks
     ),

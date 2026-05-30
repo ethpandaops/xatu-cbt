@@ -81,7 +81,7 @@ bids_chunked AS (
       bc.value AS max_value,
       toDateTime64(bc.earliest_timestamp_ms / 1000, 3) AS earliest_bid_date_time
   FROM bids_with_chunks AS bc
-  INNER JOIN max_value_per_chunk AS mvc
+  GLOBAL INNER JOIN max_value_per_chunk AS mvc
     ON bc.slot = mvc.slot
     AND bc.builder_pubkey = mvc.builder_pubkey
     AND bc.chunk_slot_start_diff = mvc.chunk_slot_start_diff
@@ -94,7 +94,7 @@ relay_aggregation AS (
       bc.block_hash,
       groupArray(DISTINCT b.relay_name) AS relay_names
   FROM bids_chunked AS bc
-  INNER JOIN bids AS b
+  GLOBAL INNER JOIN bids AS b
     ON bc.slot = b.slot
     AND bc.builder_pubkey = b.builder_pubkey
     AND bc.block_hash = b.block_hash
@@ -113,7 +113,7 @@ max_bid_details AS (
       bc.earliest_bid_date_time,
       ra.relay_names
   FROM bids_chunked AS bc
-  INNER JOIN relay_aggregation AS ra
+  GLOBAL INNER JOIN relay_aggregation AS ra
     ON bc.slot = ra.slot
     AND bc.builder_pubkey = ra.builder_pubkey
     AND bc.block_hash = ra.block_hash
