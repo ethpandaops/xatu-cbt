@@ -6,8 +6,10 @@ external_data:
         network_column: meta_network_name
 assertions:
     - name: total count
+      # The fixture has 17 rows that duplicate another by the table's ReplacingMergeTree ORDER BY
+      # key, so after dedup the table holds 983 distinct rows.
       sql: |
         SELECT COUNT(*) AS count
         FROM cluster('{remote_cluster}', default.beacon_api_eth_v1_events_attestation)
       expected:
-        count: 1000
+        count: 983

@@ -51,8 +51,12 @@ SELECT
     sum(o.count) AS total_count,
     sum(o.gas) AS total_gas,
     sum(o.error_count) AS total_error_count,
-    round(avg(o.count), 4) AS avg_count_per_block,
-    round(avg(o.gas), 4) AS avg_gas_per_block,
+    -- Compute per-block averages as total / distinct-blocks rather than avg() over the source rows.
+    -- int_block_opcode_gas can carry multiple partial rows per (block, opcode) across shards, so
+    -- avg(o.gas) would divide by the inflated row count; sum()/count(DISTINCT block_number) is the
+    -- true per-block average regardless of how many partial rows back each block.
+    round(if(count(DISTINCT o.block_number) > 0, sum(o.count) / count(DISTINCT o.block_number), 0), 4) AS avg_count_per_block,
+    round(if(count(DISTINCT o.block_number) > 0, sum(o.gas) / count(DISTINCT o.block_number), 0), 4) AS avg_gas_per_block,
     round(if(sum(o.count) > 0, sum(o.gas) / sum(o.count), 0), 4) AS avg_gas_per_execution
 FROM (SELECT * FROM {{ index .dep "{{transformation}}" "int_block_opcode_gas" "helpers" "from" }} FINAL) AS o
 GLOBAL INNER JOIN blocks_in_days AS b ON o.block_number = b.block_number

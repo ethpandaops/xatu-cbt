@@ -435,7 +435,7 @@ CREATE TABLE `${NETWORK_NAME}`.dim_validator_status_local ON CLUSTER '{cluster}'
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',
     `version`
-) PARTITION BY toStartOfMonth(epoch_start_date_time)
+) PARTITION BY tuple()
 ORDER BY (validator_index, status)
 COMMENT 'Validator lifecycle status transitions — one row per (validator_index, status) with the first epoch observed';
 
