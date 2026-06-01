@@ -53,7 +53,7 @@ SELECT
     sum(o.error_count) AS total_error_count,
     -- Compute per-block averages as total / distinct-blocks rather than avg() over the source rows.
     -- int_block_opcode_gas can carry multiple partial rows per (block, opcode) across shards, so
-    -- avg(o.gas) would divide by the inflated row count; sum()/count(DISTINCT block_number) is the
+    -- avg(o.gas) would divide by the inflated row count, whereas sum()/count(DISTINCT block_number) is the
     -- true per-block average regardless of how many partial rows back each block.
     round(if(count(DISTINCT o.block_number) > 0, sum(o.count) / count(DISTINCT o.block_number), 0), 4) AS avg_count_per_block,
     round(if(count(DISTINCT o.block_number) > 0, sum(o.gas) / count(DISTINCT o.block_number), 0), 4) AS avg_gas_per_block,
