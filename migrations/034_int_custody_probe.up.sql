@@ -64,8 +64,12 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     int_custody_probe_local,
+    -- Sharded by (slot, peer_id_unique_key), NOT probe_date_time. The downstream
+    -- int_custody_probe_order_by_slot re-keys to (slot_start_date_time, slot, peer_id_unique_key);
+    -- since slot determines slot_start_date_time, this co-locates every re-keyed dedup group on one
+    -- shard so its ReplacingMergeTree FINAL can collapse it (probe_date_time-based sharding scattered
+    -- the same logical row across shards, which FINAL cannot dedup cross-shard).
     cityHash64(
-        probe_date_time,
         slot,
         peer_id_unique_key
     )

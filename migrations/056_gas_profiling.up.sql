@@ -45,7 +45,7 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     int_transaction_opcode_gas_local,
-    cityHash64(block_number, transaction_hash)
+    cityHash64(block_number)
 );
 
 -- Projection for opcode-first queries (e.g., "how much gas did SLOAD use across blocks?")
@@ -112,7 +112,7 @@ ENGINE = Distributed(
   '{cluster}',
   '${NETWORK_NAME}',
   int_transaction_call_frame_local,
-  cityHash64(block_number, transaction_hash)
+  cityHash64(block_number)
 );
 
 -- Projection for transaction lookups without block_number
@@ -169,7 +169,7 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     int_transaction_call_frame_opcode_gas_local,
-    cityHash64(block_number, transaction_hash)
+    cityHash64(block_number)
 );
 
 -- Projection for frame-first queries (e.g., "what opcodes did frame 15 execute?")

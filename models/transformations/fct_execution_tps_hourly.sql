@@ -15,7 +15,6 @@ tags:
   - tps
   - transactions
 dependencies:
-  - "{{external}}.canonical_execution_transaction"
   - "{{transformation}}.int_execution_block_by_date"
 ---
 -- Hourly aggregation of execution layer TPS (transactions per second).
@@ -42,7 +41,12 @@ WITH
         SELECT
             block_number,
             block_date_time,
-            toUnixTimestamp(block_date_time) AS block_timestamp
+            toUnixTimestamp(block_date_time) AS block_timestamp,
+            -- transaction_count is precomputed in int_execution_block_by_date (a simple top-level
+            -- aggregation that merges across shards). This query therefore does NO transaction
+            -- counting of its own - it is a straight per-block lookup, correct regardless of whether
+            -- the model executes on the coordinator or shard-local.
+            transaction_count
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
@@ -54,37 +58,28 @@ WITH
             block_number,
             block_date_time,
             block_timestamp,
+            transaction_count,
             dateDiff('second',
                 lagInFrame(block_date_time, 1, block_date_time) OVER (ORDER BY block_number),
                 block_date_time
             ) AS block_time_seconds
         FROM blocks_in_hours
     ),
-    -- Count transactions per block from canonical_execution_transaction
-    tx_per_block AS (
-        SELECT
-            block_number,
-            count() AS tx_count
-        FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }} FINAL
-        WHERE block_number GLOBAL IN (SELECT block_number FROM blocks_in_hours)
-        GROUP BY block_number
-    ),
-    -- Join blocks with transactions and calculate per-block TPS
+    -- Calculate per-block TPS from the precomputed transaction_count
     blocks_with_tps AS (
         SELECT
-            b.block_number,
-            b.block_date_time,
-            b.block_timestamp,
-            b.block_time_seconds,
-            COALESCE(t.tx_count, 0) AS tx_count,
+            block_number,
+            block_date_time,
+            block_timestamp,
+            block_time_seconds,
+            transaction_count AS tx_count,
             -- TPS = tx_count / actual_time_seconds (avoid div by zero)
-            if(b.block_time_seconds > 0,
-               toFloat32(COALESCE(t.tx_count, 0)) / toFloat32(b.block_time_seconds),
+            if(block_time_seconds > 0,
+               toFloat32(transaction_count) / toFloat32(block_time_seconds),
                0) AS tps
-        FROM blocks_with_time b
-        GLOBAL LEFT JOIN tx_per_block t ON b.block_number = t.block_number
-        WHERE b.block_time_seconds IS NOT NULL  -- Skip first block (no previous to calculate gap)
-          AND b.block_time_seconds > 0          -- Skip zero-time blocks
+        FROM blocks_with_time
+        WHERE block_time_seconds IS NOT NULL  -- Skip first block (no previous to calculate gap)
+          AND block_time_seconds > 0          -- Skip zero-time blocks
     ),
     -- Calculate 5-minute moving average for each block
     blocks_with_ma AS (

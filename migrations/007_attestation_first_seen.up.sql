@@ -40,5 +40,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_attestation_first_seen ON CLUSTER '{cluster}'
     '{cluster}',
     '${NETWORK_NAME}',
     int_attestation_first_seen_local,
-    cityHash64(`slot_start_date_time`, `attesting_validator_index`)
+    -- Sharded by slot only (not attesting_validator_index) so ALL of a slot's first-seen rows
+    -- co-locate on one shard. Downstream models regroup by node/block_root/chunk (grains that
+    -- contain slot_start_date_time but not attesting_validator_index); slot-only sharding keeps
+    -- their shard-local aggregation complete instead of partial-per-shard.
+    cityHash64(`slot_start_date_time`)
 );

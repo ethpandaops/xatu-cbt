@@ -71,7 +71,7 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     int_transaction_call_frame_opcode_resource_gas_local,
-    cityHash64(block_number, transaction_hash)
+    cityHash64(block_number)
 );
 
 -- =============================================================================
@@ -118,7 +118,7 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     int_transaction_resource_gas_local,
-    cityHash64(block_number, transaction_hash)
+    cityHash64(block_number)
 );
 
 -- =============================================================================

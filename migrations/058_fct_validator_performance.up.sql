@@ -435,7 +435,11 @@ CREATE TABLE `${NETWORK_NAME}`.dim_validator_status_local ON CLUSTER '{cluster}'
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',
     `version`
-) PARTITION BY toStartOfMonth(epoch_start_date_time)
+-- No monthly partitioning: ReplacingMergeTree only dedups within a partition, so partitioning by
+-- epoch_start_date_time let a (validator_index, status) whose status window straddled a month
+-- boundary survive as two rows (two different "first epoch" values) that FINAL could never collapse.
+-- tuple() keeps every (validator_index, status) in one partition. This is a small dimension table.
+) PARTITION BY tuple()
 ORDER BY (validator_index, status)
 COMMENT 'Validator lifecycle status transitions — one row per (validator_index, status) with the first epoch observed';
 
