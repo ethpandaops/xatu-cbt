@@ -65,7 +65,6 @@ ENGINE = Distributed(
     '${NETWORK_NAME}',
     int_custody_probe_local,
     cityHash64(
-        probe_date_time,
         slot,
         peer_id_unique_key
     )

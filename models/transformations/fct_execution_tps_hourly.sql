@@ -15,7 +15,7 @@ tags:
   - tps
   - transactions
 dependencies:
-  - "{{external}}.canonical_execution_transaction"
+  - "{{transformation}}.int_block_receipt_size"
   - "{{transformation}}.int_execution_block_by_date"
 ---
 -- Hourly aggregation of execution layer TPS (transactions per second).
@@ -60,14 +60,14 @@ WITH
             ) AS block_time_seconds
         FROM blocks_in_hours
     ),
-    -- Count transactions per block from canonical_execution_transaction
+    -- Per-block transaction count from int_block_receipt_size (count of all txs per block,
+    -- precomputed and block-sharded). A lookup, not a re-count of the transaction_hash-sharded source.
     tx_per_block AS (
         SELECT
             block_number,
-            count() AS tx_count
-        FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }} FINAL
+            transaction_count AS tx_count
+        FROM {{ index .dep "{{transformation}}" "int_block_receipt_size" "helpers" "from" }} FINAL
         WHERE block_number GLOBAL IN (SELECT block_number FROM blocks_in_hours)
-        GROUP BY block_number
     ),
     -- Join blocks with transactions and calculate per-block TPS
     blocks_with_tps AS (

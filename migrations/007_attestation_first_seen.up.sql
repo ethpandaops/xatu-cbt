@@ -40,5 +40,5 @@ CREATE TABLE `${NETWORK_NAME}`.int_attestation_first_seen ON CLUSTER '{cluster}'
     '{cluster}',
     '${NETWORK_NAME}',
     int_attestation_first_seen_local,
-    cityHash64(`slot_start_date_time`, `attesting_validator_index`)
+    cityHash64(`slot_start_date_time`)
 );
