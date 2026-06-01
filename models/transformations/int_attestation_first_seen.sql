@@ -105,6 +105,10 @@ SELECT
     argMin(beacon_block_root, propagation_slot_start_diff) AS block_root,
     attesting_validator_index,
     argMin(attesting_validator_committee_index, propagation_slot_start_diff) AS attesting_validator_committee_index,
+    argMin(source_epoch, propagation_slot_start_diff) AS source_epoch,
+    argMin(source_root, propagation_slot_start_diff) AS source_root,
+    argMin(target_epoch, propagation_slot_start_diff) AS target_epoch,
+    argMin(target_root, propagation_slot_start_diff) AS target_root,
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
             splitByChar('/', meta_client_name)[2]
@@ -143,10 +147,6 @@ SELECT
     argMin(meta_client_geo_autonomous_system_number, propagation_slot_start_diff) AS meta_client_geo_autonomous_system_number,
     argMin(meta_client_geo_autonomous_system_organization, propagation_slot_start_diff) AS meta_client_geo_autonomous_system_organization,
     argMin(meta_consensus_version, propagation_slot_start_diff) AS meta_consensus_version,
-    argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation,
-    argMin(source_epoch, propagation_slot_start_diff) AS source_epoch,
-    argMin(source_root, propagation_slot_start_diff) AS source_root,
-    argMin(target_epoch, propagation_slot_start_diff) AS target_epoch,
-    argMin(target_root, propagation_slot_start_diff) AS target_root
+    argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation
 FROM combined_events
 GROUP BY slot_start_date_time, attesting_validator_index
