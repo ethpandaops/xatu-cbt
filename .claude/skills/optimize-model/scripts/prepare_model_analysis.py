@@ -38,20 +38,20 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--external-endpoint",
-        default="http://chendpoint-xatu-clickhouse.analytics.production.ethpandaops:8123",
+        default="http://chendpoint-clickhouse-raw.analytics.production.ethpandaops:8123",
     )
     parser.add_argument("--external-database", default="default")
     parser.add_argument("--external-username", default="")
     parser.add_argument("--external-password", default="")
 
-    parser.add_argument("--transformation-endpoint", default="http://chendpoint-xatu-cbt-clickhouse.analytics.production.ethpandaops:8123")
+    parser.add_argument("--transformation-endpoint", default="http://chendpoint-clickhouse-refined.analytics.production.ethpandaops:8123")
     parser.add_argument("--transformation-database", default="mainnet")
     parser.add_argument("--transformation-username", default="")
     parser.add_argument("--transformation-password", default="")
 
     parser.add_argument(
         "--access-to-external-cluster",
-        default="cluster('{remote_cluster}', database.table_name)",
+        default="cluster('{raw}', database.table_name)",
     )
     parser.add_argument("--network", default="mainnet")
     parser.add_argument("--bounds-start", type=int)

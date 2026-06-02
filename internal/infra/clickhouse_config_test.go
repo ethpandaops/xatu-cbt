@@ -30,13 +30,13 @@ func TestDetectClusterTopology(t *testing.T) {
 	}{
 		{
 			name:           "known production cluster",
-			hostname:       "chendpoint-xatu-clickhouse.analytics.production.ethpandaops",
+			hostname:       "chendpoint-clickhouse-raw.analytics.production.ethpandaops",
 			expectTopology: true,
 			expectedShards: 3,
 		},
 		{
 			name:           "known cluster with different domain",
-			hostname:       "chendpoint-xatu-clickhouse.some.other.domain",
+			hostname:       "chendpoint-clickhouse-raw.some.other.domain",
 			expectTopology: true,
 			expectedShards: 3,
 		},
@@ -48,7 +48,7 @@ func TestDetectClusterTopology(t *testing.T) {
 		},
 		{
 			name:           "no domain suffix",
-			hostname:       "chendpoint-xatu-clickhouse",
+			hostname:       "chendpoint-clickhouse-raw",
 			expectTopology: false,
 			expectedShards: 0,
 		},
@@ -94,21 +94,21 @@ func TestDetectClusterTopology(t *testing.T) {
 func TestDetectClusterTopology_ExpandedHostnames(t *testing.T) {
 	log := newTestLogger()
 
-	topology := detectClusterTopology(log, "chendpoint-xatu-clickhouse.analytics.production.ethpandaops")
+	topology := detectClusterTopology(log, "chendpoint-clickhouse-raw.analytics.production.ethpandaops")
 	require.NotNil(t, topology)
 
 	expectedHosts := [][]string{
 		{
-			"chendpoint-xatu-clickhouse-0-0.analytics.production.ethpandaops",
-			"chendpoint-xatu-clickhouse-0-1.analytics.production.ethpandaops",
+			"chendpoint-clickhouse-raw-0-0.analytics.production.ethpandaops",
+			"chendpoint-clickhouse-raw-0-1.analytics.production.ethpandaops",
 		},
 		{
-			"chendpoint-xatu-clickhouse-1-0.analytics.production.ethpandaops",
-			"chendpoint-xatu-clickhouse-1-1.analytics.production.ethpandaops",
+			"chendpoint-clickhouse-raw-1-0.analytics.production.ethpandaops",
+			"chendpoint-clickhouse-raw-1-1.analytics.production.ethpandaops",
 		},
 		{
-			"chendpoint-xatu-clickhouse-2-0.analytics.production.ethpandaops",
-			"chendpoint-xatu-clickhouse-2-1.analytics.production.ethpandaops",
+			"chendpoint-clickhouse-raw-2-0.analytics.production.ethpandaops",
+			"chendpoint-clickhouse-raw-2-1.analytics.production.ethpandaops",
 		},
 	}
 
@@ -324,7 +324,7 @@ func TestGenerateExternalClickHouseConfig_Integration(t *testing.T) {
 	t.Run("multi-shard config for known cluster", func(t *testing.T) {
 		err := GenerateExternalClickHouseConfig(
 			log,
-			"chendpoint-xatu-clickhouse.analytics.production.ethpandaops",
+			"chendpoint-clickhouse-raw.analytics.production.ethpandaops",
 			9000,
 			"",
 			"",
@@ -341,12 +341,12 @@ func TestGenerateExternalClickHouseConfig_Integration(t *testing.T) {
 			xml := string(content)
 
 			// Should have all 6 shard endpoints
-			assert.Contains(t, xml, "chendpoint-xatu-clickhouse-0-0.analytics.production.ethpandaops")
-			assert.Contains(t, xml, "chendpoint-xatu-clickhouse-0-1.analytics.production.ethpandaops")
-			assert.Contains(t, xml, "chendpoint-xatu-clickhouse-1-0.analytics.production.ethpandaops")
-			assert.Contains(t, xml, "chendpoint-xatu-clickhouse-1-1.analytics.production.ethpandaops")
-			assert.Contains(t, xml, "chendpoint-xatu-clickhouse-2-0.analytics.production.ethpandaops")
-			assert.Contains(t, xml, "chendpoint-xatu-clickhouse-2-1.analytics.production.ethpandaops")
+			assert.Contains(t, xml, "chendpoint-clickhouse-raw-0-0.analytics.production.ethpandaops")
+			assert.Contains(t, xml, "chendpoint-clickhouse-raw-0-1.analytics.production.ethpandaops")
+			assert.Contains(t, xml, "chendpoint-clickhouse-raw-1-0.analytics.production.ethpandaops")
+			assert.Contains(t, xml, "chendpoint-clickhouse-raw-1-1.analytics.production.ethpandaops")
+			assert.Contains(t, xml, "chendpoint-clickhouse-raw-2-0.analytics.production.ethpandaops")
+			assert.Contains(t, xml, "chendpoint-clickhouse-raw-2-1.analytics.production.ethpandaops")
 
 			// Should have 3 shards in xatu_cluster
 			xatuClusterStart := strings.Index(xml, "<xatu_cluster>")
@@ -481,10 +481,10 @@ func TestGenerateExternalClickHouseConfigFromURL(t *testing.T) {
 
 func TestKnownClusters(t *testing.T) {
 	// Verify the knownClusters map is properly configured
-	cluster, ok := knownClusters["chendpoint-xatu-clickhouse"]
-	require.True(t, ok, "chendpoint-xatu-clickhouse should be in knownClusters")
+	cluster, ok := knownClusters["chendpoint-clickhouse-raw"]
+	require.True(t, ok, "chendpoint-clickhouse-raw should be in knownClusters")
 
-	assert.Equal(t, "chendpoint-xatu-clickhouse", cluster.HostPrefix)
+	assert.Equal(t, "chendpoint-clickhouse-raw", cluster.HostPrefix)
 	assert.Equal(t, 3, len(cluster.Shards), "should have 3 shards")
 
 	// Verify shard structure

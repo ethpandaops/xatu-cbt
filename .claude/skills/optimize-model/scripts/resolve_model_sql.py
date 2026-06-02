@@ -49,7 +49,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--transformation-database", default="mainnet")
     parser.add_argument(
         "--external-template",
-        default="cluster('{remote_cluster}', database.table_name)",
+        default="cluster('{raw}', database.table_name)",
         help="Template used for external dependencies",
     )
     parser.add_argument("--network", default="mainnet")

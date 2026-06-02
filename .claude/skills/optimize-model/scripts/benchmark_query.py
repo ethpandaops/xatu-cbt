@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     src.add_argument("--query", help="SQL query string")
     src.add_argument("--query-file", help="Path to SQL query file")
 
-    parser.add_argument("--endpoint", default="http://chendpoint-xatu-cbt-clickhouse.analytics.production.ethpandaops:8123")
+    parser.add_argument("--endpoint", default="http://chendpoint-clickhouse-refined.analytics.production.ethpandaops:8123")
     parser.add_argument("--database", default="mainnet")
     parser.add_argument("--username", default="")
     parser.add_argument("--password", default="")
