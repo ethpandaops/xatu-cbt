@@ -36,7 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-query-file", required=True)
     parser.add_argument("--candidate-query-file", required=True)
-    parser.add_argument("--endpoint", default="http://chendpoint-xatu-cbt-clickhouse.analytics.production.ethpandaops:8123")
+    parser.add_argument("--endpoint", default="http://chendpoint-clickhouse-refined.analytics.production.ethpandaops:8123")
     parser.add_argument("--database", default="mainnet")
     parser.add_argument("--username", default="")
     parser.add_argument("--password", default="")

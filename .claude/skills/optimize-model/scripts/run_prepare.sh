@@ -9,22 +9,24 @@ if [ -z "$MODEL" ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Load credentials/overrides from the project .env (exported env wins over .env).
+. "$SCRIPT_DIR/_load_env.sh"
 REPO_ROOT="${REPO_ROOT:-.}"
 SESSION_ID="${SESSION_ID:-$(date +%s)-$$}"
 PERIOD_MODE="${PERIOD_MODE:-sane}"
 PREP_OUTPUT="${PREP_OUTPUT:-/tmp/optimize-model.${SESSION_ID}.prepare.json}"
 
-EXTERNAL_ENDPOINT="${EXTERNAL_ENDPOINT:-http://chendpoint-xatu-clickhouse.analytics.production.ethpandaops:8123}"
+EXTERNAL_ENDPOINT="${EXTERNAL_ENDPOINT:-http://chendpoint-clickhouse-raw.analytics.production.ethpandaops:8123}"
 EXTERNAL_DB="${EXTERNAL_DB:-default}"
 EXTERNAL_USER="${EXTERNAL_USER:-}"
 EXTERNAL_PASS="${EXTERNAL_PASS:-}"
 
-TRANSFORM_ENDPOINT="${TRANSFORM_ENDPOINT:-http://chendpoint-xatu-cbt-clickhouse.analytics.production.ethpandaops:8123}"
+TRANSFORM_ENDPOINT="${TRANSFORM_ENDPOINT:-http://chendpoint-clickhouse-refined.analytics.production.ethpandaops:8123}"
 TRANSFORM_DB="${TRANSFORM_DB:-mainnet}"
 TRANSFORM_USER="${TRANSFORM_USER:-}"
 TRANSFORM_PASS="${TRANSFORM_PASS:-}"
 
-ACCESS_TO_EXTERNAL_CLUSTER="${ACCESS_TO_EXTERNAL_CLUSTER:-cluster('{remote_cluster}', database.table_name)}"
+ACCESS_TO_EXTERNAL_CLUSTER="${ACCESS_TO_EXTERNAL_CLUSTER:-cluster('{raw}', database.table_name)}"
 NETWORK="${NETWORK:-mainnet}"
 TIMEOUT="${TIMEOUT:-30}"
 

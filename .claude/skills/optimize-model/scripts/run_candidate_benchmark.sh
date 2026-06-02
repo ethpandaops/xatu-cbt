@@ -19,6 +19,8 @@ if [ ! -f "$CANDIDATE_SQL" ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Load credentials/overrides from the project .env (exported env wins over .env).
+. "$SCRIPT_DIR/_load_env.sh"
 
 SESSION_ID="${SESSION_ID:-$(python3 - <<'PY' "$PREP_OUTPUT"
 import json,sys
@@ -31,7 +33,7 @@ if [ -z "$SESSION_ID" ]; then
   SESSION_ID="$(date +%s)-$$"
 fi
 
-TRANSFORM_ENDPOINT="${TRANSFORM_ENDPOINT:-http://chendpoint-xatu-cbt-clickhouse.analytics.production.ethpandaops:8123}"
+TRANSFORM_ENDPOINT="${TRANSFORM_ENDPOINT:-http://chendpoint-clickhouse-refined.analytics.production.ethpandaops:8123}"
 TRANSFORM_DB="${TRANSFORM_DB:-mainnet}"
 TRANSFORM_USER="${TRANSFORM_USER:-}"
 TRANSFORM_PASS="${TRANSFORM_PASS:-}"

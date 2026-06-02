@@ -18,7 +18,7 @@ Use these rules to convert CBT transformation model templates into a runnable re
 
 ## Substitution
 - External dependency replacement uses configurable template:
-  - Default: `cluster('{remote_cluster}', database.table_name)`
+  - Default: `cluster('{raw}', database.table_name)`
   - Replace `database` and `table_name` with confirmed external database and dependency table.
   - If template uses `cluster(...)`, resolve dependency table to `<table>_local` (not the Distributed table name).
 - Transformation dependency replacement is direct table access:
