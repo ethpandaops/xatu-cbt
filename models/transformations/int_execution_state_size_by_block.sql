@@ -9,7 +9,6 @@ fill:
   allow_gap_skipping: false
 schedules:
   forwardfill: "@every 1m"
-  backfill: "@every 1m"
 tags:
   - execution
   - state_size
@@ -26,8 +25,8 @@ dependencies:
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
 -- Seed: cumulative totals at the last block before this chunk. Reverse PK scan with
--- LIMIT 1 early-stops after one block; the genesis chunk finds none, so the scalar
--- subqueries below resolve to NULL and COALESCE to 0.
+-- LIMIT 1 early-stops after one block, and the genesis chunk finds none, so the
+-- scalar subqueries below resolve to NULL and COALESCE to 0.
 prev_state AS (
     SELECT
         accounts,
