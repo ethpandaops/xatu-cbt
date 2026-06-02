@@ -1,0 +1,106 @@
+model: int_execution_state_size_by_block
+network: mainnet
+external_data:
+    execution_state_size_delta:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_execution_state_size_by_block_execution_state_size_delta.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_execution_state_size_by_block FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Block numbers should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_execution_state_size_by_block FINAL
+        WHERE block_number < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block numbers should be unique (one cumulative row per block)
+      sql: |
+        SELECT COUNT(*) AS dup_blocks FROM (
+          SELECT block_number, COUNT(*) AS c
+          FROM int_execution_state_size_by_block FINAL
+          GROUP BY block_number
+          HAVING c > 1
+        )
+      assertions:
+        - type: equals
+          column: dup_blocks
+          value: 0
+    - name: No null cumulative totals
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_execution_state_size_by_block FINAL
+        WHERE accounts IS NULL
+           OR account_bytes IS NULL
+           OR account_trienodes IS NULL
+           OR account_trienode_bytes IS NULL
+           OR contract_codes IS NULL
+           OR contract_code_bytes IS NULL
+           OR storages IS NULL
+           OR storage_bytes IS NULL
+           OR storage_trienodes IS NULL
+           OR storage_trienode_bytes IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Cumulative account totals should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_execution_state_size_by_block FINAL
+        WHERE accounts < 0 OR account_bytes < 0
+           OR account_trienodes < 0 OR account_trienode_bytes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Cumulative storage totals should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_execution_state_size_by_block FINAL
+        WHERE storages < 0 OR storage_bytes < 0
+           OR storage_trienodes < 0 OR storage_trienode_bytes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Cumulative contract code totals should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_execution_state_size_by_block FINAL
+        WHERE contract_codes < 0 OR contract_code_bytes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Cumulative series must be monotonically non-decreasing for contract codes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT
+            contract_codes,
+            lagInFrame(contract_codes) OVER (ORDER BY block_number) AS prev_codes
+          FROM int_execution_state_size_by_block FINAL
+        )
+        WHERE prev_codes IS NOT NULL AND contract_codes < prev_codes
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Account bytes should be at least the number of accounts (non-zero bytes per account)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_execution_state_size_by_block FINAL
+        WHERE accounts > 0 AND account_bytes < accounts
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: updated_date_time should be populated
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_execution_state_size_by_block FINAL
+        WHERE updated_date_time IS NULL OR toUInt64(updated_date_time) = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

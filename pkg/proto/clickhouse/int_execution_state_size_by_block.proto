@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Cumulative execution layer state size per block, reconstructed from execution_state_size_delta. Drop-in replacement for the deprecated execution_state_size snapshot table.
+
+message IntExecutionStateSizeByBlock {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Block number at which the cumulative state size is measured
+  uint64 block_number = 12;
+  // Cumulative total number of accounts in the state
+  uint64 accounts = 13;
+  // Cumulative total bytes used by account data
+  uint64 account_bytes = 14;
+  // Cumulative number of trie nodes in the account trie
+  uint64 account_trienodes = 15;
+  // Cumulative total bytes used by account trie nodes
+  uint64 account_trienode_bytes = 16;
+  // Cumulative total number of contract codes stored
+  uint64 contract_codes = 17;
+  // Cumulative total bytes used by contract code
+  uint64 contract_code_bytes = 18;
+  // Cumulative total number of storage slots in the state
+  uint64 storages = 19;
+  // Cumulative total bytes used by storage data
+  uint64 storage_bytes = 20;
+  // Cumulative number of trie nodes in the storage trie
+  uint64 storage_trienodes = 21;
+  // Cumulative total bytes used by storage trie nodes
+  uint64 storage_trienode_bytes = 22;
+}
+
+// Request for listing int_execution_state_size_by_block records
+message ListIntExecutionStateSizeByBlockRequest {
+  // Filter by block_number - Block number at which the cumulative state size is measured (PRIMARY KEY - required)
+  UInt64Filter block_number = 1;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2;
+  // Filter by accounts - Cumulative total number of accounts in the state (optional)
+  UInt64Filter accounts = 3;
+  // Filter by account_bytes - Cumulative total bytes used by account data (optional)
+  UInt64Filter account_bytes = 4;
+  // Filter by account_trienodes - Cumulative number of trie nodes in the account trie (optional)
+  UInt64Filter account_trienodes = 5;
+  // Filter by account_trienode_bytes - Cumulative total bytes used by account trie nodes (optional)
+  UInt64Filter account_trienode_bytes = 6;
+  // Filter by contract_codes - Cumulative total number of contract codes stored (optional)
+  UInt64Filter contract_codes = 7;
+  // Filter by contract_code_bytes - Cumulative total bytes used by contract code (optional)
+  UInt64Filter contract_code_bytes = 8;
+  // Filter by storages - Cumulative total number of storage slots in the state (optional)
+  UInt64Filter storages = 9;
+  // Filter by storage_bytes - Cumulative total bytes used by storage data (optional)
+  UInt64Filter storage_bytes = 10;
+  // Filter by storage_trienodes - Cumulative number of trie nodes in the storage trie (optional)
+  UInt64Filter storage_trienodes = 11;
+  // Filter by storage_trienode_bytes - Cumulative total bytes used by storage trie nodes (optional)
+  UInt64Filter storage_trienode_bytes = 12;
+
+  // The maximum number of int_execution_state_size_by_block to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 13;
+  // A page token, received from a previous `ListIntExecutionStateSizeByBlock` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 14;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 15;
+}
+
+// Response for listing int_execution_state_size_by_block records
+message ListIntExecutionStateSizeByBlockResponse {
+  // The list of int_execution_state_size_by_block.
+  repeated IntExecutionStateSizeByBlock int_execution_state_size_by_block = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_execution_state_size_by_block record by primary key
+message GetIntExecutionStateSizeByBlockRequest {
+  // Block number at which the cumulative state size is measured
+  uint64 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single int_execution_state_size_by_block record
+message GetIntExecutionStateSizeByBlockResponse {
+  IntExecutionStateSizeByBlock item = 1;
+}
+
+// Query int_execution_state_size_by_block data
+service IntExecutionStateSizeByBlockService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntExecutionStateSizeByBlockRequest) returns (ListIntExecutionStateSizeByBlockResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntExecutionStateSizeByBlockRequest) returns (GetIntExecutionStateSizeByBlockResponse);
+}
