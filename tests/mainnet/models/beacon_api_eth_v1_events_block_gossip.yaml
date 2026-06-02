@@ -8,6 +8,6 @@ assertions:
     - name: total count
       sql: |
         SELECT COUNT(*) AS count
-        FROM cluster('{remote_cluster}', default.beacon_api_eth_v1_events_block_gossip)
+        FROM cluster('{raw}', default.beacon_api_eth_v1_events_block_gossip)
       expected:
         count: 1000

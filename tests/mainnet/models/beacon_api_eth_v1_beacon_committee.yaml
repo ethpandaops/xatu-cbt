@@ -8,6 +8,6 @@ assertions:
     - name: total count
       sql: |
         SELECT COUNT(*) AS count
-        FROM cluster('{remote_cluster}', default.beacon_api_eth_v1_beacon_committee)
+        FROM cluster('{raw}', default.beacon_api_eth_v1_beacon_committee)
       expected:
         count: 1000
