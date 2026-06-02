@@ -9,6 +9,7 @@ fill:
   allow_gap_skipping: false
 schedules:
   forwardfill: "@every 1m"
+  backfill: "@every 1m"
 tags:
   - execution
   - state_size
