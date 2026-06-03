@@ -15,9 +15,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// refinedNodeCount is the number of refined ClickHouse nodes (cluster_2S_2R:
-// 2 shards x 2 replicas). Config files are generated/copied for each.
-const refinedNodeCount = 4
+// refinedNodeCount is the number of refined ClickHouse nodes (cluster_2S_1R:
+// 2 shards x 1 replica). Config files are generated/copied for each.
+const refinedNodeCount = 2
 
 var (
 	errExternalHostRequired = errors.New("external host is required for external mode")
@@ -110,14 +110,14 @@ func detectClusterTopology(log logrus.FieldLogger, hostname string) *ExpandedTop
 }
 
 // multiShardConfigTemplate is the XML template for multi-shard external clusters.
-// The refined cluster (cluster_2S_2R) is the local 4-node cluster (2 shards x 2 replicas);
+// The refined cluster (cluster_2S_1R) is the local 2-node cluster (2 shards x 1 replica);
 // the xatu_cluster points at the remote/external raw cluster expanded from its topology.
 const multiShardConfigTemplate = `<clickhouse replace="true">
     <logger>
         <level>debug</level>
         <console>1</console>
     </logger>
-    <display_name>cluster_2S_2R node {{.NodeNum}}</display_name>
+    <display_name>cluster_2S_1R node {{.NodeNum}}</display_name>
     <listen_host>0.0.0.0</listen_host>
     <http_port>8123</http_port>
     <tcp_port>9000</tcp_port>
@@ -133,7 +133,7 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
         <path>/clickhouse/task_queue/ddl</path>
     </distributed_ddl>
     <remote_servers>
-        <cluster_2S_2R>
+        <cluster_2S_1R>
             <secret>supersecret</secret>
             <shard>
                 <internal_replication>true</internal_replication>
@@ -141,23 +141,15 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
                     <host>xatu-cbt-clickhouse-01</host>
                     <port>9000</port>
                 </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
                     <host>xatu-cbt-clickhouse-02</host>
                     <port>9000</port>
                 </replica>
             </shard>
-            <shard>
-                <internal_replication>true</internal_replication>
-                <replica>
-                    <host>xatu-cbt-clickhouse-03</host>
-                    <port>9000</port>
-                </replica>
-                <replica>
-                    <host>xatu-cbt-clickhouse-04</host>
-                    <port>9000</port>
-                </replica>
-            </shard>
-        </cluster_2S_2R>
+        </cluster_2S_1R>
         <xatu_cluster>
 {{- range .Shards}}
             <shard>
@@ -195,7 +187,7 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
     </zookeeper>
     <macros>
         <installation>xatu</installation>
-        <cluster>cluster_2S_2R</cluster>
+        <cluster>cluster_2S_1R</cluster>
         <shard>{{.Shard}}</shard>
         <replica>{{.Replica}}</replica>
         <raw>xatu_cluster</raw>
@@ -219,24 +211,12 @@ type multiShardTemplateData struct {
 }
 
 // shardReplicaForNode maps a 1-based refined node number to its {shard}/{replica}
-// macro values for the 2 shards x 2 replicas topology:
+// macro values for the 2 shards x 1 replica topology:
 //
-//	node 1 -> shard 01, replica 01    node 3 -> shard 02, replica 01
-//	node 2 -> shard 01, replica 02    node 4 -> shard 02, replica 02
+//	node 1 -> shard 01, replica 01
+//	node 2 -> shard 02, replica 01
 func shardReplicaForNode(nodeNum int) (shard, replica string) {
-	if nodeNum <= 2 {
-		shard = "01"
-	} else {
-		shard = "02"
-	}
-
-	if nodeNum%2 == 1 {
-		replica = "01"
-	} else {
-		replica = "02"
-	}
-
-	return shard, replica
+	return fmt.Sprintf("%02d", nodeNum), "01"
 }
 
 type templateShard struct {
@@ -323,13 +303,13 @@ func generateSingleShardConfig(nodeNum int, host string, port int, username, pas
 
 // clickhouseConfigTemplate is the XML configuration template for ClickHouse external mode
 // when the external host does not match a known multi-shard cluster (single remote endpoint).
-// The local refined cluster (cluster_2S_2R) is still 2 shards x 2 replicas.
+// The local refined cluster (cluster_2S_1R) is still 2 shards x 1 replica.
 const clickhouseConfigTemplate = `<clickhouse replace="true">
     <logger>
         <level>debug</level>
         <console>1</console>
     </logger>
-    <display_name>cluster_2S_2R node %d</display_name>
+    <display_name>cluster_2S_1R node %d</display_name>
     <listen_host>0.0.0.0</listen_host>
     <http_port>8123</http_port>
     <tcp_port>9000</tcp_port>
@@ -345,7 +325,7 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
         <path>/clickhouse/task_queue/ddl</path>
     </distributed_ddl>
     <remote_servers>
-        <cluster_2S_2R>
+        <cluster_2S_1R>
             <secret>supersecret</secret>
             <shard>
                 <internal_replication>true</internal_replication>
@@ -353,23 +333,15 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
                     <host>xatu-cbt-clickhouse-01</host>
                     <port>9000</port>
                 </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
                     <host>xatu-cbt-clickhouse-02</host>
                     <port>9000</port>
                 </replica>
             </shard>
-            <shard>
-                <internal_replication>true</internal_replication>
-                <replica>
-                    <host>xatu-cbt-clickhouse-03</host>
-                    <port>9000</port>
-                </replica>
-                <replica>
-                    <host>xatu-cbt-clickhouse-04</host>
-                    <port>9000</port>
-                </replica>
-            </shard>
-        </cluster_2S_2R>
+        </cluster_2S_1R>
         <xatu_cluster>
             <shard>
                 <internal_replication>false</internal_replication>
@@ -397,7 +369,7 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
     </zookeeper>
     <macros>
         <installation>xatu</installation>
-        <cluster>cluster_2S_2R</cluster>
+        <cluster>cluster_2S_1R</cluster>
         <shard>%s</shard>
         <replica>%s</replica>
         <raw>xatu_cluster</raw>

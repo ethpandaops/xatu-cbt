@@ -19,9 +19,8 @@
         <path>/clickhouse/task_queue/ddl</path>
     </distributed_ddl>
     <remote_servers>
-        <!-- Raw / external source cluster: 2 shards x 2 replicas (mirrors prod clickhouse-raw
-             topology, scaled from prod's 3 shards x 2 replicas). Two shards is enough to surface
-             cross-shard issues in external-source reads. -->
+        <!-- Raw / external source cluster: 2 shards x 1 replica (mirrors prod clickhouse-raw,
+             scaled down; 2nd replica per shard dropped to keep ON CLUSTER DDL cost low). -->
         <xatu_cluster>
             <secret>supersecret</secret>
             <shard>
@@ -30,19 +29,11 @@
                     <host>xatu-clickhouse-01</host>
                     <port>9000</port>
                 </replica>
-                <replica>
-                    <host>xatu-clickhouse-02</host>
-                    <port>9000</port>
-                </replica>
             </shard>
             <shard>
                 <internal_replication>true</internal_replication>
                 <replica>
-                    <host>xatu-clickhouse-03</host>
-                    <port>9000</port>
-                </replica>
-                <replica>
-                    <host>xatu-clickhouse-04</host>
+                    <host>xatu-clickhouse-02</host>
                     <port>9000</port>
                 </replica>
             </shard>
@@ -65,8 +56,8 @@
     <macros>
         <installation>xatu</installation>
         <cluster>xatu_cluster</cluster>
-        <shard>01</shard>
-        <replica>02</replica>
+        <shard>02</shard>
+        <replica>01</replica>
     </macros>
     <access_control_improvements>
         <settings_constraints_replace_previous>true</settings_constraints_replace_previous>

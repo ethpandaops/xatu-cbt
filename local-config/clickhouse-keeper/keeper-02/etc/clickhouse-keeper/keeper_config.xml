@@ -1,7 +1,7 @@
 <clickhouse>
     <!-- 3-node ClickHouse Keeper ensemble (replaces ZooKeeper).
          Coordinates ReplicatedMergeTree + ON CLUSTER DDL for BOTH the refined
-         (cluster_2S_2R) and raw (xatu_cluster) clusters. server_id is the only
+         (cluster_2S_1R) and raw (xatu_cluster) clusters. server_id is the only
          field that differs between keeper-01/02/03. -->
     <logger>
         <level>information</level>

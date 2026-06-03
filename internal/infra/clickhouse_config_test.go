@@ -147,10 +147,11 @@ func TestGenerateMultiShardXML(t *testing.T) {
 			password: "",
 			secure:   false,
 			checks: []string{
-				"<display_name>cluster_2S_2R node 1</display_name>",
-				// Local refined cluster: 2 shards x 2 replicas + Keeper coordination
-				"<cluster_2S_2R>",
-				"<host>xatu-cbt-clickhouse-03</host>",
+				"<display_name>cluster_2S_1R node 1</display_name>",
+				// Local refined cluster: 2 shards x 1 replica + Keeper coordination
+				"<cluster_2S_1R>",
+				"<host>xatu-cbt-clickhouse-01</host>",
+				"<host>xatu-cbt-clickhouse-02</host>",
 				"<host>xatu-cbt-clickhouse-keeper-01</host>",
 				// Remote/external raw cluster expanded from topology
 				"<host>host-0-0.example.com</host>",
@@ -172,40 +173,14 @@ func TestGenerateMultiShardXML(t *testing.T) {
 			password: "mypass",
 			secure:   true,
 			checks: []string{
-				"<display_name>cluster_2S_2R node 2</display_name>",
+				"<display_name>cluster_2S_1R node 2</display_name>",
 				"<port>9440</port>",
 				"<user>myuser</user>",
 				"<password>mypass</password>",
 				"<secure>1</secure>",
-				// node 2 -> shard 01, replica 02
-				"<shard>01</shard>",
-				"<replica>02</replica>",
-			},
-		},
-		{
-			name:     "node 3 maps to shard 02 replica 01",
-			nodeNum:  3,
-			port:     9000,
-			username: "",
-			password: "",
-			secure:   false,
-			checks: []string{
-				"<display_name>cluster_2S_2R node 3</display_name>",
+				// node 2 -> shard 02, replica 01
 				"<shard>02</shard>",
 				"<replica>01</replica>",
-			},
-		},
-		{
-			name:     "node 4 maps to shard 02 replica 02",
-			nodeNum:  4,
-			port:     9000,
-			username: "",
-			password: "",
-			secure:   false,
-			checks: []string{
-				"<display_name>cluster_2S_2R node 4</display_name>",
-				"<shard>02</shard>",
-				"<replica>02</replica>",
 			},
 		},
 		{
@@ -287,7 +262,7 @@ func TestGenerateSingleShardConfig(t *testing.T) {
 			password: "",
 			secure:   false,
 			checks: []string{
-				"<display_name>cluster_2S_2R node 1</display_name>",
+				"<display_name>cluster_2S_1R node 1</display_name>",
 				"<host>clickhouse.example.com</host>",
 				"<port>9000</port>",
 				"<secure>0</secure>",
@@ -337,7 +312,7 @@ func TestGenerateExternalClickHouseConfig_Integration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create the source config directories that copyUsersConfig and copyInitDBScripts expect
-	for nodeNum := 1; nodeNum <= 4; nodeNum++ {
+	for nodeNum := 1; nodeNum <= 2; nodeNum++ {
 		usersDir := filepath.Join("local-config", "clickhouse", formatNodeDir(nodeNum), "etc", "clickhouse-server", "users.d")
 		err := os.MkdirAll(usersDir, 0o755)
 		require.NoError(t, err)
@@ -368,7 +343,7 @@ func TestGenerateExternalClickHouseConfig_Integration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify config files were created
-		for nodeNum := 1; nodeNum <= 4; nodeNum++ {
+		for nodeNum := 1; nodeNum <= 2; nodeNum++ {
 			configPath := filepath.Join("local-config", "clickhouse-external", formatNodeDir(nodeNum), "etc", "clickhouse-server", "config.d", "config.xml")
 			content, err := os.ReadFile(configPath)
 			require.NoError(t, err, "config file should exist for node %d", nodeNum)
@@ -443,7 +418,7 @@ func TestGenerateExternalClickHouseConfigFromURL(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create source config directories
-	for nodeNum := 1; nodeNum <= 4; nodeNum++ {
+	for nodeNum := 1; nodeNum <= 2; nodeNum++ {
 		usersDir := filepath.Join("local-config", "clickhouse", formatNodeDir(nodeNum), "etc", "clickhouse-server", "users.d")
 		err := os.MkdirAll(usersDir, 0o755)
 		require.NoError(t, err)
@@ -554,7 +529,7 @@ func TestGenerateExternalClickHouseConfig_HealsStaleDirectory(t *testing.T) {
 	require.NoError(t, os.Chdir(tmpDir))
 
 	// Source users.xml/init-db that copyUsersConfig + generateInitDBScripts read from.
-	for nodeNum := 1; nodeNum <= 4; nodeNum++ {
+	for nodeNum := 1; nodeNum <= 2; nodeNum++ {
 		usersDir := filepath.Join("local-config", "clickhouse", formatNodeDir(nodeNum), "etc", "clickhouse-server", "users.d")
 		require.NoError(t, os.MkdirAll(usersDir, 0o755))
 		require.NoError(t, os.WriteFile(filepath.Join(usersDir, "users.xml"), []byte("<clickhouse/>"), 0o644))
@@ -565,7 +540,7 @@ func TestGenerateExternalClickHouseConfig_HealsStaleDirectory(t *testing.T) {
 	}
 
 	// Simulate the bad state: a DIRECTORY where node 03's config.xml file must go.
-	staleConfigPath := filepath.Join("local-config", "clickhouse-external", "clickhouse-03", "etc", "clickhouse-server", "config.d", "config.xml")
+	staleConfigPath := filepath.Join("local-config", "clickhouse-external", "clickhouse-02", "etc", "clickhouse-server", "config.d", "config.xml")
 	require.NoError(t, os.MkdirAll(staleConfigPath, 0o755))
 
 	info, err := os.Stat(staleConfigPath)
@@ -580,7 +555,7 @@ func TestGenerateExternalClickHouseConfig_HealsStaleDirectory(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	for nodeNum := 1; nodeNum <= 4; nodeNum++ {
+	for nodeNum := 1; nodeNum <= 2; nodeNum++ {
 		configPath := filepath.Join("local-config", "clickhouse-external", formatNodeDir(nodeNum), "etc", "clickhouse-server", "config.d", "config.xml")
 		fi, statErr := os.Stat(configPath)
 		require.NoError(t, statErr, "config.xml should exist for node %d", nodeNum)

@@ -91,12 +91,12 @@ Before running tests or development work, start the platform infrastructure:
 ```
 
 This starts:
-- Refined ClickHouse cluster `cluster_2S_2R`: 4 nodes / 2 shards x 2 replicas (mirrors the
-  production clickhouse-refined topology, scaled to 2 shards so cross-shard issues — e.g. a
-  distributed `IN`/`JOIN` missing `GLOBAL` — surface locally)
+- Refined ClickHouse cluster `cluster_2S_1R`: 2 nodes / 2 shards x 1 replica. Sharded so
+  cross-shard issues — e.g. a distributed `IN`/`JOIN` missing `GLOBAL` — surface locally,
+  without a 2nd replica per shard (which doubles `ON CLUSTER` DDL cost and slows the test suite)
 - 3-node ClickHouse Keeper ensemble for cluster coordination (replaces ZooKeeper)
-- Raw ClickHouse cluster `xatu_cluster` (external data source): 4 nodes / 2 shards x 2 replicas
-  (mirrors the production clickhouse-raw topology), started in local xatu mode
+- Raw ClickHouse cluster `xatu_cluster` (external data source): 2 nodes / 2 shards x 1 replica,
+  started in local xatu mode
 - Redis for state management
 - Shared across both ephemeral test databases and persistent network databases
 

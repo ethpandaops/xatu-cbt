@@ -2,13 +2,14 @@
 # Platform Infrastructure for xatu-cbt
 #
 # This file provides the foundational data platform used by both testing and development.
-# It is built to mirror the production clickhouse-refined cluster as closely as is
-# practical locally, so cross-shard / replication bugs surface in dev:
-# - Refined ClickHouse cluster `cluster_2S_2R`: 2 shards x 2 replicas (4 nodes).
-#   Mirrors prod's 3 shards x 2 replicas, scaled to 2 shards (enough to catch
-#   cross-shard issues such as distributed IN/JOIN missing GLOBAL).
+# It mirrors the production clickhouse-raw/refined topology closely enough to surface
+# cross-shard bugs in dev, while keeping ON CLUSTER DDL cost low so the (DDL-heavy) test
+# suite stays fast:
+# - Refined ClickHouse cluster `cluster_2S_1R`: 2 shards x 1 replica (2 nodes).
+#   Sharded (catches distributed IN/JOIN missing GLOBAL) but no 2nd replica per shard —
+#   a 2nd replica doubles ON CLUSTER DDL host-count and times the test suite out.
 # - ClickHouse Keeper: 3-node ensemble (replaces ZooKeeper) coordinating both clusters.
-# - Raw ClickHouse cluster `xatu_cluster` (external data source): 1 shard x 2 replicas.
+# - Raw ClickHouse cluster `xatu_cluster` (external data source): 2 shards x 1 replica.
 # - Redis (state management for the CBT engine).
 #
 # USAGE:
@@ -51,18 +52,10 @@ volumes:
     name: xatu-cbt-clickhouse-01-data
   clickhouse-02-data:
     name: xatu-cbt-clickhouse-02-data
-  clickhouse-03-data:
-    name: xatu-cbt-clickhouse-03-data
-  clickhouse-04-data:
-    name: xatu-cbt-clickhouse-04-data
   xatu-clickhouse-01-data:
     name: xatu-clickhouse-01-data
   xatu-clickhouse-02-data:
     name: xatu-clickhouse-02-data
-  xatu-clickhouse-03-data:
-    name: xatu-clickhouse-03-data
-  xatu-clickhouse-04-data:
-    name: xatu-clickhouse-04-data
   clickhouse-keeper-01-data:
     name: xatu-cbt-clickhouse-keeper-01-data
   clickhouse-keeper-02-data:
@@ -129,9 +122,8 @@ services:
       start_period: 10s
 
   # ---------------------------------------------------------------------------
-  # Refined cluster `cluster_2S_2R` — 2 shards x 2 replicas.
-  #   shard 1: xatu-cbt-clickhouse-01 (replica 01), xatu-cbt-clickhouse-02 (replica 02)
-  #   shard 2: xatu-cbt-clickhouse-03 (replica 01), xatu-cbt-clickhouse-04 (replica 02)
+  # Refined cluster `cluster_2S_1R` — 2 shards x 1 replica.
+  #   shard 1: xatu-cbt-clickhouse-01    shard 2: xatu-cbt-clickhouse-02
   # ---------------------------------------------------------------------------
   xatu-cbt-clickhouse-01:
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}
@@ -209,87 +201,10 @@ services:
       timeout: 5s
       retries: 5
 
-  xatu-cbt-clickhouse-03:
-    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-cbt-clickhouse-03
-    hostname: xatu-cbt-clickhouse-03
-    user: "101:101"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - xatu-net
-    ports:
-      - "${CLICKHOUSE_CBT_03_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_03_HTTP_PORT:-8127}:8123"
-      - "${CLICKHOUSE_CBT_03_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_03_NATIVE_PORT:-9004}:9000"
-    volumes:
-      - clickhouse-03-data:/var/lib/clickhouse/
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-03/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-03/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-03/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-      - ./local-config/refined-settings.xml:/etc/clickhouse-server/config.d/refined-settings.xml:ro
-      - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
-    environment:
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
-      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-default}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
-      CLICKHOUSE_USER_READONLY_PASSWORD: ${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
-    depends_on:
-      xatu-cbt-clickhouse-keeper-01:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-02:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-03:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  xatu-cbt-clickhouse-04:
-    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-cbt-clickhouse-04
-    hostname: xatu-cbt-clickhouse-04
-    user: "101:101"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - xatu-net
-    ports:
-      - "${CLICKHOUSE_CBT_04_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_04_HTTP_PORT:-8128}:8123"
-      - "${CLICKHOUSE_CBT_04_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_04_NATIVE_PORT:-9005}:9000"
-    volumes:
-      - clickhouse-04-data:/var/lib/clickhouse/
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-04/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-04/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-04/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-      - ./local-config/refined-settings.xml:/etc/clickhouse-server/config.d/refined-settings.xml:ro
-      - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
-    environment:
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
-      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-default}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
-      CLICKHOUSE_USER_READONLY_PASSWORD: ${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
-    depends_on:
-      xatu-cbt-clickhouse-keeper-01:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-02:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-03:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # ---------------------------------------------------------------------------
-  # Raw ClickHouse cluster `xatu_cluster` (external data source) — 2 shards x 2 replicas
-  # (mirrors prod clickhouse-raw, scaled from 3 shards x 2 replicas).
-  #   shard 1: xatu-clickhouse-01 (r01), xatu-clickhouse-02 (r02)
-  #   shard 2: xatu-clickhouse-03 (r01), xatu-clickhouse-04 (r02)
+  # Raw ClickHouse cluster `xatu_cluster` (external data source) — 2 shards x 1 replica
+  # (mirrors prod clickhouse-raw, scaled down).
+  #   shard 1: xatu-clickhouse-01    shard 2: xatu-clickhouse-02
   # Only started in local xatu mode (profile: xatu-local).
   # ---------------------------------------------------------------------------
   xatu-clickhouse-01:
@@ -347,82 +262,6 @@ services:
       - ./local-config/clickhouse/xatu-clickhouse-02/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
       - ./local-config/clickhouse/xatu-clickhouse-02/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
       - ./local-config/clickhouse/xatu-clickhouse-02/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-      - ./local-config/raw-settings.xml:/etc/clickhouse-server/config.d/raw-settings.xml:ro
-      - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
-    environment:
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
-      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-default}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-supersecret}
-      CLICKHOUSE_USER_READONLY_PASSWORD: ${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
-    depends_on:
-      xatu-cbt-clickhouse-keeper-01:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-02:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-03:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  xatu-clickhouse-03:
-    profiles:
-      - xatu-local
-    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-clickhouse-03
-    hostname: xatu-clickhouse-03
-    user: "101:101"
-    networks:
-      - xatu-net
-    ports:
-      - "${CLICKHOUSE_XATU_03_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_XATU_03_HTTP_PORT:-8129}:8123"
-      - "${CLICKHOUSE_XATU_03_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_XATU_03_NATIVE_PORT:-9006}:9000"
-    volumes:
-      - xatu-clickhouse-03-data:/var/lib/clickhouse/
-      - ./local-config/clickhouse/xatu-clickhouse-03/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/clickhouse/xatu-clickhouse-03/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/clickhouse/xatu-clickhouse-03/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-      - ./local-config/raw-settings.xml:/etc/clickhouse-server/config.d/raw-settings.xml:ro
-      - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
-    environment:
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
-      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-default}
-      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-supersecret}
-      CLICKHOUSE_USER_READONLY_PASSWORD: ${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
-    depends_on:
-      xatu-cbt-clickhouse-keeper-01:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-02:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-03:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  xatu-clickhouse-04:
-    profiles:
-      - xatu-local
-    image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-clickhouse-04
-    hostname: xatu-clickhouse-04
-    user: "101:101"
-    networks:
-      - xatu-net
-    ports:
-      - "${CLICKHOUSE_XATU_04_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_XATU_04_HTTP_PORT:-8130}:8123"
-      - "${CLICKHOUSE_XATU_04_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_XATU_04_NATIVE_PORT:-9007}:9000"
-    volumes:
-      - xatu-clickhouse-04-data:/var/lib/clickhouse/
-      - ./local-config/clickhouse/xatu-clickhouse-04/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/clickhouse/xatu-clickhouse-04/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/clickhouse/xatu-clickhouse-04/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
       - ./local-config/raw-settings.xml:/etc/clickhouse-server/config.d/raw-settings.xml:ro
       - ./.parquet_cache:/var/lib/clickhouse/user_files/.parquet_cache
     environment:

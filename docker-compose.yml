@@ -4,10 +4,6 @@ volumes:
     driver: local
   clickhouse-02-data:
     driver: local
-  clickhouse-03-data:
-    driver: local
-  clickhouse-04-data:
-    driver: local
   clickhouse-keeper-01-data:
     driver: local
   clickhouse-keeper-02-data:
@@ -42,10 +38,6 @@ services:
       xatu-cbt-clickhouse-01:
         condition: service_healthy
       xatu-cbt-clickhouse-02:
-        condition: service_healthy
-      xatu-cbt-clickhouse-03:
-        condition: service_healthy
-      xatu-cbt-clickhouse-04:
         condition: service_healthy
     volumes:
       - cbt-config:/config
@@ -187,7 +179,7 @@ services:
     deploy:
       replicas: 1
 
-  # Refined cluster `cluster_2S_2R` — 2 shards x 2 replicas (shard 1: 01,02 / shard 2: 03,04)
+  # Refined cluster `cluster_2S_1R` — 2 shards x 1 replica (shard 1: 01 / shard 2: 02)
   xatu-cbt-clickhouse-01:
     image: "clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}"
     container_name: xatu-cbt-clickhouse-01
@@ -260,88 +252,6 @@ services:
         [
           "CMD-SHELL",
           "set -x; wget --spider --quiet http://xatu-cbt-clickhouse-02:9000 || exit 1; wget --spider --quiet --header 'Host: localhost' --post-data 'query=SELECT 1' http://localhost:8123 || exit 1",
-        ]
-      interval: 5s
-      timeout: 10s
-      retries: 15
-      start_period: 15s
-    environment:
-      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
-      - CLICKHOUSE_USER=default
-      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
-      - CLICKHOUSE_USER_READONLY_PASSWORD=${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
-  xatu-cbt-clickhouse-03:
-    image: "clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}"
-    container_name: xatu-cbt-clickhouse-03
-    hostname: xatu-cbt-clickhouse-03
-    user: 101:101
-    profiles:
-      - clickhouse
-      - ""
-    networks:
-      - xatu_xatu-net
-    volumes:
-      - clickhouse-03-data:/var/lib/clickhouse/
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-03/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-03/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-03/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-      - ./local-config/refined-settings.xml:/etc/clickhouse-server/config.d/refined-settings.xml:ro
-    ports:
-      - "${CLICKHOUSE_CBT_03_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_03_HTTP_PORT:-8127}:8123"
-      - "${CLICKHOUSE_CBT_03_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_03_NATIVE_PORT:-9004}:9000"
-    depends_on:
-      xatu-cbt-clickhouse-keeper-01:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-02:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-03:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "set -x; wget --spider --quiet http://xatu-cbt-clickhouse-03:9000 || exit 1; wget --spider --quiet --header 'Host: localhost' --post-data 'query=SELECT 1' http://localhost:8123 || exit 1",
-        ]
-      interval: 5s
-      timeout: 10s
-      retries: 15
-      start_period: 15s
-    environment:
-      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
-      - CLICKHOUSE_USER=default
-      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
-      - CLICKHOUSE_USER_READONLY_PASSWORD=${CLICKHOUSE_USER_READONLY_PASSWORD:-readonly}
-  xatu-cbt-clickhouse-04:
-    image: "clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}"
-    container_name: xatu-cbt-clickhouse-04
-    hostname: xatu-cbt-clickhouse-04
-    user: 101:101
-    profiles:
-      - clickhouse
-      - ""
-    networks:
-      - xatu_xatu-net
-    volumes:
-      - clickhouse-04-data:/var/lib/clickhouse/
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-04/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-04/etc/clickhouse-server/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
-      - ./local-config/${CLICKHOUSE_CONFIG_DIR:-clickhouse}/clickhouse-04/etc/clickhouse-server/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-      - ./local-config/refined-settings.xml:/etc/clickhouse-server/config.d/refined-settings.xml:ro
-    ports:
-      - "${CLICKHOUSE_CBT_04_HTTP_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_04_HTTP_PORT:-8128}:8123"
-      - "${CLICKHOUSE_CBT_04_NATIVE_ADDRESS:-127.0.0.1}:${CLICKHOUSE_CBT_04_NATIVE_PORT:-9005}:9000"
-    depends_on:
-      xatu-cbt-clickhouse-keeper-01:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-02:
-        condition: service_healthy
-      xatu-cbt-clickhouse-keeper-03:
-        condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "set -x; wget --spider --quiet http://xatu-cbt-clickhouse-04:9000 || exit 1; wget --spider --quiet --header 'Host: localhost' --post-data 'query=SELECT 1' http://localhost:8123 || exit 1",
         ]
       interval: 5s
       timeout: 10s

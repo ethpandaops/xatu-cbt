@@ -100,7 +100,9 @@ func (m *dockerManager) Stop(profiles ...string) error {
 		args = append(args, "--profile", profile)
 	}
 
-	args = append(args, "down")
+	// --remove-orphans clears containers no longer defined in the compose file so they
+	// don't linger and reattach to the network on the next `up`.
+	args = append(args, "down", "--remove-orphans")
 
 	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose down: %w", err)
@@ -134,7 +136,9 @@ func (m *dockerManager) Reset(profiles ...string) error {
 		args = append(args, "--profile", profile)
 	}
 
-	args = append(args, "down", "-v")
+	// --remove-orphans clears containers no longer defined in the compose file so a
+	// fresh start is truly clean.
+	args = append(args, "down", "-v", "--remove-orphans")
 
 	if _, err := m.execComposeOutput(ctx, args...); err != nil {
 		return fmt.Errorf("executing docker-compose down: %w", err)
