@@ -6,10 +6,12 @@
             <use_uncompressed_cache>0</use_uncompressed_cache>
             <load_balancing>in_order</load_balancing>
             <log_queries>1</log_queries>
-            <!-- insert_quorum=auto resolves to a majority (=2 on a 2-replica shard); prod parity -->
-            <insert_quorum>auto</insert_quorum>
-            <insert_quorum_timeout>60000</insert_quorum_timeout>
-            <insert_quorum_parallel>1</insert_quorum_parallel>
+            <!-- 2 shards x 1 replica: no second replica to form a quorum with. An INSERT whose
+                 rows all shard to one node sends an EMPTY block to the other shard, which under
+                 insert_quorum returns UNKNOWN_STATUS_OF_INSERT — the CBT engine treats that as a
+                 failure and retries the transformation until the test times out. Quorum must be
+                 off here. Keep synchronous distributed inserts so output is read-after-write visible. -->
+            <insert_quorum>0</insert_quorum>
             <insert_distributed_sync>1</insert_distributed_sync>
             <!-- prod parity: stream distributed aggregation instead of buffering — lowers memory
                  for cross-shard GROUP BY now that there are two shards -->
