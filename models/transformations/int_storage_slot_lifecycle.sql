@@ -59,7 +59,7 @@ boundaries AS (
         SELECT address, slot_key, lifecycle_number, birth_block, death_block,
                effective_bytes_birth, effective_bytes_death, updated_date_time
         FROM `{{ .self.database }}`.int_storage_slot_lifecycle_boundary
-        WHERE (address, slot_key) IN (SELECT address, slot_key FROM touched_slots)
+        WHERE (address, slot_key) GLOBAL IN (SELECT address, slot_key FROM touched_slots)
             AND birth_block <= {{ .bounds.end }}
     )
     GROUP BY address, slot_key, lifecycle_number
@@ -101,16 +101,16 @@ touches_enriched AS (
         ifNull(ps.interval_sum, toUInt64(0)) as prev_isum,
         ifNull(ps.interval_max, toUInt32(0)) as prev_imax
     FROM batch_touches t
-    LEFT JOIN batch_diffs d
+    GLOBAL LEFT JOIN batch_diffs d
         ON t.block_number = d.block_number
         AND t.address = d.address
         AND t.slot_key = d.slot_key
-    INNER JOIN boundaries b
+    GLOBAL INNER JOIN boundaries b
         ON t.address = b.address
         AND t.slot_key = b.slot_key
         AND t.block_number >= b.birth_block
         AND (b.death_block IS NULL OR t.block_number <= b.death_block)
-    LEFT JOIN prev_stats ps
+    GLOBAL LEFT JOIN prev_stats ps
         ON b.address = ps.address
         AND b.slot_key = ps.slot_key
         AND b.lifecycle_number = ps.lifecycle_number
