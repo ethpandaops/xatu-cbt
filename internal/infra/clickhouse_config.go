@@ -131,6 +131,12 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
     </user_directories>
     <distributed_ddl>
         <path>/clickhouse/task_queue/ddl</path>
+        <!-- The CBT test harness clones ~113 isolated databases up front, firing >1400
+             CREATE ... ON CLUSTER tasks at the per-host-serial DDL queue. The default
+             pool_size=1 drains that backlog so slowly that tasks wait past
+             distributed_ddl_task_timeout (code 159 TIMEOUT_EXCEEDED). 4 workers per host
+             drain the clone storm ~4x faster. Prod has no such storm, so it keeps default. -->
+        <pool_size>4</pool_size>
     </distributed_ddl>
     <remote_servers>
         <cluster_2S_1R>
@@ -323,6 +329,12 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
     </user_directories>
     <distributed_ddl>
         <path>/clickhouse/task_queue/ddl</path>
+        <!-- The CBT test harness clones ~113 isolated databases up front, firing >1400
+             CREATE ... ON CLUSTER tasks at the per-host-serial DDL queue. The default
+             pool_size=1 drains that backlog so slowly that tasks wait past
+             distributed_ddl_task_timeout (code 159 TIMEOUT_EXCEEDED). 4 workers per host
+             drain the clone storm ~4x faster. Prod has no such storm, so it keeps default. -->
+        <pool_size>4</pool_size>
     </distributed_ddl>
     <remote_servers>
         <cluster_2S_1R>

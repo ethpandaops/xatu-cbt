@@ -19,6 +19,11 @@
             <!-- prod parity: keep pooled inter-node connections alive so the distributed
                  background sender doesn't hit "Broken pipe" on stale sockets -->
             <tcp_keep_alive_timeout>60</tcp_keep_alive_timeout>
+            <!-- The harness clones ~113 databases up front. With distributed_ddl pool_size
+                 raised the ON CLUSTER backlog drains fast, but give the issuing client a
+                 generous ceiling (default is 180s) so a momentarily deep queue never trips
+                 code 159 TIMEOUT_EXCEEDED. -->
+            <distributed_ddl_task_timeout>600</distributed_ddl_task_timeout>
         </default>
         <readonly>
             <max_memory_usage>20000000000</max_memory_usage>

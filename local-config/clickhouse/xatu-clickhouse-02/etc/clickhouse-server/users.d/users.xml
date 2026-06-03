@@ -13,6 +13,11 @@
             <!-- prod parity: raw ingest batches span wide date ranges; default of 100 partitions
                  per insert block jams Distributed sends. prod raises this to 1000. -->
             <max_partitions_per_insert_block>1000</max_partitions_per_insert_block>
+            <!-- The harness clones ~113 external databases up front. With distributed_ddl
+                 pool_size raised the ON CLUSTER backlog drains fast, but give the issuing
+                 client a generous ceiling (default is 180s) so a momentarily deep queue
+                 never trips code 159 TIMEOUT_EXCEEDED. -->
+            <distributed_ddl_task_timeout>600</distributed_ddl_task_timeout>
         </default>
         <readonly>
             <max_memory_usage>20000000000</max_memory_usage>
