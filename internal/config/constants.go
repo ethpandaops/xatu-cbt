@@ -4,7 +4,8 @@ const (
 	// XatuClusterName is the ClickHouse cluster name for external data.
 	XatuClusterName = "xatu_cluster"
 	// CBTClusterName is the ClickHouse cluster name for transformations.
-	CBTClusterName = "cluster_2S_1R"
+	// Topology: 2 shards x 2 replicas (mirrors the production clickhouse-refined cluster).
+	CBTClusterName = "cluster_2S_2R"
 	// ClickHouseLocalSuffix is the suffix appended to distributed table names to access local shards.
 	ClickHouseLocalSuffix = "_local"
 	// RedisContainerName is the name of the Redis container.

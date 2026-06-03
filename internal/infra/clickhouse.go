@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // ClickHouse driver registration
+	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/sirupsen/logrus"
 )
 
@@ -149,7 +150,7 @@ func (m *clickhouseManager) CleanupEphemeralDatabases(ctx context.Context, maxAg
 
 		m.log.WithField("database", dbName).Info("dropping ephemeral test database")
 
-		dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER cluster_2S_1R", dbName)
+		dropSQL := fmt.Sprintf("DROP DATABASE IF EXISTS `%s` ON CLUSTER %s", dbName, config.CBTClusterName)
 		if _, err := conn.ExecContext(ctx, dropSQL); err != nil {
 			m.log.WithError(err).WithField("database", dbName).Error("failed to drop database")
 			continue

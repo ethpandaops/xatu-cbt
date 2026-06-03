@@ -3,7 +3,7 @@
         <level>debug</level>
         <console>1</console>
     </logger>
-    <display_name>xatu_cluster node 2</display_name>
+    <display_name>cluster_2S_2R node 3</display_name>
     <listen_host>0.0.0.0</listen_host>
     <http_port>8123</http_port>
     <tcp_port>9000</tcp_port>
@@ -19,9 +19,36 @@
         <path>/clickhouse/task_queue/ddl</path>
     </distributed_ddl>
     <remote_servers>
-        <!-- Raw / external source cluster: 2 shards x 2 replicas (mirrors prod clickhouse-raw
-             topology, scaled from prod's 3 shards x 2 replicas). Two shards is enough to surface
-             cross-shard issues in external-source reads. -->
+        <!-- Refined cluster: 2 shards x 2 replicas (mirrors prod clickhouse-refined topology,
+             scaled from prod's 3 shards x 2 replicas). Two shards is enough to surface
+             cross-shard bugs (e.g. distributed IN/JOIN missing GLOBAL). -->
+        <cluster_2S_2R>
+            <secret>supersecret</secret>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>xatu-cbt-clickhouse-01</host>
+                    <port>9000</port>
+                </replica>
+                <replica>
+                    <host>xatu-cbt-clickhouse-02</host>
+                    <port>9000</port>
+                </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>xatu-cbt-clickhouse-03</host>
+                    <port>9000</port>
+                </replica>
+                <replica>
+                    <host>xatu-cbt-clickhouse-04</host>
+                    <port>9000</port>
+                </replica>
+            </shard>
+        </cluster_2S_2R>
+        <!-- Raw/external source cluster (xatu): 2 shards x 2 replicas, mirroring the raw cluster
+             topology so {raw} distributed reads cover ALL raw shards (not just shard 1). -->
         <xatu_cluster>
             <secret>supersecret</secret>
             <shard>
@@ -64,9 +91,10 @@
     </zookeeper>
     <macros>
         <installation>xatu</installation>
-        <cluster>xatu_cluster</cluster>
-        <shard>01</shard>
-        <replica>02</replica>
+        <cluster>cluster_2S_2R</cluster>
+        <shard>02</shard>
+        <replica>01</replica>
+        <raw>xatu_cluster</raw>
     </macros>
     <access_control_improvements>
         <settings_constraints_replace_previous>true</settings_constraints_replace_previous>
