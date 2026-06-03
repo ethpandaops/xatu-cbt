@@ -55,7 +55,7 @@ prev_state AS (
         argMax(birth_block, (lifecycle_number, updated_date_time)) as birth,
         argMax(effective_bytes_birth, (lifecycle_number, updated_date_time)) as eb_birth
     FROM `{{ .self.database }}`.`{{ .self.table }}`
-    WHERE (address, slot_key) IN (SELECT address, slot_key FROM event_slots)
+    WHERE (address, slot_key) GLOBAL IN (SELECT address, slot_key FROM event_slots)
         AND birth_block <= {{ .bounds.end }}
     GROUP BY address, slot_key
 ),
@@ -79,7 +79,7 @@ events_numbered AS (
         ifNull(p.birth, toUInt32(0)) as prev_birth,
         ifNull(p.eb_birth, toUInt8(0)) as prev_eb_birth
     FROM batch_events e
-    LEFT JOIN prev_state p
+    GLOBAL LEFT JOIN prev_state p
         ON e.address = p.address AND e.slot_key = p.slot_key
 ),
 -- Aggregate per lifecycle: one row with birth and death info
