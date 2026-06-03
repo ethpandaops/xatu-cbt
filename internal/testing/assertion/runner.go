@@ -221,13 +221,13 @@ func (r *runner) executeAssertion(ctx context.Context, log logrus.FieldLogger, d
 
 		// Substitute variables in SQL:
 		// - {database} -> actual test database name (e.g., ext_xxx or cbt_xxx)
-		// - cluster('{remote_cluster}', default.TABLE) -> TABLE (since we USE dbName)
+		// - cluster('{raw}', default.TABLE) -> TABLE (since we USE dbName)
 		// - default. -> empty (since we USE dbName, tables are in current db context)
 		query := strings.ReplaceAll(assertion.SQL, "{database}", dbName)
 
 		// Handle cluster() wrapper - must remove BOTH the prefix AND trailing ) together
-		// Pattern: cluster('{remote_cluster}', default.TABLE) -> TABLE
-		const clusterPrefix = "cluster('{remote_cluster}', default."
+		// Pattern: cluster('{raw}', default.TABLE) -> TABLE
+		const clusterPrefix = "cluster('{raw}', default."
 		for strings.Contains(query, clusterPrefix) {
 			startIdx := strings.Index(query, clusterPrefix)
 			// Find the matching closing ) after the table name
@@ -241,7 +241,7 @@ func (r *runner) executeAssertion(ctx context.Context, log logrus.FieldLogger, d
 			}
 		}
 
-		query = strings.ReplaceAll(query, "{remote_cluster}", dbName) // Fallback for other uses
+		query = strings.ReplaceAll(query, "{raw}", dbName) // Fallback for other uses
 		query = strings.ReplaceAll(query, "default.", "")             // Remove default. prefix
 
 		// Execute query with timeout.

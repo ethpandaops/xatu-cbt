@@ -181,7 +181,7 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
         <cluster>cluster_2S_1R</cluster>
         <shard>01</shard>
         <replica>{{printf "%02d" .NodeNum}}</replica>
-        <remote_cluster>xatu_cluster</remote_cluster>
+        <raw>xatu_cluster</raw>
     </macros>
     <access_control_improvements>
         <settings_constraints_replace_previous>true</settings_constraints_replace_previous>
@@ -340,7 +340,7 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
         <cluster>cluster_2S_1R</cluster>
         <shard>01</shard>
         <replica>%02d</replica>
-        <remote_cluster>xatu_cluster</remote_cluster>
+        <raw>xatu_cluster</raw>
     </macros>
     <access_control_improvements>
         <settings_constraints_replace_previous>true</settings_constraints_replace_previous>

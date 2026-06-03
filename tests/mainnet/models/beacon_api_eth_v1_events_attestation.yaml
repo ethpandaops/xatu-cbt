@@ -10,6 +10,6 @@ assertions:
       # key, so after dedup the table holds 983 distinct rows.
       sql: |
         SELECT COUNT(*) AS count
-        FROM cluster('{remote_cluster}', default.beacon_api_eth_v1_events_attestation)
+        FROM cluster('{raw}', default.beacon_api_eth_v1_events_attestation)
       expected:
         count: 983

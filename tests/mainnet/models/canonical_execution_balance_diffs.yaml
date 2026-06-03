@@ -8,6 +8,6 @@ assertions:
     - name: total count
       sql: |
         SELECT COUNT(*) AS count
-        FROM cluster('{remote_cluster}', default.canonical_execution_balance_diffs)
+        FROM cluster('{raw}', default.canonical_execution_balance_diffs)
       expected:
         count: 1000

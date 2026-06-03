@@ -100,7 +100,7 @@ services:
             },
             'models': {
                 'external': {
-                    'defaultCluster': '{remote_cluster}',
+                    'defaultCluster': '{raw}',
                     'defaultDatabase': 'default'
                 },
                 'transformations': {

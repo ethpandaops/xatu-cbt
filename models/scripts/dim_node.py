@@ -183,7 +183,7 @@ def main():
     cluster = os.environ.get('CLICKHOUSE_CLUSTER', '')
     local_suffix = os.environ.get('CLICKHOUSE_LOCAL_SUFFIX', '')
 
-    external_cluster = os.environ.get('EXTERNAL_CLUSTER', '{remote_cluster}')
+    external_cluster = os.environ.get('EXTERNAL_CLUSTER', '{raw}')
 
     # Get network name from NETWORK env var (passed by CBT).
     # Or if not set, use the database name.
