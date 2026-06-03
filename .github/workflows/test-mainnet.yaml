@@ -63,12 +63,11 @@ jobs:
         if: needs.detect.outputs.models == 'all'
         # 2 shards do ~2x the per-test work (ON CLUSTER DDL + distributed inserts +
         # scatter/gather reads), so the full 113-model suite no longer fits the 30m
-        # default at concurrency 5. Concurrency 10 (2x default, same as the impacted
-        # path) with a 60m budget: enough parallelism to finish in time, but not so much
-        # that 15 concurrent heavy parquet loads/transformations exhaust the runner's RAM
-        # (15-wide hit code 241 memory-limit + transformation timeouts). DDL pool_size=4
-        # keeps the up-front clone phase fast regardless of this value.
-        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 10 --timeout 60m
+        # default at concurrency 5. Run at the max (15 = the Redis DB-slot pool size) with a
+        # 60m budget. DDL pool_size=4 keeps the up-front clone phase fast, and the parquet
+        # loader now reads in small 2k-row blocks so 15 concurrent loads stay within memory
+        # (the earlier code 241 was a fixed 2GB per-load cap, not contention).
+        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 15 --timeout 60m
       - name: Run mainnet tests (impacted only)
         if: needs.detect.outputs.models != 'all'
         run: |
