@@ -68,7 +68,7 @@ blocks_with_payloads AS (
     p.transaction_count,
     p.relay_name
   FROM blocks b
-  INNER JOIN proposer_payloads_raw p ON b.block_hash = p.block_hash
+  GLOBAL INNER JOIN proposer_payloads_raw p ON b.block_hash = p.block_hash
 ),
 payload_aggregated AS (
   SELECT
@@ -120,4 +120,4 @@ SELECT
   END AS value,
   pa.transaction_count
 FROM payload_aggregated pa
-LEFT JOIN bid_traces_raw bt ON pa.block_hash = bt.block_hash
+GLOBAL LEFT JOIN bid_traces_raw bt ON pa.block_hash = bt.block_hash

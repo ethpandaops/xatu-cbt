@@ -92,7 +92,7 @@ source_with_time AS (
         e.effective_bytes,
         b.block_date_time as source_expiry_time
     FROM source_expiries e
-    INNER JOIN source_block_times b
+    GLOBAL INNER JOIN source_block_times b
         ON e.source_expiry_block = b.block_number
 ),
 -- Map source expiry time to new expiry block using ASOF JOIN
@@ -107,7 +107,7 @@ new_expiry_block_map AS (
         s.source_expiry_time,
         c.block_number as new_expiry_block
     FROM source_with_time s
-    ASOF LEFT JOIN expiry_block_candidates c
+    GLOBAL ASOF LEFT JOIN expiry_block_candidates c
         ON s.dummy_key = c.dummy_key
         AND c.block_date_time >= s.source_expiry_time + INTERVAL 6 MONTH
     WHERE c.block_number IS NOT NULL
@@ -122,7 +122,7 @@ relevant_reactivations AS (
         touch_block,
         block_number as reactivation_block
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_reactivation_12m" "helpers" "from" }} FINAL
-    WHERE (address, slot_key, touch_block) IN (
+    WHERE (address, slot_key, touch_block) GLOBAL IN (
         SELECT address, slot_key, touch_block FROM new_expiry_block_map
     )
 )
@@ -134,7 +134,7 @@ SELECT
     m.touch_block,  -- Propagate original touch_block for next waterfall tier
     m.effective_bytes
 FROM new_expiry_block_map m
-LEFT JOIN relevant_reactivations r
+GLOBAL LEFT JOIN relevant_reactivations r
     ON m.address = r.address
     AND m.slot_key = r.slot_key
     AND m.touch_block = r.touch_block

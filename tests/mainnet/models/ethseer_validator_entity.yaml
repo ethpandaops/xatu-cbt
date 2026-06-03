@@ -8,6 +8,6 @@ assertions:
     - name: total count
       sql: |
         SELECT COUNT(*) AS count
-        FROM cluster('{remote_cluster}', default.ethseer_validator_entity)
+        FROM cluster('{raw}', default.ethseer_validator_entity)
       expected:
         count: 10000

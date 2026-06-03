@@ -772,6 +772,126 @@ func BuildListIntAttestationFirstSeenQuery(req *ListIntAttestationFirstSeenReque
 		}
 	}
 
+	// Add filter for column: source_epoch
+	if req.SourceEpoch != nil {
+		switch filter := req.SourceEpoch.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("source_epoch", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("source_epoch", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("source_epoch", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("source_epoch", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("source_epoch", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("source_epoch", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("source_epoch", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("source_epoch", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("source_epoch", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: source_root
+	if req.SourceRoot != nil {
+		switch filter := req.SourceRoot.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("source_root", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("source_root", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("source_root", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("source_root", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("source_root", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("source_root", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("source_root", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("source_root", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("source_root", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: target_epoch
+	if req.TargetEpoch != nil {
+		switch filter := req.TargetEpoch.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("target_epoch", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("target_epoch", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("target_epoch", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("target_epoch", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("target_epoch", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("target_epoch", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("target_epoch", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("target_epoch", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("target_epoch", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: target_root
+	if req.TargetRoot != nil {
+		switch filter := req.TargetRoot.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("target_root", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("target_root", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("target_root", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("target_root", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("target_root", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("target_root", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("target_root", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("target_root", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("target_root", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -797,7 +917,7 @@ func BuildListIntAttestationFirstSeenQuery(req *ListIntAttestationFirstSeenReque
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "source", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "seen_slot_start_diff", "block_root", "attesting_validator_index", "attesting_validator_committee_index", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
+		validFields := []string{"updated_date_time", "source", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "seen_slot_start_diff", "block_root", "attesting_validator_index", "attesting_validator_committee_index", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation", "source_epoch", "source_root", "target_epoch", "target_root"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -809,7 +929,7 @@ func BuildListIntAttestationFirstSeenQuery(req *ListIntAttestationFirstSeenReque
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "attesting_validator_index", "attesting_validator_committee_index", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "attesting_validator_index", "attesting_validator_committee_index", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation", "source_epoch", "source_root", "target_epoch", "target_root"}
 
 	return BuildParameterizedQuery("int_attestation_first_seen", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -829,7 +949,7 @@ func BuildGetIntAttestationFirstSeenQuery(req *GetIntAttestationFirstSeenRequest
 	orderByClause := " ORDER BY slot_start_date_time, attesting_validator_index"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "attesting_validator_index", "attesting_validator_committee_index", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "source", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "seen_slot_start_diff", "block_root", "attesting_validator_index", "attesting_validator_committee_index", "username", "node_id", "classification", "meta_client_name", "meta_client_version", "meta_client_implementation", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_consensus_version", "meta_consensus_implementation", "source_epoch", "source_root", "target_epoch", "target_root"}
 
 	// Return single record
 	return BuildParameterizedQuery("int_attestation_first_seen", columns, qb, orderByClause, 1, 0, options...)

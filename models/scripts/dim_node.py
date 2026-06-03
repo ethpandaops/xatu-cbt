@@ -111,14 +111,14 @@ def parse_validator_ranges_data(json_data, database_name):
 
     return validators
 
-def fetch_ethseer_validators(ch_url, database_name, external_database):
+def fetch_ethseer_validators(ch_url, database_name, external_database, external_cluster):
     """Fetch validator data from ethseer_validator_entity table"""
     db = external_database if external_database else 'default'
     query = f"""
     SELECT
         `index` AS validator_index,
         entity AS source
-    FROM cluster('{{remote_cluster}}', {db}.ethseer_validator_entity_local)
+    FROM cluster('{external_cluster}', {db}.ethseer_validator_entity_local)
     FINAL
     WHERE meta_network_name = '{database_name}'
     FORMAT JSONCompact
@@ -183,6 +183,8 @@ def main():
     cluster = os.environ.get('CLICKHOUSE_CLUSTER', '')
     local_suffix = os.environ.get('CLICKHOUSE_LOCAL_SUFFIX', '')
 
+    external_cluster = os.environ.get('EXTERNAL_CLUSTER', '{raw}')
+
     # Get network name from NETWORK env var (passed by CBT).
     # Or if not set, use the database name.
     network_name = os.environ.get('NETWORK', target_db)
@@ -231,7 +233,7 @@ def main():
 
         # Step 4: Fetch ethseer validators
         print(f"\nFetching validators from ethseer_validator_entity table...")
-        ethseer_validators = fetch_ethseer_validators(ch_url, network_name, external_database)
+        ethseer_validators = fetch_ethseer_validators(ch_url, network_name, external_database, external_cluster)
         print(f"Found {len(ethseer_validators)} validator entries from ethseer")
 
         # Step 5: Merge data from both sources

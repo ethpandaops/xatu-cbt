@@ -15,20 +15,47 @@ Never modify the model file. Only report findings and recommendations.
 
 Before any analysis, collect and confirm (allow overrides):
 
+Credentials and endpoint/database overrides are auto-loaded from the project `.env` by the run wrappers
+(`EXTERNAL_USER`/`EXTERNAL_PASS` for the raw cluster, `TRANSFORM_USER`/`TRANSFORM_PASS` for the refined cluster).
+Already-exported shell variables take precedence over `.env`. Note these are the PRODUCTION cluster credentials,
+separate from the local docker `CLICKHOUSE_USERNAME`/`CLICKHOUSE_PASSWORD`.
+
 - External models cluster:
-  - `endpoint`: `http://chendpoint-xatu-clickhouse.analytics.production.ethpandaops:8123`
+  - `endpoint`: `http://chendpoint-clickhouse-raw.analytics.production.ethpandaops:8123`
   - `default_database`: `default`
-  - `username`: empty
-  - `password`: empty
+  - `username`: `EXTERNAL_USER` (from `.env`, default empty)
+  - `password`: `EXTERNAL_PASS` (from `.env`, default empty)
 - Transformation models cluster:
-  - `endpoint`: `http://chendpoint-xatu-cbt-clickhouse.analytics.production.ethpandaops:8123`
+  - `endpoint`: `http://chendpoint-clickhouse-refined.analytics.production.ethpandaops:8123`
   - `default_database`: `mainnet`
-  - `username`: empty
-  - `password`: empty
-  - `access_to_external_cluster`: `cluster('{remote_cluster}', database.table_name)`
+  - `username`: `TRANSFORM_USER` (from `.env`, default empty)
+  - `password`: `TRANSFORM_PASS` (from `.env`, default empty)
+  - `access_to_external_cluster`: `cluster('{raw}', database.table_name)`
   - Cluster substitution rule: when template uses `cluster(...)`, external dependencies are resolved to `<table>_local` automatically.
 
 If any value is missing or ambiguous, ask follow-up questions before running benchmarks.
+
+### Credential preflight (gate before any cluster query)
+
+The raw and refined clusters require authentication, so empty credentials will fail with
+`AUTHENTICATION_FAILED` rather than run anonymously. Before the first `run_prepare.sh`/benchmark call,
+resolve the credentials exactly as the wrappers do and check whether they are populated:
+
+```bash
+bash -c '. .claude/skills/optimize-model/scripts/_load_env.sh; \
+  echo "EXTERNAL=${EXTERNAL_USER:+set} TRANSFORM=${TRANSFORM_USER:+set}"'
+```
+
+If the credentials for a cluster you are about to query are empty, STOP and elicit a choice from the
+user with `AskUserQuestion` (do not silently run and let it fail):
+
+- **Add credentials** — ask the user to populate `EXTERNAL_USER`/`EXTERNAL_PASS` and/or
+  `TRANSFORM_USER`/`TRANSFORM_PASS` in `.env` (or export them), then re-resolve and continue.
+- **Continue unauthenticated** — proceed anyway. Only valid if the target cluster permits anonymous
+  access; otherwise expect the run to fail with `AUTHENTICATION_FAILED`.
+
+Only run the benchmark scripts once the user has chosen. Skip this gate (no prompt) when the needed
+credentials are already present.
 
 ## Inputs
 

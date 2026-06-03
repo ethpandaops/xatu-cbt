@@ -41,7 +41,7 @@ ENGINE = Distributed(
     '{cluster}',
     '${NETWORK_NAME}',
     int_transaction_receipt_size_local,
-    cityHash64(block_number, transaction_hash)
+    cityHash64(block_number)
 );
 
 -- =============================================================================

@@ -39,7 +39,7 @@ traces_with_tx_status AS (
         action_type,
         error,
         coalesce(action_to, '') as beneficiary,
-        reinterpretAsUInt256(reverse(unhex(substring(action_value, 3)))) as value_transferred,
+        action_value as value_transferred,
         -- Flag if this tx has a failed root trace (root = trace_address IS NULL or empty)
         maxIf(1, (trace_address IS NULL OR trace_address = '') AND error IS NOT NULL AND error != '')
             OVER (PARTITION BY block_number, transaction_hash) as tx_failed
@@ -90,7 +90,7 @@ selfdestruct_traces AS (
         c.beneficiary,
         c.value_transferred
     FROM candidate_selfdestructs c
-    LEFT JOIN errored_ancestors ea
+    GLOBAL LEFT JOIN errored_ancestors ea
         ON c.block_number = ea.block_number
         AND c.transaction_hash = ea.transaction_hash
         AND startsWith(c.trace_address, concat(ea.trace_address, '_'))
@@ -108,7 +108,7 @@ contract_creations AS (
         transaction_index as creation_transaction_index,
         internal_index as creation_internal_index
     FROM {{ index .dep "{{transformation}}" "int_contract_creation" "helpers" "from" }}
-    WHERE contract_address IN (SELECT address FROM selfdestruct_traces)
+    WHERE contract_address GLOBAL IN (SELECT address FROM selfdestruct_traces)
         -- Partition pruning: contracts can only be created before/at selfdestruct block
         AND block_number <= {{ .bounds.end }}
     GROUP BY contract_address, block_number, transaction_hash, transaction_index, internal_index
@@ -137,7 +137,7 @@ latest_creation AS (
                 c.creation_internal_index, 0))
         ).2 as creation_transaction_hash
     FROM selfdestruct_traces s
-    LEFT JOIN contract_creations c
+    GLOBAL LEFT JOIN contract_creations c
         ON s.address = c.contract_address
         AND (c.creation_block < s.block_number
              OR (c.creation_block = s.block_number
@@ -173,7 +173,7 @@ SELECT
     lc.creation_block,
     lc.creation_transaction_hash
 FROM selfdestruct_traces s
-LEFT JOIN latest_creation lc
+GLOBAL LEFT JOIN latest_creation lc
     ON s.block_number = lc.block_number
     AND s.transaction_hash = lc.transaction_hash
     AND s.transaction_index = lc.transaction_index

@@ -54,7 +54,7 @@ previous_sd_in_batch AS (
             (prev.block_number, prev.transaction_index, prev.internal_index)
         ) as prev_sd
     FROM clearing_selfdestructs sd
-    INNER JOIN clearing_selfdestructs prev
+    GLOBAL INNER JOIN clearing_selfdestructs prev
         ON sd.address = prev.address
         AND (prev.block_number, prev.transaction_index, prev.internal_index)
             < (sd.block_number, sd.transaction_index, sd.internal_index)
@@ -94,12 +94,12 @@ all_slots_before_selfdestruct AS (
         d.slot,
         argMax(d.to_value, (d.block_number, d.transaction_index, d.internal_index)) as last_value
     FROM clearing_selfdestructs sd
-    LEFT JOIN previous_sd_in_batch prev
+    GLOBAL LEFT JOIN previous_sd_in_batch prev
         ON sd.block_number = prev.block_number
         AND sd.transaction_index = prev.transaction_index
         AND sd.internal_index = prev.internal_index
         AND sd.address = prev.address
-    INNER JOIN all_storage_history d
+    GLOBAL INNER JOIN all_storage_history d
         ON sd.address = d.address
         -- Storage must be before this selfdestruct
         AND (d.block_number, d.transaction_index, d.internal_index)

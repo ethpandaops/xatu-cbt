@@ -59,4 +59,4 @@ SELECT
         ELSE 'missed'
     END as status
 FROM canonical c
-LEFT JOIN head_blocks h ON c.slot = h.slot
+GLOBAL LEFT JOIN head_blocks h ON c.slot = h.slot

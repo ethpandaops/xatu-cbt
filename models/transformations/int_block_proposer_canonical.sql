@@ -54,4 +54,4 @@ SELECT
     pd.proposer_pubkey as proposer_pubkey,
     CASE WHEN b.block_root = '' THEN NULL ELSE b.block_root END as block_root
 FROM proposer_duties pd
-FULL OUTER JOIN blocks b ON pd.slot = b.slot;
+GLOBAL FULL OUTER JOIN blocks b ON pd.slot = b.slot;

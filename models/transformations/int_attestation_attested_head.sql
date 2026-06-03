@@ -94,7 +94,7 @@ filtered_events AS (
         ce.attesting_validator_index,
         ce.propagation_distance
     FROM combined_events ce
-    INNER JOIN validator_indices vi ON ce.slot = vi.slot AND ce.attesting_validator_index = vi.validator_index
+    GLOBAL INNER JOIN validator_indices vi ON ce.slot = vi.slot AND ce.attesting_validator_index = vi.validator_index
 )
 
 SELECT

@@ -33,15 +33,15 @@ type ShardDefinition struct {
 
 // ClusterTopology defines the complete topology of a known cluster.
 type ClusterTopology struct {
-	HostPrefix string            // e.g., "chendpoint-xatu-clickhouse"
+	HostPrefix string            // e.g., "chendpoint-clickhouse-raw"
 	Shards     []ShardDefinition // Shard definitions with replica suffixes
 }
 
 // knownClusters maps hostname prefixes to their cluster topologies.
 // When a hostname matches a prefix, the full topology is used for config generation.
 var knownClusters = map[string]ClusterTopology{
-	"chendpoint-xatu-clickhouse": {
-		HostPrefix: "chendpoint-xatu-clickhouse",
+	"chendpoint-clickhouse-raw": {
+		HostPrefix: "chendpoint-clickhouse-raw",
 		Shards: []ShardDefinition{
 			{Replicas: []ReplicaDefinition{{HostSuffix: "-0-0"}, {HostSuffix: "-0-1"}}},
 			{Replicas: []ReplicaDefinition{{HostSuffix: "-1-0"}, {HostSuffix: "-1-1"}}},
@@ -57,7 +57,7 @@ type ExpandedTopology struct {
 
 // ExpandedShard contains fully resolved replica hostnames for a shard.
 type ExpandedShard struct {
-	Replicas []string // Full hostnames, e.g., "chendpoint-xatu-clickhouse-0-0.analytics.production.ethpandaops"
+	Replicas []string // Full hostnames, e.g., "chendpoint-clickhouse-raw-0-0.analytics.production.ethpandaops"
 }
 
 // detectClusterTopology checks if the hostname matches a known cluster pattern.
@@ -181,7 +181,7 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
         <cluster>cluster_2S_1R</cluster>
         <shard>01</shard>
         <replica>{{printf "%02d" .NodeNum}}</replica>
-        <remote_cluster>xatu_cluster</remote_cluster>
+        <raw>xatu_cluster</raw>
     </macros>
     <access_control_improvements>
         <settings_constraints_replace_previous>true</settings_constraints_replace_previous>
@@ -340,7 +340,7 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
         <cluster>cluster_2S_1R</cluster>
         <shard>01</shard>
         <replica>%02d</replica>
-        <remote_cluster>xatu_cluster</remote_cluster>
+        <raw>xatu_cluster</raw>
     </macros>
     <access_control_improvements>
         <settings_constraints_replace_previous>true</settings_constraints_replace_previous>
@@ -352,7 +352,7 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
 // This creates config files in local-config/clickhouse-external/ with the xatu_cluster configured
 // to point to the provided external ClickHouse connection details.
 //
-// For known cluster patterns (e.g., chendpoint-xatu-clickhouse), it automatically expands
+// For known cluster patterns (e.g., chendpoint-clickhouse-raw), it automatically expands
 // to include all shards and replicas. For unknown clusters, it uses a single-endpoint config.
 func GenerateExternalClickHouseConfig(log logrus.FieldLogger, host string, port int, username, password string, secure bool) error {
 	if host == "" {

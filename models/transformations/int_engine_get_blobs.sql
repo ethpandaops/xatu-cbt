@@ -120,7 +120,7 @@ enriched AS (
         eg.meta_client_geo_autonomous_system_number,
         eg.meta_client_geo_autonomous_system_organization
     FROM engine_get_blobs eg
-    LEFT JOIN blob_context bc ON eg.vh = bc.versioned_hash
+    GLOBAL LEFT JOIN blob_context bc ON eg.vh = bc.versioned_hash
     GROUP BY
         eg.source_updated_date_time,
         eg.event_date_time,

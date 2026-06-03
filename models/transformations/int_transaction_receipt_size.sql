@@ -204,6 +204,6 @@ SELECT
     COALESCE(l.log_topic_count, toUInt32(0)) AS log_topic_count,
     tx.meta_network_name
 FROM tx
-LEFT JOIN logs_per_tx l
+GLOBAL LEFT JOIN logs_per_tx l
     ON l.block_number = tx.block_number
     AND l.transaction_hash = tx.transaction_hash

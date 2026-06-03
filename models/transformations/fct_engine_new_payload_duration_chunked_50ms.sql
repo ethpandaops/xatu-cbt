@@ -57,7 +57,7 @@ payloads AS (
         ep.status,
         CASE WHEN positionCaseInsensitive(ep.meta_client_name, '7870') > 0 THEN 'eip7870-block-builder' ELSE '' END AS node_class
     FROM engine_payloads ep
-    LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
+    GLOBAL LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
 ),
 
 -- Group payloads into 50ms chunks

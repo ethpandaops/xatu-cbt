@@ -70,7 +70,7 @@ FROM (
             s.effective_bytes,
             b.block_date_time
         FROM {{ index .dep "{{transformation}}" "int_contract_storage_state_with_expiry_by_address" "helpers" "from" }} AS s FINAL
-        INNER JOIN blocks_in_hours AS b ON s.block_number = b.block_number
+        GLOBAL INNER JOIN blocks_in_hours AS b ON s.block_number = b.block_number
         WHERE s.block_number >= (SELECT min_block FROM block_range)
           AND s.block_number <= (SELECT max_block FROM block_range)
     )

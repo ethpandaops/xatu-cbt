@@ -70,10 +70,10 @@ SELECT
      NULL) AS slot_distance,
   attestations.propagation_distance
 FROM duties
-LEFT JOIN attestations ON 
+GLOBAL LEFT JOIN attestations ON 
     duties.slot = attestations.slot 
     AND duties.attesting_validator_index = attestations.attesting_validator_index
-LEFT JOIN blocks ON 
+GLOBAL LEFT JOIN blocks ON 
     attestations.block_root = blocks.block_root
     AND attestations.block_root IS NOT NULL
 SETTINGS join_use_nulls = 1

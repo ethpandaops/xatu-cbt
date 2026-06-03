@@ -25,14 +25,23 @@ MAIN_PATH=./cmd/xatu-cbt
 # Docker image for CBT
 CBT_DOCKER_IMAGE=ethpandaops/cbt:debian-latest
 
-# Check for Docker image updates (once per day)
+# Check for Docker image updates (once per day). Skip if the image is already
+# available locally and we can't reach the registry — avoids blocking builds
+# on transient Docker Hub rate limits when the image is already cached.
 .docker-check-timestamp:
 	@mkdir -p .make-cache
 	@if [ ! -f .make-cache/docker-pull-timestamp ] || \
 		[ $$(( $$(date +%s) - $$(stat -c %Y .make-cache/docker-pull-timestamp 2>/dev/null || echo 0) )) -gt 86400 ]; then \
 		echo "Checking for CBT Docker image updates..."; \
-		docker pull $(CBT_DOCKER_IMAGE) && \
-		touch .make-cache/docker-pull-timestamp; \
+		if docker pull $(CBT_DOCKER_IMAGE); then \
+			touch .make-cache/docker-pull-timestamp; \
+		elif docker image inspect $(CBT_DOCKER_IMAGE) >/dev/null 2>&1; then \
+			echo "Pull failed but image present locally — continuing."; \
+			touch .make-cache/docker-pull-timestamp; \
+		else \
+			echo "Pull failed and image not cached locally."; \
+			exit 1; \
+		fi; \
 	else \
 		echo "Docker image checked recently (within 24h), skipping..."; \
 	fi

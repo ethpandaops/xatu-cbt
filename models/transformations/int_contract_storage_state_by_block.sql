@@ -55,7 +55,7 @@ sparse_deltas AS (
             ELSE 0
         END)) as contracts_delta
     FROM {{ index .dep "{{transformation}}" "int_contract_storage_state" "helpers" "from" }} s FINAL
-    LEFT JOIN prev_address_state p ON s.address = p.address
+    GLOBAL LEFT JOIN prev_address_state p ON s.address = p.address
     WHERE s.block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     GROUP BY s.block_number
 ),

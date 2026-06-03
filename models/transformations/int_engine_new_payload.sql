@@ -125,7 +125,7 @@ enriched AS (
         ep.meta_client_geo_autonomous_system_number,
         ep.meta_client_geo_autonomous_system_organization
     FROM engine_payloads ep
-    LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
+    GLOBAL LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
 )
 
 -- Aggregate using argMax to deduplicate by ORDER BY key

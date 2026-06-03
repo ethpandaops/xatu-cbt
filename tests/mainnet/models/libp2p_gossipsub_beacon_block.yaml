@@ -8,6 +8,6 @@ assertions:
     - name: total count
       sql: |
         SELECT COUNT(*) AS count
-        FROM cluster('{remote_cluster}', default.libp2p_gossipsub_beacon_block)
+        FROM cluster('{raw}', default.libp2p_gossipsub_beacon_block)
       expected:
         count: 1000

@@ -78,7 +78,7 @@ final_chunks AS (
         sc.chunk_slot_start_diff,
         COALESCE(ac.attestation_count, 0) AS attestation_count
     FROM slot_chunks sc
-    LEFT JOIN attestations_chunked ac
+    GLOBAL LEFT JOIN attestations_chunked ac
         ON sc.slot = ac.slot
         AND sc.slot_start_date_time = ac.slot_start_date_time
         AND sc.epoch = ac.epoch

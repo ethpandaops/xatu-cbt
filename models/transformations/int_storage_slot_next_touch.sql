@@ -47,7 +47,7 @@ latest_state AS (
         argMax(block_number, updated_date_time) as block_number,
         argMax(next_touch_block, updated_date_time) as next_touch_block
     FROM `{{ .self.database }}`.helper_storage_slot_next_touch_latest_state
-    WHERE (address, slot_key) IN (SELECT address, slot_key FROM touches_aggregated)
+    WHERE (address, slot_key) GLOBAL IN (SELECT address, slot_key FROM touches_aggregated)
     GROUP BY address, slot_key
 ),
 -- Previous tail rows that need next_touch_block updated
@@ -60,7 +60,7 @@ prev_tail_rows AS (
         ls.slot_key,
         a.first_block
     FROM latest_state ls
-    INNER JOIN touches_aggregated a ON ls.address = a.address AND ls.slot_key = a.slot_key
+    GLOBAL INNER JOIN touches_aggregated a ON ls.address = a.address AND ls.slot_key = a.slot_key
     WHERE ls.next_touch_block IS NULL
         AND ls.block_number < a.first_block
 ),

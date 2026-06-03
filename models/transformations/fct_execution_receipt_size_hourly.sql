@@ -68,7 +68,7 @@ WITH
             r.p50_receipt_bytes_per_transaction,
             r.p95_receipt_bytes_per_transaction
         FROM expanded_blocks b
-        LEFT JOIN (
+        GLOBAL LEFT JOIN (
             SELECT *
             FROM {{ index .dep "{{transformation}}" "int_block_receipt_size" "helpers" "from" }} FINAL
             WHERE block_number >= (SELECT min_block FROM block_range)

@@ -124,5 +124,5 @@ SELECT
     pd.proposer_pubkey as proposer_pubkey,
     NULLIF(db.block_root, '') AS block_root
 FROM proposer_duties pd
-FULL OUTER JOIN deduplicated_blocks db ON pd.slot = db.slot
+GLOBAL FULL OUTER JOIN deduplicated_blocks db ON pd.slot = db.slot
 SETTINGS join_use_nulls = 1;

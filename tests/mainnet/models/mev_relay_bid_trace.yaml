@@ -8,6 +8,6 @@ assertions:
     - name: total count
       sql: |
         SELECT COUNT(*) AS count
-        FROM cluster('{remote_cluster}', default.mev_relay_bid_trace)
+        FROM cluster('{raw}', default.mev_relay_bid_trace)
       expected:
         count: 1000

@@ -75,7 +75,7 @@ filtered_expiry AS (
     FROM {{ index .dep "{{transformation}}" "int_contract_storage_expiry_1m" "helpers" "from" }}
     WHERE block_number > (SELECT min_prev FROM expiry_bounds)
         AND block_number < (SELECT max_react FROM expiry_bounds)
-        AND address IN (SELECT address FROM unique_addresses)
+        AND address GLOBAL IN (SELECT address FROM unique_addresses)
     GROUP BY address, block_number, touch_block
 )
 -- Join with filtered expiry table to get active_slots/effective_bytes from the expiry record
@@ -88,7 +88,7 @@ SELECT
     argMax(e.active_slots, e.block_number) as active_slots,
     argMax(e.effective_bytes, e.block_number) as effective_bytes
 FROM reactivation_candidates r
-INNER JOIN filtered_expiry e
+GLOBAL INNER JOIN filtered_expiry e
     ON r.address = e.address
     AND e.block_number < r.reactivation_block
     AND e.block_number > r.previous_touch_block

@@ -88,3 +88,16 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    - name: Each validator has exactly one row per slot and block root
+      sql: |
+        SELECT count() AS duplicates
+        FROM (
+            SELECT slot, block_root, attesting_validator_index, count() AS cnt
+            FROM int_attestation_attested_canonical FINAL
+            GROUP BY slot, block_root, attesting_validator_index
+            HAVING cnt > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicates
+          value: 0

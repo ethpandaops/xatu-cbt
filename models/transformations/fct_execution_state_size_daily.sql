@@ -12,7 +12,7 @@ tags:
   - execution
   - state_size
 dependencies:
-  - "{{external}}.execution_state_size"
+  - "{{transformation}}.int_execution_state_size_by_block"
   - "{{external}}.canonical_execution_block"
 ---
 -- This query expands the block range to complete day boundaries to handle partial
@@ -85,8 +85,9 @@ FROM (
             s.storage_trienodes,
             s.storage_trienode_bytes,
             b.block_date_time
-        FROM {{ index .dep "{{external}}" "execution_state_size" "helpers" "from" }} AS s FINAL
+        FROM {{ index .dep "{{transformation}}" "int_execution_state_size_by_block" "helpers" "from" }} AS s FINAL
         GLOBAL INNER JOIN blocks_in_days AS b ON s.block_number = b.block_number
+        WHERE s.block_number BETWEEN (SELECT min(block_number) FROM blocks_in_days) AND (SELECT max(block_number) FROM blocks_in_days)
     )
     GROUP BY day_start_date
 )

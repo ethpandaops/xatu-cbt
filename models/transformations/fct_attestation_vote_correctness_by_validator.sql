@@ -103,7 +103,7 @@ WITH
                curr.first_block_root,
                prev.last_block_root) AS canonical_target_root
         FROM epoch_blocks curr
-        LEFT JOIN epoch_blocks prev ON prev.epoch = curr.epoch - 1
+        GLOBAL LEFT JOIN epoch_blocks prev ON prev.epoch = curr.epoch - 1
     ),
 
     -- Source checkpoints: epoch boundary block root (same derivation as target).
@@ -116,7 +116,7 @@ WITH
                curr.first_block_root,
                prev.last_block_root) AS canonical_source_root
         FROM epoch_blocks curr
-        LEFT JOIN epoch_blocks prev ON prev.epoch = curr.epoch - 1
+        GLOBAL LEFT JOIN epoch_blocks prev ON prev.epoch = curr.epoch - 1
     )
 
 SELECT
@@ -149,19 +149,19 @@ SELECT
     END AS source_correct,
     attestations.inclusion_distance AS inclusion_distance
 FROM duties
-LEFT JOIN attestations ON
+GLOBAL LEFT JOIN attestations ON
     duties.slot = attestations.slot
     AND duties.attesting_validator_index = attestations.attesting_validator_index
-LEFT JOIN gossip_attestations ON
+GLOBAL LEFT JOIN gossip_attestations ON
     duties.slot = gossip_attestations.slot
     AND duties.attesting_validator_index = gossip_attestations.attesting_validator_index
-LEFT JOIN blocks ON
+GLOBAL LEFT JOIN blocks ON
     attestations.head_root = blocks.block_root
     AND attestations.head_root IS NOT NULL
-LEFT JOIN target_checkpoints ON
+GLOBAL LEFT JOIN target_checkpoints ON
     attestations.target_epoch = target_checkpoints.target_epoch
     AND attestations.target_root IS NOT NULL
-LEFT JOIN source_checkpoints ON
+GLOBAL LEFT JOIN source_checkpoints ON
     gossip_attestations.source_epoch = source_checkpoints.source_epoch
     AND gossip_attestations.source_root IS NOT NULL
 SETTINGS join_use_nulls = 1

@@ -40,7 +40,7 @@ expiry_state AS (
         argMax(active_slots, block_number) as active_slots,
         argMax(effective_bytes, block_number) as effective_bytes
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_state_with_expiry_by_address" "helpers" "from" }} FINAL
-    WHERE address IN (SELECT contract_address FROM top_100_raw)
+    WHERE address GLOBAL IN (SELECT contract_address FROM top_100_raw)
     GROUP BY address, expiry_policy
 )
 -- Insert raw state rows (NULL expiry_policy)
@@ -57,7 +57,7 @@ SELECT
     dim.factory_contract,
     dim.labels
 FROM top_100_raw AS state
-LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
+GLOBAL LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
     ON state.contract_address = dim.contract_address
 UNION ALL
 -- Insert expiry policy rows
@@ -74,8 +74,8 @@ SELECT
     dim.factory_contract,
     dim.labels
 FROM top_100_raw AS r
-INNER JOIN expiry_state AS e ON r.contract_address = e.address
-LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
+GLOBAL INNER JOIN expiry_state AS e ON r.contract_address = e.address
+GLOBAL LEFT JOIN `{{ .self.database }}`.`dim_contract_owner` AS dim FINAL
     ON r.contract_address = dim.contract_address
 ORDER BY expiry_policy, rank ASC;
 
