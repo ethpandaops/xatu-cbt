@@ -61,7 +61,11 @@ jobs:
         run: ./bin/xatu-cbt infra start
       - name: Run mainnet tests (full suite)
         if: needs.detect.outputs.models == 'all'
-        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 5
+        # 2 shards do ~2x the per-test work (ON CLUSTER DDL + distributed inserts +
+        # scatter/gather reads), so the full 113-model suite no longer fits the 30m
+        # default at concurrency 5. Run at max parallelism (15 = Redis DB-slot cap) and
+        # raise the run budget to 60m for margin.
+        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 15 --timeout 60m
       - name: Run mainnet tests (impacted only)
         if: needs.detect.outputs.models != 'all'
         run: |
