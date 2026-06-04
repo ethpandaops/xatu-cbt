@@ -78,7 +78,7 @@ prev_stats AS (
         argMax(interval_sum, updated_date_time) as interval_sum,
         argMax(interval_max, updated_date_time) as interval_max
     FROM `{{ .self.database }}`.`{{ .self.table }}`
-    WHERE (address, slot_key) IN (SELECT address, slot_key FROM touched_slots)
+    WHERE (address, slot_key) GLOBAL IN (SELECT address, slot_key FROM touched_slots)
         AND birth_block <= {{ .bounds.end }}
     GROUP BY address, slot_key, lifecycle_number
 ),
