@@ -17,8 +17,16 @@
     </user_directories>
     <distributed_ddl>
         <path>/clickhouse/task_queue/ddl</path>
+        <!-- The CBT test harness clones ~113 isolated external databases up front, firing
+             >1400 CREATE ... ON CLUSTER tasks at the per-host-serial DDL queue. The default
+             pool_size=1 drains that backlog so slowly that tasks wait past
+             distributed_ddl_task_timeout (code 159 TIMEOUT_EXCEEDED). 4 workers per host
+             drain the clone storm ~4x faster. Prod has no such storm, so it keeps default. -->
+        <pool_size>4</pool_size>
     </distributed_ddl>
     <remote_servers>
+        <!-- Raw / external source cluster: 2 shards x 1 replica (mirrors prod clickhouse-raw,
+             scaled down; 2nd replica per shard dropped to keep ON CLUSTER DDL cost low). -->
         <xatu_cluster>
             <secret>supersecret</secret>
             <shard>
@@ -27,6 +35,9 @@
                     <host>xatu-clickhouse-01</host>
                     <port>9000</port>
                 </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
                     <host>xatu-clickhouse-02</host>
                     <port>9000</port>
@@ -36,23 +47,23 @@
     </remote_servers>
     <zookeeper>
         <node>
-            <host>xatu-cbt-clickhouse-zookeeper-01</host>
-            <port>2181</port>
+            <host>xatu-cbt-clickhouse-keeper-01</host>
+            <port>9181</port>
         </node>
         <node>
-            <host>xatu-cbt-clickhouse-zookeeper-02</host>
-            <port>2181</port>
+            <host>xatu-cbt-clickhouse-keeper-02</host>
+            <port>9181</port>
         </node>
         <node>
-            <host>xatu-cbt-clickhouse-zookeeper-03</host>
-            <port>2181</port>
+            <host>xatu-cbt-clickhouse-keeper-03</host>
+            <port>9181</port>
         </node>
     </zookeeper>
     <macros>
         <installation>xatu</installation>
         <cluster>xatu_cluster</cluster>
-        <shard>01</shard>
-        <replica>02</replica>
+        <shard>02</shard>
+        <replica>01</replica>
     </macros>
     <access_control_improvements>
         <settings_constraints_replace_previous>true</settings_constraints_replace_previous>

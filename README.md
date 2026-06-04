@@ -86,12 +86,17 @@ The platform provides a persistent ClickHouse cluster infrastructure shared betw
 Before running tests or development work, start the platform infrastructure:
 
 ```bash
-# Start ClickHouse cluster, Zookeeper, and Redis
+# Start ClickHouse cluster, ClickHouse Keeper, and Redis
 ./bin/xatu-cbt infra start
 ```
 
 This starts:
-- 2-node ClickHouse cluster with Zookeeper coordination
+- Refined ClickHouse cluster `cluster_2S_1R`: 2 nodes / 2 shards x 1 replica. Sharded so
+  cross-shard issues — e.g. a distributed `IN`/`JOIN` missing `GLOBAL` — surface locally,
+  without a 2nd replica per shard (which doubles `ON CLUSTER` DDL cost and slows the test suite)
+- 3-node ClickHouse Keeper ensemble for cluster coordination (replaces ZooKeeper)
+- Raw ClickHouse cluster `xatu_cluster` (external data source): 2 nodes / 2 shards x 1 replica,
+  started in local xatu mode
 - Redis for state management
 - Shared across both ephemeral test databases and persistent network databases
 

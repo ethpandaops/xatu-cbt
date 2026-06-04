@@ -1,0 +1,47 @@
+<clickhouse>
+    <!-- 3-node ClickHouse Keeper ensemble (replaces ZooKeeper).
+         Coordinates ReplicatedMergeTree + ON CLUSTER DDL for BOTH the refined
+         (cluster_2S_1R) and raw (xatu_cluster) clusters. server_id is the only
+         field that differs between keeper-01/02/03. -->
+    <logger>
+        <level>information</level>
+        <console>1</console>
+    </logger>
+
+    <listen_host>0.0.0.0</listen_host>
+    <max_connections>4096</max_connections>
+
+    <keeper_server>
+        <tcp_port>9181</tcp_port>
+        <!-- Must be unique across the ensemble -->
+        <server_id>1</server_id>
+
+        <!-- Entrypoint chowns these paths under the mounted /var/lib/clickhouse volume -->
+        <log_storage_path>/var/lib/clickhouse/coordination/log</log_storage_path>
+        <snapshot_storage_path>/var/lib/clickhouse/coordination/snapshots</snapshot_storage_path>
+
+        <coordination_settings>
+            <operation_timeout_ms>10000</operation_timeout_ms>
+            <session_timeout_ms>30000</session_timeout_ms>
+            <raft_logs_level>information</raft_logs_level>
+        </coordination_settings>
+
+        <raft_configuration>
+            <server>
+                <id>1</id>
+                <hostname>xatu-cbt-clickhouse-keeper-01</hostname>
+                <port>9234</port>
+            </server>
+            <server>
+                <id>2</id>
+                <hostname>xatu-cbt-clickhouse-keeper-02</hostname>
+                <port>9234</port>
+            </server>
+            <server>
+                <id>3</id>
+                <hostname>xatu-cbt-clickhouse-keeper-03</hostname>
+                <port>9234</port>
+            </server>
+        </raft_configuration>
+    </keeper_server>
+</clickhouse>

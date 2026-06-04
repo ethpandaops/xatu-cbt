@@ -6,10 +6,24 @@
             <use_uncompressed_cache>0</use_uncompressed_cache>
             <load_balancing>in_order</load_balancing>
             <log_queries>1</log_queries>
-            <insert_quorum>2</insert_quorum>
-            <insert_quorum_timeout>60000</insert_quorum_timeout>
-            <insert_quorum_parallel>1</insert_quorum_parallel>
+            <!-- 2 shards x 1 replica: no second replica to form a quorum with. An INSERT whose
+                 rows all shard to one node sends an EMPTY block to the other shard, which under
+                 insert_quorum returns UNKNOWN_STATUS_OF_INSERT — the CBT engine treats that as a
+                 failure and retries the transformation until the test times out. Quorum must be
+                 off here. Keep synchronous distributed inserts so output is read-after-write visible. -->
+            <insert_quorum>0</insert_quorum>
             <insert_distributed_sync>1</insert_distributed_sync>
+            <!-- prod parity: stream distributed aggregation instead of buffering — lowers memory
+                 for cross-shard GROUP BY now that there are two shards -->
+            <distributed_aggregation_memory_efficient>1</distributed_aggregation_memory_efficient>
+            <!-- prod parity: keep pooled inter-node connections alive so the distributed
+                 background sender doesn't hit "Broken pipe" on stale sockets -->
+            <tcp_keep_alive_timeout>60</tcp_keep_alive_timeout>
+            <!-- The harness clones ~113 databases up front. With distributed_ddl pool_size
+                 raised the ON CLUSTER backlog drains fast, but give the issuing client a
+                 generous ceiling (default is 180s) so a momentarily deep queue never trips
+                 code 159 TIMEOUT_EXCEEDED. -->
+            <distributed_ddl_task_timeout>600</distributed_ddl_task_timeout>
         </default>
         <readonly>
             <max_memory_usage>20000000000</max_memory_usage>
@@ -17,6 +31,9 @@
             <load_balancing>in_order</load_balancing>
             <readonly>2</readonly>
             <log_queries>1</log_queries>
+            <!-- prod parity (user profile): reject queries that can't use the primary key index,
+                 catching accidental full scans from read-only consumers -->
+            <force_primary_key>1</force_primary_key>
             <constraints>
                 <max_execution_time>
                 <changeable_in_readonly/>

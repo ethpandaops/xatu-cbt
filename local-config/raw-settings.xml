@@ -1,0 +1,43 @@
+<clickhouse>
+    <!--
+      Behavioral runtime settings ported from the production clickhouse-raw cluster
+      (platform: environments/*/applications/clickhouse-raw/values.yaml). Mounted into all
+      four raw nodes (xatu-clickhouse-01..04) in local xatu mode.
+
+      Content is identical to refined-settings.xml — prod's clickhouse-raw and clickhouse-refined
+      ship the same aggressive_merges.xml. Kept as a separate file to mirror prod's two-app layout
+      and allow future divergence.
+
+      Goal: behavioral parity so local dev surfaces the same part-format / "too many parts" / merge
+      behavior as prod's raw ingest cluster.
+
+      DELIBERATELY NOT COPIED from prod (same reasoning as refined-settings.xml):
+        * S3 disks / cache, users, passwords, quotas.
+        * Machine-SIZING knobs — background_pool_size (prod 48), background_fetches_pool_size,
+          mark_cache_size, the 150GB merge ceilings, and the number_of_free_entries_in_pool_* /
+          max_replicated_merges_in_queue thresholds. Tuned for 96-vCPU / 256GB prod nodes;
+          reproducing them across four co-located local nodes trips ClickHouse's pool-coupling
+          sanity checks and risks memory overcommit. None affect query/merge CORRECTNESS.
+        * Graceful-shutdown waits (operational).
+      Raw-specific ingest profile settings (max_partitions_per_insert_block, tcp_keep_alive_timeout,
+      distributed_aggregation_memory_efficient, force_primary_key) live in the raw users.xml.
+    -->
+
+    <!-- Never let the drop-size guard block test/dev teardown. prod: 10000G; 0 = unlimited. -->
+    <max_table_size_to_drop>0</max_table_size_to_drop>
+    <max_partition_size_to_drop>0</max_partition_size_to_drop>
+
+    <merge_tree>
+        <!-- Replicate prod's "too many parts" back-pressure thresholds verbatim. prod: 300 / 600 -->
+        <parts_to_delay_insert>300</parts_to_delay_insert>
+        <parts_to_throw_insert>600</parts_to_throw_insert>
+        <max_parts_in_total>100000</max_parts_in_total>
+        <!-- prod: 200 -->
+        <max_parts_to_merge_at_once>200</max_parts_to_merge_at_once>
+
+        <!-- Force Wide part format on every insert (prod parity). Exercises the wide-part
+             read/merge code paths instead of compact parts on tiny test data. -->
+        <min_bytes_for_wide_part>0</min_bytes_for_wide_part>
+        <min_rows_for_wide_part>0</min_rows_for_wide_part>
+    </merge_tree>
+</clickhouse>

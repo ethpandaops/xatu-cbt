@@ -15,6 +15,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// refinedNodeCount is the number of refined ClickHouse nodes (cluster_2S_1R:
+// 2 shards x 1 replica). Config files are generated/copied for each.
+const refinedNodeCount = 2
+
 var (
 	errExternalHostRequired = errors.New("external host is required for external mode")
 	errXatuURLEmpty         = errors.New("xatu URL is empty")
@@ -106,6 +110,8 @@ func detectClusterTopology(log logrus.FieldLogger, hostname string) *ExpandedTop
 }
 
 // multiShardConfigTemplate is the XML template for multi-shard external clusters.
+// The refined cluster (cluster_2S_1R) is the local 2-node cluster (2 shards x 1 replica);
+// the xatu_cluster points at the remote/external raw cluster expanded from its topology.
 const multiShardConfigTemplate = `<clickhouse replace="true">
     <logger>
         <level>debug</level>
@@ -125,6 +131,12 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
     </user_directories>
     <distributed_ddl>
         <path>/clickhouse/task_queue/ddl</path>
+        <!-- The CBT test harness clones ~113 isolated databases up front, firing >1400
+             CREATE ... ON CLUSTER tasks at the per-host-serial DDL queue. The default
+             pool_size=1 drains that backlog so slowly that tasks wait past
+             distributed_ddl_task_timeout (code 159 TIMEOUT_EXCEEDED). 4 workers per host
+             drain the clone storm ~4x faster. Prod has no such storm, so it keeps default. -->
+        <pool_size>4</pool_size>
     </distributed_ddl>
     <remote_servers>
         <cluster_2S_1R>
@@ -135,6 +147,9 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
                     <host>xatu-cbt-clickhouse-01</host>
                     <port>9000</port>
                 </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
                     <host>xatu-cbt-clickhouse-02</host>
                     <port>9000</port>
@@ -164,23 +179,23 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
     </remote_servers>
     <zookeeper>
         <node>
-            <host>xatu-cbt-clickhouse-zookeeper-01</host>
-            <port>2181</port>
+            <host>xatu-cbt-clickhouse-keeper-01</host>
+            <port>9181</port>
         </node>
         <node>
-            <host>xatu-cbt-clickhouse-zookeeper-02</host>
-            <port>2181</port>
+            <host>xatu-cbt-clickhouse-keeper-02</host>
+            <port>9181</port>
         </node>
         <node>
-            <host>xatu-cbt-clickhouse-zookeeper-03</host>
-            <port>2181</port>
+            <host>xatu-cbt-clickhouse-keeper-03</host>
+            <port>9181</port>
         </node>
     </zookeeper>
     <macros>
         <installation>xatu</installation>
         <cluster>cluster_2S_1R</cluster>
-        <shard>01</shard>
-        <replica>{{printf "%02d" .NodeNum}}</replica>
+        <shard>{{.Shard}}</shard>
+        <replica>{{.Replica}}</replica>
         <raw>xatu_cluster</raw>
     </macros>
     <access_control_improvements>
@@ -192,11 +207,22 @@ const multiShardConfigTemplate = `<clickhouse replace="true">
 // multiShardTemplateData holds the data for rendering the multi-shard template.
 type multiShardTemplateData struct {
 	NodeNum  int
+	Shard    string // refined-cluster shard macro, e.g. "01" / "02"
+	Replica  string // refined-cluster replica macro, e.g. "01" / "02"
 	Port     int
 	Username string
 	Password string
 	Secure   int // 0 or 1
 	Shards   []templateShard
+}
+
+// shardReplicaForNode maps a 1-based refined node number to its {shard}/{replica}
+// macro values for the 2 shards x 1 replica topology:
+//
+//	node 1 -> shard 01, replica 01
+//	node 2 -> shard 02, replica 01
+func shardReplicaForNode(nodeNum int) (shard, replica string) {
+	return fmt.Sprintf("%02d", nodeNum), "01"
 }
 
 type templateShard struct {
@@ -224,8 +250,12 @@ func generateMultiShardXML(nodeNum int, topology *ExpandedTopology, port int, us
 		shards[i] = templateShard{Replicas: replicas}
 	}
 
+	shard, replica := shardReplicaForNode(nodeNum)
+
 	data := multiShardTemplateData{
 		NodeNum:  nodeNum,
+		Shard:    shard,
+		Replica:  replica,
 		Port:     port,
 		Username: username,
 		Password: password,
@@ -263,6 +293,8 @@ func generateSingleShardConfig(nodeNum int, host string, port int, username, pas
 		passwordXML = fmt.Sprintf("\n                    <password>%s</password>", password)
 	}
 
+	shard, replica := shardReplicaForNode(nodeNum)
+
 	return fmt.Sprintf(clickhouseConfigTemplate,
 		nodeNum,     // display_name node number
 		host,        // xatu_cluster host
@@ -270,11 +302,14 @@ func generateSingleShardConfig(nodeNum int, host string, port int, username, pas
 		usernameXML, // optional username
 		passwordXML, // optional password
 		secureInt,   // secure flag
-		nodeNum,     // replica number
+		shard,       // refined-cluster shard macro
+		replica,     // refined-cluster replica macro
 	)
 }
 
-// clickhouseConfigTemplate is the XML configuration template for ClickHouse external mode.
+// clickhouseConfigTemplate is the XML configuration template for ClickHouse external mode
+// when the external host does not match a known multi-shard cluster (single remote endpoint).
+// The local refined cluster (cluster_2S_1R) is still 2 shards x 1 replica.
 const clickhouseConfigTemplate = `<clickhouse replace="true">
     <logger>
         <level>debug</level>
@@ -294,6 +329,12 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
     </user_directories>
     <distributed_ddl>
         <path>/clickhouse/task_queue/ddl</path>
+        <!-- The CBT test harness clones ~113 isolated databases up front, firing >1400
+             CREATE ... ON CLUSTER tasks at the per-host-serial DDL queue. The default
+             pool_size=1 drains that backlog so slowly that tasks wait past
+             distributed_ddl_task_timeout (code 159 TIMEOUT_EXCEEDED). 4 workers per host
+             drain the clone storm ~4x faster. Prod has no such storm, so it keeps default. -->
+        <pool_size>4</pool_size>
     </distributed_ddl>
     <remote_servers>
         <cluster_2S_1R>
@@ -304,6 +345,9 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
                     <host>xatu-cbt-clickhouse-01</host>
                     <port>9000</port>
                 </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
                 <replica>
                     <host>xatu-cbt-clickhouse-02</host>
                     <port>9000</port>
@@ -323,23 +367,23 @@ const clickhouseConfigTemplate = `<clickhouse replace="true">
     </remote_servers>
     <zookeeper>
         <node>
-            <host>xatu-cbt-clickhouse-zookeeper-01</host>
-            <port>2181</port>
+            <host>xatu-cbt-clickhouse-keeper-01</host>
+            <port>9181</port>
         </node>
         <node>
-            <host>xatu-cbt-clickhouse-zookeeper-02</host>
-            <port>2181</port>
+            <host>xatu-cbt-clickhouse-keeper-02</host>
+            <port>9181</port>
         </node>
         <node>
-            <host>xatu-cbt-clickhouse-zookeeper-03</host>
-            <port>2181</port>
+            <host>xatu-cbt-clickhouse-keeper-03</host>
+            <port>9181</port>
         </node>
     </zookeeper>
     <macros>
         <installation>xatu</installation>
         <cluster>cluster_2S_1R</cluster>
-        <shard>01</shard>
-        <replica>%02d</replica>
+        <shard>%s</shard>
+        <replica>%s</replica>
         <raw>xatu_cluster</raw>
     </macros>
     <access_control_improvements>
@@ -371,8 +415,18 @@ func GenerateExternalClickHouseConfig(log logrus.FieldLogger, host string, port 
 	// Base directory for clickhouse-external configs
 	baseDir := filepath.Join("local-config", "clickhouse-external")
 
-	// Generate configs for both ClickHouse nodes (01 and 02)
-	for nodeNum := 1; nodeNum <= 2; nodeNum++ {
+	// Wipe any prior generation before regenerating. This tree is fully generated
+	// (and gitignored), so a clean slate is always safe. It also self-heals a nasty
+	// failure mode: when `docker compose up` mounts a bind-mount whose source file is
+	// missing (e.g. after the node count grew from a previous version), Docker creates
+	// an empty *directory* at that source path. A later regeneration then fails with
+	// "config.xml: is a directory" because WriteFile can't replace a directory.
+	if err := os.RemoveAll(baseDir); err != nil {
+		return fmt.Errorf("failed to clean external config dir %s: %w", baseDir, err)
+	}
+
+	// Generate configs for every refined ClickHouse node (01..04)
+	for nodeNum := 1; nodeNum <= refinedNodeCount; nodeNum++ {
 		var configContent string
 		var err error
 
@@ -506,7 +560,7 @@ EOT
 // generateInitDBScripts creates init scripts for external mode.
 // These scripts only handle user configuration, not cluster topology.
 func generateInitDBScripts(log logrus.FieldLogger, destBaseDir string) error {
-	for nodeNum := 1; nodeNum <= 2; nodeNum++ {
+	for nodeNum := 1; nodeNum <= refinedNodeCount; nodeNum++ {
 		destDir := filepath.Join(destBaseDir, fmt.Sprintf("clickhouse-%02d", nodeNum), "etc", "clickhouse-server", "docker-entrypoint-initdb.d")
 
 		// Create destination directory
@@ -533,7 +587,7 @@ func generateInitDBScripts(log logrus.FieldLogger, destBaseDir string) error {
 func copyUsersConfig(log logrus.FieldLogger, destBaseDir string) error {
 	sourceBase := filepath.Join("local-config", "clickhouse")
 
-	for nodeNum := 1; nodeNum <= 2; nodeNum++ {
+	for nodeNum := 1; nodeNum <= refinedNodeCount; nodeNum++ {
 		// Source and destination paths
 		sourcePath := filepath.Join(sourceBase, fmt.Sprintf("clickhouse-%02d", nodeNum), "etc", "clickhouse-server", "users.d", "users.xml")
 		destDir := filepath.Join(destBaseDir, fmt.Sprintf("clickhouse-%02d", nodeNum), "etc", "clickhouse-server", "users.d")

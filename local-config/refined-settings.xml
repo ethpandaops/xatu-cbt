@@ -1,0 +1,40 @@
+<clickhouse>
+    <!--
+      Behavioral runtime settings ported from the production clickhouse-refined cluster
+      (platform: environments/*/applications/clickhouse-refined/values.yaml). Mounted into all
+      four refined nodes (xatu-cbt-clickhouse-01..04) in BOTH local and external mode, so it lives
+      outside the CLICKHOUSE_CONFIG_DIR-specific tree.
+
+      Goal: behavioral parity so local dev surfaces the same part-format / "too many parts" / merge
+      behavior as prod.
+
+      DELIBERATELY NOT COPIED from prod:
+        * S3 disks / cache, users, passwords, quotas (see CLAUDE.md).
+        * Machine-SIZING knobs — background_pool_size (prod 48), background_fetches_pool_size,
+          mark_cache_size, the 150GB merge ceilings, and the number_of_free_entries_in_pool_* /
+          max_replicated_merges_in_queue thresholds. Those were tuned for 96-vCPU / 256GB prod
+          nodes. Reproducing them across four co-located nodes on a dev box just (a) trips
+          ClickHouse's pool-coupling sanity checks (e.g. number_of_free_entries_in_pool_to_execute_
+          optimize_entire_partition default 25 must be <= background_pool_size) and (b) risks memory
+          overcommit. None of them change query/merge CORRECTNESS, so the defaults are used instead.
+        * Graceful-shutdown waits (operational, not relevant to ephemeral local containers).
+    -->
+
+    <!-- Never let the drop-size guard block test/dev teardown. prod: 10000G; 0 = unlimited. -->
+    <max_table_size_to_drop>0</max_table_size_to_drop>
+    <max_partition_size_to_drop>0</max_partition_size_to_drop>
+
+    <merge_tree>
+        <!-- Replicate prod's "too many parts" back-pressure thresholds verbatim. prod: 300 / 600 -->
+        <parts_to_delay_insert>300</parts_to_delay_insert>
+        <parts_to_throw_insert>600</parts_to_throw_insert>
+        <max_parts_in_total>100000</max_parts_in_total>
+        <!-- prod: 200 -->
+        <max_parts_to_merge_at_once>200</max_parts_to_merge_at_once>
+
+        <!-- Force Wide part format on every insert (prod parity). Exercises the wide-part
+             read/merge/projection code paths instead of compact parts on tiny test data. -->
+        <min_bytes_for_wide_part>0</min_bytes_for_wide_part>
+        <min_rows_for_wide_part>0</min_rows_for_wide_part>
+    </merge_tree>
+</clickhouse>

@@ -4,6 +4,9 @@ const (
 	// XatuClusterName is the ClickHouse cluster name for external data.
 	XatuClusterName = "xatu_cluster"
 	// CBTClusterName is the ClickHouse cluster name for transformations.
+	// Topology: 2 shards x 1 replica — sharded (mirrors prod cross-shard behavior) but
+	// without a 2nd replica per shard, which would double ON CLUSTER DDL cost and time
+	// the test suite out.
 	CBTClusterName = "cluster_2S_1R"
 	// ClickHouseLocalSuffix is the suffix appended to distributed table names to access local shards.
 	ClickHouseLocalSuffix = "_local"

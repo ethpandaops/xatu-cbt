@@ -1097,11 +1097,15 @@ func (m *DatabaseManager) LoadParquetData(ctx context.Context, database string, 
 // loadParquetFile loads a single parquet file into a table
 func (m *DatabaseManager) loadParquetFile(ctx context.Context, database, tableName, filePath string) error {
 	localTableName := tableName + "_local"
-	// Use streaming settings to avoid loading entire parquet into memory:
+	// canonical_execution_traces carries large blob columns (action_init/action_input); a
+	// single read block briefly needs ~2GB on the read stage, which tripped the old 2GB
+	// max_memory_usage (code 241). Raising the ceiling to 3GB fixes that on its own. Keep the
+	// parquet read block at 8k rows: shrinking it lowers peak memory but slows large loads
+	// (libp2p_gossipsub_beacon_attestation) enough to blow the 5m QueryTimeout.
 	// - max_insert_block_size: flush every 10k rows (smaller batches)
 	// - min_insert_block_size_bytes: flush when buffer hits 10MB
 	// - input_format_parquet_max_block_size: read parquet in 8k row chunks
-	// - max_memory_usage: limit query to 2GB
+	// - max_memory_usage: 3GB ceiling (was 2GB)
 	insertSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers and file path
 		`INSERT INTO "%s"."%s"
 		 SELECT * FROM file('%s', Parquet)
@@ -1109,7 +1113,7 @@ func (m *DatabaseManager) loadParquetFile(ctx context.Context, database, tableNa
 		   max_insert_block_size = 10000,
 		   min_insert_block_size_bytes = 10485760,
 		   input_format_parquet_max_block_size = 8192,
-		   max_memory_usage = 2000000000`,
+		   max_memory_usage = 3000000000`,
 		database, localTableName, filePath,
 	)
 

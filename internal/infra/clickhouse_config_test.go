@@ -148,12 +148,20 @@ func TestGenerateMultiShardXML(t *testing.T) {
 			secure:   false,
 			checks: []string{
 				"<display_name>cluster_2S_1R node 1</display_name>",
+				// Local refined cluster: 2 shards x 1 replica + Keeper coordination
+				"<cluster_2S_1R>",
+				"<host>xatu-cbt-clickhouse-01</host>",
+				"<host>xatu-cbt-clickhouse-02</host>",
+				"<host>xatu-cbt-clickhouse-keeper-01</host>",
+				// Remote/external raw cluster expanded from topology
 				"<host>host-0-0.example.com</host>",
 				"<host>host-0-1.example.com</host>",
 				"<host>host-1-0.example.com</host>",
 				"<host>host-1-1.example.com</host>",
 				"<port>9000</port>",
 				"<secure>0</secure>",
+				// node 1 -> shard 01, replica 01
+				"<shard>01</shard>",
 				"<replica>01</replica>",
 			},
 		},
@@ -170,7 +178,9 @@ func TestGenerateMultiShardXML(t *testing.T) {
 				"<user>myuser</user>",
 				"<password>mypass</password>",
 				"<secure>1</secure>",
-				"<replica>02</replica>",
+				// node 2 -> shard 02, replica 01
+				"<shard>02</shard>",
+				"<replica>01</replica>",
 			},
 		},
 		{
@@ -499,6 +509,57 @@ func TestKnownClusters(t *testing.T) {
 		for j, replica := range shard.Replicas {
 			assert.Equal(t, expectedSuffixes[i][j], replica.HostSuffix, "shard %d replica %d suffix mismatch", i, j)
 		}
+	}
+}
+
+// TestGenerateExternalClickHouseConfig_HealsStaleDirectory verifies the generator
+// recovers when a previous run / docker bind-mount left a *directory* where a
+// config.xml file should be (the "config.xml: is a directory" failure). This happens
+// when the refined node count grows and `docker compose up` auto-creates empty
+// directories at the new bind-mount source paths.
+func TestGenerateExternalClickHouseConfig_HealsStaleDirectory(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "clickhouse-config-heal-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer os.Chdir(originalDir)
+
+	require.NoError(t, os.Chdir(tmpDir))
+
+	// Source users.xml/init-db that copyUsersConfig + generateInitDBScripts read from.
+	for nodeNum := 1; nodeNum <= 2; nodeNum++ {
+		usersDir := filepath.Join("local-config", "clickhouse", formatNodeDir(nodeNum), "etc", "clickhouse-server", "users.d")
+		require.NoError(t, os.MkdirAll(usersDir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(usersDir, "users.xml"), []byte("<clickhouse/>"), 0o644))
+
+		initDBDir := filepath.Join("local-config", "clickhouse", formatNodeDir(nodeNum), "etc", "clickhouse-server", "docker-entrypoint-initdb.d")
+		require.NoError(t, os.MkdirAll(initDBDir, 0o755))
+		require.NoError(t, os.WriteFile(filepath.Join(initDBDir, "init.sh"), []byte("#!/bin/bash\n"), 0o755))
+	}
+
+	// Simulate the bad state: a DIRECTORY where node 03's config.xml file must go.
+	staleConfigPath := filepath.Join("local-config", "clickhouse-external", "clickhouse-02", "etc", "clickhouse-server", "config.d", "config.xml")
+	require.NoError(t, os.MkdirAll(staleConfigPath, 0o755))
+
+	info, err := os.Stat(staleConfigPath)
+	require.NoError(t, err)
+	require.True(t, info.IsDir(), "precondition: config.xml should start as a directory")
+
+	// Generator must clean the stale tree and regenerate real files for all 4 nodes.
+	err = GenerateExternalClickHouseConfig(
+		newTestLogger(),
+		"chendpoint-clickhouse-raw.analytics.production.ethpandaops",
+		9000, "", "", false,
+	)
+	require.NoError(t, err)
+
+	for nodeNum := 1; nodeNum <= 2; nodeNum++ {
+		configPath := filepath.Join("local-config", "clickhouse-external", formatNodeDir(nodeNum), "etc", "clickhouse-server", "config.d", "config.xml")
+		fi, statErr := os.Stat(configPath)
+		require.NoError(t, statErr, "config.xml should exist for node %d", nodeNum)
+		assert.False(t, fi.IsDir(), "config.xml for node %d should be a file, not a directory", nodeNum)
 	}
 }
 
