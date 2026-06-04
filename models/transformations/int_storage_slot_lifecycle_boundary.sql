@@ -115,6 +115,6 @@ FROM lifecycle_boundaries
 SETTINGS
     max_bytes_before_external_sort = 10000000000,
     max_bytes_before_external_group_by = 10000000000,
-    max_threads = 8,
+    max_threads = 16,
     distributed_aggregation_memory_efficient = 1,
     join_algorithm = 'parallel_hash';
