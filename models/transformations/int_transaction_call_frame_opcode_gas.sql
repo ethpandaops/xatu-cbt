@@ -68,13 +68,13 @@ SELECT
     opcode_count AS count,
     gas,
     gas_cumulative,
-    error_count,
     memory_words_sum_before,
     memory_words_sum_after,
     memory_words_sq_sum_before,
     memory_words_sq_sum_after,
     memory_expansion_gas,
     cold_access_count,
+    error_count,
     meta_network_name
 FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }}
 WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
