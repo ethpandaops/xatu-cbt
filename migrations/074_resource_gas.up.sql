@@ -11,12 +11,12 @@ ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas_local ON CLU
     ADD COLUMN IF NOT EXISTS `cold_access_count` UInt64 DEFAULT 0 COMMENT 'Number of cold storage/account accesses (EIP-2929).' CODEC(ZSTD(1)) AFTER `memory_expansion_gas`;
 
 ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas ON CLUSTER '{cluster}'
-    ADD COLUMN IF NOT EXISTS `memory_words_sum_before` UInt64 DEFAULT 0 COMMENT 'SUM(ceil(memory_bytes/32)) before each opcode executes.' CODEC(ZSTD(1)) AFTER `gas_cumulative`,
-    ADD COLUMN IF NOT EXISTS `memory_words_sum_after` UInt64 DEFAULT 0 COMMENT 'SUM(ceil(memory_bytes/32)) after each opcode executes.' CODEC(ZSTD(1)) AFTER `memory_words_sum_before`,
-    ADD COLUMN IF NOT EXISTS `memory_words_sq_sum_before` UInt64 DEFAULT 0 COMMENT 'SUM(words_before²).' CODEC(ZSTD(1)) AFTER `memory_words_sum_after`,
-    ADD COLUMN IF NOT EXISTS `memory_words_sq_sum_after` UInt64 DEFAULT 0 COMMENT 'SUM(words_after²).' CODEC(ZSTD(1)) AFTER `memory_words_sq_sum_before`,
-    ADD COLUMN IF NOT EXISTS `memory_expansion_gas` UInt64 DEFAULT 0 COMMENT 'SUM(memory_expansion_gas). Exact per-opcode memory expansion cost.' CODEC(ZSTD(1)) AFTER `memory_words_sq_sum_after`,
-    ADD COLUMN IF NOT EXISTS `cold_access_count` UInt64 DEFAULT 0 COMMENT 'Number of cold storage/account accesses (EIP-2929).' CODEC(ZSTD(1)) AFTER `memory_expansion_gas`;
+    ADD COLUMN IF NOT EXISTS `memory_words_sum_before` UInt64 DEFAULT 0 COMMENT 'SUM(ceil(memory_bytes/32)) before each opcode executes.' AFTER `gas_cumulative`,
+    ADD COLUMN IF NOT EXISTS `memory_words_sum_after` UInt64 DEFAULT 0 COMMENT 'SUM(ceil(memory_bytes/32)) after each opcode executes.' AFTER `memory_words_sum_before`,
+    ADD COLUMN IF NOT EXISTS `memory_words_sq_sum_before` UInt64 DEFAULT 0 COMMENT 'SUM(words_before²).' AFTER `memory_words_sum_after`,
+    ADD COLUMN IF NOT EXISTS `memory_words_sq_sum_after` UInt64 DEFAULT 0 COMMENT 'SUM(words_after²).' AFTER `memory_words_sq_sum_before`,
+    ADD COLUMN IF NOT EXISTS `memory_expansion_gas` UInt64 DEFAULT 0 COMMENT 'SUM(memory_expansion_gas). Exact per-opcode memory expansion cost.' AFTER `memory_words_sq_sum_after`,
+    ADD COLUMN IF NOT EXISTS `cold_access_count` UInt64 DEFAULT 0 COMMENT 'Number of cold storage/account accesses (EIP-2929).' AFTER `memory_expansion_gas`;
 
 -- =============================================================================
 -- int_transaction_call_frame_opcode_resource_gas
