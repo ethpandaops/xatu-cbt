@@ -80,6 +80,20 @@ WITH
           AND slot_start_date_time <= fromUnixTimestamp({{ .bounds.end }})
     ),
 
+    -- Canonical head expected at each slot: the most recent canonical block at or
+    -- before the slot. For slots whose own block is missed or orphaned this resolves
+    -- to the previous canonical block, matching the consensus spec's
+    -- get_block_root_at_slot - where attesting to the prior block is the correct
+    -- head vote for an empty slot.
+    slot_canonical_head AS (
+        SELECT
+            slot,
+            anyLast(if(`status` = 'canonical', block_root, NULL))
+                OVER (ORDER BY slot ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                AS canonical_head_root
+        FROM blocks
+    ),
+
     -- Canonical target blocks: the block at the epoch boundary (first slot of epoch),
     -- or if that slot is missed, the last block from the previous epoch
     epoch_blocks AS (
@@ -126,12 +140,15 @@ SELECT
     duties.attesting_validator_index AS validator_index,
     -- Whether attested (not missed)
     attestations.head_root IS NOT NULL AS attested,
-    -- Head correctness: slot_distance = 0 means correct head vote
+    -- Head correctness: did the validator vote the canonical head for its slot?
+    -- The canonical head is the most recent canonical block at or before the slot,
+    -- so a vote for the previous block on a missed or orphaned slot is correct
+    -- (per get_block_root_at_slot in the consensus spec).
     CASE
         WHEN attestations.head_root IS NULL THEN NULL
-        WHEN blocks.slot IS NOT NULL AND duties.slot = blocks.slot THEN true
-        WHEN blocks.slot IS NOT NULL AND duties.slot != blocks.slot THEN false
-        ELSE NULL
+        WHEN slot_canonical_head.canonical_head_root IS NULL THEN NULL
+        WHEN attestations.head_root = slot_canonical_head.canonical_head_root THEN true
+        ELSE false
     END AS head_correct,
     -- Target correctness
     CASE
@@ -155,9 +172,8 @@ GLOBAL LEFT JOIN attestations ON
 GLOBAL LEFT JOIN gossip_attestations ON
     duties.slot = gossip_attestations.slot
     AND duties.attesting_validator_index = gossip_attestations.attesting_validator_index
-GLOBAL LEFT JOIN blocks ON
-    attestations.head_root = blocks.block_root
-    AND attestations.head_root IS NOT NULL
+GLOBAL LEFT JOIN slot_canonical_head ON
+    duties.slot = slot_canonical_head.slot
 GLOBAL LEFT JOIN target_checkpoints ON
     attestations.target_epoch = target_checkpoints.target_epoch
     AND attestations.target_root IS NOT NULL
