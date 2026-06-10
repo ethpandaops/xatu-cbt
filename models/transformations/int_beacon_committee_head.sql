@@ -47,6 +47,59 @@ votes AS
     GROUP BY
         slot, slot_start_date_time, epoch, epoch_start_date_time,
         committee_index, v_norm
+),
+
+-- Sentries publish a whole epoch's committees as one batch around the epoch
+-- boundary, so the external bound can cover a slot while that batch is still
+-- being ingested. Processing such a slot bakes in a partial committee set
+-- permanently, as incremental intervals are never reprocessed. The committee
+-- count per slot is constant within an epoch, so require every slot in the
+-- interval to have as many committees as its epoch shows anywhere in a
+-- +-2 epoch window, and fail the task otherwise so the scheduler retries
+-- once ingestion has settled.
+--
+-- These scans deliberately read the source table directly (not per_view) and
+-- skip FINAL: committee PRESENCE is unaffected by ReplacingMergeTree version
+-- replacement, and reusing per_view would inline its heavy validators column
+-- a second time.
+expected_per_epoch AS
+(
+    SELECT
+        epoch,
+        uniqExact(committee_index) AS expected_committees
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "helpers" "from" }}
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 768 SECOND
+                                   AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 768 SECOND
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    GROUP BY epoch
+),
+
+slot_committees AS
+(
+    SELECT
+        slot,
+        any(epoch) AS epoch,
+        uniqExact(committee_index) AS committees
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "helpers" "from" }}
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    GROUP BY slot
+),
+
+-- A slot still mid-ingest can also have ZERO visible rows, which no per-slot
+-- comparison can see, so additionally require every slot on the 12s grid
+-- inside the interval to be present at all. Slot duration is hardcoded the
+-- same way other models hardcode it (e.g. the /12000 propagation buckets).
+gate AS
+(
+    SELECT
+        (
+            SELECT countIf(sc.committees < e.expected_committees)
+            FROM slot_committees AS sc
+            INNER JOIN expected_per_epoch AS e ON sc.epoch = e.epoch
+        ) AS incomplete_slots,
+        toInt64(intDiv({{ .bounds.end }} - {{ .bounds.start }}, 12) + 1)
+            - toInt64((SELECT count() FROM slot_committees)) AS missing_slots
 )
 
 SELECT
@@ -58,6 +111,13 @@ SELECT
     committee_index,
     argMax(v_norm, (votes, toUInt64(cityHash64(v_norm)))) AS validators
 FROM votes
+WHERE (
+    SELECT throwIf(
+        incomplete_slots > 0 OR missing_slots > 0,
+        'int_beacon_committee_head: interval has missing or incomplete slots (ingestion not settled), failing task for retry'
+    )
+    FROM gate
+) = 0
 GROUP BY
     slot,
     slot_start_date_time,
