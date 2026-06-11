@@ -97,9 +97,9 @@ slot_committees AS
 -- expected count cannot be derived from the span length alone: snap the
 -- start bound up to the first on-grid timestamp, using the grid phase
 -- observed from any ingested slot in the interval, then count grid points
--- up to the end bound. With zero ingested slots the phase is unknowable;
--- keep the span-derived over-estimate so the task fails and retries, the
--- desired outcome for an interval with no data at all.
+-- up to the end bound. With zero ingested slots the phase is unknowable,
+-- so keep the span-derived over-estimate: the task fails and retries,
+-- the desired outcome for an interval with no data at all.
 gate AS
 (
     SELECT
