@@ -83,7 +83,10 @@ SESSION_ID="$SESSION_ID" PREP_OUTPUT="$PREP_OUTPUT" \
   .claude/skills/optimize-model/scripts/run_prepare.sh "$ARGUMENTS"
 ```
 
-- This command generates session-isolated `/tmp` artifacts.
+- This command generates session-isolated `/tmp` artifacts. Artifact names also
+  include the bounds window, so multi-window runs (one prep per window) never
+  overwrite each other's rendered SQL or bench/hash outputs; downstream
+  wrappers resolve paths via the prep manifest (`paths`, `artifact_prefix`).
 - Use `summary`, `period`, `unresolved_fragments`, and `summary.introspection_ok` from `$PREP_OUTPUT`.
 - Confirm `period.bounds_start`/`period.bounds_end` are sane before benchmarking.
 - If unresolved fragments remain, ask targeted follow-up questions and rerun.

@@ -23,6 +23,12 @@ Use these rules to convert CBT transformation model templates into a runnable re
   - If template uses `cluster(...)`, resolve dependency table to `<table>_local` (not the Distributed table name).
 - Transformation dependency replacement is direct table access:
   - `` `<transformation_database>`.`<table>` ``
+- Other dep accessors mirror CBT's template engine exactly:
+  - `"database"` => database name only.
+  - `"table"` => bare table name, never suffixed with `_local` (the suffix is
+    applied only inside `helpers.from`). Models doing shard-local pushdowns
+    (e.g. `cluster(..., view(...))`) append `_local` explicitly.
+  - `"cluster"` => cluster name (e.g. `{raw}`); external dependencies only.
 
 ## Common CBT Variables
 For benchmark rendering, substitute these defaults unless user overrides:

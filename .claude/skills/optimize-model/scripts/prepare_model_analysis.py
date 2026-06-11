@@ -372,7 +372,10 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     session_id = args.session_id.strip() or uuid.uuid4().hex[:8]
-    artifact_prefix = f"{args.prefix}.{session_id}"
+    # Include the bounds window in the prefix so repeated preps in one session
+    # (e.g. multi-window benchmarking) never overwrite each other's rendered
+    # SQL; downstream wrappers resolve artifacts via this manifest's paths.
+    artifact_prefix = f"{args.prefix}.{session_id}.{bounds_start}-{bounds_end}"
 
     resolve_json = out_dir / f"{artifact_prefix}.resolve.json"
     schema_json = out_dir / f"{artifact_prefix}.schemas.json"

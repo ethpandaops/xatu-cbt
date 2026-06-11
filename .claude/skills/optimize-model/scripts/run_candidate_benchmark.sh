@@ -47,7 +47,20 @@ CANDIDATE_LABEL_RAW="${CANDIDATE_LABEL:-$(basename "$CANDIDATE_SQL" .sql)}"
 WINDOW_LABEL="$(printf '%s' "$WINDOW_LABEL_RAW" | tr -cs 'A-Za-z0-9._-' '_')"
 CANDIDATE_LABEL="$(printf '%s' "$CANDIDATE_LABEL_RAW" | tr -cs 'A-Za-z0-9._-' '_')"
 
-BENCH_OUTPUT="${BENCH_OUTPUT:-/tmp/optimize-model.${SESSION_ID}.bench.${WINDOW_LABEL}.${CANDIDATE_LABEL}.json}"
+# Window-unique prefix (includes bounds) so candidate benchmarks of different
+# prep windows in one session never overwrite each other.
+ARTIFACT_PREFIX="$(python3 - <<'PY' "$PREP_OUTPUT"
+import json,sys
+with open(sys.argv[1], 'r', encoding='utf-8') as f:
+    data = json.load(f)
+print(data.get('artifact_prefix', ''))
+PY
+)"
+if [ -z "$ARTIFACT_PREFIX" ]; then
+  ARTIFACT_PREFIX="optimize-model.${SESSION_ID}"
+fi
+
+BENCH_OUTPUT="${BENCH_OUTPUT:-/tmp/${ARTIFACT_PREFIX}.bench.${WINDOW_LABEL}.${CANDIDATE_LABEL}.json}"
 
 python3 "$SCRIPT_DIR/benchmark_query.py" \
   --query-file "$CANDIDATE_SQL" \

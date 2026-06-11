@@ -217,16 +217,23 @@ def replace_dep_helpers(
                 return external_database
             return transformation_database
 
-        # .table => table name only.
+        # .table => bare table name, matching CBT's template engine exactly:
+        # the _local suffix is applied only inside helpers.from, never here.
+        # Models that need the shard-local table (e.g. inside cluster(...,
+        # view(...)) pushdowns) append `_local` explicitly in the template.
         if key1 == "table":
-            if chosen_kind == "external":
-                uses_cluster_function = (
-                    re.search(r"\bcluster\s*\(", external_template, flags=re.IGNORECASE)
-                    is not None
-                )
-                if uses_cluster_function and not table.endswith("_local"):
-                    return f"{table}_local"
             return table
+
+        # .cluster => cluster name from the external access template
+        # (e.g. cluster('{raw}', ...) => {raw}). CBT only exposes this field
+        # on external dependencies, so leave transformation deps unresolved.
+        if key1 == "cluster" and chosen_kind == "external":
+            cluster_match = re.search(
+                r"\bcluster\s*\(\s*'([^']+)'", external_template, flags=re.IGNORECASE
+            )
+            if cluster_match:
+                return cluster_match.group(1)
+            return match.group(0)
 
         # Unknown accessor: leave template unresolved for explicit follow-up.
         return match.group(0)
