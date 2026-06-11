@@ -129,9 +129,15 @@ SELECT
     committee_index,
     argMax(v_norm, (votes, toUInt64(cityHash64(v_norm)))) AS validators
 FROM votes
+-- The gate protects against ingestion RACES, which settle within seconds
+-- (emit-to-queryable p999 is under 30s). An interval whose end is more than
+-- an hour old is settled: anything still absent is permanently absent (a
+-- sentry outage at the time), and refusing it forever would wedge backfill
+-- at the first historical gap. For settled intervals, bake what exists.
 WHERE (
     SELECT throwIf(
-        incomplete_slots > 0 OR missing_slots > 0,
+        (incomplete_slots > 0 OR missing_slots > 0)
+            AND fromUnixTimestamp({{ .bounds.end }}) > now() - INTERVAL 1 HOUR,
         'int_beacon_committee_head: interval has missing or incomplete slots (ingestion not settled), failing task for retry'
     )
     FROM gate
