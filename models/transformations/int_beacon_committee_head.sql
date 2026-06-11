@@ -13,11 +13,20 @@ tags:
   - committee
   - head
 dependencies:
-  - "{{external}}.beacon_api_eth_v1_beacon_committee"
+  - - "{{external}}.beacon_api_eth_v1_beacon_committee"
+    - "{{external}}.canonical_beacon_committee"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
+-- Committee assignment is deterministic per epoch (fixed by the RANDAO seed
+-- epochs in advance), so the head-event stream and the canonical table can
+-- never disagree on CONTENT, only on presence. Unioning canonical in as a
+-- synthetic client makes it a backstop: at the head its range is empty (it
+-- lags finalization) and it contributes nothing, while in backfilled history
+-- it fills slots whose head-event batches were lost to sentry outages. The
+-- two sources form an OR-group dependency, so forwardfill is not capped at
+-- canonical's lag.
 per_view AS
 (
     SELECT DISTINCT
@@ -29,6 +38,18 @@ per_view AS
         arraySort(arrayDistinct(validators)) AS v_norm,
         meta_client_name AS client
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    UNION ALL
+    SELECT DISTINCT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        committee_index,
+        arraySort(arrayDistinct(validators)) AS v_norm,
+        'canonical' AS client
+    FROM {{ index .dep "{{external}}" "canonical_beacon_committee" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
@@ -58,19 +79,31 @@ votes AS
 -- +-2 epoch window, and fail the task otherwise so the scheduler retries
 -- once ingestion has settled.
 --
--- These scans deliberately read the source table directly (not per_view) and
+-- These scans deliberately read the source tables directly (not per_view) and
 -- skip FINAL: committee PRESENCE is unaffected by ReplacingMergeTree version
 -- replacement, and reusing per_view would inline its heavy validators column
--- a second time.
+-- a second time. Presence is the union of both sources, matching per_view.
+presence_window AS
+(
+    SELECT slot, epoch, committee_index, slot_start_date_time
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "helpers" "from" }}
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 768 SECOND
+                                   AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 768 SECOND
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    UNION ALL
+    SELECT slot, epoch, committee_index, slot_start_date_time
+    FROM {{ index .dep "{{external}}" "canonical_beacon_committee" "helpers" "from" }}
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 768 SECOND
+                                   AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 768 SECOND
+        AND meta_network_name = '{{ .env.NETWORK }}'
+),
+
 expected_per_epoch AS
 (
     SELECT
         epoch,
         uniqExact(committee_index) AS expected_committees
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "helpers" "from" }}
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 768 SECOND
-                                   AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 768 SECOND
-        AND meta_network_name = '{{ .env.NETWORK }}'
+    FROM presence_window
     GROUP BY epoch
 ),
 
@@ -81,9 +114,8 @@ slot_committees AS
         any(epoch) AS epoch,
         any(toUnixTimestamp(slot_start_date_time)) AS slot_ts,
         uniqExact(committee_index) AS committees
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "helpers" "from" }}
+    FROM presence_window
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
     GROUP BY slot
 ),
 
@@ -129,9 +161,16 @@ SELECT
     committee_index,
     argMax(v_norm, (votes, toUInt64(cityHash64(v_norm)))) AS validators
 FROM votes
+-- The gate protects against ingestion RACES, which settle within seconds
+-- (emit-to-queryable p999 is under 30s). An interval whose end is more than
+-- an hour old is settled: anything absent from BOTH the head-event stream
+-- and the canonical table by then is permanently absent, and refusing it
+-- forever would wedge backfill at the first such gap. For settled
+-- intervals, bake what exists.
 WHERE (
     SELECT throwIf(
-        incomplete_slots > 0 OR missing_slots > 0,
+        (incomplete_slots > 0 OR missing_slots > 0)
+            AND fromUnixTimestamp({{ .bounds.end }}) > now() - INTERVAL 1 HOUR,
         'int_beacon_committee_head: interval has missing or incomplete slots (ingestion not settled), failing task for retry'
     )
     FROM gate

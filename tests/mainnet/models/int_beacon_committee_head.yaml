@@ -4,6 +4,9 @@ external_data:
     beacon_api_eth_v1_beacon_committee:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_beacon_committee_head_beacon_api_eth_v1_beacon_committee.parquet
         network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_committee.parquet
+        network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
       sql: |
