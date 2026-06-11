@@ -35,6 +35,19 @@ print(data['paths']['rendered_sql'])
 PY
 )"
 
+# Window-unique prefix (includes bounds) so benchmarks of different prep
+# windows in one session never overwrite each other.
+ARTIFACT_PREFIX="$(python3 - <<'PY' "$PREP_OUTPUT"
+import json,sys
+with open(sys.argv[1], 'r', encoding='utf-8') as f:
+    data = json.load(f)
+print(data.get('artifact_prefix', ''))
+PY
+)"
+if [ -z "$ARTIFACT_PREFIX" ]; then
+  ARTIFACT_PREFIX="optimize-model.${SESSION_ID}"
+fi
+
 TRANSFORM_ENDPOINT="${TRANSFORM_ENDPOINT:-http://chendpoint-clickhouse-refined.analytics.production.ethpandaops:8123}"
 TRANSFORM_DB="${TRANSFORM_DB:-mainnet}"
 TRANSFORM_USER="${TRANSFORM_USER:-}"
@@ -43,7 +56,7 @@ TRANSFORM_PASS="${TRANSFORM_PASS:-}"
 WARMUP="${WARMUP:-1}"
 RUNS="${RUNS:-3}"
 BENCH_TIMEOUT="${BENCH_TIMEOUT:-300}"
-BENCH_OUTPUT="${BENCH_OUTPUT:-/tmp/optimize-model.${SESSION_ID}.bench.json}"
+BENCH_OUTPUT="${BENCH_OUTPUT:-/tmp/${ARTIFACT_PREFIX}.bench.baseline.json}"
 
 python3 "$SCRIPT_DIR/benchmark_query.py" \
   --query-file "$RENDERED_SQL" \

@@ -46,7 +46,21 @@ TRANSFORM_DB="${TRANSFORM_DB:-mainnet}"
 TRANSFORM_USER="${TRANSFORM_USER:-}"
 TRANSFORM_PASS="${TRANSFORM_PASS:-}"
 HASH_TIMEOUT="${HASH_TIMEOUT:-300}"
-HASH_OUTPUT="${HASH_OUTPUT:-/tmp/optimize-model.${SESSION_ID}.hash.json}"
+
+# Window-unique prefix (includes bounds) plus candidate name so hash results
+# of different windows/candidates in one session never overwrite each other.
+ARTIFACT_PREFIX="$(python3 - <<'PY' "$PREP_OUTPUT"
+import json,sys
+with open(sys.argv[1], 'r', encoding='utf-8') as f:
+    data = json.load(f)
+print(data.get('artifact_prefix', ''))
+PY
+)"
+if [ -z "$ARTIFACT_PREFIX" ]; then
+  ARTIFACT_PREFIX="optimize-model.${SESSION_ID}"
+fi
+CANDIDATE_NAME="$(basename "$CANDIDATE_SQL" .sql | tr -cs 'A-Za-z0-9._-' '_')"
+HASH_OUTPUT="${HASH_OUTPUT:-/tmp/${ARTIFACT_PREFIX}.hash.${CANDIDATE_NAME}.json}"
 HASH_MISMATCH_FAIL="${HASH_MISMATCH_FAIL:-0}"
 SERVER_VERSION="${SERVER_VERSION:-$(python3 - <<'PY' "$PREP_OUTPUT"
 import json,sys
