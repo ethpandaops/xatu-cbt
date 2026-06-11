@@ -79,6 +79,7 @@ slot_committees AS
     SELECT
         slot,
         any(epoch) AS epoch,
+        any(toUnixTimestamp(slot_start_date_time)) AS slot_ts,
         uniqExact(committee_index) AS committees
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_committee" "helpers" "from" }}
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
@@ -90,6 +91,15 @@ slot_committees AS
 -- comparison can see, so additionally require every slot on the 12s grid
 -- inside the interval to be present at all. Slot duration is hardcoded the
 -- same way other models hardcode it (e.g. the /12000 propagation buckets).
+--
+-- Bounds are not necessarily aligned to that grid (backfill chunks are
+-- arbitrary spans whose length need not be a multiple of 12), so the
+-- expected count cannot be derived from the span length alone: snap the
+-- start bound up to the first on-grid timestamp, using the grid phase
+-- observed from any ingested slot in the interval, then count grid points
+-- up to the end bound. With zero ingested slots the phase is unknowable;
+-- keep the span-derived over-estimate so the task fails and retries, the
+-- desired outcome for an interval with no data at all.
 gate AS
 (
     SELECT
@@ -98,8 +108,16 @@ gate AS
             FROM slot_committees AS sc
             INNER JOIN expected_per_epoch AS e ON sc.epoch = e.epoch
         ) AS incomplete_slots,
-        toInt64(intDiv({{ .bounds.end }} - {{ .bounds.start }}, 12) + 1)
-            - toInt64((SELECT count() FROM slot_committees)) AS missing_slots
+        (
+            SELECT
+                if(count() = 0,
+                   toInt64(intDiv({{ .bounds.end }} - {{ .bounds.start }}, 12) + 1),
+                   toInt64(intDiv(
+                       {{ .bounds.end }}
+                           - ({{ .bounds.start }} + ((toInt64(any(slot_ts)) - {{ .bounds.start }}) % 12)),
+                       12) + 1))
+            FROM slot_committees
+        ) - toInt64((SELECT count() FROM slot_committees)) AS missing_slots
 )
 
 SELECT
