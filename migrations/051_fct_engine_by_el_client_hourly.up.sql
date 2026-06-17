@@ -1,15 +1,15 @@
 -- Drop deprecated status_hourly and status_daily tables (replaced by _by_el_client_hourly)
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_engine_new_payload_status_hourly ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_engine_new_payload_status_hourly_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_engine_new_payload_status_daily ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_engine_new_payload_status_daily_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_engine_get_blobs_status_hourly ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_engine_get_blobs_status_hourly_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_engine_get_blobs_status_daily ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_engine_get_blobs_status_daily_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_engine_new_payload_status_hourly ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_engine_new_payload_status_hourly_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_engine_new_payload_status_daily ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_engine_new_payload_status_daily_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_engine_get_blobs_status_hourly ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_engine_get_blobs_status_hourly_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_engine_get_blobs_status_daily ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_engine_get_blobs_status_daily_local ON CLUSTER '{cluster}';
 
 -- fct_engine_new_payload_by_el_client_hourly
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_engine_new_payload_by_el_client_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `meta_execution_implementation` LowCardinality(String) COMMENT 'Execution client implementation (e.g., Geth, Nethermind, Besu, Reth)',
@@ -39,17 +39,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client_hourly_local 
 ORDER BY (hour_start_date_time, meta_execution_implementation, meta_execution_version, node_class)
 COMMENT 'Hourly aggregated engine_newPayload statistics by execution client with true percentiles';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client_hourly_local
+CREATE TABLE fct_engine_new_payload_by_el_client_hourly ON CLUSTER '{cluster}'
+AS fct_engine_new_payload_by_el_client_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_engine_new_payload_by_el_client_hourly_local,
     cityHash64(hour_start_date_time, meta_execution_implementation, meta_execution_version, node_class)
 );
 
 -- fct_engine_get_blobs_by_el_client_hourly
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_engine_get_blobs_by_el_client_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `meta_execution_implementation` LowCardinality(String) COMMENT 'Execution client implementation (e.g., Geth, Nethermind, Besu, Reth)',
@@ -77,11 +77,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_hourly_local ON
 ORDER BY (hour_start_date_time, meta_execution_implementation, meta_execution_version, node_class)
 COMMENT 'Hourly aggregated engine_getBlobs statistics by execution client with true percentiles';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_hourly_local
+CREATE TABLE fct_engine_get_blobs_by_el_client_hourly ON CLUSTER '{cluster}'
+AS fct_engine_get_blobs_by_el_client_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_engine_get_blobs_by_el_client_hourly_local,
     cityHash64(hour_start_date_time, meta_execution_implementation, meta_execution_version, node_class)
 );

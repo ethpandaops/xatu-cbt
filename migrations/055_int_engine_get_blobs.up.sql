@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_engine_get_blobs_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_engine_get_blobs_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -61,23 +61,23 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Individual engine_getBlobs observations enriched with slot context from beacon blob sidecar data';
 
-CREATE TABLE `${NETWORK_NAME}`.int_engine_get_blobs ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_engine_get_blobs_local
+CREATE TABLE int_engine_get_blobs ON CLUSTER '{cluster}'
+AS int_engine_get_blobs_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_engine_get_blobs_local,
     cityHash64(slot_start_date_time, block_root, meta_client_name, event_date_time)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.int_engine_get_blobs_local ON CLUSTER '{cluster}'
+ALTER TABLE int_engine_get_blobs_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
     ORDER BY (slot, block_root)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.int_engine_get_blobs_local ON CLUSTER '{cluster}'
+ALTER TABLE int_engine_get_blobs_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_duration_ms
 (
     SELECT *

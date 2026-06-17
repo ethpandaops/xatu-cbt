@@ -4,42 +4,42 @@
 
 -- Drop unified/waterfall tables (order: distributed first, then local)
 -- Hourly/daily aggregations
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_hourly ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_hourly_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_daily ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_daily_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_hourly ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_hourly_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_daily ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_daily_local ON CLUSTER '{cluster}';
 -- Main unified table
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_local ON CLUSTER '{cluster}';
 -- Reactivation tables (all tiers)
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_24m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_24m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_18m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_18m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_12m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_12m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_6m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_6m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_1m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_1m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_24m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_24m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_18m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_18m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_12m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_12m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_6m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_6m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_1m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_1m_local ON CLUSTER '{cluster}';
 -- Expiry tables (all tiers)
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_24m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_24m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_18m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_18m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_12m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_12m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_6m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_6m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_1m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_1m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_24m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_24m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_18m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_18m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_12m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_12m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_6m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_6m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_1m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_1m_local ON CLUSTER '{cluster}';
 
 -- ============================================================================
 -- Recreate original _by_6m tables (from migration 037)
 -- ============================================================================
 
 -- int_storage_slot_expiry_by_6m
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_expiry_by_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot expiry is recorded (6 months after it was set)' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -53,15 +53,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m_local ON CLUSTER '{
 ORDER BY (block_number, address, slot_key)
 COMMENT 'Storage slot expiries - records slots that were set 6 months ago and are now candidates for clearing';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_expiry_by_6m ON CLUSTER '{cluster}' AS int_storage_slot_expiry_by_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_expiry_by_6m_local,
     cityHash64(block_number, address)
 );
 
 -- int_storage_slot_reactivation_by_6m
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_reactivation_by_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot was reactivated/cancelled (touched after 6+ months of inactivity)' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -75,15 +75,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m_local ON CLUS
 ORDER BY (block_number, address, slot_key)
 COMMENT 'Storage slot reactivations/cancellations - records slots that were touched after 6+ months of inactivity, undoing their expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_reactivation_by_6m ON CLUSTER '{cluster}' AS int_storage_slot_reactivation_by_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_reactivation_by_6m_local,
     cityHash64(block_number, address)
 );
 
 -- fct_storage_slot_state_with_expiry_by_6m
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_by_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `net_slots_delta` Int32 COMMENT 'Net slot adjustment this block (negative=expiry, positive=reactivation)' CODEC(DoubleDelta, ZSTD(1)),
@@ -100,9 +100,9 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_local ON
 ORDER BY (block_number)
 COMMENT 'Cumulative storage slot state per block with 6-month expiry policy applied - slots unused for 6 months are cleared';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_local ENGINE = Distributed(
+CREATE TABLE fct_storage_slot_state_with_expiry_by_6m ON CLUSTER '{cluster}' AS fct_storage_slot_state_with_expiry_by_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_by_6m_local,
     cityHash64(block_number)
 );
@@ -112,7 +112,7 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m ON CLUST
 -- ============================================================================
 
 -- Hourly storage slot state with expiry
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_by_6m_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `active_slots` Int64 COMMENT 'Cumulative count of active storage slots at end of hour (with 6m expiry policy)' CODEC(ZSTD(1)),
@@ -125,17 +125,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_hourly_l
 ORDER BY (`hour_start_date_time`)
 COMMENT 'Storage slot state metrics with 6-month expiry policy aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_hourly_local
+CREATE TABLE fct_storage_slot_state_with_expiry_by_6m_hourly ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_with_expiry_by_6m_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_by_6m_hourly_local,
     cityHash64(`hour_start_date_time`)
 );
 
 -- Daily storage slot state with expiry
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_by_6m_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `active_slots` Int64 COMMENT 'Cumulative count of active storage slots at end of day (with 6m expiry policy)' CODEC(ZSTD(1)),
@@ -148,11 +148,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_daily_lo
 ORDER BY (`day_start_date`)
 COMMENT 'Storage slot state metrics with 6-month expiry policy aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_daily_local
+CREATE TABLE fct_storage_slot_state_with_expiry_by_6m_daily ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_with_expiry_by_6m_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_by_6m_daily_local,
     cityHash64(`day_start_date`)
 );

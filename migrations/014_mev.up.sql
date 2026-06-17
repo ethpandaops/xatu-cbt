@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_head_local on cluster '{cluster}' (
+CREATE TABLE fct_block_mev_head_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number within the block proposer payload' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The start time for the slot that the proposer payload is for' CODEC(DoubleDelta, ZSTD(1)),
@@ -28,21 +28,21 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'MEV relay proposer payload delivered for a block on the unfinalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_mev_head_local ENGINE = Distributed(
+CREATE TABLE fct_block_mev_head ON CLUSTER '{cluster}' AS fct_block_mev_head_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_block_mev_head_local,
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_mev_head_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_block_mev_head_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
     ORDER BY (`slot`, `block_root`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_mev_canonical_local on cluster '{cluster}' (
+CREATE TABLE int_block_mev_canonical_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number within the block proposer payload' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The start time for the slot that the proposer payload is for' CODEC(DoubleDelta, ZSTD(1)),
@@ -72,14 +72,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'MEV relay proposer payload delivered for a block on the finalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_mev_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_mev_canonical_local ENGINE = Distributed(
+CREATE TABLE int_block_mev_canonical ON CLUSTER '{cluster}' AS int_block_mev_canonical_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_block_mev_canonical_local,
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.fct_block_mev_local on cluster '{cluster}' (
+CREATE TABLE fct_block_mev_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number within the block proposer payload' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The start time for the slot that the proposer payload is for' CODEC(DoubleDelta, ZSTD(1)),
@@ -110,21 +110,21 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'MEV relay proposer payload delivered for a block on the finalized chain including orphaned blocks';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_block_mev ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_mev_local ENGINE = Distributed(
+CREATE TABLE fct_block_mev ON CLUSTER '{cluster}' AS fct_block_mev_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_block_mev_local,
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_mev_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_block_mev_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
     ORDER BY (`slot`, `block_root`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms_local on cluster '{cluster}' (
+CREATE TABLE fct_mev_bid_highest_value_by_builder_chunked_50ms_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number within the block bid' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The start time for the slot that the bid is for' CODEC(DoubleDelta, ZSTD(1)),
@@ -147,21 +147,21 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Highest value bid from each builder per slot broken down by 50ms chunks. Each block_hash appears in the chunk determined by its earliest bid timestamp. Only includes bids within -12000ms to +12000ms of slot start time';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms_local ENGINE = Distributed(
+CREATE TABLE fct_mev_bid_highest_value_by_builder_chunked_50ms ON CLUSTER '{cluster}' AS fct_mev_bid_highest_value_by_builder_chunked_50ms_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_mev_bid_highest_value_by_builder_chunked_50ms_local,
     cityHash64(`slot_start_date_time`, `chunk_slot_start_diff`, `builder_pubkey`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_highest_value_by_builder_chunked_50ms_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_mev_bid_highest_value_by_builder_chunked_50ms_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
     ORDER BY (`slot`, `chunk_slot_start_diff`, `builder_pubkey`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local on cluster '{cluster}' (
+CREATE TABLE fct_mev_bid_count_by_relay_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number within the block bid' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The start time for the slot that the bid is for' CODEC(DoubleDelta, ZSTD(1)),
@@ -180,14 +180,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Total number of MEV relay bids for a slot by relay';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local ENGINE = Distributed(
+CREATE TABLE fct_mev_bid_count_by_relay ON CLUSTER '{cluster}' AS fct_mev_bid_count_by_relay_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_mev_bid_count_by_relay_local,
     cityHash64(`slot_start_date_time`, `relay_name`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_relay_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_mev_bid_count_by_relay_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

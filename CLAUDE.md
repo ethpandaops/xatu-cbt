@@ -7,7 +7,7 @@ Xatu CBT contains the models and tests for the [xatu](https://github.com/ethpand
 ## Quirks
 
 - Models are defined once but reused for multiple ethereum networks.
-- We template `${NETWORK_NAME}` as the database in the [migrations](./migrations).
+- [Migrations](./migrations) are database-agnostic: write unqualified table names, use `currentDatabase()` as the database arg of `Distributed` engines, and keep the `{database}` macro in `Replicated*` ZooKeeper paths. The target database is chosen at apply time via the connection's `database=` (one set of files builds every network's database) — do NOT hardcode or template a database name.
 - Models must just reference tables in the same database, as we want to be able to reuse the models across many networks.
 - Tests run against a network, not a specific fork.
 

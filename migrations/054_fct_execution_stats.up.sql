@@ -1,5 +1,5 @@
 -- fct_execution_tps_hourly
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_tps_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_tps_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this hour' CODEC(ZSTD(1)),
@@ -23,17 +23,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_tps_hourly_local ON CLUSTER '{clust
 ORDER BY (hour_start_date_time)
 COMMENT 'Hourly aggregated execution layer TPS statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_tps_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_tps_hourly_local
+CREATE TABLE fct_execution_tps_hourly ON CLUSTER '{cluster}'
+AS fct_execution_tps_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_tps_hourly_local,
     cityHash64(hour_start_date_time)
 );
 
 -- fct_execution_tps_daily
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_tps_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_tps_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this day' CODEC(ZSTD(1)),
@@ -57,17 +57,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_tps_daily_local ON CLUSTER '{cluste
 ORDER BY (day_start_date)
 COMMENT 'Daily aggregated execution layer TPS statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_tps_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_tps_daily_local
+CREATE TABLE fct_execution_tps_daily ON CLUSTER '{cluster}'
+AS fct_execution_tps_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_tps_daily_local,
     cityHash64(day_start_date)
 );
 
 -- fct_execution_gas_used_hourly
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_used_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_gas_used_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this hour' CODEC(ZSTD(1)),
@@ -91,17 +91,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_used_hourly_local ON CLUSTER '{
 ORDER BY (hour_start_date_time)
 COMMENT 'Hourly aggregated execution layer gas used statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_used_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_gas_used_hourly_local
+CREATE TABLE fct_execution_gas_used_hourly ON CLUSTER '{cluster}'
+AS fct_execution_gas_used_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_gas_used_hourly_local,
     cityHash64(hour_start_date_time)
 );
 
 -- fct_execution_gas_used_daily
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_used_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_gas_used_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this day' CODEC(ZSTD(1)),
@@ -125,17 +125,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_used_daily_local ON CLUSTER '{c
 ORDER BY (day_start_date)
 COMMENT 'Daily aggregated execution layer gas used statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_used_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_gas_used_daily_local
+CREATE TABLE fct_execution_gas_used_daily ON CLUSTER '{cluster}'
+AS fct_execution_gas_used_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_gas_used_daily_local,
     cityHash64(day_start_date)
 );
 
 -- fct_execution_gas_limit_hourly
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_gas_limit_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this hour' CODEC(ZSTD(1)),
@@ -158,17 +158,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_hourly_local ON CLUSTER '
 ORDER BY (hour_start_date_time)
 COMMENT 'Hourly aggregated execution layer gas limit statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_gas_limit_hourly_local
+CREATE TABLE fct_execution_gas_limit_hourly ON CLUSTER '{cluster}'
+AS fct_execution_gas_limit_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_gas_limit_hourly_local,
     cityHash64(hour_start_date_time)
 );
 
 -- fct_execution_gas_limit_daily
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_gas_limit_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this day' CODEC(ZSTD(1)),
@@ -191,17 +191,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_daily_local ON CLUSTER '{
 ORDER BY (day_start_date)
 COMMENT 'Daily aggregated execution layer gas limit statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_gas_limit_daily_local
+CREATE TABLE fct_execution_gas_limit_daily ON CLUSTER '{cluster}'
+AS fct_execution_gas_limit_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_gas_limit_daily_local,
     cityHash64(day_start_date)
 );
 
 -- fct_execution_gas_limit_signalling_hourly (rolling 7-day window with Map schema)
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_signalling_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_gas_limit_signalling_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `gas_limit_band_counts` Map(String, UInt32) COMMENT 'Map of gas limit band (1M increments) to validator count from rolling 7-day window' CODEC(ZSTD(1))
@@ -213,14 +213,14 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_signalling_hourly_local O
 ORDER BY (hour_start_date_time)
 COMMENT 'Hourly snapshots of validator gas limit signalling using rolling 7-day window';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_signalling_hourly ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_gas_limit_signalling_hourly ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime,
     `hour_start_date_time` DateTime,
     `gas_limit_band_counts` Map(String, UInt32)
-) ENGINE = Distributed('{cluster}', '${NETWORK_NAME}', fct_execution_gas_limit_signalling_hourly_local, cityHash64(hour_start_date_time));
+) ENGINE = Distributed('{cluster}', currentDatabase(), fct_execution_gas_limit_signalling_hourly_local, cityHash64(hour_start_date_time));
 
 -- fct_execution_gas_limit_signalling_daily (rolling 7-day window with Map schema)
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_signalling_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_gas_limit_signalling_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `gas_limit_band_counts` Map(String, UInt32) COMMENT 'Map of gas limit band (1M increments) to validator count from rolling 7-day window' CODEC(ZSTD(1))
@@ -232,14 +232,14 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_signalling_daily_local ON
 ORDER BY (day_start_date)
 COMMENT 'Daily snapshots of validator gas limit signalling using rolling 7-day window';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_gas_limit_signalling_daily ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_gas_limit_signalling_daily ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime,
     `day_start_date` Date,
     `gas_limit_band_counts` Map(String, UInt32)
-) ENGINE = Distributed('{cluster}', '${NETWORK_NAME}', fct_execution_gas_limit_signalling_daily_local, cityHash64(day_start_date));
+) ENGINE = Distributed('{cluster}', currentDatabase(), fct_execution_gas_limit_signalling_daily_local, cityHash64(day_start_date));
 
 -- fct_execution_transactions_hourly
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_transactions_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_transactions_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this hour' CODEC(ZSTD(1)),
@@ -263,17 +263,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_transactions_hourly_local ON CLUSTE
 ORDER BY (hour_start_date_time)
 COMMENT 'Hourly aggregated execution layer transaction counts with cumulative totals and per-block statistics';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_transactions_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_transactions_hourly_local
+CREATE TABLE fct_execution_transactions_hourly ON CLUSTER '{cluster}'
+AS fct_execution_transactions_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_transactions_hourly_local,
     cityHash64(hour_start_date_time)
 );
 
 -- fct_execution_transactions_daily
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_transactions_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_transactions_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this day' CODEC(ZSTD(1)),
@@ -297,11 +297,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_transactions_daily_local ON CLUSTER
 ORDER BY (day_start_date)
 COMMENT 'Daily aggregated execution layer transaction counts with cumulative totals and per-block statistics';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_transactions_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_transactions_daily_local
+CREATE TABLE fct_execution_transactions_daily ON CLUSTER '{cluster}'
+AS fct_execution_transactions_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_transactions_daily_local,
     cityHash64(day_start_date)
 );

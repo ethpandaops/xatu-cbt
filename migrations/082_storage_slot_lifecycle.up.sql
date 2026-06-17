@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_lifecycle_boundary_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_lifecycle_boundary_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `slot_key` String COMMENT 'The storage slot key' CODEC(ZSTD(1)),
@@ -15,16 +15,16 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_lifecycle_boundary_local ON CLUS
 ORDER BY (address, slot_key, lifecycle_number)
 COMMENT 'Lifecycle boundaries per storage slot: birth (0→non-zero) and death (non-zero→0) blocks with effective bytes at each transition.';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_lifecycle_boundary ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_storage_slot_lifecycle_boundary_local
+CREATE TABLE int_storage_slot_lifecycle_boundary ON CLUSTER '{cluster}'
+AS int_storage_slot_lifecycle_boundary_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_lifecycle_boundary_local,
     cityHash64(address, slot_key)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_lifecycle_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_lifecycle_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `slot_key` String COMMENT 'The storage slot key' CODEC(ZSTD(1)),
@@ -48,11 +48,11 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_lifecycle_local ON CLUSTER '{clu
 ORDER BY (address, slot_key, lifecycle_number)
 COMMENT 'Per-slot lifecycle metrics: birth/death blocks, touch counts, and touch-to-touch interval statistics. A lifecycle starts when a slot transitions from zero to non-zero (birth) and ends at the reverse (death). A slot can have multiple lifecycles.';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_lifecycle ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_storage_slot_lifecycle_local
+CREATE TABLE int_storage_slot_lifecycle ON CLUSTER '{cluster}'
+AS int_storage_slot_lifecycle_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_lifecycle_local,
     cityHash64(address, slot_key)
 );

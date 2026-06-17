@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_attestation_attested_canonical_local on cluster '{cluster}' (
+CREATE TABLE int_attestation_attested_canonical_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -24,14 +24,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attested head of a block for the unfinalized chain.';
 
-CREATE TABLE `${NETWORK_NAME}`.int_attestation_attested_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_attestation_attested_canonical_local ENGINE = Distributed(
+CREATE TABLE int_attestation_attested_canonical ON CLUSTER '{cluster}' AS int_attestation_attested_canonical_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_attestation_attested_canonical_local,
     cityHash64(`slot_start_date_time`, `block_root`, `attesting_validator_index`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_canonical_local on cluster '{cluster}' (
+CREATE TABLE fct_attestation_correctness_canonical_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -52,21 +52,21 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestation correctness of a block for the finalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_correctness_canonical_local ENGINE = Distributed(
+CREATE TABLE fct_attestation_correctness_canonical ON CLUSTER '{cluster}' AS fct_attestation_correctness_canonical_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_correctness_canonical_local,
     cityHash64(`slot_start_date_time`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_attestation_correctness_canonical_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_attestation_correctness_canonical_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
     ORDER BY (`slot`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_head_local on cluster '{cluster}' (
+CREATE TABLE fct_attestation_correctness_by_validator_head_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -87,14 +87,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestation correctness by validator for the finalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_head_local ENGINE = Distributed(
+CREATE TABLE fct_attestation_correctness_by_validator_head ON CLUSTER '{cluster}' AS fct_attestation_correctness_by_validator_head_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_correctness_by_validator_head_local,
     cityHash64(`slot_start_date_time`, `attesting_validator_index`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_canonical_local on cluster '{cluster}' (
+CREATE TABLE fct_attestation_correctness_by_validator_canonical_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -116,9 +116,9 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestation correctness by validator for the finalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_correctness_by_validator_canonical_local ENGINE = Distributed(
+CREATE TABLE fct_attestation_correctness_by_validator_canonical ON CLUSTER '{cluster}' AS fct_attestation_correctness_by_validator_canonical_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_correctness_by_validator_canonical_local,
     cityHash64(`slot_start_date_time`, `attesting_validator_index`)
 );

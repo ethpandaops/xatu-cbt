@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_local on cluster '{cluster}' (
+CREATE TABLE fct_attestation_liveness_by_entity_head_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -18,14 +18,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestation liveness aggregated by entity for the head chain. One row per (slot, entity) with counts for both attested and missed attestations.';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_local ENGINE = Distributed(
+CREATE TABLE fct_attestation_liveness_by_entity_head ON CLUSTER '{cluster}' AS fct_attestation_liveness_by_entity_head_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_liveness_by_entity_head_local,
     cityHash64(`slot`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_attestation_liveness_by_entity_head_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_attestation_liveness_by_entity_head_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

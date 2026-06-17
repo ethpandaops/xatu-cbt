@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.dim_node_local on cluster '{cluster}' (
+CREATE TABLE dim_node_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `validator_index` UInt32 COMMENT 'The index of the validator' CODEC(ZSTD(1)),
     `name` Nullable(String) COMMENT 'The name of the node' CODEC(ZSTD(1)),
@@ -17,9 +17,9 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Node information for validators';
 
-CREATE TABLE `${NETWORK_NAME}`.dim_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.dim_node_local ENGINE = Distributed(
+CREATE TABLE dim_node ON CLUSTER '{cluster}' AS dim_node_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     dim_node_local,
     cityHash64(`validator_index`)
 );

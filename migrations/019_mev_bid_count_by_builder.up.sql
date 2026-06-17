@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_builder_local on cluster '{cluster}' (
+CREATE TABLE fct_mev_bid_count_by_builder_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number within the block bid' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The start time for the slot that the bid is for' CODEC(DoubleDelta, ZSTD(1)),
@@ -17,14 +17,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Total number of MEV builder bids for a slot';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_builder ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_mev_bid_count_by_builder_local ENGINE = Distributed(
+CREATE TABLE fct_mev_bid_count_by_builder ON CLUSTER '{cluster}' AS fct_mev_bid_count_by_builder_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_mev_bid_count_by_builder_local,
     cityHash64(`slot_start_date_time`, `builder_pubkey`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_mev_bid_count_by_builder_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_mev_bid_count_by_builder_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

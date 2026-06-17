@@ -1,7 +1,7 @@
 -- ============================================================================
 -- fct_attestation_vote_correctness_by_validator (per-slot)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_attestation_vote_correctness_by_validator_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -28,16 +28,16 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Per-slot attestation vote correctness by validator';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_local
+CREATE TABLE fct_attestation_vote_correctness_by_validator ON CLUSTER '{cluster}'
+AS fct_attestation_vote_correctness_by_validator_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_vote_correctness_by_validator_local,
     cityHash64(validator_index, slot_start_date_time)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_attestation_vote_correctness_by_validator_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot_start_date_time
 (
     SELECT *
@@ -47,7 +47,7 @@ ADD PROJECTION p_by_slot_start_date_time
 -- ============================================================================
 -- fct_sync_committee_participation_by_validator (per-slot)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_sync_committee_participation_by_validator_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -68,11 +68,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_loc
 ORDER BY (validator_index, slot_start_date_time)
 COMMENT 'Per-slot sync committee participation by validator';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_local
+CREATE TABLE fct_sync_committee_participation_by_validator ON CLUSTER '{cluster}'
+AS fct_sync_committee_participation_by_validator_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_sync_committee_participation_by_validator_local,
     cityHash64(validator_index, slot_start_date_time)
 );
@@ -80,7 +80,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- fct_validator_balance (per-epoch)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_validator_balance_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -104,11 +104,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_local ON CLUSTER '{cluster}
 ORDER BY (validator_index, epoch_start_date_time)
 COMMENT 'Per-epoch validator balance and status';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_validator_balance_local
+CREATE TABLE fct_validator_balance ON CLUSTER '{cluster}'
+AS fct_validator_balance_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_validator_balance_local,
     cityHash64(validator_index, epoch_start_date_time)
 );
@@ -116,7 +116,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- fct_attestation_vote_correctness_by_validator_hourly
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_attestation_vote_correctness_by_validator_hourly_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -144,16 +144,16 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Hourly aggregation of per-validator attestation vote correctness';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_hourly_local
+CREATE TABLE fct_attestation_vote_correctness_by_validator_hourly ON CLUSTER '{cluster}'
+AS fct_attestation_vote_correctness_by_validator_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_vote_correctness_by_validator_hourly_local,
     cityHash64(validator_index, hour_start_date_time)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_hourly_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_attestation_vote_correctness_by_validator_hourly_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_hour_start_date_time
 (
     SELECT *
@@ -163,7 +163,7 @@ ADD PROJECTION p_by_hour_start_date_time
 -- ============================================================================
 -- fct_validator_balance_hourly
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_validator_balance_hourly_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -197,16 +197,16 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Hourly validator balance snapshots aggregated from per-epoch data';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_validator_balance_hourly_local
+CREATE TABLE fct_validator_balance_hourly ON CLUSTER '{cluster}'
+AS fct_validator_balance_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_validator_balance_hourly_local,
     cityHash64(validator_index, hour_start_date_time)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_validator_balance_hourly_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_validator_balance_hourly_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_hour_start_date_time
 (
     SELECT *
@@ -216,7 +216,7 @@ ADD PROJECTION p_by_hour_start_date_time
 -- ============================================================================
 -- fct_sync_committee_participation_by_validator_hourly
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_sync_committee_participation_by_validator_hourly_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -240,16 +240,16 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Hourly aggregation of per-validator sync committee participation';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_hourly_local
+CREATE TABLE fct_sync_committee_participation_by_validator_hourly ON CLUSTER '{cluster}'
+AS fct_sync_committee_participation_by_validator_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_sync_committee_participation_by_validator_hourly_local,
     cityHash64(validator_index, hour_start_date_time)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_hourly_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_sync_committee_participation_by_validator_hourly_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_hour_start_date_time
 (
     SELECT *
@@ -259,7 +259,7 @@ ADD PROJECTION p_by_hour_start_date_time
 -- ============================================================================
 -- fct_attestation_vote_correctness_by_validator_daily
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_attestation_vote_correctness_by_validator_daily_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -285,11 +285,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_dai
 ORDER BY (validator_index, day_start_date)
 COMMENT 'Daily aggregation of per-validator attestation vote correctness';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_attestation_vote_correctness_by_validator_daily_local
+CREATE TABLE fct_attestation_vote_correctness_by_validator_daily ON CLUSTER '{cluster}'
+AS fct_attestation_vote_correctness_by_validator_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_vote_correctness_by_validator_daily_local,
     cityHash64(validator_index, day_start_date)
 );
@@ -297,7 +297,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- fct_validator_balance_daily
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_validator_balance_daily_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -329,11 +329,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_daily_local ON CLUSTER '{cl
 ORDER BY (validator_index, day_start_date)
 COMMENT 'Daily validator balance snapshots aggregated from per-epoch data';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_validator_balance_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_validator_balance_daily_local
+CREATE TABLE fct_validator_balance_daily ON CLUSTER '{cluster}'
+AS fct_validator_balance_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_validator_balance_daily_local,
     cityHash64(validator_index, day_start_date)
 );
@@ -341,7 +341,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- fct_sync_committee_participation_by_validator_daily
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_sync_committee_participation_by_validator_daily_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -363,11 +363,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_dai
 ORDER BY (validator_index, day_start_date)
 COMMENT 'Daily aggregation of per-validator sync committee participation';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_sync_committee_participation_by_validator_daily_local
+CREATE TABLE fct_sync_committee_participation_by_validator_daily ON CLUSTER '{cluster}'
+AS fct_sync_committee_participation_by_validator_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_sync_committee_participation_by_validator_daily_local,
     cityHash64(validator_index, day_start_date)
 );
@@ -375,7 +375,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- fct_block_proposer_by_validator (per-slot, re-indexed by validator)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_by_validator_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_block_proposer_by_validator_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -400,16 +400,16 @@ CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_by_validator_local ON CLUSTER 
 ORDER BY (validator_index, slot_start_date_time)
 COMMENT 'Block proposers re-indexed by validator for efficient validator lookups';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_by_validator ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_block_proposer_by_validator_local
+CREATE TABLE fct_block_proposer_by_validator ON CLUSTER '{cluster}'
+AS fct_block_proposer_by_validator_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_block_proposer_by_validator_local,
     cityHash64(validator_index, slot_start_date_time)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.dim_validator_status_local ON CLUSTER '{cluster}' (
+CREATE TABLE dim_validator_status_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `version` UInt32 COMMENT 'ReplacingMergeTree version: 4294967295 - epoch, keeps earliest epoch' CODEC(ZSTD(1)),
@@ -439,11 +439,11 @@ CREATE TABLE `${NETWORK_NAME}`.dim_validator_status_local ON CLUSTER '{cluster}'
 ORDER BY (validator_index, status)
 COMMENT 'Validator lifecycle status transitions — one row per (validator_index, status) with the first epoch observed';
 
-CREATE TABLE `${NETWORK_NAME}`.dim_validator_status ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.dim_validator_status_local
+CREATE TABLE dim_validator_status ON CLUSTER '{cluster}'
+AS dim_validator_status_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     dim_validator_status_local,
     cityHash64(validator_index, status)
 );
@@ -451,7 +451,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- dim_validator_pubkey (validator index <-> pubkey mapping)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.dim_validator_pubkey_local ON CLUSTER '{cluster}' (
+CREATE TABLE dim_validator_pubkey_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -474,11 +474,11 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Validator index to pubkey mapping — one row per validator with the latest pubkey';
 
-CREATE TABLE `${NETWORK_NAME}`.dim_validator_pubkey ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.dim_validator_pubkey_local
+CREATE TABLE dim_validator_pubkey ON CLUSTER '{cluster}'
+AS dim_validator_pubkey_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     dim_validator_pubkey_local,
     cityHash64(pubkey, validator_index)
 );

@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_head_first_seen_by_node_local on cluster '{cluster}' (
+CREATE TABLE fct_head_first_seen_by_node_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `source` LowCardinality(String) COMMENT 'Source of the event' CODEC(ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
@@ -34,14 +34,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'When the head event was first seen on the network by a sentry node';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_head_first_seen_by_node ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_head_first_seen_by_node_local ENGINE = Distributed(
+CREATE TABLE fct_head_first_seen_by_node ON CLUSTER '{cluster}' AS fct_head_first_seen_by_node_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_head_first_seen_by_node_local,
     cityHash64(`slot_start_date_time`, `meta_client_name`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_head_first_seen_by_node_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_head_first_seen_by_node_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

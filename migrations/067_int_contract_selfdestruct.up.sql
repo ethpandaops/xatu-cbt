@@ -16,7 +16,7 @@
 -- ============================================================================
 -- int_contract_creation
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_creation_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_creation_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'Block where contract was created' CODEC(DoubleDelta, ZSTD(1)),
     `transaction_hash` String COMMENT 'Transaction hash' CODEC(ZSTD(1)),
@@ -39,9 +39,9 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Contract creation events with projection for efficient address lookups';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_creation ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_creation_local ENGINE = Distributed(
+CREATE TABLE int_contract_creation ON CLUSTER '{cluster}' AS int_contract_creation_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_creation_local,
     cityHash64(block_number, contract_address)
 );
@@ -49,7 +49,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_creation ON CLUSTER '{cluster}' AS `
 -- ============================================================================
 -- int_contract_selfdestruct
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_selfdestruct_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_selfdestruct_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'Block where SELFDESTRUCT occurred' CODEC(DoubleDelta, ZSTD(1)),
     `transaction_hash` String COMMENT 'Transaction hash' CODEC(ZSTD(1)),
@@ -72,9 +72,9 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'SELFDESTRUCT operations with EIP-6780 storage clearing implications';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_selfdestruct ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_selfdestruct_local ENGINE = Distributed(
+CREATE TABLE int_contract_selfdestruct ON CLUSTER '{cluster}' AS int_contract_selfdestruct_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_selfdestruct_local,
     cityHash64(block_number, address)
 );
@@ -90,7 +90,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_selfdestruct ON CLUSTER '{cluster}' 
 --   - Pre-Shanghai: All selfdestructs clear storage
 --   - Post-Shanghai (EIP-6780): Only ephemeral contracts clear storage
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_selfdestruct_diffs_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_selfdestruct_diffs_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'Block where SELFDESTRUCT occurred' CODEC(DoubleDelta, ZSTD(1)),
     `transaction_index` UInt32 COMMENT 'Transaction index within the block' CODEC(DoubleDelta, ZSTD(1)),
@@ -110,9 +110,9 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Synthetic storage diffs for selfdestructs that clear all storage slots';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_selfdestruct_diffs ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_selfdestruct_diffs_local ENGINE = Distributed(
+CREATE TABLE int_storage_selfdestruct_diffs ON CLUSTER '{cluster}' AS int_storage_selfdestruct_diffs_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_selfdestruct_diffs_local,
     cityHash64(block_number, address)
 );
