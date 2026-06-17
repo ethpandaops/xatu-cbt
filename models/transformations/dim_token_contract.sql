@@ -18,7 +18,7 @@ dependencies:
   - "{{external}}.canonical_execution_erc721_transfers"
 ---
 -- Classifies every contract that emits ERC20/ERC721 Transfer events into a single token_standard.
--- ERC20 and ERC721 Transfer share the same event signature; xatu separates them into two tables by
+-- ERC20 and ERC721 Transfer share the same event signature, xatu separates them into two tables by
 -- indexed-topic count, so a contract can appear in both. We assign the standard first-come-first-
 -- serve: whatever its earliest Transfer event in this chunk was. The dual-standard set is tiny, so
 -- the tie-break is immaterial, and this keeps each contract in exactly one mutually exclusive bucket
