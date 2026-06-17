@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms_local on cluster '{cluster}' (
+CREATE TABLE fct_attestation_first_seen_chunked_50ms_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -18,14 +18,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Attestations first seen on the unfinalized chain broken down by 50ms chunks. Only includes attestations that were seen within 12000ms of the slot start time. There can be multiple block roots + chunk_slot_start_diff for the same slot, it most likely means votes for prior slot blocks';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms_local ENGINE = Distributed(
+CREATE TABLE fct_attestation_first_seen_chunked_50ms ON CLUSTER '{cluster}' AS fct_attestation_first_seen_chunked_50ms_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_first_seen_chunked_50ms_local,
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_attestation_first_seen_chunked_50ms_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_attestation_first_seen_chunked_50ms_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

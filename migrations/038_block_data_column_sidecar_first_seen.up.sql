@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_block_data_column_sidecar_first_seen_local on cluster '{cluster}' (
+CREATE TABLE fct_block_data_column_sidecar_first_seen_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `source` LowCardinality(String) COMMENT 'Source of the event' CODEC(ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
@@ -36,14 +36,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'When the data column was first seen on the network by any sentry node';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_block_data_column_sidecar_first_seen ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_data_column_sidecar_first_seen_local ENGINE = Distributed(
+CREATE TABLE fct_block_data_column_sidecar_first_seen ON CLUSTER '{cluster}' AS fct_block_data_column_sidecar_first_seen_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_block_data_column_sidecar_first_seen_local,
     cityHash64(`slot_start_date_time`, `block_root`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_data_column_sidecar_first_seen_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_block_data_column_sidecar_first_seen_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

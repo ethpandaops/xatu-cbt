@@ -4,7 +4,7 @@
 -- Per-transaction exact RLP-encoded receipt size derived from
 -- canonical_execution_logs and canonical_execution_transaction.
 
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_receipt_size_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_transaction_receipt_size_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -35,11 +35,11 @@ SETTINGS
 COMMENT 'Per-transaction exact RLP-encoded receipt size derived from logs and transaction data.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_receipt_size ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_transaction_receipt_size_local
+CREATE TABLE int_transaction_receipt_size ON CLUSTER '{cluster}'
+AS int_transaction_receipt_size_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_transaction_receipt_size_local,
     cityHash64(block_number)
 );
@@ -49,7 +49,7 @@ ENGINE = Distributed(
 -- =============================================================================
 -- Per-block receipt size totals. Derived from int_transaction_receipt_size.
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_receipt_size_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_block_receipt_size_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -85,11 +85,11 @@ SETTINGS
 COMMENT 'Per-block receipt size totals. Derived from int_transaction_receipt_size.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.int_block_receipt_size ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_block_receipt_size_local
+CREATE TABLE int_block_receipt_size ON CLUSTER '{cluster}'
+AS int_block_receipt_size_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_block_receipt_size_local,
     cityHash64(block_number)
 );
@@ -99,7 +99,7 @@ ENGINE = Distributed(
 -- =============================================================================
 -- Daily aggregation of receipt size with standard statistics suite.
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_receipt_size_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_receipt_size_daily_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -145,11 +145,11 @@ SETTINGS
 COMMENT 'Daily aggregation of receipt size with standard statistics.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_receipt_size_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_receipt_size_daily_local
+CREATE TABLE fct_execution_receipt_size_daily ON CLUSTER '{cluster}'
+AS fct_execution_receipt_size_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_receipt_size_daily_local,
     cityHash64(day_start_date)
 );
@@ -159,7 +159,7 @@ ENGINE = Distributed(
 -- =============================================================================
 -- Hourly aggregation of receipt size with standard statistics suite.
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_receipt_size_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_receipt_size_hourly_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -205,11 +205,11 @@ SETTINGS
 COMMENT 'Hourly aggregation of receipt size with standard statistics.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_receipt_size_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_receipt_size_hourly_local
+CREATE TABLE fct_execution_receipt_size_hourly ON CLUSTER '{cluster}'
+AS fct_execution_receipt_size_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_receipt_size_hourly_local,
     cityHash64(hour_start_date_time)
 );

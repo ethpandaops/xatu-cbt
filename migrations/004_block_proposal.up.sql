@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_head_local on cluster '{cluster}' (
+CREATE TABLE fct_block_proposer_head_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -18,21 +18,21 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Block proposers for the unfinalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_head ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_proposer_head_local ENGINE = Distributed(
+CREATE TABLE fct_block_proposer_head ON CLUSTER '{cluster}' AS fct_block_proposer_head_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_block_proposer_head_local,
     cityHash64(`slot_start_date_time`, `proposer_validator_index`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_head_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_block_proposer_head_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
     ORDER BY (`slot`, `proposer_validator_index`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_canonical_local on cluster '{cluster}' (
+CREATE TABLE int_block_proposer_canonical_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -52,14 +52,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Block proposers for the finalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_proposer_canonical ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_block_proposer_canonical_local ENGINE = Distributed(
+CREATE TABLE int_block_proposer_canonical ON CLUSTER '{cluster}' AS int_block_proposer_canonical_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_block_proposer_canonical_local,
     cityHash64(`slot_start_date_time`)
 );
 
-CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_local on cluster '{cluster}' (
+CREATE TABLE fct_block_proposer_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -80,14 +80,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Block proposers for the finalized chain including orphaned blocks';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_proposer_local ENGINE = Distributed(
+CREATE TABLE fct_block_proposer ON CLUSTER '{cluster}' AS fct_block_proposer_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_block_proposer_local,
     cityHash64(`slot_start_date_time`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_block_proposer_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

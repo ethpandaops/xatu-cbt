@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -113,11 +114,28 @@ Example:
 	RunE: runInfraReset,
 }
 
+var infraMigrateXatuCmd = &cobra.Command{
+	Use:   "migrate-xatu",
+	Short: "Run xatu schema migrations against the local xatu ClickHouse cluster",
+	Long: `Runs ONLY the xatu (external source) ClickHouse migrations against the local
+xatu cluster. Unlike "infra start --run-migrations", this does NOT run CBT
+migrations — it is the dedicated seam for orchestrators (e.g. xcli) that drive
+CBT setup separately, per-network.
+
+The xatu repository is cloned/updated as needed (use --xatu-ref to pin a ref).
+
+Example:
+  xatu-cbt infra migrate-xatu --xatu-ref master`,
+	RunE: runInfraMigrateXatu,
+}
+
 func init() {
 	infraCmd.AddCommand(infraStartCmd)
 	infraCmd.AddCommand(infraStopCmd)
 	infraCmd.AddCommand(infraStatusCmd)
 	infraCmd.AddCommand(infraResetCmd)
+	infraCmd.AddCommand(infraMigrateXatuCmd)
+	infraMigrateXatuCmd.Flags().StringVar(&infraXatuRef, "xatu-ref", config.XatuDefaultRef, "Xatu repository ref (branch/tag/commit)")
 	infraCmd.PersistentFlags().StringVar(&infraClickhouseURL, "clickhouse-url", config.GetCBTClickHouseURL(), "CBT ClickHouse cluster URL")
 	infraCmd.PersistentFlags().StringVar(&infraRedisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
 	infraStopCmd.Flags().BoolVar(&infraCleanupTestDBs, "cleanup-test-dbs", true, "Cleanup ephemeral test databases")
@@ -461,8 +479,43 @@ func runInfraMigrations(ctx context.Context, log logrus.FieldLogger, xatuSource,
 	return nil
 }
 
-// runXatuMigrations runs migrations against the Xatu ClickHouse cluster.
-func runXatuMigrations(ctx context.Context, log logrus.FieldLogger, migrationDir string) error {
+// runInfraMigrateXatu runs ONLY the xatu migrations against the local xatu cluster.
+// It is the dedicated, CBT-free seam used by external orchestrators (e.g. xcli) so
+// they can drive CBT network setup separately.
+func runInfraMigrateXatu(_ *cobra.Command, _ []string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	log := newLogger(false)
+
+	wd, wdErr := os.Getwd()
+	if wdErr != nil {
+		return fmt.Errorf("getting working directory: %w", wdErr)
+	}
+
+	xatuRepoPath, repoErr := ensureXatuRepo(log, wd, config.XatuRepoURL, infraXatuRef)
+	if repoErr != nil {
+		return fmt.Errorf("ensuring xatu repository: %w", repoErr)
+	}
+
+	baseMigrationDir := filepath.Join(xatuRepoPath, config.XatuMigrationsPath)
+
+	fmt.Println("→ Running Xatu cluster migrations...")
+
+	if err := runXatuMigrations(ctx, log, baseMigrationDir); err != nil {
+		return fmt.Errorf("xatu migrations: %w", err)
+	}
+
+	fmt.Println("✓ Xatu cluster migrations complete")
+
+	return nil
+}
+
+// runXatuMigrations runs xatu's per-schema migration sets against the Xatu
+// ClickHouse cluster. Each set is database-agnostic and applied to its target
+// database, tracked in its own schema_migrations_<set> table. baseMigrationDir is
+// the root migrations directory; each set lives in a subdirectory below it.
+func runXatuMigrations(ctx context.Context, log logrus.FieldLogger, baseMigrationDir string) error {
 	xatuConnStr := config.GetXatuClickHouseURL()
 
 	// Open connection to Xatu cluster
@@ -476,21 +529,43 @@ func runXatuMigrations(ctx context.Context, log logrus.FieldLogger, migrationDir
 		return fmt.Errorf("pinging xatu clickhouse: %w", pingErr)
 	}
 
-	// Create required databases
+	// Create required databases. golang-migrate cannot bootstrap the database it
+	// connects to, so every target database must exist before migrations run.
 	if dbErr := createXatuDatabases(ctx, conn); dbErr != nil {
 		return dbErr
 	}
 
-	log.WithField("migration_dir", migrationDir).Debug("running xatu migrations")
+	for _, set := range config.XatuMigrationSets() {
+		setDir := filepath.Join(baseMigrationDir, set.Name)
+		if _, statErr := os.Stat(setDir); statErr != nil {
+			return fmt.Errorf("xatu migration set %q not found at %s (xatu ref may predate the per-set layout): %w",
+				set.Name, setDir, statErr)
+		}
 
-	// Run migrations using golang-migrate
+		log.WithFields(logrus.Fields{
+			"set":      set.Name,
+			"database": set.Database,
+		}).Debug("running xatu migrations")
+
+		if err := applyXatuMigrationSet(log, xatuConnStr, setDir, set); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// applyXatuMigrationSet applies a single xatu migration set to its target database.
+func applyXatuMigrationSet(log logrus.FieldLogger, connStr, setDir string, set config.XatuMigrationSet) error {
 	m, migErr := migrate.New(
-		fmt.Sprintf("file://%s", migrationDir),
-		fmt.Sprintf("%s?database=default&x-multi-statement=true&x-cluster-name=%s&x-migrations-table-engine=ReplicatedMergeTree",
-			xatuConnStr, config.XatuClusterName),
+		fmt.Sprintf("file://%s", setDir),
+		fmt.Sprintf(
+			"%s?database=%s&x-multi-statement=true&x-cluster-name=%s&x-migrations-table=%s%s&x-migrations-table-engine=ReplicatedMergeTree",
+			connStr, set.Database, config.XatuClusterName, config.SchemaMigrationsPrefix, set.Name,
+		),
 	)
 	if migErr != nil {
-		return fmt.Errorf("creating migration instance: %w", migErr)
+		return fmt.Errorf("creating migration instance for set %q: %w", set.Name, migErr)
 	}
 	defer func() {
 		if _, closeErr := m.Close(); closeErr != nil {
@@ -499,21 +574,21 @@ func runXatuMigrations(ctx context.Context, log logrus.FieldLogger, migrationDir
 	}()
 
 	if upErr := m.Up(); upErr != nil && !errors.Is(upErr, migrate.ErrNoChange) {
-		return fmt.Errorf("running migrations: %w", upErr)
+		return fmt.Errorf("running migrations for set %q: %w", set.Name, upErr)
 	}
 
 	return nil
 }
 
-// createXatuDatabases creates the required databases in the Xatu cluster.
+// createXatuDatabases creates the per-set target databases in the Xatu cluster.
+// golang-migrate cannot bootstrap the database it connects to, so the targets
+// must exist before migrations run.
 func createXatuDatabases(ctx context.Context, conn *sql.DB) error {
-	databases := []string{"default", "tmp", "admin", "dbt"}
-
-	for _, db := range databases {
-		createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s", db, config.XatuClusterName)
+	for _, set := range config.XatuMigrationSets() {
+		createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s", set.Database, config.XatuClusterName)
 
 		if _, execErr := conn.ExecContext(ctx, createSQL); execErr != nil {
-			return fmt.Errorf("creating %s database: %w", db, execErr)
+			return fmt.Errorf("creating %s database: %w", set.Database, execErr)
 		}
 	}
 

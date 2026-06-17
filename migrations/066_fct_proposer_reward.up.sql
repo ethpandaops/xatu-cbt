@@ -1,5 +1,5 @@
 -- fct_proposer_reward_hourly
-CREATE TABLE `${NETWORK_NAME}`.fct_proposer_reward_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_proposer_reward_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of MEV relay blocks in this hour' CODEC(ZSTD(1)),
@@ -22,17 +22,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_proposer_reward_hourly_local ON CLUSTER '{clu
 ORDER BY (hour_start_date_time)
 COMMENT 'Hourly aggregated MEV proposer reward statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_proposer_reward_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_proposer_reward_hourly_local
+CREATE TABLE fct_proposer_reward_hourly ON CLUSTER '{cluster}'
+AS fct_proposer_reward_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_proposer_reward_hourly_local,
     cityHash64(hour_start_date_time)
 );
 
 -- fct_proposer_reward_daily
-CREATE TABLE `${NETWORK_NAME}`.fct_proposer_reward_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_proposer_reward_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of MEV relay blocks in this day' CODEC(ZSTD(1)),
@@ -55,11 +55,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_proposer_reward_daily_local ON CLUSTER '{clus
 ORDER BY (day_start_date)
 COMMENT 'Daily aggregated MEV proposer reward statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_proposer_reward_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_proposer_reward_daily_local
+CREATE TABLE fct_proposer_reward_daily ON CLUSTER '{cluster}'
+AS fct_proposer_reward_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_proposer_reward_daily_local,
     cityHash64(day_start_date)
 );

@@ -1,7 +1,7 @@
 -- Cumulative execution layer state size per block (incremental, reconstructed
 -- from execution_state_size_delta). Replaces the deprecated execution_state_size
 -- snapshot table as the source for the hourly/daily aggregations.
-CREATE TABLE `${NETWORK_NAME}`.int_execution_state_size_by_block_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_execution_state_size_by_block_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt64 COMMENT 'Block number at which the cumulative state size is measured' CODEC(DoubleDelta, ZSTD(1)),
     `accounts` UInt64 COMMENT 'Cumulative total number of accounts in the state' CODEC(ZSTD(1)),
@@ -22,11 +22,11 @@ CREATE TABLE `${NETWORK_NAME}`.int_execution_state_size_by_block_local ON CLUSTE
 ORDER BY (`block_number`)
 COMMENT 'Cumulative execution layer state size per block, reconstructed from execution_state_size_delta. Drop-in replacement for the deprecated execution_state_size snapshot table.';
 
-CREATE TABLE `${NETWORK_NAME}`.int_execution_state_size_by_block ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_execution_state_size_by_block_local
+CREATE TABLE int_execution_state_size_by_block ON CLUSTER '{cluster}'
+AS int_execution_state_size_by_block_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_execution_state_size_by_block_local,
     cityHash64(`block_number`)
 );

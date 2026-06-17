@@ -47,7 +47,30 @@ const (
 	// XatuDefaultRef is the default git reference for the xatu repository.
 	XatuDefaultRef = "master"
 	// XatuMigrationsPath is the path to migrations within the xatu repository.
+	// Each per-schema set lives in its own subdirectory below this path.
 	XatuMigrationsPath = "deploy/migrations/clickhouse"
 	// DefaultRedisURL is the default redis url.
 	DefaultRedisURL = "redis://localhost:6380"
 )
+
+// XatuMigrationSet pairs a xatu migration set (a subdirectory under
+// XatuMigrationsPath) with the ClickHouse database it targets. xatu splits its
+// migrations into database-agnostic per-schema sets; each set is applied to its
+// target database and tracked in its own schema_migrations_<Name> table.
+type XatuMigrationSet struct {
+	// Name is the set's subdirectory name and the schema_migrations_<Name> suffix.
+	Name string
+	// Database is the ClickHouse database the set is applied to.
+	Database string
+}
+
+// XatuMigrationSets returns xatu's per-schema migration sets and their target
+// databases for the local stack. Mirrors xatu's clickhouse-migrate.sh convention
+// (directory name == database name), with the xatu set remapped to `default`.
+func XatuMigrationSets() []XatuMigrationSet {
+	return []XatuMigrationSet{
+		{Name: "xatu", Database: DefaultDatabase},
+		{Name: "observoor", Database: "observoor"},
+		{Name: "admin", Database: "admin"},
+	}
+}

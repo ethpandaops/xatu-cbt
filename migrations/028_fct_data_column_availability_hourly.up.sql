@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_hourly_local on cluster '{cluster}' (
+CREATE TABLE fct_data_column_availability_hourly_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `column_index` UInt64 COMMENT 'Column index (0-127)' CODEC(ZSTD(1)),
@@ -27,9 +27,9 @@ SETTINGS
   deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Data column availability by hour and column index';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_hourly ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_data_column_availability_hourly_local ENGINE = Distributed(
+CREATE TABLE fct_data_column_availability_hourly ON CLUSTER '{cluster}' AS fct_data_column_availability_hourly_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_data_column_availability_hourly_local,
     cityHash64(`hour_start_date_time`, `column_index`)
 );

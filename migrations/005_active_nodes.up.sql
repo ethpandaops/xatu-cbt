@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_node_active_last_24h_local on cluster '{cluster}' (
+CREATE TABLE fct_node_active_last_24h_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `last_seen_date_time` DateTime COMMENT 'Timestamp when the node was last seen' CODEC(DoubleDelta, ZSTD(1)),
     `username` String COMMENT 'Username of the node' CODEC(ZSTD(1)),
@@ -27,9 +27,9 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Active nodes for the network';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_node_active_last_24h ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_node_active_last_24h_local ENGINE = Distributed(
+CREATE TABLE fct_node_active_last_24h ON CLUSTER '{cluster}' AS fct_node_active_last_24h_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_node_active_last_24h_local,
     cityHash64(`meta_client_name`)
 );

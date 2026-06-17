@@ -1,5 +1,5 @@
 -- int_storage_slot_diff
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_diff_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_diff_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -14,15 +14,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_diff_local ON CLUSTER '{cluster}
 ORDER BY (block_number, address, slot_key)
 COMMENT 'Storage slot diffs aggregated per block - stores effective bytes from first and last value per address/slot';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_diff ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_diff_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_diff ON CLUSTER '{cluster}' AS int_storage_slot_diff_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_diff_local,
     cityHash64(block_number, address)
 );
 
 -- int_storage_slot_diff_by_address_slot
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_diff_by_address_slot_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_diff_by_address_slot_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -37,15 +37,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_diff_by_address_slot_local ON CL
 ORDER BY (address, slot_key, block_number)
 COMMENT 'Storage slot diffs aggregated per block - stores effective bytes from first and last value per address/slot';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_diff_by_address_slot ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_diff_by_address_slot_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_diff_by_address_slot ON CLUSTER '{cluster}' AS int_storage_slot_diff_by_address_slot_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_diff_by_address_slot_local,
     cityHash64(address, slot_key)
 );
 
 -- fct_storage_slot_state
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `slots_delta` Int32 COMMENT 'Change in active slots for this block (positive=activated, negative=deactivated)' CODEC(DoubleDelta, ZSTD(1)),
@@ -60,15 +60,15 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_local ON CLUSTER '{cluster
 ORDER BY (block_number)
 COMMENT 'Cumulative storage slot state per block - tracks active slots and effective bytes with per-block deltas';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_storage_slot_state_local ENGINE = Distributed(
+CREATE TABLE fct_storage_slot_state ON CLUSTER '{cluster}' AS fct_storage_slot_state_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_local,
     cityHash64(block_number)
 );
 
 -- int_storage_slot_expiry_by_6m
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_expiry_by_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot expiry is recorded (6 months after it was set)' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -82,15 +82,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m_local ON CLUSTER '{
 ORDER BY (block_number, address, slot_key)
 COMMENT 'Storage slot expiries - records slots that were set 6 months ago and are now candidates for clearing';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_expiry_by_6m ON CLUSTER '{cluster}' AS int_storage_slot_expiry_by_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_expiry_by_6m_local,
     cityHash64(block_number, address)
 );
 
 -- fct_storage_slot_state_with_expiry_by_6m
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_by_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `net_slots_delta` Int32 COMMENT 'Net slot adjustment this block (negative=expiry, positive=reactivation)' CODEC(DoubleDelta, ZSTD(1)),
@@ -107,15 +107,15 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_local ON
 ORDER BY (block_number)
 COMMENT 'Cumulative storage slot state per block with 6-month expiry policy applied - slots unused for 6 months are cleared';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_local ENGINE = Distributed(
+CREATE TABLE fct_storage_slot_state_with_expiry_by_6m ON CLUSTER '{cluster}' AS fct_storage_slot_state_with_expiry_by_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_by_6m_local,
     cityHash64(block_number)
 );
 
 -- int_storage_slot_next_touch
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_next_touch_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_next_touch_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot was touched' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -136,15 +136,15 @@ ORDER BY (block_number, address, slot_key)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Storage slot touches with precomputed next touch block - ordered by block_number for efficient range queries';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_next_touch ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_next_touch_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_next_touch ON CLUSTER '{cluster}' AS int_storage_slot_next_touch_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_next_touch_local,
     cityHash64(block_number, address)
 );
 
 -- int_storage_slot_read
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_read_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_read_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -157,15 +157,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_read_local ON CLUSTER '{cluster}
 ORDER BY (block_number, address, slot_key)
 COMMENT 'Storage slot reads aggregated per block - tracks which slots were read per address';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_read ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_read_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_read ON CLUSTER '{cluster}' AS int_storage_slot_read_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_read_local,
     cityHash64(block_number, address)
 );
 
 -- int_storage_slot_reactivation_by_6m
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_reactivation_by_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot was reactivated/cancelled (touched after 6+ months of inactivity)' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -179,15 +179,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m_local ON CLUS
 ORDER BY (block_number, address, slot_key)
 COMMENT 'Storage slot reactivations/cancellations - records slots that were touched after 6+ months of inactivity, undoing their expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_reactivation_by_6m ON CLUSTER '{cluster}' AS int_storage_slot_reactivation_by_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_reactivation_by_6m_local,
     cityHash64(block_number, address)
 );
 
 -- helper_storage_slot_next_touch_latest_state
-CREATE TABLE `${NETWORK_NAME}`.helper_storage_slot_next_touch_latest_state_local ON CLUSTER '{cluster}' (
+CREATE TABLE helper_storage_slot_next_touch_latest_state_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `slot_key` String COMMENT 'The storage slot key' CODEC(ZSTD(1)),
@@ -200,9 +200,9 @@ CREATE TABLE `${NETWORK_NAME}`.helper_storage_slot_next_touch_latest_state_local
 ) ORDER BY (address, slot_key)
 COMMENT 'Latest state per storage slot for efficient lookups. Helper table for int_storage_slot_next_touch.';
 
-CREATE TABLE `${NETWORK_NAME}`.helper_storage_slot_next_touch_latest_state ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.helper_storage_slot_next_touch_latest_state_local ENGINE = Distributed(
+CREATE TABLE helper_storage_slot_next_touch_latest_state ON CLUSTER '{cluster}' AS helper_storage_slot_next_touch_latest_state_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     helper_storage_slot_next_touch_latest_state_local,
     cityHash64(address, slot_key)
 );

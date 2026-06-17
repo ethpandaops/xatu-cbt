@@ -14,29 +14,29 @@
 -- ============================================================================
 
 -- From migration 037: fct_storage_slot_state (renamed to int_storage_slot_state_by_block)
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_local ON CLUSTER '{cluster}';
 
 -- From migration 039: fct_storage_slot_state_hourly/daily (renamed to fct_storage_slot_state_by_block_*)
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_hourly ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_hourly_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_daily ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_daily_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_hourly ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_hourly_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_daily ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_daily_local ON CLUSTER '{cluster}';
 
 -- From migration 050: fct_storage_slot_state_with_expiry* (renamed to int_storage_slot_state_with_expiry_by_block)
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_hourly ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_hourly_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_daily ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_daily_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_hourly ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_hourly_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_daily ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_daily_local ON CLUSTER '{cluster}';
 
 -- ============================================================================
 -- NEW SLOT-LEVEL STATE TABLES (replacing fct_storage_slot_state from 037)
 -- ============================================================================
 
 -- int_storage_slot_state (per block, address)
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_state_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -52,15 +52,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_local ON CLUSTER '{cluster
 ORDER BY (block_number, address)
 COMMENT 'Cumulative storage slot state per block per address - tracks active slots and effective bytes with per-block deltas';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_state_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_state ON CLUSTER '{cluster}' AS int_storage_slot_state_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_state_local,
     cityHash64(block_number, address)
 );
 
 -- int_storage_slot_state_by_address (same data as int_storage_slot_state, ordered by address for efficient address lookups)
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_by_address_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_state_by_address_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -76,15 +76,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_by_address_local ON CLUSTE
 ORDER BY (address, block_number)
 COMMENT 'Cumulative storage slot state per block per address - ordered by address for efficient address-based queries';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_by_address ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_state_by_address_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_state_by_address ON CLUSTER '{cluster}' AS int_storage_slot_state_by_address_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_state_by_address_local,
     cityHash64(address, block_number)
 );
 
 -- int_storage_slot_state_by_block (aggregated per block from int_storage_slot_state)
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_by_block_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_state_by_block_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `slots_delta` Int32 COMMENT 'Change in active slots for this block (positive=activated, negative=deactivated)' CODEC(DoubleDelta, ZSTD(1)),
@@ -99,9 +99,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_by_block_local ON CLUSTER 
 ORDER BY (block_number)
 COMMENT 'Cumulative storage slot state per block - tracks active slots and effective bytes with per-block deltas';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_by_block ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_state_by_block_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_state_by_block ON CLUSTER '{cluster}' AS int_storage_slot_state_by_block_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_state_by_block_local,
     cityHash64(block_number)
 );
@@ -111,7 +111,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_by_block ON CLUSTER '{clus
 -- ============================================================================
 
 -- Hourly storage slot state by block (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_block_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_by_block_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `active_slots` Int64 COMMENT 'Cumulative count of active storage slots at end of hour' CODEC(ZSTD(1)),
@@ -124,17 +124,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_block_hourly_local ON C
 ORDER BY (`hour_start_date_time`)
 COMMENT 'Storage slot state metrics aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_block_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_by_block_hourly_local
+CREATE TABLE fct_storage_slot_state_by_block_hourly ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_by_block_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_by_block_hourly_local,
     cityHash64(`hour_start_date_time`)
 );
 
 -- Daily storage slot state by block (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_block_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_by_block_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `active_slots` Int64 COMMENT 'Cumulative count of active storage slots at end of day' CODEC(ZSTD(1)),
@@ -147,17 +147,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_block_daily_local ON CL
 ORDER BY (`day_start_date`)
 COMMENT 'Storage slot state metrics aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_block_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_by_block_daily_local
+CREATE TABLE fct_storage_slot_state_by_block_daily ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_by_block_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_by_block_daily_local,
     cityHash64(`day_start_date`)
 );
 
 -- Hourly storage slot state by address (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_address_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_by_address_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
@@ -171,17 +171,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_address_hourly_local ON
 ORDER BY (address, `hour_start_date_time`)
 COMMENT 'Storage slot state metrics per address aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_address_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_by_address_hourly_local
+CREATE TABLE fct_storage_slot_state_by_address_hourly ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_by_address_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_by_address_hourly_local,
     cityHash64(address, `hour_start_date_time`)
 );
 
 -- Daily storage slot state by address (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_address_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_by_address_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
@@ -195,11 +195,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_address_daily_local ON 
 ORDER BY (address, `day_start_date`)
 COMMENT 'Storage slot state metrics per address aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_by_address_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_by_address_daily_local
+CREATE TABLE fct_storage_slot_state_by_address_daily ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_by_address_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_by_address_daily_local,
     cityHash64(address, `day_start_date`)
 );
@@ -209,7 +209,7 @@ ENGINE = Distributed(
 -- ============================================================================
 
 -- int_storage_slot_state_with_expiry (per block, address, expiry_policy)
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_state_with_expiry_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -228,15 +228,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_local ON CLUST
 ORDER BY (expiry_policy, block_number, address)
 COMMENT 'Cumulative storage slot state per block per address with expiry policies - supports 1m, 6m, 12m, 18m, 24m waterfall';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_with_expiry ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_state_with_expiry ON CLUSTER '{cluster}' AS int_storage_slot_state_with_expiry_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_state_with_expiry_local,
     cityHash64(block_number, address)
 );
 
 -- int_storage_slot_state_with_expiry_by_address (same data, ordered by address for efficient address lookups)
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_by_address_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_state_with_expiry_by_address_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -255,15 +255,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_by_address_loc
 ORDER BY (address, expiry_policy, block_number)
 COMMENT 'Cumulative storage slot state per block per address with expiry policies - ordered by address for efficient address lookups';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_by_address ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_by_address_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_state_with_expiry_by_address ON CLUSTER '{cluster}' AS int_storage_slot_state_with_expiry_by_address_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_state_with_expiry_by_address_local,
     cityHash64(address, block_number)
 );
 
 -- int_storage_slot_state_with_expiry_by_block (aggregated from int_storage_slot_state_with_expiry)
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_by_block_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_state_with_expiry_by_block_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
@@ -281,15 +281,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_by_block_local
 ORDER BY (expiry_policy, block_number)
 COMMENT 'Cumulative storage slot state per block with expiry policies - supports 1m, 6m, 12m, 18m, 24m waterfall';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_by_block ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_state_with_expiry_by_block_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_state_with_expiry_by_block ON CLUSTER '{cluster}' AS int_storage_slot_state_with_expiry_by_block_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_state_with_expiry_by_block_local,
     cityHash64(block_number)
 );
 
 -- fct_storage_slot_state_with_expiry_by_block_hourly (unified, with expiry_policy)
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_block_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_by_block_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
@@ -303,17 +303,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_block_hourl
 ORDER BY (expiry_policy, hour_start_date_time)
 COMMENT 'Storage slot state metrics with expiry policies aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_block_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_block_hourly_local
+CREATE TABLE fct_storage_slot_state_with_expiry_by_block_hourly ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_with_expiry_by_block_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_by_block_hourly_local,
     cityHash64(expiry_policy, hour_start_date_time)
 );
 
 -- fct_storage_slot_state_with_expiry_by_block_daily (unified, with expiry_policy)
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_block_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_by_block_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
@@ -327,17 +327,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_block_daily
 ORDER BY (expiry_policy, day_start_date)
 COMMENT 'Storage slot state metrics with expiry policies aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_block_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_block_daily_local
+CREATE TABLE fct_storage_slot_state_with_expiry_by_block_daily ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_with_expiry_by_block_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_by_block_daily_local,
     cityHash64(expiry_policy, day_start_date)
 );
 
 -- fct_storage_slot_state_with_expiry_by_address_hourly (with expiry_policy and address)
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_address_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_by_address_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
@@ -352,17 +352,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_address_hou
 ORDER BY (address, expiry_policy, hour_start_date_time)
 COMMENT 'Storage slot state metrics per address with expiry policies aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_address_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_address_hourly_local
+CREATE TABLE fct_storage_slot_state_with_expiry_by_address_hourly ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_with_expiry_by_address_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_by_address_hourly_local,
     cityHash64(address, expiry_policy, hour_start_date_time)
 );
 
 -- fct_storage_slot_state_with_expiry_by_address_daily (with expiry_policy and address)
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_address_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_by_address_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
@@ -377,11 +377,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_address_dai
 ORDER BY (address, expiry_policy, day_start_date)
 COMMENT 'Storage slot state metrics per address with expiry policies aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_address_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_address_daily_local
+CREATE TABLE fct_storage_slot_state_with_expiry_by_address_daily ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_with_expiry_by_address_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_by_address_daily_local,
     cityHash64(address, expiry_policy, day_start_date)
 );
@@ -395,7 +395,7 @@ ENGINE = Distributed(
 -- Top 100 contracts by active storage slot count with expiry policies
 -- Rank is based on raw state (NULL expiry_policy), with expiry values shown
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_top_100_by_slots_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` Nullable(String) COMMENT 'Expiry policy identifier: NULL (raw), 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
     `rank` UInt32 COMMENT 'Rank by active slots (1=highest), based on raw state' CODEC(DoubleDelta, ZSTD(1)),
@@ -416,11 +416,11 @@ ORDER BY (`rank`, ifNull(`expiry_policy`, ''))
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Top 100 contracts by active storage slot count with expiry policies applied';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_slots_local
+CREATE TABLE fct_storage_slot_top_100_by_slots ON CLUSTER '{cluster}'
+AS fct_storage_slot_top_100_by_slots_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_top_100_by_slots_local,
     cityHash64(`rank`)
 );
@@ -430,7 +430,7 @@ ENGINE = Distributed(
 -- Top 100 contracts by effective bytes with expiry policies
 -- Rank is based on raw state (NULL expiry_policy), with expiry values shown
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_top_100_by_bytes_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` Nullable(String) COMMENT 'Expiry policy identifier: NULL (raw), 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
     `rank` UInt32 COMMENT 'Rank by effective bytes (1=highest), based on raw state' CODEC(DoubleDelta, ZSTD(1)),
@@ -451,11 +451,11 @@ ORDER BY (`rank`, ifNull(`expiry_policy`, ''))
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Top 100 contracts by effective storage bytes with expiry policies applied';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_top_100_by_bytes_local
+CREATE TABLE fct_storage_slot_top_100_by_bytes ON CLUSTER '{cluster}'
+AS fct_storage_slot_top_100_by_bytes_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_top_100_by_bytes_local,
     cityHash64(`rank`)
 );
@@ -468,7 +468,7 @@ ENGINE = Distributed(
 -- storage slot tables.
 -- ============================================================================
 
-CREATE TABLE `${NETWORK_NAME}`.dim_contract_owner_local ON CLUSTER '{cluster}' (
+CREATE TABLE dim_contract_owner_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `contract_address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `owner_key` Nullable(String) COMMENT 'Owner key identifier' CODEC(ZSTD(1)),
@@ -486,11 +486,11 @@ ORDER BY (`contract_address`)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Contract owner information from Dune Analytics, growthepie, and eth-labels for top storage slot contracts';
 
-CREATE TABLE `${NETWORK_NAME}`.dim_contract_owner ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.dim_contract_owner_local
+CREATE TABLE dim_contract_owner ON CLUSTER '{cluster}'
+AS dim_contract_owner_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     dim_contract_owner_local,
     cityHash64(`contract_address`)
 );
@@ -511,7 +511,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- int_contract_storage_next_touch
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_next_touch_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_next_touch_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract was touched' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -531,9 +531,9 @@ ORDER BY (block_number, address)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Contract-level touches with precomputed next touch block - a touch is any slot read or write on the contract';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_next_touch ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_next_touch_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_next_touch ON CLUSTER '{cluster}' AS int_contract_storage_next_touch_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_next_touch_local,
     cityHash64(block_number, address)
 );
@@ -541,7 +541,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_next_touch ON CLUSTER '{clus
 -- ============================================================================
 -- helper_contract_storage_next_touch_latest_state
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.helper_contract_storage_next_touch_latest_state_local ON CLUSTER '{cluster}' (
+CREATE TABLE helper_contract_storage_next_touch_latest_state_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number of the latest touch for this contract' CODEC(DoubleDelta, ZSTD(1)),
@@ -553,9 +553,9 @@ CREATE TABLE `${NETWORK_NAME}`.helper_contract_storage_next_touch_latest_state_l
 ) ORDER BY (address)
 COMMENT 'Latest state per contract for efficient lookups. Helper table for int_contract_storage_next_touch.';
 
-CREATE TABLE `${NETWORK_NAME}`.helper_contract_storage_next_touch_latest_state ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.helper_contract_storage_next_touch_latest_state_local ENGINE = Distributed(
+CREATE TABLE helper_contract_storage_next_touch_latest_state ON CLUSTER '{cluster}' AS helper_contract_storage_next_touch_latest_state_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     helper_contract_storage_next_touch_latest_state_local,
     cityHash64(address)
 );
@@ -563,7 +563,7 @@ CREATE TABLE `${NETWORK_NAME}`.helper_contract_storage_next_touch_latest_state O
 -- ============================================================================
 -- int_contract_storage_expiry_1m (base tier)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_1m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_expiry_1m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -578,9 +578,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_1m_local ON CLUSTER '
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 1-month expiries - base tier of waterfall chain';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_1m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_expiry_1m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_expiry_1m ON CLUSTER '{cluster}' AS int_contract_storage_expiry_1m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_expiry_1m_local,
     cityHash64(block_number, address)
 );
@@ -588,7 +588,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_1m ON CLUSTER '{clust
 -- ============================================================================
 -- int_contract_storage_reactivation_1m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_1m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_reactivation_1m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -603,9 +603,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_1m_local ON CLU
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 1-month reactivations - contracts touched after 1m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_1m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_reactivation_1m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_reactivation_1m ON CLUSTER '{cluster}' AS int_contract_storage_reactivation_1m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_reactivation_1m_local,
     cityHash64(block_number, address)
 );
@@ -613,7 +613,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_1m ON CLUSTER '
 -- ============================================================================
 -- int_contract_storage_expiry_6m (waterfalls from 1m)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_expiry_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -628,9 +628,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_6m_local ON CLUSTER '
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 6-month expiries - waterfalls from 1m tier';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_expiry_6m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_expiry_6m ON CLUSTER '{cluster}' AS int_contract_storage_expiry_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_expiry_6m_local,
     cityHash64(block_number, address)
 );
@@ -638,7 +638,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_6m ON CLUSTER '{clust
 -- ============================================================================
 -- int_contract_storage_reactivation_6m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_reactivation_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -653,9 +653,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_6m_local ON CLU
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 6-month reactivations - contracts touched after 6m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_reactivation_6m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_reactivation_6m ON CLUSTER '{cluster}' AS int_contract_storage_reactivation_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_reactivation_6m_local,
     cityHash64(block_number, address)
 );
@@ -663,7 +663,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_6m ON CLUSTER '
 -- ============================================================================
 -- int_contract_storage_expiry_12m (waterfalls from 6m)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_12m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_expiry_12m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -678,9 +678,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_12m_local ON CLUSTER 
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 12-month expiries - waterfalls from 6m tier';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_12m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_expiry_12m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_expiry_12m ON CLUSTER '{cluster}' AS int_contract_storage_expiry_12m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_expiry_12m_local,
     cityHash64(block_number, address)
 );
@@ -688,7 +688,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_12m ON CLUSTER '{clus
 -- ============================================================================
 -- int_contract_storage_reactivation_12m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_12m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_reactivation_12m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -703,9 +703,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_12m_local ON CL
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 12-month reactivations - contracts touched after 12m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_12m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_reactivation_12m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_reactivation_12m ON CLUSTER '{cluster}' AS int_contract_storage_reactivation_12m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_reactivation_12m_local,
     cityHash64(block_number, address)
 );
@@ -713,7 +713,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_12m ON CLUSTER 
 -- ============================================================================
 -- int_contract_storage_expiry_18m (waterfalls from 12m)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_18m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_expiry_18m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -728,9 +728,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_18m_local ON CLUSTER 
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 18-month expiries - waterfalls from 12m tier';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_18m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_expiry_18m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_expiry_18m ON CLUSTER '{cluster}' AS int_contract_storage_expiry_18m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_expiry_18m_local,
     cityHash64(block_number, address)
 );
@@ -738,7 +738,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_18m ON CLUSTER '{clus
 -- ============================================================================
 -- int_contract_storage_reactivation_18m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_18m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_reactivation_18m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -753,9 +753,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_18m_local ON CL
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 18-month reactivations - contracts touched after 18m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_18m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_reactivation_18m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_reactivation_18m ON CLUSTER '{cluster}' AS int_contract_storage_reactivation_18m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_reactivation_18m_local,
     cityHash64(block_number, address)
 );
@@ -763,7 +763,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_18m ON CLUSTER 
 -- ============================================================================
 -- int_contract_storage_expiry_24m (waterfalls from 18m)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_24m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_expiry_24m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -778,9 +778,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_24m_local ON CLUSTER 
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 24-month expiries - waterfalls from 18m tier';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_24m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_expiry_24m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_expiry_24m ON CLUSTER '{cluster}' AS int_contract_storage_expiry_24m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_expiry_24m_local,
     cityHash64(block_number, address)
 );
@@ -788,7 +788,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_expiry_24m ON CLUSTER '{clus
 -- ============================================================================
 -- int_contract_storage_reactivation_24m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_24m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_reactivation_24m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this contract was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -803,9 +803,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_24m_local ON CL
 ORDER BY (block_number, address, touch_block)
 COMMENT 'Contract-level 24-month reactivations - contracts touched after 24m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_24m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_reactivation_24m_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_reactivation_24m ON CLUSTER '{cluster}' AS int_contract_storage_reactivation_24m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_reactivation_24m_local,
     cityHash64(block_number, address)
 );
@@ -815,7 +815,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_reactivation_24m ON CLUSTER 
 -- ============================================================================
 -- Tracks per-contract storage state under each expiry policy.
 -- active_slots and effective_bytes reflect the contract state after expiry adjustments.
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_address_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_state_with_expiry_by_address_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -830,9 +830,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_address
 ORDER BY (address, expiry_policy, block_number)
 COMMENT 'Contract-level expiry state ordered by address - tracks active_slots and effective_bytes per contract';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_address ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_address_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_state_with_expiry_by_address ON CLUSTER '{cluster}' AS int_contract_storage_state_with_expiry_by_address_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_state_with_expiry_by_address_local,
     cityHash64(address, block_number)
 );
@@ -841,7 +841,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_address
 -- int_contract_storage_state_with_expiry_by_block (network-wide aggregation)
 -- ============================================================================
 -- Network-wide totals: sum of slots, sum of bytes, count of active contracts.
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_block_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_state_with_expiry_by_block_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
@@ -856,9 +856,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_block_l
 ORDER BY (expiry_policy, block_number)
 COMMENT 'Contract-level expiry state per block network-wide - totals for slots, bytes, and active contracts';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_block ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_block_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_state_with_expiry_by_block ON CLUSTER '{cluster}' AS int_contract_storage_state_with_expiry_by_block_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_state_with_expiry_by_block_local,
     cityHash64(block_number)
 );
@@ -866,7 +866,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_by_block O
 -- ============================================================================
 -- fct_contract_storage_state_with_expiry_by_block_hourly
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_block_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_contract_storage_state_with_expiry_by_block_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
@@ -881,11 +881,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_block_h
 ORDER BY (expiry_policy, hour_start_date_time)
 COMMENT 'Contract-level expiry state metrics aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_block_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_block_hourly_local
+CREATE TABLE fct_contract_storage_state_with_expiry_by_block_hourly ON CLUSTER '{cluster}'
+AS fct_contract_storage_state_with_expiry_by_block_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_contract_storage_state_with_expiry_by_block_hourly_local,
     cityHash64(expiry_policy, hour_start_date_time)
 );
@@ -893,7 +893,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- fct_contract_storage_state_with_expiry_by_block_daily
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_block_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_contract_storage_state_with_expiry_by_block_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
@@ -908,11 +908,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_block_d
 ORDER BY (expiry_policy, day_start_date)
 COMMENT 'Contract-level expiry state metrics aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_block_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_block_daily_local
+CREATE TABLE fct_contract_storage_state_with_expiry_by_block_daily ON CLUSTER '{cluster}'
+AS fct_contract_storage_state_with_expiry_by_block_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_contract_storage_state_with_expiry_by_block_daily_local,
     cityHash64(expiry_policy, day_start_date)
 );
@@ -920,7 +920,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- fct_contract_storage_state_with_expiry_by_address_hourly
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_address_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_contract_storage_state_with_expiry_by_address_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
@@ -935,11 +935,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_address
 ORDER BY (address, expiry_policy, hour_start_date_time)
 COMMENT 'Contract-level expiry state metrics per address aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_address_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_address_hourly_local
+CREATE TABLE fct_contract_storage_state_with_expiry_by_address_hourly ON CLUSTER '{cluster}'
+AS fct_contract_storage_state_with_expiry_by_address_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_contract_storage_state_with_expiry_by_address_hourly_local,
     cityHash64(address, expiry_policy, hour_start_date_time)
 );
@@ -947,7 +947,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- fct_contract_storage_state_with_expiry_by_address_daily
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_address_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_contract_storage_state_with_expiry_by_address_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
@@ -962,11 +962,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_address
 ORDER BY (address, expiry_policy, day_start_date)
 COMMENT 'Contract-level expiry state metrics per address aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_address_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_contract_storage_state_with_expiry_by_address_daily_local
+CREATE TABLE fct_contract_storage_state_with_expiry_by_address_daily ON CLUSTER '{cluster}'
+AS fct_contract_storage_state_with_expiry_by_address_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_contract_storage_state_with_expiry_by_address_daily_local,
     cityHash64(address, expiry_policy, day_start_date)
 );
@@ -983,7 +983,7 @@ ENGINE = Distributed(
 --   - active_slots, effective_bytes: final values (base + cumulative)
 -- ============================================================================
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_state_with_expiry_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -1004,15 +1004,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_local ON C
 ORDER BY (expiry_policy, block_number, address)
 COMMENT 'Contract-level expiry state base table - tracks deltas and cumulative adjustments per address per policy';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_with_expiry ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_state_with_expiry_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_state_with_expiry ON CLUSTER '{cluster}' AS int_contract_storage_state_with_expiry_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_state_with_expiry_local,
     cityHash64(block_number, address)
 );
 
 -- int_contract_storage_state (per block, address) - same structure as int_storage_slot_state
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_state_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -1028,15 +1028,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_local ON CLUSTER '{clu
 ORDER BY (block_number, address)
 COMMENT 'Cumulative contract storage state per block per address - tracks active slots and effective bytes with per-block deltas';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_state_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_state ON CLUSTER '{cluster}' AS int_contract_storage_state_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_state_local,
     cityHash64(block_number, address)
 );
 
 -- int_contract_storage_state_by_address (same data as int_contract_storage_state, ordered by address for efficient address lookups)
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_by_address_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_state_by_address_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -1052,15 +1052,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_by_address_local ON CL
 ORDER BY (address, block_number)
 COMMENT 'Cumulative contract storage state per block per address - ordered by address for efficient address-based queries';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_by_address ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_state_by_address_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_state_by_address ON CLUSTER '{cluster}' AS int_contract_storage_state_by_address_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_state_by_address_local,
     cityHash64(address, block_number)
 );
 
 -- int_contract_storage_state_by_block (aggregated per block with active_contracts count)
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_by_block_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_contract_storage_state_by_block_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `slots_delta` Int32 COMMENT 'Change in active slots for this block (positive=activated, negative=deactivated)' CODEC(DoubleDelta, ZSTD(1)),
@@ -1077,15 +1077,15 @@ CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_by_block_local ON CLUS
 ORDER BY (block_number)
 COMMENT 'Cumulative contract storage state per block - tracks active slots, effective bytes, and active contracts with per-block deltas';
 
-CREATE TABLE `${NETWORK_NAME}`.int_contract_storage_state_by_block ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_contract_storage_state_by_block_local ENGINE = Distributed(
+CREATE TABLE int_contract_storage_state_by_block ON CLUSTER '{cluster}' AS int_contract_storage_state_by_block_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_contract_storage_state_by_block_local,
     cityHash64(block_number)
 );
 
 -- Hourly contract storage state by block (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_block_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_contract_storage_state_by_block_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `active_slots` Int64 COMMENT 'Cumulative count of active storage slots at end of hour' CODEC(ZSTD(1)),
@@ -1099,17 +1099,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_block_hourly_local 
 ORDER BY (`hour_start_date_time`)
 COMMENT 'Contract storage state metrics aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_block_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_contract_storage_state_by_block_hourly_local
+CREATE TABLE fct_contract_storage_state_by_block_hourly ON CLUSTER '{cluster}'
+AS fct_contract_storage_state_by_block_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_contract_storage_state_by_block_hourly_local,
     cityHash64(`hour_start_date_time`)
 );
 
 -- Daily contract storage state by block (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_block_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_contract_storage_state_by_block_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `active_slots` Int64 COMMENT 'Cumulative count of active storage slots at end of day' CODEC(ZSTD(1)),
@@ -1123,17 +1123,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_block_daily_local O
 ORDER BY (`day_start_date`)
 COMMENT 'Contract storage state metrics aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_block_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_contract_storage_state_by_block_daily_local
+CREATE TABLE fct_contract_storage_state_by_block_daily ON CLUSTER '{cluster}'
+AS fct_contract_storage_state_by_block_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_contract_storage_state_by_block_daily_local,
     cityHash64(`day_start_date`)
 );
 
 -- Hourly contract storage state by address (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_address_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_contract_storage_state_by_address_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
@@ -1147,17 +1147,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_address_hourly_loca
 ORDER BY (address, `hour_start_date_time`)
 COMMENT 'Contract storage state metrics per address aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_address_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_contract_storage_state_by_address_hourly_local
+CREATE TABLE fct_contract_storage_state_by_address_hourly ON CLUSTER '{cluster}'
+AS fct_contract_storage_state_by_address_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_contract_storage_state_by_address_hourly_local,
     cityHash64(address, `hour_start_date_time`)
 );
 
 -- Daily contract storage state by address (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_address_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_contract_storage_state_by_address_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
@@ -1171,11 +1171,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_address_daily_local
 ORDER BY (address, `day_start_date`)
 COMMENT 'Contract storage state metrics per address aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_contract_storage_state_by_address_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_contract_storage_state_by_address_daily_local
+CREATE TABLE fct_contract_storage_state_by_address_daily ON CLUSTER '{cluster}'
+AS fct_contract_storage_state_by_address_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_contract_storage_state_by_address_daily_local,
     cityHash64(address, `day_start_date`)
 );
