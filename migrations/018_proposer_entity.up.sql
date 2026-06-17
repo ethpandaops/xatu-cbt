@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_entity_local on cluster '{cluster}' (
+CREATE TABLE fct_block_proposer_entity_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'The slot number' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -16,14 +16,14 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Block proposer entity for the unfinalized chain';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_block_proposer_entity ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_block_proposer_entity_local ENGINE = Distributed(
+CREATE TABLE fct_block_proposer_entity ON CLUSTER '{cluster}' AS fct_block_proposer_entity_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_block_proposer_entity_local,
     cityHash64(`slot_start_date_time`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_block_proposer_entity_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_block_proposer_entity_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *

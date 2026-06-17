@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_slot_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_engine_get_blobs_by_slot_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number of the beacon block being reconstructed' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -27,11 +27,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_slot_local ON CLUSTER '{c
 ORDER BY (slot_start_date_time, block_root, status, node_class)
 COMMENT 'Slot-level aggregated engine_getBlobs observations grouped by status with duration statistics';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_slot ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_engine_get_blobs_by_slot_local
+CREATE TABLE fct_engine_get_blobs_by_slot ON CLUSTER '{cluster}'
+AS fct_engine_get_blobs_by_slot_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_engine_get_blobs_by_slot_local,
     cityHash64(slot_start_date_time, block_root, status, node_class)
 );

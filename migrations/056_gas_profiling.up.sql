@@ -3,7 +3,7 @@
 -- =============================================================================
 
 -- Local table for opcode-level gas aggregation per transaction
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_opcode_gas_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_transaction_opcode_gas_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -39,24 +39,24 @@ SETTINGS
 COMMENT 'Aggregated opcode-level gas usage per transaction. Source: canonical_execution_transaction_structlog';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_opcode_gas ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_transaction_opcode_gas_local
+CREATE TABLE int_transaction_opcode_gas ON CLUSTER '{cluster}'
+AS int_transaction_opcode_gas_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_transaction_opcode_gas_local,
     cityHash64(block_number)
 );
 
 -- Projection for opcode-first queries (e.g., "how much gas did SLOAD use across blocks?")
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_opcode_gas_local ON CLUSTER '{cluster}'
+ALTER TABLE int_transaction_opcode_gas_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_opcode (
     SELECT *
     ORDER BY (opcode, block_number, transaction_hash)
 );
 
 -- Projection for transaction-first queries (e.g., "what opcodes did this tx use?")
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_opcode_gas_local ON CLUSTER '{cluster}'
+ALTER TABLE int_transaction_opcode_gas_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_transaction (
     SELECT *
     ORDER BY (transaction_hash, opcode)
@@ -66,7 +66,7 @@ ADD PROJECTION p_by_transaction (
 -- int_transaction_call_frame
 -- =============================================================================
 
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_call_frame_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_transaction_call_frame_local ON CLUSTER '{cluster}' (
   -- Metadata
   `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -106,17 +106,17 @@ SETTINGS
   deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Aggregated call frame activity per transaction for call tree analysis';
 
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_call_frame ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_transaction_call_frame_local
+CREATE TABLE int_transaction_call_frame ON CLUSTER '{cluster}'
+AS int_transaction_call_frame_local
 ENGINE = Distributed(
   '{cluster}',
-  '${NETWORK_NAME}',
+  currentDatabase(),
   int_transaction_call_frame_local,
   cityHash64(block_number)
 );
 
 -- Projection for transaction lookups without block_number
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_local ON CLUSTER '{cluster}'
+ALTER TABLE int_transaction_call_frame_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_transaction (
   SELECT *
   ORDER BY (transaction_hash, call_frame_id)
@@ -128,7 +128,7 @@ ADD PROJECTION p_by_transaction (
 
 -- Local table for opcode-level gas aggregation per call frame within transactions
 -- This table enables per-frame opcode breakdown, answering "which opcodes did frame N execute?"
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_transaction_call_frame_opcode_gas_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -163,24 +163,24 @@ SETTINGS
 COMMENT 'Aggregated opcode-level gas usage per call frame. Enables per-frame opcode analysis.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas_local
+CREATE TABLE int_transaction_call_frame_opcode_gas ON CLUSTER '{cluster}'
+AS int_transaction_call_frame_opcode_gas_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_transaction_call_frame_opcode_gas_local,
     cityHash64(block_number)
 );
 
 -- Projection for frame-first queries (e.g., "what opcodes did frame 15 execute?")
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas_local ON CLUSTER '{cluster}'
+ALTER TABLE int_transaction_call_frame_opcode_gas_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_frame (
     SELECT *
     ORDER BY (transaction_hash, call_frame_id, opcode)
 );
 
 -- Projection for opcode-first queries (e.g., "which frames used SLOAD?")
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas_local ON CLUSTER '{cluster}'
+ALTER TABLE int_transaction_call_frame_opcode_gas_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_opcode (
     SELECT *
     ORDER BY (opcode, block_number, transaction_hash, call_frame_id)
@@ -190,7 +190,7 @@ ADD PROJECTION p_by_opcode (
 -- dim_function_signature
 -- =============================================================================
 
-CREATE TABLE `${NETWORK_NAME}`.dim_function_signature_local ON CLUSTER '{cluster}' (
+CREATE TABLE dim_function_signature_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `selector` String COMMENT 'Function selector (first 4 bytes of keccak256 hash, hex encoded with 0x prefix)' CODEC(ZSTD(1)),
     `name` String COMMENT 'Function signature name (e.g., transfer(address,uint256))' CODEC(ZSTD(1)),
@@ -206,11 +206,11 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Function signature lookup table populated from Sourcify signature database.';
 
-CREATE TABLE `${NETWORK_NAME}`.dim_function_signature ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.dim_function_signature_local
+CREATE TABLE dim_function_signature ON CLUSTER '{cluster}'
+AS dim_function_signature_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     dim_function_signature_local,
     cityHash64(selector)
 );
@@ -221,7 +221,7 @@ ENGINE = Distributed(
 
 -- Local table for block-level opcode gas aggregation
 -- Aggregates opcode gas data from int_transaction_opcode_gas to block level
-CREATE TABLE `${NETWORK_NAME}`.int_block_opcode_gas_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_block_opcode_gas_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -250,17 +250,17 @@ SETTINGS
 COMMENT 'Aggregated opcode-level gas usage per block. Derived from int_transaction_opcode_gas.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.int_block_opcode_gas ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_block_opcode_gas_local
+CREATE TABLE int_block_opcode_gas ON CLUSTER '{cluster}'
+AS int_block_opcode_gas_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_block_opcode_gas_local,
     cityHash64(block_number)
 );
 
 -- Projection for opcode-first queries (e.g., "how much gas did SLOAD use across blocks?")
-ALTER TABLE `${NETWORK_NAME}`.int_block_opcode_gas_local ON CLUSTER '{cluster}'
+ALTER TABLE int_block_opcode_gas_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_opcode (
     SELECT *
     ORDER BY (opcode, block_number)
@@ -271,7 +271,7 @@ ADD PROJECTION p_by_opcode (
 -- =============================================================================
 
 -- Hourly opcode execution rate (ops/sec) with statistical aggregations
-CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_opcode_ops_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this hour' CODEC(ZSTD(1)),
@@ -296,11 +296,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_hourly_local ON CLUSTER '{cluster}
 ORDER BY (hour_start_date_time)
 COMMENT 'Hourly aggregated opcode execution rate statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_opcode_ops_hourly_local
+CREATE TABLE fct_opcode_ops_hourly ON CLUSTER '{cluster}'
+AS fct_opcode_ops_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_opcode_ops_hourly_local,
     cityHash64(hour_start_date_time)
 );
@@ -310,7 +310,7 @@ ENGINE = Distributed(
 -- =============================================================================
 
 -- Daily opcode execution rate (ops/sec) with statistical aggregations
-CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_opcode_ops_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `block_count` UInt32 COMMENT 'Number of blocks in this day' CODEC(ZSTD(1)),
@@ -335,11 +335,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_daily_local ON CLUSTER '{cluster}'
 ORDER BY (day_start_date)
 COMMENT 'Daily aggregated opcode execution rate statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_opcode_ops_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_opcode_ops_daily_local
+CREATE TABLE fct_opcode_ops_daily ON CLUSTER '{cluster}'
+AS fct_opcode_ops_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_opcode_ops_daily_local,
     cityHash64(day_start_date)
 );
@@ -349,7 +349,7 @@ ENGINE = Distributed(
 -- =============================================================================
 
 -- Hourly per-opcode gas consumption
-CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_opcode_gas_by_opcode_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `opcode` LowCardinality(String) COMMENT 'The EVM opcode name (e.g., SLOAD, ADD, CALL)',
@@ -370,17 +370,17 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Hourly per-opcode gas consumption for Top Opcodes by Gas charts';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly_local
+CREATE TABLE fct_opcode_gas_by_opcode_hourly ON CLUSTER '{cluster}'
+AS fct_opcode_gas_by_opcode_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_opcode_gas_by_opcode_hourly_local,
     cityHash64(hour_start_date_time)
 );
 
 -- Projection for opcode-first queries (e.g., "how much gas did SLOAD use over time?")
-ALTER TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_hourly_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_opcode_gas_by_opcode_hourly_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_opcode (
     SELECT *
     ORDER BY (opcode, hour_start_date_time)
@@ -391,7 +391,7 @@ ADD PROJECTION p_by_opcode (
 -- =============================================================================
 
 -- Daily per-opcode gas consumption
-CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_opcode_gas_by_opcode_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `opcode` LowCardinality(String) COMMENT 'The EVM opcode name (e.g., SLOAD, ADD, CALL)',
@@ -412,17 +412,17 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Daily per-opcode gas consumption for Top Opcodes by Gas charts';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily_local
+CREATE TABLE fct_opcode_gas_by_opcode_daily ON CLUSTER '{cluster}'
+AS fct_opcode_gas_by_opcode_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_opcode_gas_by_opcode_daily_local,
     cityHash64(day_start_date)
 );
 
 -- Projection for opcode-first queries (e.g., "how much gas did SLOAD use over time?")
-ALTER TABLE `${NETWORK_NAME}`.fct_opcode_gas_by_opcode_daily_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_opcode_gas_by_opcode_daily_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_opcode (
     SELECT *
     ORDER BY (opcode, day_start_date)

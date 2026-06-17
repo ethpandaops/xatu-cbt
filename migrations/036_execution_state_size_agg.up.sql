@@ -1,5 +1,5 @@
 -- Hourly absolute values (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_state_size_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `accounts` UInt64 COMMENT 'Total accounts at end of hour' CODEC(ZSTD(1)),
@@ -21,17 +21,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_hourly_local ON CLUSTER 
 ORDER BY (`hour_start_date_time`)
 COMMENT 'Execution layer state size metrics aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_state_size_hourly_local
+CREATE TABLE fct_execution_state_size_hourly ON CLUSTER '{cluster}'
+AS fct_execution_state_size_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_state_size_hourly_local,
     cityHash64(`hour_start_date_time`)
 );
 
 -- Daily absolute values (incremental)
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_execution_state_size_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `accounts` UInt64 COMMENT 'Total accounts at end of day' CODEC(ZSTD(1)),
@@ -53,11 +53,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_daily_local ON CLUSTER '
 ORDER BY (`day_start_date`)
 COMMENT 'Execution layer state size metrics aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_execution_state_size_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_execution_state_size_daily_local
+CREATE TABLE fct_execution_state_size_daily ON CLUSTER '{cluster}'
+AS fct_execution_state_size_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_execution_state_size_daily_local,
     cityHash64(`day_start_date`)
 );

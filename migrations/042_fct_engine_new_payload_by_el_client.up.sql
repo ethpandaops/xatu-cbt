@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_engine_new_payload_by_el_client_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number of the beacon block containing the payload' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -29,11 +29,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client_local ON CLUS
 ORDER BY (slot_start_date_time, block_hash, meta_execution_implementation, meta_execution_version, status, node_class)
 COMMENT 'engine_newPayload observations aggregated by execution client and status for EL comparison';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_engine_new_payload_by_el_client_local
+CREATE TABLE fct_engine_new_payload_by_el_client ON CLUSTER '{cluster}'
+AS fct_engine_new_payload_by_el_client_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_engine_new_payload_by_el_client_local,
     cityHash64(slot_start_date_time, block_hash, meta_execution_implementation, meta_execution_version, status, node_class)
 );

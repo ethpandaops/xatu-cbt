@@ -1,5 +1,5 @@
 -- fct_attestation_inclusion_delay_hourly
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_inclusion_delay_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_attestation_inclusion_delay_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `slot_count` UInt32 COMMENT 'Number of slots in this hour' CODEC(ZSTD(1)),
@@ -21,17 +21,17 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_inclusion_delay_hourly_local ON C
 ORDER BY (hour_start_date_time)
 COMMENT 'Hourly aggregated attestation inclusion delay statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_inclusion_delay_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_attestation_inclusion_delay_hourly_local
+CREATE TABLE fct_attestation_inclusion_delay_hourly ON CLUSTER '{cluster}'
+AS fct_attestation_inclusion_delay_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_inclusion_delay_hourly_local,
     cityHash64(hour_start_date_time)
 );
 
 -- fct_attestation_inclusion_delay_daily
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_inclusion_delay_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_attestation_inclusion_delay_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `slot_count` UInt32 COMMENT 'Number of slots in this day' CODEC(ZSTD(1)),
@@ -53,11 +53,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_attestation_inclusion_delay_daily_local ON CL
 ORDER BY (day_start_date)
 COMMENT 'Daily aggregated attestation inclusion delay statistics with percentiles, Bollinger bands, and moving averages';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_attestation_inclusion_delay_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_attestation_inclusion_delay_daily_local
+CREATE TABLE fct_attestation_inclusion_delay_daily ON CLUSTER '{cluster}'
+AS fct_attestation_inclusion_delay_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_attestation_inclusion_delay_daily_local,
     cityHash64(day_start_date)
 );

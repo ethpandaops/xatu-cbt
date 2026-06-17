@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_status_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_engine_get_blobs_status_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `node_class` LowCardinality(String) COMMENT 'Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes)' CODEC(ZSTD(1)),
@@ -23,11 +23,11 @@ ORDER BY (day_start_date, node_class)
 SETTINGS deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Daily aggregated engine_getBlobs status distribution and duration statistics';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_status_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_engine_get_blobs_status_daily_local
+CREATE TABLE fct_engine_get_blobs_status_daily ON CLUSTER '{cluster}'
+AS fct_engine_get_blobs_status_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_engine_get_blobs_status_daily_local,
     cityHash64(day_start_date, node_class)
 );

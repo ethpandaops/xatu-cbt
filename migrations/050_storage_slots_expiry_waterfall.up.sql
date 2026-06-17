@@ -13,17 +13,17 @@
 -- ============================================================================
 
 -- Drop old policy-specific tables (order: distributed first, then local)
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_reactivation_by_6m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.int_storage_slot_expiry_by_6m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_by_6m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_reactivation_by_6m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_by_6m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_by_6m_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_by_6m ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS int_storage_slot_expiry_by_6m_local ON CLUSTER '{cluster}';
 
 -- ============================================================================
 -- int_storage_slot_expiry_1m (base tier)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_1m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_expiry_1m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -38,9 +38,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_1m_local ON CLUSTER '{clu
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 1-month expiries - base tier of waterfall chain';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_1m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_expiry_1m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_expiry_1m ON CLUSTER '{cluster}' AS int_storage_slot_expiry_1m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_expiry_1m_local,
     cityHash64(block_number, address)
 );
@@ -48,7 +48,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_1m ON CLUSTER '{cluster}'
 -- ============================================================================
 -- int_storage_slot_reactivation_1m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_1m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_reactivation_1m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -63,9 +63,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_1m_local ON CLUSTER
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 1-month reactivations - slots touched after 1m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_1m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_reactivation_1m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_reactivation_1m ON CLUSTER '{cluster}' AS int_storage_slot_reactivation_1m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_reactivation_1m_local,
     cityHash64(block_number, address)
 );
@@ -73,7 +73,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_1m ON CLUSTER '{clu
 -- ============================================================================
 -- int_storage_slot_expiry_6m (waterfalls from 1m)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_expiry_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -88,9 +88,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_6m_local ON CLUSTER '{clu
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 6-month expiries - waterfalls from 1m tier';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_expiry_6m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_expiry_6m ON CLUSTER '{cluster}' AS int_storage_slot_expiry_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_expiry_6m_local,
     cityHash64(block_number, address)
 );
@@ -98,7 +98,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_6m ON CLUSTER '{cluster}'
 -- ============================================================================
 -- int_storage_slot_reactivation_6m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_6m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_reactivation_6m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -113,9 +113,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_6m_local ON CLUSTER
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 6-month reactivations - slots touched after 6m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_6m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_reactivation_6m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_reactivation_6m ON CLUSTER '{cluster}' AS int_storage_slot_reactivation_6m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_reactivation_6m_local,
     cityHash64(block_number, address)
 );
@@ -123,7 +123,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_6m ON CLUSTER '{clu
 -- ============================================================================
 -- int_storage_slot_expiry_12m (waterfalls from 6m)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_12m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_expiry_12m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -138,9 +138,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_12m_local ON CLUSTER '{cl
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 12-month expiries - waterfalls from 6m tier';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_12m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_expiry_12m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_expiry_12m ON CLUSTER '{cluster}' AS int_storage_slot_expiry_12m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_expiry_12m_local,
     cityHash64(block_number, address)
 );
@@ -148,7 +148,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_12m ON CLUSTER '{cluster}
 -- ============================================================================
 -- int_storage_slot_reactivation_12m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_12m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_reactivation_12m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -163,9 +163,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_12m_local ON CLUSTE
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 12-month reactivations - slots touched after 12m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_12m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_reactivation_12m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_reactivation_12m ON CLUSTER '{cluster}' AS int_storage_slot_reactivation_12m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_reactivation_12m_local,
     cityHash64(block_number, address)
 );
@@ -173,7 +173,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_12m ON CLUSTER '{cl
 -- ============================================================================
 -- int_storage_slot_expiry_18m (waterfalls from 12m)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_18m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_expiry_18m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -188,9 +188,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_18m_local ON CLUSTER '{cl
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 18-month expiries - waterfalls from 12m tier';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_18m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_expiry_18m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_expiry_18m ON CLUSTER '{cluster}' AS int_storage_slot_expiry_18m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_expiry_18m_local,
     cityHash64(block_number, address)
 );
@@ -198,7 +198,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_18m ON CLUSTER '{cluster}
 -- ============================================================================
 -- int_storage_slot_reactivation_18m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_18m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_reactivation_18m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -213,9 +213,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_18m_local ON CLUSTE
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 18-month reactivations - slots touched after 18m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_18m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_reactivation_18m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_reactivation_18m ON CLUSTER '{cluster}' AS int_storage_slot_reactivation_18m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_reactivation_18m_local,
     cityHash64(block_number, address)
 );
@@ -223,7 +223,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_18m ON CLUSTER '{cl
 -- ============================================================================
 -- int_storage_slot_expiry_24m (waterfalls from 18m)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_24m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_expiry_24m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot expiry is recorded' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -238,9 +238,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_24m_local ON CLUSTER '{cl
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 24-month expiries - waterfalls from 18m tier';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_24m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_expiry_24m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_expiry_24m ON CLUSTER '{cluster}' AS int_storage_slot_expiry_24m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_expiry_24m_local,
     cityHash64(block_number, address)
 );
@@ -248,7 +248,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_expiry_24m ON CLUSTER '{cluster}
 -- ============================================================================
 -- int_storage_slot_reactivation_24m
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_24m_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_storage_slot_reactivation_24m_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number where this slot was reactivated' CODEC(DoubleDelta, ZSTD(1)),
     `address` String COMMENT 'The contract address' CODEC(ZSTD(1)),
@@ -263,9 +263,9 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_24m_local ON CLUSTE
 ORDER BY (block_number, address, slot_key, touch_block)
 COMMENT 'Storage slot 24-month reactivations - slots touched after 24m expiry';
 
-CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_24m ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.int_storage_slot_reactivation_24m_local ENGINE = Distributed(
+CREATE TABLE int_storage_slot_reactivation_24m ON CLUSTER '{cluster}' AS int_storage_slot_reactivation_24m_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_storage_slot_reactivation_24m_local,
     cityHash64(block_number, address)
 );
@@ -273,7 +273,7 @@ CREATE TABLE `${NETWORK_NAME}`.int_storage_slot_reactivation_24m ON CLUSTER '{cl
 -- ============================================================================
 -- fct_storage_slot_state_with_expiry (unified, partitioned by policy)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `block_number` UInt32 COMMENT 'The block number' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
@@ -291,9 +291,9 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_local ON CLUST
 ORDER BY (expiry_policy, block_number)
 COMMENT 'Cumulative storage slot state with expiry policies - supports 1m, 6m, 12m, 18m, 24m waterfall';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_local ENGINE = Distributed(
+CREATE TABLE fct_storage_slot_state_with_expiry ON CLUSTER '{cluster}' AS fct_storage_slot_state_with_expiry_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_local,
     cityHash64(block_number)
 );
@@ -301,15 +301,15 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry ON CLUSTER '{c
 -- ============================================================================
 -- Drop old 6m-specific hourly/daily aggregation tables
 -- ============================================================================
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_hourly ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_hourly_local ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_daily ON CLUSTER '{cluster}';
-DROP TABLE IF EXISTS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_by_6m_daily_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_by_6m_hourly ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_by_6m_hourly_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_by_6m_daily ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_storage_slot_state_with_expiry_by_6m_daily_local ON CLUSTER '{cluster}';
 
 -- ============================================================================
 -- fct_storage_slot_state_with_expiry_hourly (unified, with expiry_policy)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_hourly_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_hourly_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `hour_start_date_time` DateTime COMMENT 'Start of the hour period' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
@@ -323,11 +323,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_hourly_local O
 ORDER BY (expiry_policy, hour_start_date_time)
 COMMENT 'Storage slot state metrics with expiry policies aggregated by hour';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_hourly ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_hourly_local
+CREATE TABLE fct_storage_slot_state_with_expiry_hourly ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_with_expiry_hourly_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_hourly_local,
     cityHash64(expiry_policy, hour_start_date_time)
 );
@@ -335,7 +335,7 @@ ENGINE = Distributed(
 -- ============================================================================
 -- fct_storage_slot_state_with_expiry_daily (unified, with expiry_policy)
 -- ============================================================================
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_daily_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_storage_slot_state_with_expiry_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `expiry_policy` LowCardinality(String) COMMENT 'Expiry policy identifier: 1m, 6m, 12m, 18m, 24m' CODEC(ZSTD(1)),
@@ -349,11 +349,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_daily_local ON
 ORDER BY (expiry_policy, day_start_date)
 COMMENT 'Storage slot state metrics with expiry policies aggregated by day';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_daily ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_storage_slot_state_with_expiry_daily_local
+CREATE TABLE fct_storage_slot_state_with_expiry_daily ON CLUSTER '{cluster}'
+AS fct_storage_slot_state_with_expiry_daily_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_storage_slot_state_with_expiry_daily_local,
     cityHash64(expiry_policy, day_start_date)
 );

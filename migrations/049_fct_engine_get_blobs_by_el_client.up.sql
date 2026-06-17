@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_local ON CLUSTER '{cluster}' (
+CREATE TABLE fct_engine_get_blobs_by_el_client_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number of the beacon block being reconstructed' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -26,11 +26,11 @@ CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_local ON CLUSTE
 ORDER BY (slot_start_date_time, block_root, meta_execution_implementation, meta_execution_version, status, node_class)
 COMMENT 'engine_getBlobs observations aggregated by execution client and status for EL comparison';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.fct_engine_get_blobs_by_el_client_local
+CREATE TABLE fct_engine_get_blobs_by_el_client ON CLUSTER '{cluster}'
+AS fct_engine_get_blobs_by_el_client_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_engine_get_blobs_by_el_client_local,
     cityHash64(slot_start_date_time, block_root, meta_execution_implementation, meta_execution_version, status, node_class)
 );

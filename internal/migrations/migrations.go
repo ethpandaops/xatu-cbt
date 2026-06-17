@@ -4,9 +4,7 @@ package migrations
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/golang-migrate/migrate/v4"
@@ -14,33 +12,36 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"         // file source driver for migrations
 )
 
-// PrepareAndRun prepares migration files by substituting network name and runs migrations
-func PrepareAndRun(cfg *config.AppConfig) error {
-	// Create temp directory for processed migrations
-	tempDir, err := os.MkdirTemp("", "xatu-cbt-migrations-*")
+// migrationsDirName is the directory holding the migration SQL, relative to the
+// working directory (the repo root).
+const migrationsDirName = "migrations"
+
+// migrationSourceURL returns the golang-migrate file:// source URL for the
+// migration set. The migrations are database-agnostic and applied verbatim — the
+// target database is selected via the connection's database= parameter and
+// resolved in-SQL by currentDatabase()/the {database} macro — so no per-network
+// templating is needed.
+func migrationSourceURL() (string, error) {
+	absDir, err := filepath.Abs(migrationsDirName)
 	if err != nil {
-		return fmt.Errorf("failed to create temp directory: %w", err)
+		return "", fmt.Errorf("failed to resolve migrations directory: %w", err)
 	}
-	defer func() {
-		_ = os.RemoveAll(tempDir) // Clean up temp dir when done
-	}()
 
-	// Get the migrations directory (relative to the binary location)
-	migrationsDir := "migrations"
+	return fmt.Sprintf("file://%s", absDir), nil
+}
 
-	// Copy and process migration files
-	if procErr := processMigrationFiles(migrationsDir, tempDir, cfg.Network); procErr != nil {
-		return fmt.Errorf("failed to process migration files: %w", procErr)
+// PrepareAndRun runs the database-agnostic migrations against the network database.
+func PrepareAndRun(cfg *config.AppConfig) error {
+	source, err := migrationSourceURL()
+	if err != nil {
+		return err
 	}
 
 	// Build connection string for golang-migrate
 	connStr := buildConnectionString(cfg)
 
 	// Create migration instance
-	m, err := migrate.New(
-		fmt.Sprintf("file://%s", tempDir),
-		connStr,
-	)
+	m, err := migrate.New(source, connStr)
 	if err != nil {
 		return fmt.Errorf("failed to create migration instance: %w", err)
 	}
@@ -72,46 +73,6 @@ func PrepareAndRun(cfg *config.AppConfig) error {
 	return nil
 }
 
-// processMigrationFiles copies migration files from source to dest, substituting ${NETWORK_NAME}
-func processMigrationFiles(sourceDir, destDir, network string) error {
-	// Read all files from source directory
-	entries, err := os.ReadDir(sourceDir)
-	if err != nil {
-		return fmt.Errorf("failed to read migrations directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		// Only process .sql files
-		if !strings.HasSuffix(entry.Name(), ".sql") {
-			continue
-		}
-
-		sourcePath := filepath.Join(sourceDir, entry.Name())
-		destPath := filepath.Join(destDir, entry.Name())
-
-		// Read source file
-		// #nosec G304 -- sourcePath is constructed from known directory
-		content, err := os.ReadFile(sourcePath)
-		if err != nil {
-			return fmt.Errorf("failed to read file %s: %w", sourcePath, err)
-		}
-
-		// Replace ${NETWORK_NAME} with actual network
-		processedContent := strings.ReplaceAll(string(content), "${NETWORK_NAME}", network)
-
-		// Write processed content to destination
-		if err := os.WriteFile(destPath, []byte(processedContent), 0o600); err != nil {
-			return fmt.Errorf("failed to write file %s: %w", destPath, err)
-		}
-	}
-
-	return nil
-}
-
 // buildConnectionString builds the ClickHouse connection string for golang-migrate
 func buildConnectionString(cfg *config.AppConfig) string {
 	// Build base connection string
@@ -137,58 +98,4 @@ func buildConnectionString(cfg *config.AppConfig) string {
 	}
 
 	return connStr
-}
-
-// GetMigrationStatus returns the current migration version and dirty state
-func GetMigrationStatus(cfg *config.AppConfig) (version uint, dirty bool, err error) {
-	// Create temp directory for processed migrations (needed for source)
-	tempDir, err := os.MkdirTemp("", "xatu-cbt-migrations-status-*")
-	if err != nil {
-		return 0, false, fmt.Errorf("failed to create temp directory: %w", err)
-	}
-	defer func() {
-		_ = os.RemoveAll(tempDir)
-	}()
-
-	// Copy migration files (needed for migrate instance)
-	if procErr := processMigrationFiles("migrations", tempDir, cfg.Network); procErr != nil {
-		return 0, false, fmt.Errorf("failed to process migration files: %w", procErr)
-	}
-
-	connStr := buildConnectionString(cfg)
-
-	m, mErr := migrate.New(
-		fmt.Sprintf("file://%s", tempDir),
-		connStr,
-	)
-	if mErr != nil {
-		return 0, false, fmt.Errorf("failed to create migration instance: %w", mErr)
-	}
-	defer func() {
-		if _, closeErr := m.Close(); closeErr != nil {
-			fmt.Printf("Warning: failed to close migration instance: %v\n", closeErr)
-		}
-	}()
-
-	version, dirty, err = m.Version()
-	if errors.Is(err, migrate.ErrNilVersion) {
-		// No migrations applied yet
-		return 0, false, nil
-	}
-	if err != nil {
-		return 0, false, err
-	}
-
-	return version, dirty, nil
-}
-
-// CopyMigrationsToDirectory copies and processes migration files to a specific directory
-// This is useful for debugging or manual inspection
-func CopyMigrationsToDirectory(sourceDir, destDir, network string) error {
-	// Create destination directory if it doesn't exist
-	if err := os.MkdirAll(destDir, 0o750); err != nil {
-		return fmt.Errorf("failed to create destination directory: %w", err)
-	}
-
-	return processMigrationFiles(sourceDir, destDir, network)
 }

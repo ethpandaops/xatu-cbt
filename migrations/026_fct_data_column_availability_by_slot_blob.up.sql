@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_by_slot_blob_local on cluster '{cluster}' (
+CREATE TABLE fct_data_column_availability_by_slot_blob_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `slot` UInt32 COMMENT 'Slot number being probed' CODEC(DoubleDelta, ZSTD(1)),
     `slot_start_date_time` DateTime COMMENT 'The wall clock time when the slot started' CODEC(DoubleDelta, ZSTD(1)),
@@ -35,14 +35,14 @@ SETTINGS
   deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Data column availability by slot, blob index, and column index';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_by_slot_blob ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_data_column_availability_by_slot_blob_local ENGINE = Distributed(
+CREATE TABLE fct_data_column_availability_by_slot_blob ON CLUSTER '{cluster}' AS fct_data_column_availability_by_slot_blob_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_data_column_availability_by_slot_blob_local,
     cityHash64(`slot_start_date_time`, `blob_index`, `column_index`)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.fct_data_column_availability_by_slot_blob_local ON CLUSTER '{cluster}'
+ALTER TABLE fct_data_column_availability_by_slot_blob_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot_blob_column
 (
     SELECT *

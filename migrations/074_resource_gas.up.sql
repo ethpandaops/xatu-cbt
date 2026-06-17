@@ -2,7 +2,7 @@
 -- These columns enable downstream SQL to compute memory expansion gas and cold access gas
 -- without needing per-opcode structlog data.
 
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas_local ON CLUSTER '{cluster}'
+ALTER TABLE int_transaction_call_frame_opcode_gas_local ON CLUSTER '{cluster}'
     ADD COLUMN IF NOT EXISTS `memory_words_sum_before` UInt64 DEFAULT 0 COMMENT 'SUM(ceil(memory_bytes/32)) before each opcode executes.' CODEC(ZSTD(1)) AFTER `gas_cumulative`,
     ADD COLUMN IF NOT EXISTS `memory_words_sum_after` UInt64 DEFAULT 0 COMMENT 'SUM(ceil(memory_bytes/32)) after each opcode executes.' CODEC(ZSTD(1)) AFTER `memory_words_sum_before`,
     ADD COLUMN IF NOT EXISTS `memory_words_sq_sum_before` UInt64 DEFAULT 0 COMMENT 'SUM(words_before²).' CODEC(ZSTD(1)) AFTER `memory_words_sum_after`,
@@ -10,7 +10,7 @@ ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas_local ON CLU
     ADD COLUMN IF NOT EXISTS `memory_expansion_gas` UInt64 DEFAULT 0 COMMENT 'SUM(memory_expansion_gas). Exact per-opcode memory expansion cost.' CODEC(ZSTD(1)) AFTER `memory_words_sq_sum_after`,
     ADD COLUMN IF NOT EXISTS `cold_access_count` UInt64 DEFAULT 0 COMMENT 'Number of cold storage/account accesses (EIP-2929).' CODEC(ZSTD(1)) AFTER `memory_expansion_gas`;
 
-ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas ON CLUSTER '{cluster}'
+ALTER TABLE int_transaction_call_frame_opcode_gas ON CLUSTER '{cluster}'
     ADD COLUMN IF NOT EXISTS `memory_words_sum_before` UInt64 DEFAULT 0 COMMENT 'SUM(ceil(memory_bytes/32)) before each opcode executes.' AFTER `gas_cumulative`,
     ADD COLUMN IF NOT EXISTS `memory_words_sum_after` UInt64 DEFAULT 0 COMMENT 'SUM(ceil(memory_bytes/32)) after each opcode executes.' AFTER `memory_words_sum_before`,
     ADD COLUMN IF NOT EXISTS `memory_words_sq_sum_before` UInt64 DEFAULT 0 COMMENT 'SUM(words_before²).' AFTER `memory_words_sum_after`,
@@ -25,7 +25,7 @@ ALTER TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_gas ON CLUSTER '
 -- Splits EVM gas into 7 resource categories: compute, memory, address_access,
 -- state_growth, history, bloom_topics, block_size.
 
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_resource_gas_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_transaction_call_frame_opcode_resource_gas_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -65,11 +65,11 @@ SETTINGS
 COMMENT 'Per-frame per-opcode resource gas decomposition into 7 categories.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_call_frame_opcode_resource_gas ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_transaction_call_frame_opcode_resource_gas_local
+CREATE TABLE int_transaction_call_frame_opcode_resource_gas ON CLUSTER '{cluster}'
+AS int_transaction_call_frame_opcode_resource_gas_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_transaction_call_frame_opcode_resource_gas_local,
     cityHash64(block_number)
 );
@@ -79,7 +79,7 @@ ENGINE = Distributed(
 -- =============================================================================
 -- Per-transaction resource gas totals including intrinsic gas decomposition.
 
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_resource_gas_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_transaction_resource_gas_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -112,11 +112,11 @@ SETTINGS
 COMMENT 'Per-transaction resource gas totals including intrinsic gas decomposition.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.int_transaction_resource_gas ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_transaction_resource_gas_local
+CREATE TABLE int_transaction_resource_gas ON CLUSTER '{cluster}'
+AS int_transaction_resource_gas_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_transaction_resource_gas_local,
     cityHash64(block_number)
 );
@@ -126,7 +126,7 @@ ENGINE = Distributed(
 -- =============================================================================
 -- Per-block resource gas totals.
 
-CREATE TABLE `${NETWORK_NAME}`.int_block_resource_gas_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_block_resource_gas_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -157,11 +157,11 @@ SETTINGS
 COMMENT 'Per-block resource gas totals. Derived from int_transaction_resource_gas.';
 
 -- Distributed table
-CREATE TABLE `${NETWORK_NAME}`.int_block_resource_gas ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_block_resource_gas_local
+CREATE TABLE int_block_resource_gas ON CLUSTER '{cluster}'
+AS int_block_resource_gas_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_block_resource_gas_local,
     cityHash64(block_number)
 );

@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload_local ON CLUSTER '{cluster}' (
+CREATE TABLE int_engine_new_payload_local ON CLUSTER '{cluster}' (
     -- Metadata
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
 
@@ -67,23 +67,23 @@ SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Individual engine_newPayload observations enriched with block size from fct_block_head';
 
-CREATE TABLE `${NETWORK_NAME}`.int_engine_new_payload ON CLUSTER '{cluster}'
-AS `${NETWORK_NAME}`.int_engine_new_payload_local
+CREATE TABLE int_engine_new_payload ON CLUSTER '{cluster}'
+AS int_engine_new_payload_local
 ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     int_engine_new_payload_local,
     cityHash64(slot_start_date_time, block_hash, meta_client_name, event_date_time)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.int_engine_new_payload_local ON CLUSTER '{cluster}'
+ALTER TABLE int_engine_new_payload_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_slot
 (
     SELECT *
     ORDER BY (slot, block_hash)
 );
 
-ALTER TABLE `${NETWORK_NAME}`.int_engine_new_payload_local ON CLUSTER '{cluster}'
+ALTER TABLE int_engine_new_payload_local ON CLUSTER '{cluster}'
 ADD PROJECTION p_by_duration_ms
 (
     SELECT *

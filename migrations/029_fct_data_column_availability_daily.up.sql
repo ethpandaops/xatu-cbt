@@ -1,4 +1,4 @@
-CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_daily_local on cluster '{cluster}' (
+CREATE TABLE fct_data_column_availability_daily_local on cluster '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `date` Date COMMENT 'Date of the aggregation' CODEC(DoubleDelta, ZSTD(1)),
     `column_index` UInt64 COMMENT 'Column index (0-127)' CODEC(ZSTD(1)),
@@ -27,9 +27,9 @@ SETTINGS
   deduplicate_merge_projection_mode = 'rebuild'
 COMMENT 'Data column availability by day and column index';
 
-CREATE TABLE `${NETWORK_NAME}`.fct_data_column_availability_daily ON CLUSTER '{cluster}' AS `${NETWORK_NAME}`.fct_data_column_availability_daily_local ENGINE = Distributed(
+CREATE TABLE fct_data_column_availability_daily ON CLUSTER '{cluster}' AS fct_data_column_availability_daily_local ENGINE = Distributed(
     '{cluster}',
-    '${NETWORK_NAME}',
+    currentDatabase(),
     fct_data_column_availability_daily_local,
     cityHash64(`date`, `column_index`)
 );

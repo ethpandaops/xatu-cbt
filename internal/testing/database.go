@@ -147,11 +147,12 @@ func (m *DatabaseManager) PrepareNetworkDatabase(ctx context.Context, _ string) 
 	// Check if already prepared FIRST to avoid slow ON CLUSTER DDL
 	alreadyPrepared := !m.forceRebuild && m.isXatuClusterPrepared(ctx)
 
-	if !alreadyPrepared {
-		// Only create databases if not already prepared
-		databases := []string{"default", "tmp", "admin", "dbt"}
+	sets := config.XatuMigrationSets()
 
-		for _, db := range databases {
+	if !alreadyPrepared {
+		// Create each migration set's target database.
+		for _, set := range sets {
+			db := set.Database
 			logCtx.WithField("database", db).Debug("creating database")
 
 			createSQL := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s` ON CLUSTER %s", db, config.XatuClusterName)
@@ -172,7 +173,9 @@ func (m *DatabaseManager) PrepareNetworkDatabase(ctx context.Context, _ string) 
 	if alreadyPrepared { //nolint:nestif // Database preparation logic
 		logCtx.Info("cluster already prepared")
 	} else {
-		for _, db := range []string{"default", "admin", "dbt"} {
+		// Clear each set's target database before re-applying migrations.
+		for _, set := range sets {
+			db := set.Database
 			m.log.WithField("database", db).Debug("clearing database tables")
 			if err := m.clearNetworkTables(ctx, db, m.forceRebuild); err != nil {
 				m.log.WithError(err).WithField("database", db).Warn("failed to clear tables (non-fatal)")
@@ -183,8 +186,10 @@ func (m *DatabaseManager) PrepareNetworkDatabase(ctx context.Context, _ string) 
 			xatuMigrationStart := time.Now()
 			logCtx.Info("running migrations")
 
-			if err := m.runMigrations(ctx, m.xatuConn, "default", m.xatuMigrationDir, ""); err != nil {
-				return fmt.Errorf("running xatu migrations: %w", err)
+			for _, set := range sets {
+				if err := m.runXatuSetMigrations(ctx, set); err != nil {
+					return fmt.Errorf("running xatu %s migrations: %w", set.Name, err)
+				}
 			}
 
 			logCtx.WithFields(logrus.Fields{
@@ -240,7 +245,7 @@ func (m *DatabaseManager) CreateCBTTemplate(ctx context.Context, migrationDir st
 	logCtx.Info("running migrations")
 
 	migrationStart := time.Now()
-	if err := m.runMigrations(ctx, m.cbtConn, templateDB, migrationDir, ""); err != nil {
+	if err := m.runMigrations(ctx, m.cbtConn, templateDB, migrationDir); err != nil {
 		return fmt.Errorf("running CBT template migrations: %w", err)
 	}
 
@@ -368,13 +373,18 @@ func (m *DatabaseManager) isXatuClusterPrepared(ctx context.Context) bool {
 	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer cancel()
 
+	// The xatu set (raw event schema in `default`) is the indicator that the
+	// cluster has been migrated; CBT external models read from it.
+	xatuSet := config.XatuMigrationSets()[0]
+	migrationsTable := fmt.Sprintf("%s%s", config.SchemaMigrationsPrefix, xatuSet.Name)
+
 	var count int
 	checkSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
 		`SELECT COUNT(*)
 		FROM system.tables
-		WHERE database = 'default'
-		AND name = '%s%s'`,
-		config.SchemaMigrationsPrefix, config.DefaultDatabase)
+		WHERE database = '%s'
+		AND name = '%s'`,
+		xatuSet.Database, migrationsTable)
 	err := m.xatuConn.QueryRowContext(queryCtx, checkSQL).Scan(&count)
 
 	if err != nil || count == 0 {
@@ -387,8 +397,8 @@ func (m *DatabaseManager) isXatuClusterPrepared(ctx context.Context) bool {
 	var migrationCount int
 	countSQL := fmt.Sprintf( //nolint:gosec // G201: Safe SQL with controlled identifiers
 		`SELECT COUNT(*)
-		FROM %s.%s%s`,
-		config.DefaultDatabase, config.SchemaMigrationsPrefix, config.DefaultDatabase)
+		FROM %s.%s`,
+		xatuSet.Database, migrationsTable)
 	err = m.xatuConn.QueryRowContext(queryCtx2, countSQL).Scan(&migrationCount)
 
 	return err == nil && migrationCount > 0
@@ -422,8 +432,9 @@ func (m *DatabaseManager) clearNetworkTables(ctx context.Context, network string
 	}
 
 	for _, obj := range objects {
-		isSchemaMigrations := obj.name == config.SchemaMigrationsPrefix[:len(config.SchemaMigrationsPrefix)-1] ||
-			obj.name == config.SchemaMigrationsPrefix+config.DefaultDatabase
+		// Skip the per-set schema_migrations_<set> bookkeeping tables unless
+		// explicitly clearing migrations.
+		isSchemaMigrations := strings.HasPrefix(obj.name, config.SchemaMigrationsPrefix)
 		if isSchemaMigrations && !clearMigrations {
 			continue
 		}
@@ -479,7 +490,7 @@ func (m *DatabaseManager) CreateTestDatabase(
 	logCtx.Info("running migrations")
 
 	migrationStart := time.Now()
-	if err := m.runMigrations(ctx, m.cbtConn, dbName, migrationDir, ""); err != nil {
+	if err := m.runMigrations(ctx, m.cbtConn, dbName, migrationDir); err != nil {
 		_ = m.DropDatabase(ctx, dbName)
 		return "", fmt.Errorf("running xatu-cbt migrations: %w", err)
 	}
@@ -1142,12 +1153,104 @@ func (m *DatabaseManager) generateDatabaseName(network, spec string) string {
 }
 
 // runMigrations executes all pending migrations for a database.
+// runXatuSetMigrations applies a single database-agnostic xatu migration set to
+// its target database on the xatu cluster, tracked in schema_migrations_<set>.
+// The set SQL is applied verbatim (no templating): xatu's migrations resolve the
+// database via the connection, not via qualified table names.
+func (m *DatabaseManager) runXatuSetMigrations(ctx context.Context, set config.XatuMigrationSet) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	setDir := filepath.Join(m.xatuMigrationDir, set.Name)
+	if _, statErr := os.Stat(setDir); statErr != nil {
+		return fmt.Errorf("xatu migration set %q not found at %s (xatu ref may predate the per-set layout): %w",
+			set.Name, setDir, statErr)
+	}
+
+	sourceFS, err := loadVerbatimMigrationFS(setDir)
+	if err != nil {
+		return fmt.Errorf("loading %s migrations: %w", set.Name, err)
+	}
+
+	sourceDriver, err := iofs.New(sourceFS, ".")
+	if err != nil {
+		return fmt.Errorf("creating source driver: %w", err)
+	}
+
+	dbDriver, err := clickhouse.WithInstance(m.xatuConn, &clickhouse.Config{
+		DatabaseName:          set.Database,
+		MigrationsTable:       fmt.Sprintf("%s%s", config.SchemaMigrationsPrefix, set.Name),
+		MultiStatementEnabled: true,
+		MultiStatementMaxSize: 1024 * 1024,
+	})
+	if err != nil {
+		return fmt.Errorf("creating clickhouse driver: %w", err)
+	}
+
+	mig, err := migrate.NewWithInstance("iofs", sourceDriver, set.Database, dbDriver)
+	if err != nil {
+		return fmt.Errorf("creating migrate instance: %w", err)
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		if upErr := mig.Up(); upErr != nil && !errors.Is(upErr, migrate.ErrNoChange) {
+			done <- fmt.Errorf("running migrations: %w", upErr)
+
+			return
+		}
+		done <- nil
+	}()
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("migration canceled: %w", ctx.Err())
+	case err := <-done:
+		return err
+	}
+}
+
+// loadVerbatimMigrationFS loads .sql migration files from dir into an in-memory
+// filesystem without templating, for database-agnostic migration sets.
+func loadVerbatimMigrationFS(dir string) (fs.FS, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("reading migration directory: %w", err)
+	}
+
+	filesystem := memfs.NewFS()
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+
+		content, err := os.ReadFile(filepath.Join(dir, entry.Name())) //nolint:gosec // G304: migration files from trusted xatu repo
+		if err != nil {
+			return nil, fmt.Errorf("reading migration file %s: %w", entry.Name(), err)
+		}
+
+		body := string(content)
+		if strings.TrimSpace(body) == "" {
+			// Bare statement, no trailing comment: the multi-statement splitter is
+			// comment-unaware and would treat a trailing "; -- ..." as an empty query.
+			body = "SELECT 1;"
+		}
+
+		filesystem.WriteFile(entry.Name(), body)
+	}
+
+	return filesystem, nil
+}
+
 func (m *DatabaseManager) runMigrations(
 	ctx context.Context,
 	conn *sql.DB,
 	dbName,
-	migrationDir,
-	tablePrefix string,
+	migrationDir string,
 ) error {
 	select {
 	case <-ctx.Done():
@@ -1155,9 +1258,9 @@ func (m *DatabaseManager) runMigrations(
 	default:
 	}
 
-	sourceFS, err := m.createTemplatedFS(dbName, migrationDir)
+	sourceFS, err := loadVerbatimMigrationFS(migrationDir)
 	if err != nil {
-		return fmt.Errorf("creating templated migrations: %w", err)
+		return fmt.Errorf("loading migrations: %w", err)
 	}
 
 	m.log.WithField("database", dbName).Debug("running migrations, please wait")
@@ -1167,7 +1270,7 @@ func (m *DatabaseManager) runMigrations(
 		return fmt.Errorf("creating source driver: %w", err)
 	}
 
-	migrationsTableName := fmt.Sprintf("%sschema_migrations_%s", tablePrefix, dbName)
+	migrationsTableName := fmt.Sprintf("schema_migrations_%s", dbName)
 	dbDriver, err := clickhouse.WithInstance(conn, &clickhouse.Config{
 		DatabaseName:          dbName,
 		MigrationsTable:       migrationsTableName,
@@ -1202,245 +1305,6 @@ func (m *DatabaseManager) runMigrations(
 	}
 
 	return nil
-}
-
-// createTemplatedFS creates an in-memory filesystem with templated migration files.
-func (m *DatabaseManager) createTemplatedFS(dbName, migrationDir string) (fs.FS, error) {
-	m.log.WithField("database", dbName).Debug("creating in-memory migration filesystem")
-
-	entries, err := os.ReadDir(migrationDir)
-	if err != nil {
-		return nil, fmt.Errorf("reading migration directory: %w", err)
-	}
-
-	filesystem := memfs.NewFS()
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		filename := entry.Name()
-		if !strings.HasSuffix(filename, ".sql") {
-			continue
-		}
-
-		content, err := os.ReadFile(filepath.Join(migrationDir, filename)) //nolint:gosec // G304: Reading migration files from trusted directory
-		if err != nil {
-			return nil, fmt.Errorf("reading migration file %s: %w", filename, err)
-		}
-
-		templatedSQL := m.templateSQL(string(content), dbName)
-
-		if templatedSQL == "" {
-			m.log.WithField("file", filename).Debug("empty migration file, adding no-op statement")
-			templatedSQL = "SELECT 1; -- No-op migration"
-		}
-
-		filesystem.WriteFile(filename, templatedSQL)
-	}
-
-	m.log.WithField("files", len(entries)).Debug("templated migration files")
-
-	return filesystem, nil
-}
-
-// templateSQL replaces database placeholders in SQL migration content
-//
-//nolint:gocyclo // SQL parsing logic requires multiple branches
-func (m *DatabaseManager) templateSQL(sqlTemplate, dbName string) string {
-	if dbName == "default" {
-		return sqlTemplate
-	}
-
-	templated := strings.ReplaceAll(sqlTemplate, "${NETWORK_NAME}", dbName)
-
-	hardcodedDBs := []string{"default", "dbt", "admin"}
-	for _, db := range hardcodedDBs {
-		templated = strings.ReplaceAll(templated, fmt.Sprintf(", %s,", db), fmt.Sprintf(", %s,", dbName))
-		templated = strings.ReplaceAll(templated, fmt.Sprintf(",%s,", db), fmt.Sprintf(",%s,", dbName))
-	}
-
-	tmpDB := fmt.Sprintf("%s_tmp", dbName)
-	templated = strings.ReplaceAll(templated, ", tmp,", fmt.Sprintf(", %s,", tmpDB))
-	templated = strings.ReplaceAll(templated, ",tmp,", fmt.Sprintf(",%s,", tmpDB))
-
-	templated = m.qualifyCreateStatements(templated, dbName)
-
-	for _, db := range hardcodedDBs {
-		templated = strings.ReplaceAll(templated, fmt.Sprintf("%s.", db), fmt.Sprintf("%s.", dbName))
-		templated = strings.ReplaceAll(templated, fmt.Sprintf("FROM %s ", db), fmt.Sprintf("FROM %s ", dbName))
-		templated = strings.ReplaceAll(templated, fmt.Sprintf("INTO %s ", db), fmt.Sprintf("INTO %s ", dbName))
-	}
-
-	templated = strings.ReplaceAll(templated, "tmp.", fmt.Sprintf("%s.", tmpDB))
-	templated = strings.ReplaceAll(templated, "FROM tmp ", fmt.Sprintf("FROM %s ", tmpDB))
-	templated = strings.ReplaceAll(templated, "INTO tmp ", fmt.Sprintf("INTO %s ", tmpDB))
-
-	for _, db := range []string{"default", "dbt", "admin"} {
-		oldPath := fmt.Sprintf("/{cluster}/%s/", db)
-		newPath := fmt.Sprintf("/{cluster}/%s/", dbName)
-		templated = strings.ReplaceAll(templated, oldPath, newPath)
-
-		oldPath2 := fmt.Sprintf("/%s/tables/", db)
-		newPath2 := fmt.Sprintf("/%s/tables/", dbName)
-		templated = strings.ReplaceAll(templated, oldPath2, newPath2)
-	}
-
-	templated = strings.ReplaceAll(templated, "/{cluster}/tmp/", fmt.Sprintf("/{cluster}/%s/", tmpDB))
-	templated = strings.ReplaceAll(templated, "/tmp/tables/", fmt.Sprintf("/%s/tables/", tmpDB))
-
-	return strings.TrimSpace(templated)
-}
-
-// qualifyCreateStatements adds database qualifier to DDL statements
-func (m *DatabaseManager) qualifyCreateStatements(sqlContent, dbName string) string {
-	var (
-		lines  = strings.Split(sqlContent, "\n")
-		result = make([]string, 0, len(lines))
-	)
-
-	for _, line := range lines {
-		var (
-			trimmed   = strings.TrimSpace(line)
-			upperLine = strings.ToUpper(trimmed)
-			parts     = strings.Fields(trimmed)
-		)
-
-		if qualifiedLine, handled := qualifyDDLStatement(line, upperLine, parts, dbName); handled {
-			result = append(result, qualifiedLine)
-			continue
-		}
-
-		if qualifiedLine, handled := qualifyClauseLine(line, upperLine, parts, dbName); handled {
-			result = append(result, qualifiedLine)
-			continue
-		}
-
-		result = append(result, line)
-	}
-
-	return strings.Join(result, "\n")
-}
-
-// qualifyDDLStatement processes DROP, TRUNCATE, CREATE, and ALTER statements.
-//
-//nolint:gocyclo // SQL parsing logic requires multiple branches
-func qualifyDDLStatement(line, upperLine string, parts []string, dbName string) (string, bool) {
-	var objNameIdx int
-
-	switch {
-	case strings.HasPrefix(upperLine, "DROP TABLE"):
-		objNameIdx = 2
-		if len(parts) >= 5 && strings.EqualFold(parts[2], "IF") && strings.EqualFold(parts[3], "EXISTS") {
-			objNameIdx = 4
-		}
-	case strings.HasPrefix(upperLine, "TRUNCATE TABLE"):
-		objNameIdx = 2
-	case strings.HasPrefix(upperLine, "CREATE TABLE"):
-		objNameIdx = 2
-		if len(parts) >= 5 && strings.EqualFold(parts[2], "IF") &&
-			strings.EqualFold(parts[3], "NOT") && strings.EqualFold(parts[4], "EXISTS") {
-			objNameIdx = 5
-		}
-	case strings.HasPrefix(upperLine, "CREATE MATERIALIZED VIEW"):
-		objNameIdx = 3
-	case strings.HasPrefix(upperLine, "ALTER TABLE"):
-		objNameIdx = 2
-	default:
-		return line, false
-	}
-
-	if len(parts) <= objNameIdx {
-		return line, false
-	}
-
-	objName := parts[objNameIdx]
-	if isQualified(objName, dbName) {
-		return line, false
-	}
-
-	qualifiedName := qualifyName(objName, dbName)
-	newLine := strings.Replace(line, objName, qualifiedName, 1)
-
-	if strings.HasPrefix(upperLine, "CREATE") && strings.Contains(strings.ToUpper(newLine), " AS ") {
-		newLine = qualifyASClauseInline(newLine, dbName)
-	}
-
-	return newLine, true
-}
-
-// qualifyASClauseInline handles AS clauses within a line.
-func qualifyASClauseInline(line, dbName string) string {
-	asIndex := strings.Index(strings.ToUpper(line), " AS ")
-	if asIndex == -1 {
-		return line
-	}
-
-	beforeAS := line[:asIndex+4]
-	afterAS := strings.TrimSpace(line[asIndex+4:])
-	asParts := strings.Fields(afterAS)
-
-	if len(asParts) == 0 {
-		return line
-	}
-
-	asTableName := asParts[0]
-	if isQualified(asTableName, dbName) {
-		return line
-	}
-
-	asQualifiedName := qualifyName(asTableName, dbName)
-	afterAS = strings.Replace(afterAS, asTableName, asQualifiedName, 1)
-	return beforeAS + afterAS
-}
-
-// qualifyClauseLine processes standalone AS, TO, and FROM clauses.
-func qualifyClauseLine(line, upperLine string, parts []string, dbName string) (string, bool) {
-	if strings.Contains(line, ",") || strings.Contains(upperLine, "FIXEDSTRING") || strings.Contains(upperLine, "CODEC") {
-		return line, false
-	}
-
-	var tableName string
-
-	switch {
-	case strings.HasPrefix(upperLine, "AS ") && !strings.HasPrefix(upperLine, "AS SELECT"):
-		if len(parts) < 2 {
-			return line, false
-		}
-		tableName = parts[1]
-	case strings.HasPrefix(upperLine, "TO "):
-		if len(parts) < 2 {
-			return line, false
-		}
-		tableName = parts[1]
-	case strings.HasPrefix(upperLine, "FROM "):
-		if len(parts) < 2 {
-			return line, false
-		}
-		tableName = parts[1]
-		if strings.HasPrefix(tableName, "(") {
-			return line, false
-		}
-	default:
-		return line, false
-	}
-
-	if isQualified(tableName, dbName) {
-		return line, false
-	}
-
-	return strings.Replace(line, tableName, qualifyName(tableName, dbName), 1), true
-}
-
-// isQualified checks if a table name is already qualified.
-func isQualified(name, dbName string) bool {
-	return strings.Contains(name, ".") || strings.HasPrefix(name, "`"+dbName)
-}
-
-// qualifyName builds a fully qualified table name.
-func qualifyName(name, dbName string) string {
-	return fmt.Sprintf("`%s`.`%s`", dbName, strings.Trim(name, "`"))
 }
 
 // displayHostnameValidationError displays a big red warning box when hostname validation fails
