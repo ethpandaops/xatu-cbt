@@ -31,10 +31,18 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Minipool address must be a 42 char hex string
+    - name: Pool type must be minipool or megapool
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
-        WHERE NOT match(minipool_address, '^0x[0-9a-f]{40}$')
+        WHERE pool_type NOT IN ('minipool', 'megapool')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Minipool validators must have a 42 char hex pool address
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE pool_type = 'minipool' AND NOT match(pool_address, '^0x[0-9a-f]{40}$')
       assertions:
         - type: equals
           column: bad_rows

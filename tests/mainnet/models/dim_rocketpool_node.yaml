@@ -4,6 +4,12 @@ external_data:
     canonical_execution_logs:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_execution_logs.parquet
         network_column: meta_network_name
+    canonical_execution_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_execution_block.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_execution_transaction.parquet
+        network_column: meta_network_name
     canonical_beacon_validators_withdrawal_credentials:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_beacon_validators_withdrawal_credentials.parquet
         network_column: meta_network_name
@@ -39,10 +45,10 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Minipool count must be greater than zero
+    - name: Every node operator must have at least one minipool or megapool validator
       sql: |
         SELECT COUNT(*) AS bad_rows FROM dim_rocketpool_node FINAL
-        WHERE minipool_count = 0
+        WHERE minipool_count = 0 AND megapool_validator_count = 0
       assertions:
         - type: equals
           column: bad_rows

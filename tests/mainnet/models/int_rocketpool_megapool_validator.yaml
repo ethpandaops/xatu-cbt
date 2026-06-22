@@ -1,0 +1,30 @@
+model: int_rocketpool_megapool_validator
+network: mainnet
+external_data:
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_megapool_validator_canonical_execution_logs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_rocketpool_megapool_validator FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: row_count
+          value: 0
+    - name: Validator pubkey must be a 98 char hex string
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool_validator FINAL
+        WHERE NOT match(validator_pubkey, '^0x[0-9a-f]{96}$')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Node operator must be a 42 char hex string
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool_validator FINAL
+        WHERE NOT match(node_operator, '^0x[0-9a-f]{40}$')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -1,0 +1,33 @@
+model: int_rocketpool_node_event
+network: mainnet
+external_data:
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_event_canonical_execution_logs.parquet
+        network_column: meta_network_name
+    canonical_execution_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_event_canonical_execution_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_rocketpool_node_event FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: row_count
+          value: 0
+    - name: Event name must be a known node event
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
+        WHERE event_name NOT IN ('node_registered', 'rpl_staked', 'rpl_withdrawn', 'smoothing_pool_state_changed')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Node address must be a 42 char hex string
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
+        WHERE NOT match(node_address, '^0x[0-9a-f]{40}$')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

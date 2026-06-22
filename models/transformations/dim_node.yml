@@ -7,4 +7,3 @@ tags:
 exec: "python3 ${MODELS_SCRIPTS_PATH:-/models/scripts}/dim_node.py"
 dependencies:
   - "{{external}}.ethseer_validator_entity"
-  - "{{transformation}}.fct_rocketpool_validator"
