@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -245,7 +246,7 @@ func (m *DatabaseManager) CreateCBTTemplate(ctx context.Context, migrationDir st
 	logCtx.Info("running migrations")
 
 	migrationStart := time.Now()
-	if err := m.runMigrations(ctx, m.cbtConn, templateDB, migrationDir); err != nil {
+	if err := m.runMigrations(ctx, m.cbtConnStr, templateDB, migrationDir); err != nil {
 		return fmt.Errorf("running CBT template migrations: %w", err)
 	}
 
@@ -490,7 +491,7 @@ func (m *DatabaseManager) CreateTestDatabase(
 	logCtx.Info("running migrations")
 
 	migrationStart := time.Now()
-	if err := m.runMigrations(ctx, m.cbtConn, dbName, migrationDir); err != nil {
+	if err := m.runMigrations(ctx, m.cbtConnStr, dbName, migrationDir); err != nil {
 		_ = m.DropDatabase(ctx, dbName)
 		return "", fmt.Errorf("running xatu-cbt migrations: %w", err)
 	}
@@ -1246,9 +1247,39 @@ func loadVerbatimMigrationFS(dir string) (fs.FS, error) {
 	return filesystem, nil
 }
 
+// openDatabaseConn opens a ClickHouse connection whose session database is set
+// to dbName, by overriding the path of the base connection string. Migrations
+// run with unqualified DDL, so they must execute against the target database.
+func openDatabaseConn(connStr, dbName string) (*sql.DB, error) {
+	dsn, err := scopedDSN(connStr, dbName)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := sql.Open("clickhouse", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("opening clickhouse connection: %w", err)
+	}
+
+	return conn, nil
+}
+
+// scopedDSN returns connStr with its path overridden to dbName, so a connection
+// opened from it uses dbName as the session database.
+func scopedDSN(connStr, dbName string) (string, error) {
+	parsed, err := url.Parse(connStr)
+	if err != nil {
+		return "", fmt.Errorf("parsing connection string: %w", err)
+	}
+
+	parsed.Path = "/" + dbName
+
+	return parsed.String(), nil
+}
+
 func (m *DatabaseManager) runMigrations(
 	ctx context.Context,
-	conn *sql.DB,
+	connStr,
 	dbName,
 	migrationDir string,
 ) error {
@@ -1269,6 +1300,16 @@ func (m *DatabaseManager) runMigrations(
 	if err != nil {
 		return fmt.Errorf("creating source driver: %w", err)
 	}
+
+	// Scope the migration connection to the target database. Migrations use
+	// unqualified table names and Distributed(currentDatabase(), ...), so they
+	// must run with dbName as the session database; otherwise the tables are
+	// created in the connection's default database rather than dbName.
+	conn, err := openDatabaseConn(connStr, dbName)
+	if err != nil {
+		return fmt.Errorf("opening migration connection for %s: %w", dbName, err)
+	}
+	defer func() { _ = conn.Close() }()
 
 	migrationsTableName := fmt.Sprintf("schema_migrations_%s", dbName)
 	dbDriver, err := clickhouse.WithInstance(conn, &clickhouse.Config{
