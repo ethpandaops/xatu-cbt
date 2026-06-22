@@ -1,0 +1,57 @@
+model: fct_rocketpool_validator
+network: mainnet
+external_data:
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_execution_logs.parquet
+        network_column: meta_network_name
+    canonical_beacon_validators_withdrawal_credentials:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_beacon_validators_withdrawal_credentials.parquet
+        network_column: meta_network_name
+    canonical_beacon_validators_pubkeys:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_beacon_validators_pubkeys.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_rocketpool_validator FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: row_count
+          value: 0
+    - name: One row per validator index
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (
+          SELECT validator_index, COUNT(*) AS dupes
+          FROM fct_rocketpool_validator FINAL
+          GROUP BY validator_index
+          HAVING dupes > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Minipool address must be a 42 char hex string
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE NOT match(minipool_address, '^0x[0-9a-f]{40}$')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Node operator must not be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE node_operator IS NULL OR node_operator = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Has been scheduled at least once
+      sql: |
+        SELECT COUNT(*) AS count FROM admin_cbt_scheduled FINAL
+        WHERE table = 'fct_rocketpool_validator'
+      assertions:
+        - type: equals
+          column: count
+          value: 1

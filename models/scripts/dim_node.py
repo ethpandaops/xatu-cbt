@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
 Node Data Collection for Validators
-Collects validator node data from ethpandaops cartographoor and ethseer
+Collects validator node data from ethpandaops cartographoor, ethseer and Rocket Pool
 
 This script:
 1. Downloads validator ranges data from cartographoor for the network
 2. Queries ethseer_validator_entity table for additional validator mappings
-3. Expands validator ranges into individual validator rows
-4. Merges data from both sources, with cartographoor taking precedence
-5. Inserts combined data into dim_node table
+3. Queries fct_rocketpool_validator for on-chain Rocket Pool validator mappings
+4. Expands validator ranges into individual validator rows
+5. Merges data from all sources, precedence: cartographoor > ethseer > rocketpool
+6. Inserts combined data into dim_node table
 """
 
 import os
@@ -147,20 +148,62 @@ def fetch_ethseer_validators(ch_url, database_name, external_database, external_
         print(f"Warning: Failed to fetch ethseer validators: {e}", file=sys.stderr)
         return {}
 
-def merge_validator_data(cartographoor_validators, ethseer_validators):
-    """Merge validator data from both sources, with cartographoor taking precedence"""
+def fetch_rocketpool_validators(ch_url, target_db):
+    """Fetch validator -> Rocket Pool node operator mappings from fct_rocketpool_validator"""
+    query = f"""
+    SELECT
+        validator_index,
+        node_operator
+    FROM `{target_db}`.fct_rocketpool_validator
+    FINAL
+    FORMAT JSONCompact
+    """
+
+    try:
+        result = execute_clickhouse_query(ch_url, query)
+        validators = {}
+
+        if result and 'data' in result:
+            for row in result['data']:
+                validator_index = int(row[0])
+                node_operator = row[1]
+
+                validators[validator_index] = {
+                    'name': None,  # No name from rocketpool, operator kept in attributes
+                    'groups': [],
+                    'tags': ['source:rocketpool'],
+                    'attributes': {'rocketpool_node_operator': node_operator},
+                    'validator_index': validator_index,
+                    'source': 'rocketpool'
+                }
+
+        return validators
+    except Exception as e:
+        print(f"Warning: Failed to fetch rocketpool validators: {e}", file=sys.stderr)
+        return {}
+
+def merge_validator_data(cartographoor_validators, ethseer_validators, rocketpool_validators):
+    """Merge validator data from all sources. Precedence: cartographoor > ethseer > rocketpool"""
     # Start with all cartographoor validators (they have richer metadata)
     merged = dict(cartographoor_validators)
 
-    # Add ethseer validators that are not in cartographoor
+    # Add ethseer validators that are not already present
     ethseer_only_count = 0
     for validator_index, ethseer_data in ethseer_validators.items():
         if validator_index not in merged:
             merged[validator_index] = ethseer_data
             ethseer_only_count += 1
 
+    # Add rocketpool validators that are not already present
+    rocketpool_only_count = 0
+    for validator_index, rocketpool_data in rocketpool_validators.items():
+        if validator_index not in merged:
+            merged[validator_index] = rocketpool_data
+            rocketpool_only_count += 1
+
     print(f"  Validators from cartographoor: {len(cartographoor_validators)}")
     print(f"  Validators from ethseer only (gap-filled): {ethseer_only_count}")
+    print(f"  Validators from rocketpool only (gap-filled): {rocketpool_only_count}")
     print(f"  Total unique validators: {len(merged)}")
 
     return merged
@@ -236,9 +279,14 @@ def main():
         ethseer_validators = fetch_ethseer_validators(ch_url, network_name, external_database, external_cluster)
         print(f"Found {len(ethseer_validators)} validator entries from ethseer")
 
-        # Step 5: Merge data from both sources
-        print(f"\nMerging validator data from both sources...")
-        merged_validators = merge_validator_data(cartographoor_validators, ethseer_validators)
+        # Step 4b: Fetch rocketpool validators
+        print(f"\nFetching validators from fct_rocketpool_validator table...")
+        rocketpool_validators = fetch_rocketpool_validators(ch_url, target_db)
+        print(f"Found {len(rocketpool_validators)} validator entries from rocketpool")
+
+        # Step 5: Merge data from all sources
+        print(f"\nMerging validator data from all sources...")
+        merged_validators = merge_validator_data(cartographoor_validators, ethseer_validators, rocketpool_validators)
         validators_to_insert = list(merged_validators.values())
 
         if not validators_to_insert:

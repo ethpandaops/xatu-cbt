@@ -1,0 +1,59 @@
+model: int_rocketpool_minipool
+network: mainnet
+external_data:
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_minipool_canonical_execution_logs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_rocketpool_minipool FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Event name must be created or destroyed
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE event_name NOT IN ('created', 'destroyed')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Minipool address must be a 42 char hex string
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE NOT match(minipool_address, '^0x[0-9a-f]{40}$')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Node operator must be a 42 char hex string
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE NOT match(node_operator, '^0x[0-9a-f]{40}$')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Event date time must be after the Rocket Pool mainnet launch
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE event_date_time < toDateTime('2021-10-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate minipool per event name
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (
+          SELECT event_name, minipool_address, COUNT(*) AS dupes
+          FROM int_rocketpool_minipool FINAL
+          GROUP BY event_name, minipool_address
+          HAVING dupes > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
