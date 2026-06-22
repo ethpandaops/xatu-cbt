@@ -60,3 +60,5 @@ SELECT
     END as status
 FROM canonical c
 GLOBAL LEFT JOIN head_blocks h ON c.slot = h.slot
+
+-- ci probe: no-op comment to mark fct_block_proposer impacted (testing harness, not a real change)
