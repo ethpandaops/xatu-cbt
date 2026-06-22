@@ -7,7 +7,7 @@ tags:
   - rocketpool
 dependencies:
   - "{{transformation}}.int_rocketpool_minipool"
-  - "{{transformation}}.int_rocketpool_megapool_validator"
+  - "{{transformation}}.int_rocketpool_megapool"
   - "{{transformation}}.int_rocketpool_node_event"
   - "{{transformation}}.int_rocketpool_node_timezone"
   - "{{transformation}}.fct_rocketpool_validator"
@@ -28,14 +28,17 @@ mp AS (
 mega AS (
     SELECT
         node_operator,
-        count() AS megapool_validator_count,
-        min(deposit_date_time) AS first_mega,
-        max(deposit_date_time) AS last_mega
-    FROM {{ index .dep "{{transformation}}" "int_rocketpool_megapool_validator" "helpers" "from" }} FINAL
+        count() AS megapool_count,
+        min(created_date_time) AS first_mega,
+        max(created_date_time) AS last_mega
+    FROM {{ index .dep "{{transformation}}" "int_rocketpool_megapool" "helpers" "from" }} FINAL
     GROUP BY node_operator
 ),
 vc AS (
-    SELECT node_operator, count() AS validator_count
+    SELECT
+        node_operator,
+        countIf(pool_type = 'megapool') AS megapool_validator_count,
+        count() AS validator_count
     FROM {{ index .dep "{{transformation}}" "fct_rocketpool_validator" "helpers" "from" }} FINAL
     GROUP BY node_operator
 ),
@@ -65,7 +68,7 @@ SELECT
     ifNull(nullIf(reg.registered_date_time, fromUnixTimestamp(0)), least(ifNull(mp.first_mp, toDateTime('2106-02-07 00:00:00')), ifNull(mega.first_mega, toDateTime('2106-02-07 00:00:00')))) AS registered_date_time,
     ifNull(mp.minipool_count, 0) AS minipool_count,
     ifNull(mp.active_minipool_count, 0) AS active_minipool_count,
-    ifNull(mega.megapool_validator_count, 0) AS megapool_validator_count,
+    ifNull(vc.megapool_validator_count, 0) AS megapool_validator_count,
     ifNull(vc.validator_count, 0) AS validator_count,
     toUInt256(ifNull(reg.rpl_net, toInt256(0))) AS rpl_staked_wei,
     ifNull(reg.in_smoothing_pool, false) AS in_smoothing_pool,
