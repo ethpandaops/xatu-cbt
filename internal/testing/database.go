@@ -27,6 +27,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// errNoMigrationFiles is returned when a migration directory contains no
+// migration files to determine the latest version from.
+var errNoMigrationFiles = errors.New("no migration files found in migration directory")
+
 // DatabaseManager handles dual-cluster database lifecycle.
 // - xatu cluster: Network databases (mainnet, sepolia) with external data
 // - cbt cluster: Ephemeral test databases with transformations
@@ -217,7 +221,7 @@ func (m *DatabaseManager) CreateCBTTemplate(ctx context.Context, migrationDir st
 	})
 
 	// Check if template already exists and has migrations
-	if !m.forceRebuild && m.isCBTTemplateReady(ctx) {
+	if !m.forceRebuild && m.isCBTTemplateReady(ctx, migrationDir) {
 		logCtx.Info("CBT template already prepared, skipping migrations")
 		return nil
 	}
@@ -260,8 +264,9 @@ func (m *DatabaseManager) CreateCBTTemplate(ctx context.Context, migrationDir st
 	return nil
 }
 
-// isCBTTemplateReady checks if CBT template database exists with migrations applied.
-func (m *DatabaseManager) isCBTTemplateReady(ctx context.Context) bool {
+// isCBTTemplateReady checks if CBT template database exists, has migrations
+// applied, and is up to date with the latest available migration version.
+func (m *DatabaseManager) isCBTTemplateReady(ctx context.Context, migrationDir string) bool {
 	// First check the actual database exists (may be lost after infra restart)
 	dbCtx, dbCancel := context.WithTimeout(ctx, m.config.QueryTimeout)
 	defer dbCancel()
@@ -305,7 +310,108 @@ func (m *DatabaseManager) isCBTTemplateReady(ctx context.Context) bool {
 		return false
 	}
 
-	return migrationCount > 0
+	if migrationCount == 0 {
+		return false
+	}
+
+	// Confirm the template is migrated to the latest version. The CBT template
+	// persists across runs on the CI ClickHouse, so a template built before
+	// newer migrations were added would otherwise be reused while stale,
+	// leaving per-test clones missing tables. Rebuild when behind or dirty.
+	return m.isCBTTemplateUpToDate(ctx, migrationDir)
+}
+
+// isCBTTemplateUpToDate reports whether the cached CBT template has been
+// migrated to the latest available migration version and is not in a dirty
+// state. A false result triggers a rebuild of the template.
+func (m *DatabaseManager) isCBTTemplateUpToDate(ctx context.Context, migrationDir string) bool {
+	latest, err := latestMigrationVersion(migrationDir)
+	if err != nil {
+		m.log.WithError(err).Warn("could not determine latest migration version; rebuilding CBT template")
+
+		return false
+	}
+
+	applied, dirty, err := m.appliedTemplateVersion(ctx)
+	if err != nil {
+		m.log.WithError(err).Warn("could not read applied CBT template version; rebuilding CBT template")
+
+		return false
+	}
+
+	if dirty || applied < latest {
+		m.log.WithFields(logrus.Fields{
+			"applied": applied,
+			"latest":  latest,
+			"dirty":   dirty,
+		}).Info("CBT template is stale; rebuilding")
+
+		return false
+	}
+
+	return true
+}
+
+// appliedTemplateVersion returns the migration version currently applied to the
+// CBT template database and whether that migration is in a dirty state.
+func (m *DatabaseManager) appliedTemplateVersion(ctx context.Context) (version int64, dirty bool, err error) {
+	queryCtx, cancel := context.WithTimeout(ctx, m.config.QueryTimeout)
+	defer cancel()
+
+	var dirtyFlag uint8
+
+	//nolint:gosec // G201: Safe SQL with controlled identifiers
+	querySQL := fmt.Sprintf(
+		"SELECT version, dirty FROM default.%s%s ORDER BY sequence DESC LIMIT 1",
+		config.SchemaMigrationsPrefix, config.CBTTemplateDatabase)
+	if err = m.cbtConn.QueryRowContext(queryCtx, querySQL).Scan(&version, &dirtyFlag); err != nil {
+		return 0, false, fmt.Errorf("querying applied template version: %w", err)
+	}
+
+	return version, dirtyFlag != 0, nil
+}
+
+// latestMigrationVersion returns the highest migration version available in the
+// migration directory, parsed from the NNN_ prefix of *.up.sql files.
+func latestMigrationVersion(migrationDir string) (int64, error) {
+	entries, err := os.ReadDir(migrationDir)
+	if err != nil {
+		return 0, fmt.Errorf("reading migration directory: %w", err)
+	}
+
+	var (
+		latest int64
+		found  bool
+	)
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".up.sql") {
+			continue
+		}
+
+		idx := strings.IndexByte(name, '_')
+		if idx <= 0 {
+			continue
+		}
+
+		version, err := strconv.ParseInt(name[:idx], 10, 64)
+		if err != nil {
+			continue
+		}
+
+		found = true
+
+		if version > latest {
+			latest = version
+		}
+	}
+
+	if !found {
+		return 0, fmt.Errorf("%w: %s", errNoMigrationFiles, migrationDir)
+	}
+
+	return latest, nil
 }
 
 // clearCBTTemplateTables drops all tables in CBT template database for force rebuild.
