@@ -1181,7 +1181,15 @@ func (m *DatabaseManager) runXatuSetMigrations(ctx context.Context, set config.X
 		return fmt.Errorf("creating source driver: %w", err)
 	}
 
-	dbDriver, err := clickhouse.WithInstance(m.xatuConn, &clickhouse.Config{
+	// Scope the migration connection to the target database so unqualified DDL
+	// lands in set.Database rather than the connection's default database.
+	conn, err := openDatabaseConn(m.xatuConnStr, set.Database)
+	if err != nil {
+		return fmt.Errorf("opening migration connection for %s: %w", set.Database, err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	dbDriver, err := clickhouse.WithInstance(conn, &clickhouse.Config{
 		DatabaseName:          set.Database,
 		MigrationsTable:       fmt.Sprintf("%s%s", config.SchemaMigrationsPrefix, set.Name),
 		MultiStatementEnabled: true,
