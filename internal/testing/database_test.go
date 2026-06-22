@@ -27,3 +27,37 @@ func TestModifyCreateTableForClone_CrossDatabaseRenameDoesNotDoublePrefix(t *tes
 	require.Contains(t, modified, "'observoor_cpu_utilization_local'")
 	require.NotContains(t, modified, "observoor_observoor_cpu_utilization")
 }
+
+func TestScopedDSN(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		connStr string
+		dbName  string
+		want    string
+	}{
+		{
+			name:    "adds database path to bare dsn",
+			connStr: "clickhouse://default:supersecret@localhost:9000",
+			dbName:  "cbt_template",
+			want:    "clickhouse://default:supersecret@localhost:9000/cbt_template",
+		},
+		{
+			name:    "overrides an existing database path",
+			connStr: "clickhouse://default:supersecret@localhost:9000/default",
+			dbName:  "mainnet",
+			want:    "clickhouse://default:supersecret@localhost:9000/mainnet",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := scopedDSN(tt.connStr, tt.dbName)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
