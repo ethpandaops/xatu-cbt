@@ -610,41 +610,128 @@ func (e *CBTEngine) checkTransformationProgress(
 	dbName string,
 	allModels map[string]bool,
 ) ([]string, error) {
-	completedIncremental, err := e.getCompletedModels(ctx, conn, dbName, "admin_cbt_incremental")
+	// incrementalTimes maps each incremental model to when it last wrote data;
+	// presence in the map means it has processed at least one interval.
+	incrementalTimes, err := e.getModelTimes(ctx, conn, dbName, "admin_cbt_incremental", "updated_date_time")
 	if err != nil {
 		e.log.WithError(err).Debug("error checking incremental models")
 		return nil, err
 	}
 
-	completedScheduled, err := e.getCompletedModels(ctx, conn, dbName, "admin_cbt_scheduled")
+	// scheduledTimes maps each scheduled model to its latest run start time.
+	scheduledTimes, err := e.getModelTimes(ctx, conn, dbName, "admin_cbt_scheduled", "start_date_time")
 	if err != nil {
 		e.log.WithError(err).Debug("error checking scheduled models")
 		return nil, err
 	}
 
-	allCompleted := make(map[string]bool, len(completedIncremental)+len(completedScheduled))
-	for model := range completedIncremental {
-		allCompleted[model] = true
-	}
+	// A scheduled model is only "complete" once every transformation dependency
+	// is complete AND it has run since that dependency produced its data.
+	//
+	// CBT scheduled tasks skip dependency validation and fire on the first
+	// scheduler tick (cold-start last-run is the zero time), so a scheduled
+	// model otherwise runs - and is recorded in the admin table - before its
+	// incremental dependencies have inserted any rows, and the harness would
+	// treat that empty first run as success. Walking the real dependency graph
+	// and requiring a later run gates each layer (incremental -> fct -> dim)
+	// correctly and avoids the race. Recursion is memoised; the model DAG is
+	// acyclic.
+	memo := make(map[string]bool, len(allModels))
 
-	for model := range completedScheduled {
-		allCompleted[model] = true
+	var isComplete func(model string) bool
+
+	isComplete = func(model string) bool {
+		if v, ok := memo[model]; ok {
+			return v
+		}
+
+		// Guard against cycles (should not happen in a valid DAG).
+		memo[model] = false
+
+		tm := e.modelCache.GetTransformationModel(model)
+		if tm == nil {
+			return false
+		}
+
+		var result bool
+
+		if tm.ExecutionType != "scheduled" {
+			// Incremental: complete once it has processed an interval.
+			_, result = incrementalTimes[model]
+		} else if runTime, ran := scheduledTimes[model]; ran {
+			result = true
+
+			for _, dep := range tm.Dependencies {
+				if !e.modelCache.IsTransformationModel(dep) {
+					continue // external deps are seeded up front, always ready
+				}
+
+				if !isComplete(dep) || !runTime.After(e.modelReadyTime(dep, incrementalTimes, scheduledTimes)) {
+					result = false
+
+					break
+				}
+			}
+		}
+
+		memo[model] = result
+
+		return result
 	}
 
 	var pending []string
 
 	for model := range allModels {
-		if !allCompleted[model] {
+		if !isComplete(model) {
 			pending = append(pending, model)
 		}
 	}
 
 	e.log.WithFields(logrus.Fields{
-		"completed": fmt.Sprintf("[%v/%v]", len(allCompleted), len(allModels)),
+		"completed": fmt.Sprintf("[%v/%v]", len(allModels)-len(pending), len(allModels)),
 		"pending":   pending,
 	}).Debug("transformation progress")
 
 	return pending, nil
+}
+
+// modelReadyTime returns when a dependency's data became available: a scheduled
+// model's latest run start time, otherwise its incremental write time.
+func (e *CBTEngine) modelReadyTime(model string, incrementalTimes, scheduledTimes map[string]time.Time) time.Time {
+	if tm := e.modelCache.GetTransformationModel(model); tm != nil && tm.ExecutionType == "scheduled" {
+		return scheduledTimes[model]
+	}
+
+	return incrementalTimes[model]
+}
+
+// getModelTimes returns, per model, the latest value of timeColumn recorded in
+// the given admin table.
+func (e *CBTEngine) getModelTimes(ctx context.Context, conn *sql.DB, dbName, adminTable, timeColumn string) (map[string]time.Time, error) {
+	query := fmt.Sprintf(`SELECT table, max(%s) FROM %s.%s GROUP BY table`, timeColumn, dbName, adminTable) //nolint:gosec // G201: Safe SQL with controlled identifiers
+
+	rows, err := conn.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	times := make(map[string]time.Time)
+
+	for rows.Next() {
+		var (
+			tableName string
+			t         time.Time
+		)
+
+		if err := rows.Scan(&tableName, &t); err != nil {
+			continue
+		}
+
+		times[tableName] = t
+	}
+
+	return times, nil
 }
 
 // getPendingModels returns models that haven't appeared in admin tables yet.
@@ -706,33 +793,6 @@ func (e *CBTEngine) waitForAdminTables(
 			}
 		}
 	}
-}
-
-// getCompletedModels returns models that have entries in the admin table
-func (e *CBTEngine) getCompletedModels(
-	ctx context.Context,
-	conn *sql.DB,
-	dbName,
-	adminTable string,
-) (map[string]bool, error) {
-	query := fmt.Sprintf(`SELECT DISTINCT table FROM %s.%s`, dbName, adminTable) //nolint:gosec // G201: Safe SQL with controlled identifiers
-
-	rows, err := conn.QueryContext(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	completed := make(map[string]bool)
-	for rows.Next() {
-		var tableName string
-		if err := rows.Scan(&tableName); err != nil {
-			continue
-		}
-		completed[tableName] = true
-	}
-
-	return completed, nil
 }
 
 // tableExists checks if a table exists in the database
