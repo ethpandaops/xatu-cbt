@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Rocket Pool node timezone locations decoded from registerNode/setTimezoneLocation calldata
+
+message IntRocketpoolNodeTimezone {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The Rocket Pool node operator address, lowercase 0x-prefixed
+  string node_address = 12;
+  // The self-reported timezone location string (e.g. Europe/London)
+  string timezone = 13;
+  // Execution block number the timezone was set in
+  uint64 set_block_number = 14;
+  // Wall clock time of the block the timezone was set in
+  uint32 set_date_time = 15;
+}
+
+// Request for listing int_rocketpool_node_timezone records
+message ListIntRocketpoolNodeTimezoneRequest {
+  // Filter by node_address - The Rocket Pool node operator address, lowercase 0x-prefixed (PRIMARY KEY - required)
+  StringFilter node_address = 1;
+
+  // Filter by set_block_number - Execution block number the timezone was set in (ORDER BY column 2 - optional)
+  UInt64Filter set_block_number = 2;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3;
+  // Filter by timezone - The self-reported timezone location string (e.g. Europe/London) (optional)
+  StringFilter timezone = 4;
+  // Filter by set_date_time - Wall clock time of the block the timezone was set in (optional)
+  UInt32Filter set_date_time = 5;
+
+  // The maximum number of int_rocketpool_node_timezone to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 6;
+  // A page token, received from a previous `ListIntRocketpoolNodeTimezone` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 7;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 8;
+}
+
+// Response for listing int_rocketpool_node_timezone records
+message ListIntRocketpoolNodeTimezoneResponse {
+  // The list of int_rocketpool_node_timezone.
+  repeated IntRocketpoolNodeTimezone int_rocketpool_node_timezone = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_rocketpool_node_timezone record by primary key
+message GetIntRocketpoolNodeTimezoneRequest {
+  // The Rocket Pool node operator address, lowercase 0x-prefixed
+  string node_address = 1; // Primary key (required)
+}
+
+// Response for getting a single int_rocketpool_node_timezone record
+message GetIntRocketpoolNodeTimezoneResponse {
+  IntRocketpoolNodeTimezone item = 1;
+}
+
+// Query int_rocketpool_node_timezone data
+service IntRocketpoolNodeTimezoneService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntRocketpoolNodeTimezoneRequest) returns (ListIntRocketpoolNodeTimezoneResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntRocketpoolNodeTimezoneRequest) returns (GetIntRocketpoolNodeTimezoneResponse);
+}

@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Rocket Pool node operators with timezone, RPL stake, smoothing pool membership and minipool/validator counts
+
+message DimRocketpoolNode {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The Rocket Pool node operator address, lowercase 0x-prefixed
+  string node_operator = 12;
+  // The self-reported timezone location string (e.g. Europe/London), empty if unknown
+  string timezone = 13;
+  // Wall clock time the node registered with Rocket Pool
+  uint32 registered_date_time = 14;
+  // Total number of minipools ever created by this node operator
+  uint32 minipool_count = 15;
+  // Number of minipools created minus destroyed for this node operator
+  uint32 active_minipool_count = 16;
+  // Number of Saturn megapool validators for this node operator
+  uint32 megapool_validator_count = 17;
+  // Total number of beacon chain validators (minipool and megapool) linked to this node operator
+  uint32 validator_count = 18;
+  // Net RPL staked in wei (lifetime staked minus withdrawn), derived from events
+  string rpl_staked_wei = 19;
+  // Whether the node operator is currently registered for the smoothing pool
+  bool in_smoothing_pool = 20;
+  // Wall clock time of the node operators earliest observed Rocket Pool activity
+  uint32 first_seen_date_time = 21;
+  // Wall clock time of the node operators latest observed minipool or megapool activity
+  uint32 last_activity_date_time = 22;
+}
+
+// Request for listing dim_rocketpool_node records
+message ListDimRocketpoolNodeRequest {
+  // Filter by node_operator - The Rocket Pool node operator address, lowercase 0x-prefixed (PRIMARY KEY - required)
+  StringFilter node_operator = 1;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2;
+  // Filter by timezone - The self-reported timezone location string (e.g. Europe/London), empty if unknown (optional)
+  StringFilter timezone = 3;
+  // Filter by registered_date_time - Wall clock time the node registered with Rocket Pool (optional)
+  UInt32Filter registered_date_time = 4;
+  // Filter by minipool_count - Total number of minipools ever created by this node operator (optional)
+  UInt32Filter minipool_count = 5;
+  // Filter by active_minipool_count - Number of minipools created minus destroyed for this node operator (optional)
+  UInt32Filter active_minipool_count = 6;
+  // Filter by megapool_validator_count - Number of Saturn megapool validators for this node operator (optional)
+  UInt32Filter megapool_validator_count = 7;
+  // Filter by validator_count - Total number of beacon chain validators (minipool and megapool) linked to this node operator (optional)
+  UInt32Filter validator_count = 8;
+  // Filter by rpl_staked_wei - Net RPL staked in wei (lifetime staked minus withdrawn), derived from events (optional)
+  StringFilter rpl_staked_wei = 9;
+  // Filter by in_smoothing_pool - Whether the node operator is currently registered for the smoothing pool (optional)
+  BoolFilter in_smoothing_pool = 10;
+  // Filter by first_seen_date_time - Wall clock time of the node operators earliest observed Rocket Pool activity (optional)
+  UInt32Filter first_seen_date_time = 11;
+  // Filter by last_activity_date_time - Wall clock time of the node operators latest observed minipool or megapool activity (optional)
+  UInt32Filter last_activity_date_time = 12;
+
+  // The maximum number of dim_rocketpool_node to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 13;
+  // A page token, received from a previous `ListDimRocketpoolNode` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 14;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 15;
+}
+
+// Response for listing dim_rocketpool_node records
+message ListDimRocketpoolNodeResponse {
+  // The list of dim_rocketpool_node.
+  repeated DimRocketpoolNode dim_rocketpool_node = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single dim_rocketpool_node record by primary key
+message GetDimRocketpoolNodeRequest {
+  // The Rocket Pool node operator address, lowercase 0x-prefixed
+  string node_operator = 1; // Primary key (required)
+}
+
+// Response for getting a single dim_rocketpool_node record
+message GetDimRocketpoolNodeResponse {
+  DimRocketpoolNode item = 1;
+}
+
+// Query dim_rocketpool_node data
+service DimRocketpoolNodeService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListDimRocketpoolNodeRequest) returns (ListDimRocketpoolNodeResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetDimRocketpoolNodeRequest) returns (GetDimRocketpoolNodeResponse);
+}

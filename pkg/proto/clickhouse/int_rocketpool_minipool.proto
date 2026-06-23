@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Rocket Pool minipool lifecycle events (created/destroyed) decoded from execution layer logs
+
+message IntRocketpoolMinipool {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Minipool lifecycle event name (created or destroyed)
+  string event_name = 12;
+  // The Rocket Pool minipool contract address, lowercase 0x-prefixed
+  string minipool_address = 13;
+  // The Rocket Pool node operator address that owns the minipool, lowercase 0x-prefixed
+  string node_operator = 14;
+  // Execution block number the event was emitted in
+  uint64 event_block_number = 15;
+  // Wall clock time the event occurred, decoded from the event payload
+  uint32 event_date_time = 16;
+  // Execution transaction hash that emitted the event
+  string transaction_hash = 17;
+  // Log index of the event within the block
+  uint32 log_index = 18;
+}
+
+// Request for listing int_rocketpool_minipool records
+message ListIntRocketpoolMinipoolRequest {
+  // Filter by event_name - Minipool lifecycle event name (created or destroyed) (PRIMARY KEY - required)
+  StringFilter event_name = 1;
+
+  // Filter by minipool_address - The Rocket Pool minipool contract address, lowercase 0x-prefixed (ORDER BY column 2 - optional)
+  StringFilter minipool_address = 2;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3;
+  // Filter by node_operator - The Rocket Pool node operator address that owns the minipool, lowercase 0x-prefixed (optional)
+  StringFilter node_operator = 4;
+  // Filter by event_block_number - Execution block number the event was emitted in (optional)
+  UInt64Filter event_block_number = 5;
+  // Filter by event_date_time - Wall clock time the event occurred, decoded from the event payload (optional)
+  UInt32Filter event_date_time = 6;
+  // Filter by transaction_hash - Execution transaction hash that emitted the event (optional)
+  StringFilter transaction_hash = 7;
+  // Filter by log_index - Log index of the event within the block (optional)
+  UInt32Filter log_index = 8;
+
+  // The maximum number of int_rocketpool_minipool to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 9;
+  // A page token, received from a previous `ListIntRocketpoolMinipool` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 10;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 11;
+}
+
+// Response for listing int_rocketpool_minipool records
+message ListIntRocketpoolMinipoolResponse {
+  // The list of int_rocketpool_minipool.
+  repeated IntRocketpoolMinipool int_rocketpool_minipool = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_rocketpool_minipool record by primary key
+message GetIntRocketpoolMinipoolRequest {
+  // Minipool lifecycle event name (created or destroyed)
+  string event_name = 1; // Primary key (required)
+}
+
+// Response for getting a single int_rocketpool_minipool record
+message GetIntRocketpoolMinipoolResponse {
+  IntRocketpoolMinipool item = 1;
+}
+
+// Query int_rocketpool_minipool data
+service IntRocketpoolMinipoolService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListIntRocketpoolMinipoolRequest) returns (ListIntRocketpoolMinipoolResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntRocketpoolMinipoolRequest) returns (GetIntRocketpoolMinipoolResponse);
+}
