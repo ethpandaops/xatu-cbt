@@ -4,7 +4,7 @@
 -- Adds:
 --   1. int_rocketpool_megapool - Saturn megapool contracts mapped to their node
 --      operator. Megapools are deployed (CREATE2) by the RocketMegapoolFactory on
---      a node's first deposit; the node operator is the depositor on the
+--      a node's first deposit. The node operator is the depositor on the
 --      RocketNodeDeposit event in the same transaction. Megapool validators are
 --      then linked in fct_rocketpool_validator by matching the validator
 --      withdrawal credential to the megapool address (same as minipools).
