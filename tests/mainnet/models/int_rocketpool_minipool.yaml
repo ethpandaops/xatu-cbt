@@ -2,7 +2,7 @@ model: int_rocketpool_minipool
 network: mainnet
 external_data:
     canonical_execution_logs:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_minipool_canonical_execution_logs.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_minipool_canonical_execution_logs_v2.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
