@@ -93,3 +93,23 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    # Golden value: the seed window (blocks 24479996-24480002, the Saturn launch
+    # cluster) decodes via RocketMegapoolFactory CREATE2 traces to exactly 22 megapools.
+    - name: Exactly 22 megapools in the seed window
+      sql: |
+        SELECT COUNT(*) AS megapool_count FROM int_rocketpool_megapool FINAL
+      assertions:
+        - type: equals
+          column: megapool_count
+          value: 22
+    # Golden mapping verified on-chain via RocketMegapool.getNodeAddress():
+    # megapool 0xd9933f... is owned by node operator 0x50fdd8ca...
+    - name: Known megapool maps to its on-chain node operator
+      sql: |
+        SELECT COUNT(*) AS match_count FROM int_rocketpool_megapool FINAL
+        WHERE megapool_address = '0xd9933f8200ca14d3f9226e9e3e2632c7295a659a'
+          AND node_operator = '0x50fdd8ca2a04b66230dd9ff892d89eb986b1553f'
+      assertions:
+        - type: equals
+          column: match_count
+          value: 1

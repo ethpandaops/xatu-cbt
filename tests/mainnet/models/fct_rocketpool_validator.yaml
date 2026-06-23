@@ -96,3 +96,27 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    # Golden value: the seed links exactly 172 validators (via withdrawal-credential
+    # match) to the 22 megapools in the execution-side seed window.
+    - name: Exactly 172 megapool validators linked in the seed
+      sql: |
+        SELECT COUNT(*) AS megapool_validators FROM fct_rocketpool_validator FINAL
+        WHERE pool_type = 'megapool'
+      assertions:
+        - type: equals
+          column: megapool_validators
+          value: 172
+    # Golden mapping cross-validated across three independent sources: the beacon
+    # withdrawal credential (validator 2260000 -> 0xd9933f...), the execution-side
+    # megapool, and RocketMegapool.getNodeAddress() (-> operator 0x50fdd8ca...).
+    - name: Known validator maps to its megapool and on-chain operator
+      sql: |
+        SELECT COUNT(*) AS match_count FROM fct_rocketpool_validator FINAL
+        WHERE validator_index = 2260000
+          AND pool_type = 'megapool'
+          AND pool_address = '0xd9933f8200ca14d3f9226e9e3e2632c7295a659a'
+          AND node_operator = '0x50fdd8ca2a04b66230dd9ff892d89eb986b1553f'
+      assertions:
+        - type: equals
+          column: match_count
+          value: 1

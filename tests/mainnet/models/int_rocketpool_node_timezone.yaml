@@ -77,3 +77,21 @@ assertions:
         - type: greater_than_or_equal
           column: max_block
           value: 0
+    # Golden value: the seed window decodes exactly one setTimezoneLocation call.
+    - name: Exactly one timezone set in the seed window
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_rocketpool_node_timezone FINAL
+      assertions:
+        - type: equals
+          column: row_count
+          value: 1
+    # Golden mapping: node 0x88e33225... set timezone "Etc/UTC" (calldata string decode).
+    - name: Known node decodes to its set timezone
+      sql: |
+        SELECT COUNT(*) AS match_count FROM int_rocketpool_node_timezone FINAL
+        WHERE node_address = '0x88e332250eeeed6a4d64704ce1a75e0da811fc02'
+          AND timezone = 'Etc/UTC'
+      assertions:
+        - type: equals
+          column: match_count
+          value: 1

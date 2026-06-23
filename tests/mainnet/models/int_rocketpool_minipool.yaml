@@ -2,7 +2,7 @@ model: int_rocketpool_minipool
 network: mainnet
 external_data:
     canonical_execution_logs:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_minipool_canonical_execution_logs_v2.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_minipool_canonical_execution_logs_v3.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
@@ -88,3 +88,33 @@ assertions:
         - type: equals
           column: dup_rows
           value: 0
+    # Golden values: the seed window (blocks 23745000-23768000) decodes to
+    # exactly 3 MinipoolCreated and 2 MinipoolDestroyed events.
+    - name: Exactly 3 created minipools in the seed window
+      sql: |
+        SELECT COUNT(*) AS created_count FROM int_rocketpool_minipool FINAL
+        WHERE event_name = 'created'
+      assertions:
+        - type: equals
+          column: created_count
+          value: 3
+    - name: Exactly 2 destroyed minipools in the seed window
+      sql: |
+        SELECT COUNT(*) AS destroyed_count FROM int_rocketpool_minipool FINAL
+        WHERE event_name = 'destroyed'
+      assertions:
+        - type: equals
+          column: destroyed_count
+          value: 2
+    # Golden mapping verified on-chain via RocketMinipool.getNodeAddress():
+    # minipool 0x66904f10... is owned by node operator 0xa54a5482...
+    - name: Known minipool maps to its on-chain node operator
+      sql: |
+        SELECT COUNT(*) AS match_count FROM int_rocketpool_minipool FINAL
+        WHERE event_name = 'created'
+          AND minipool_address = '0x66904f103acd78896432fc8b23e83213f13c568d'
+          AND node_operator = '0xa54a548272c278e60a560ad6597c920adc479556'
+      assertions:
+        - type: equals
+          column: match_count
+          value: 1

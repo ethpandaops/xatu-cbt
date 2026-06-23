@@ -2,10 +2,10 @@ model: int_rocketpool_node_event
 network: mainnet
 external_data:
     canonical_execution_block:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_event_canonical_execution_block.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_event_canonical_execution_block_v2.parquet
         network_column: meta_network_name
     canonical_execution_logs:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_event_canonical_execution_logs.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_event_canonical_execution_logs_v2.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
@@ -92,3 +92,30 @@ assertions:
         - type: greater_than
           column: distinct_nodes
           value: 0
+    # Golden values: the seed window (blocks 23000000-23050000) was chosen to
+    # exercise all four event-name decode branches. Exact counts per branch:
+    - name: Exact event count per type in the seed window
+      sql: |
+        SELECT
+          countIf(event_name = 'node_registered') AS node_registered,
+          countIf(event_name = 'rpl_staked') AS rpl_staked,
+          countIf(event_name = 'rpl_withdrawn') AS rpl_withdrawn,
+          countIf(event_name = 'smoothing_pool_state_changed') AS smoothing,
+          COUNT(*) AS total
+        FROM int_rocketpool_node_event FINAL
+      assertions:
+        - type: equals
+          column: node_registered
+          value: 6
+        - type: equals
+          column: rpl_staked
+          value: 115
+        - type: equals
+          column: rpl_withdrawn
+          value: 2
+        - type: equals
+          column: smoothing
+          value: 10
+        - type: equals
+          column: total
+          value: 133

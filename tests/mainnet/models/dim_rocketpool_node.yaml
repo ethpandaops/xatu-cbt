@@ -103,3 +103,23 @@ assertions:
         - type: greater_than_or_equal
           column: total_minipools
           value: 0
+    # Golden value: the seed's 22 megapools belong to 22 distinct node operators.
+    - name: Exactly 22 node operators in the seed
+      sql: |
+        SELECT COUNT(*) AS operator_count FROM dim_rocketpool_node FINAL
+      assertions:
+        - type: equals
+          column: operator_count
+          value: 22
+    # Golden rollup for the on-chain-verified operator 0x50fdd8ca... (owner of
+    # megapool 0xd9933f...): one megapool validator (2260000), no minipools.
+    - name: Known operator rollup matches on-chain ownership
+      sql: |
+        SELECT COUNT(*) AS match_count FROM dim_rocketpool_node FINAL
+        WHERE node_operator = '0x50fdd8ca2a04b66230dd9ff892d89eb986b1553f'
+          AND megapool_validator_count = 1
+          AND minipool_count = 0
+      assertions:
+        - type: equals
+          column: match_count
+          value: 1
