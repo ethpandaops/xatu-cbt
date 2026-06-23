@@ -12,8 +12,9 @@ tags:
   - attestation
   - head
 dependencies:
-  - "{{external}}.beacon_api_eth_v1_events_attestation"
-  - "{{external}}.libp2p_gossipsub_beacon_attestation"
+  - - "{{external}}.beacon_api_eth_v1_events_attestation"
+    - "{{external}}.libp2p_gossipsub_beacon_attestation"
+    - "{{external}}.canonical_beacon_elaborated_attestation"
   - "{{transformation}}.int_beacon_committee_head"
 ---
 INSERT INTO
@@ -30,7 +31,18 @@ WITH validator_indices AS (
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
--- Get the events for the attestations that were captured
+-- Get the events for the attestations that were captured. The two real-time
+-- sources (beacon API event stream + libp2p gossip) only ever see the subset
+-- of attesters whose attestations propagated to a sentry before the slot was
+-- processed (~35-66% at the head). canonical_beacon_elaborated_attestation is
+-- unioned in as a third source so that backfilled/finalized history is sourced
+-- from the chain-included attestation set (~99% participation) instead. The
+-- three sources form an OR-group dependency, so forwardfill is not capped at
+-- canonical's lag: at the head canonical's range is empty and it contributes
+-- nothing, leaving the real-time sources to serve the live tip, while in
+-- backfilled history it provides the complete attester set. Canonical rows
+-- carry no gossip-propagation timing, so their propagation_distance is NULL
+-- (head rows keep their measured propagation; min() ignores the NULLs).
 combined_events AS (
     SELECT
         slot,
@@ -74,6 +86,42 @@ combined_events AS (
         AND meta_network_name = '{{ .env.NETWORK }}'
         AND aggregation_bits = ''
         AND attesting_validator_index IS NOT NULL
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, beacon_block_root, source_epoch, source_epoch_start_date_time, source_root, target_epoch, target_epoch_start_date_time, target_root, attesting_validator_index
+
+    UNION ALL
+
+    SELECT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        beacon_block_root,
+        source_epoch,
+        source_epoch_start_date_time,
+        source_root,
+        target_epoch,
+        target_epoch_start_date_time,
+        target_root,
+        attesting_validator_index,
+        CAST(NULL AS Nullable(UInt32)) AS propagation_distance
+    FROM (
+        SELECT
+            slot,
+            slot_start_date_time,
+            epoch,
+            epoch_start_date_time,
+            beacon_block_root,
+            source_epoch,
+            source_epoch_start_date_time,
+            source_root,
+            target_epoch,
+            target_epoch_start_date_time,
+            target_root,
+            arrayJoin(validators) AS attesting_validator_index
+        FROM {{ index .dep "{{external}}" "canonical_beacon_elaborated_attestation" "helpers" "from" }} FINAL
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+    )
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, beacon_block_root, source_epoch, source_epoch_start_date_time, source_root, target_epoch, target_epoch_start_date_time, target_root, attesting_validator_index
 ),
 

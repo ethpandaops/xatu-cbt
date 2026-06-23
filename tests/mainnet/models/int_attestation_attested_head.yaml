@@ -10,6 +10,9 @@ external_data:
     libp2p_gossipsub_beacon_attestation:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_libp2p_gossipsub_beacon_attestation.parquet
         network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
       sql: |
