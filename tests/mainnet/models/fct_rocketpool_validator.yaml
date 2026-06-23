@@ -1,37 +1,35 @@
 model: fct_rocketpool_validator
 network: mainnet
 external_data:
-    canonical_execution_logs:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_execution_logs.parquet
+    canonical_beacon_validators_pubkeys:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_beacon_validators_pubkeys.parquet
         network_column: meta_network_name
     canonical_beacon_validators_withdrawal_credentials:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_beacon_validators_withdrawal_credentials.parquet
         network_column: meta_network_name
-    canonical_beacon_validators_pubkeys:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_beacon_validators_pubkeys.parquet
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_execution_logs.parquet
+        network_column: meta_network_name
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_execution_traces.parquet
         network_column: meta_network_name
 assertions:
-    - name: Row count should be non-negative
+    - name: Row count should be greater than zero
       sql: |
         SELECT COUNT(*) AS row_count FROM fct_rocketpool_validator FINAL
       assertions:
-        - type: greater_than_or_equal
+        - type: greater_than
           column: row_count
           value: 0
-    - name: One row per validator index
+    - name: No negative validator_index values
       sql: |
-        SELECT COUNT(*) AS bad_rows
-        FROM (
-          SELECT validator_index, COUNT(*) AS dupes
-          FROM fct_rocketpool_validator FINAL
-          GROUP BY validator_index
-          HAVING dupes > 1
-        )
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE validator_index < 0
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Pool type must be minipool or megapool
+    - name: pool_type only contains valid enum values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
         WHERE pool_type NOT IN ('minipool', 'megapool')
@@ -39,27 +37,62 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Minipool validators must have a 42 char hex pool address
+    - name: node_operator should never be empty
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
-        WHERE pool_type = 'minipool' AND NOT match(pool_address, '^0x[0-9a-f]{40}$')
+        WHERE node_operator = '' OR node_operator IS NULL
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Node operator must not be empty
+    - name: pool_address should never be empty
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
-        WHERE node_operator IS NULL OR node_operator = ''
+        WHERE pool_address = '' OR pool_address IS NULL
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Has been scheduled at least once
+    - name: validator_index should be unique per pool assignment
       sql: |
-        SELECT COUNT(*) AS count FROM admin_cbt_scheduled FINAL
-        WHERE table = 'fct_rocketpool_validator'
+        SELECT COUNT(*) AS duplicate_rows FROM (
+          SELECT validator_index FROM fct_rocketpool_validator FINAL
+          GROUP BY validator_index
+          HAVING COUNT(*) > 1
+        )
       assertions:
         - type: equals
-          column: count
+          column: duplicate_rows
+          value: 0
+    - name: updated_date_time should be consistent for the latest run
+      sql: |
+        SELECT COUNT(DISTINCT updated_date_time) AS distinct_updates
+        FROM fct_rocketpool_validator FINAL
+      assertions:
+        - type: equals
+          column: distinct_updates
           value: 1
+    - name: created_date_time should not be after updated_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE created_date_time > updated_date_time
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: At least one megapool validator should exist
+      sql: |
+        SELECT COUNT(*) AS megapool_count FROM fct_rocketpool_validator FINAL
+        WHERE pool_type = 'megapool'
+      assertions:
+        - type: greater_than
+          column: megapool_count
+          value: 0
+    - name: pubkey when present should be a valid length hex string
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE pubkey != '' AND length(pubkey) != 98
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

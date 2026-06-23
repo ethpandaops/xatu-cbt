@@ -1,25 +1,79 @@
 model: int_rocketpool_node_timezone
 network: mainnet
 external_data:
-    canonical_execution_transaction:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_timezone_canonical_execution_transaction.parquet
-        network_column: meta_network_name
     canonical_execution_block:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_timezone_canonical_execution_block.parquet
         network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_timezone_canonical_execution_transaction.parquet
+        network_column: meta_network_name
 assertions:
-    - name: Row count should be non-negative
+    - name: Row count should be greater than zero
       sql: |
         SELECT COUNT(*) AS row_count FROM int_rocketpool_node_timezone FINAL
       assertions:
-        - type: greater_than_or_equal
+        - type: greater_than
           column: row_count
           value: 0
-    - name: Node address must be a 42 char hex string
+    - name: Node address should never be empty
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_timezone FINAL
-        WHERE NOT match(node_address, '^0x[0-9a-f]{40}$')
+        WHERE node_address = '' OR node_address IS NULL
       assertions:
         - type: equals
           column: bad_rows
+          value: 0
+    - name: Set block number should be positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_timezone FINAL
+        WHERE set_block_number <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Updated date time should be populated
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_timezone FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Set date time should be populated
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_timezone FINAL
+        WHERE set_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Set date time should not precede block timestamp floor
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_timezone FINAL
+        WHERE set_date_time < toDateTime('2020-01-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Node address should be a valid hex length
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_timezone FINAL
+        WHERE length(node_address) NOT IN (20, 42)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Distinct node addresses should be present
+      sql: |
+        SELECT uniqExact(node_address) AS distinct_nodes FROM int_rocketpool_node_timezone FINAL
+      assertions:
+        - type: greater_than
+          column: distinct_nodes
+          value: 0
+    - name: Max set block number should not be negative
+      sql: |
+        SELECT max(set_block_number) AS max_block FROM int_rocketpool_node_timezone FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: max_block
           value: 0

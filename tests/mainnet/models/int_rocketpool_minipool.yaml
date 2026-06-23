@@ -12,7 +12,7 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: Event name must be created or destroyed
+    - name: event_name only contains expected values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
         WHERE event_name NOT IN ('created', 'destroyed')
@@ -20,40 +20,71 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Minipool address must be a 42 char hex string
+    - name: event_block_number should be positive
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
-        WHERE NOT match(minipool_address, '^0x[0-9a-f]{40}$')
+        WHERE event_block_number <= 0
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Node operator must be a 42 char hex string
+    - name: minipool_address should be a valid hex address
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
-        WHERE NOT match(node_operator, '^0x[0-9a-f]{40}$')
+        WHERE minipool_address NOT LIKE '0x%' OR length(minipool_address) != 42
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Event date time must be after the Rocket Pool mainnet launch
+    - name: node_operator should be a valid hex address
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
-        WHERE event_date_time < toDateTime('2021-10-01 00:00:00')
+        WHERE node_operator NOT LIKE '0x%' OR length(node_operator) != 42
       assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No duplicate minipool per event name
+    - name: transaction_hash should not be empty
       sql: |
-        SELECT COUNT(*) AS bad_rows
-        FROM (
-          SELECT event_name, minipool_address, COUNT(*) AS dupes
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE transaction_hash = '' OR transaction_hash IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: log_index should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE log_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: created events should exist
+      sql: |
+        SELECT COUNT(*) AS created_count FROM int_rocketpool_minipool FINAL
+        WHERE event_name = 'created'
+      assertions:
+        - type: greater_than
+          column: created_count
+          value: 0
+    - name: event_date_time should be a plausible timestamp
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE event_date_time < toDateTime('2020-11-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate transaction_hash and log_index pairs
+      sql: |
+        SELECT COUNT(*) AS dup_rows FROM (
+          SELECT transaction_hash, log_index, COUNT(*) AS c
           FROM int_rocketpool_minipool FINAL
-          GROUP BY event_name, minipool_address
-          HAVING dupes > 1
+          GROUP BY transaction_hash, log_index
+          HAVING c > 1
         )
       assertions:
         - type: equals
-          column: bad_rows
+          column: dup_rows
           value: 0

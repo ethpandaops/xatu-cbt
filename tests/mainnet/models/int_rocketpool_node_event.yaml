@@ -1,21 +1,21 @@
 model: int_rocketpool_node_event
 network: mainnet
 external_data:
-    canonical_execution_logs:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_event_canonical_execution_logs.parquet
-        network_column: meta_network_name
     canonical_execution_block:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_event_canonical_execution_block.parquet
         network_column: meta_network_name
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_node_event_canonical_execution_logs.parquet
+        network_column: meta_network_name
 assertions:
-    - name: Row count should be non-negative
+    - name: Row count should be greater than zero
       sql: |
         SELECT COUNT(*) AS row_count FROM int_rocketpool_node_event FINAL
       assertions:
-        - type: greater_than_or_equal
+        - type: greater_than
           column: row_count
           value: 0
-    - name: Event name must be a known node event
+    - name: event_name only contains expected values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
         WHERE event_name NOT IN ('node_registered', 'rpl_staked', 'rpl_withdrawn', 'smoothing_pool_state_changed')
@@ -23,11 +23,72 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Node address must be a 42 char hex string
+    - name: event_block_number is always positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
+        WHERE event_block_number <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: node_address is well formed 0x-prefixed hex string
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
         WHERE NOT match(node_address, '^0x[0-9a-f]{40}$')
       assertions:
         - type: equals
           column: bad_rows
+          value: 0
+    - name: rpl_amount_wei is zero for non-RPL events
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
+        WHERE event_name IN ('node_registered', 'smoothing_pool_state_changed')
+          AND rpl_amount_wei != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: smoothing_state is only true for smoothing_pool_state_changed events
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
+        WHERE smoothing_state = true
+          AND event_name != 'smoothing_pool_state_changed'
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: log_index is non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
+        WHERE log_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null required columns
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
+        WHERE event_name IS NULL
+          OR node_address IS NULL
+          OR event_block_number IS NULL
+          OR event_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: event_date_time is within a plausible range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_node_event FINAL
+        WHERE event_date_time < toDateTime('2020-01-01 00:00:00')
+          OR event_date_time > now() + INTERVAL 1 DAY
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: At least one distinct node address present
+      sql: |
+        SELECT COUNT(DISTINCT node_address) AS distinct_nodes FROM int_rocketpool_node_event FINAL
+      assertions:
+        - type: greater_than
+          column: distinct_nodes
           value: 0
