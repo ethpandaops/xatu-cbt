@@ -10,9 +10,6 @@ external_data:
     beacon_api_eth_v1_proposer_duty:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_head_beacon_api_eth_v1_proposer_duty.parquet
         network_column: meta_network_name
-    canonical_beacon_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_proposer_duty.parquet
-        network_column: meta_network_name
     libp2p_gossipsub_beacon_block:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_head_libp2p_gossipsub_beacon_block.parquet
         network_column: meta_network_name
