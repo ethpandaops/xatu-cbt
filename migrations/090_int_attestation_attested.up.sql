@@ -12,8 +12,8 @@ CREATE TABLE int_attestation_attested_local on cluster '{cluster}' (
     `target_root` FixedString(66) COMMENT 'The target beacon block root hash in the attestation group',
     `block_root` String COMMENT 'The beacon block root hash' CODEC(ZSTD(1)),
     `attesting_validator_index` UInt32 COMMENT 'The index of the validator attesting' CODEC(ZSTD(1)),
-    `inclusion_distance` Nullable(UInt32) COMMENT 'The distance from the slot when the attestation was included on-chain. Taken from the canonical variant; null when only the head variant recorded the attestation.' CODEC(ZSTD(1)),
-    `propagation_distance` Nullable(UInt32) COMMENT 'The distance from the slot when the attestation was propagated over gossip. 0 means the attestation was propagated within the same slot as its duty was assigned, 1 means the next slot, etc. Taken from the head variant; null when only the canonical variant recorded the attestation.' CODEC(DoubleDelta, ZSTD(1)),
+    `inclusion_distance` Nullable(UInt32) COMMENT 'The distance from the slot when the attestation was included on-chain. Taken from the canonical variant. Null when only the head variant recorded the attestation.' CODEC(ZSTD(1)),
+    `propagation_distance` Nullable(UInt32) COMMENT 'The distance from the slot when the attestation was propagated over gossip. 0 means the attestation was propagated within the same slot as its duty was assigned, 1 means the next slot, etc. Taken from the head variant. Null when only the canonical variant recorded the attestation.' CODEC(DoubleDelta, ZSTD(1)),
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',

@@ -19,7 +19,7 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 -- Canonical-preferred merge of the finalized (canonical) and real-time (head)
 -- attestation variants. Canonical values win per (slot, attesting_validator_index,
--- block_root); head-only rows survive so orphaned-target votes the canonical chain
+-- block_root). Head-only rows survive so orphaned-target votes the canonical chain
 -- never recorded are still represented.
 WITH canonical AS (
     SELECT

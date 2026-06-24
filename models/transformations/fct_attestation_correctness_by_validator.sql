@@ -48,7 +48,7 @@ head AS (
 
 -- Canonical-preferred merge: one row per (slot_start_date_time, attesting_validator_index).
 -- Prefer the canonical (finalized) value when present, otherwise fall back to the head value.
--- propagation_distance is only available from head; inclusion_distance and status only from canonical.
+-- propagation_distance is only available from head, inclusion_distance and status only from canonical.
 SELECT
   fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
   CASE WHEN c.attesting_validator_index IS NOT NULL THEN c.slot ELSE h.slot END AS slot,
