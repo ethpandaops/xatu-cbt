@@ -1,8 +1,8 @@
 model: fct_block_blob_head
 network: mainnet
 external_data:
-    beacon_api_eth_v1_events_blob_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_head_beacon_api_eth_v1_events_blob_sidecar_v2.parquet
+    beacon_api_eth_v1_beacon_blob:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_head_beacon_api_eth_v1_beacon_blob.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
@@ -12,7 +12,7 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: Slot values should be non-negative
+    - name: No negative slot values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_blob_head FINAL
         WHERE slot < 0
@@ -20,7 +20,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Epoch values should be non-negative
+    - name: No negative epoch values
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_blob_head FINAL
         WHERE epoch < 0
@@ -28,15 +28,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Blob index should be non-negative
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_head FINAL
-        WHERE blob_index < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Epoch should equal floor of slot divided by 32
+    - name: Epoch equals slot divided by 32
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_blob_head FINAL
         WHERE epoch != intDiv(slot, 32)
@@ -44,7 +36,15 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No null or empty block roots
+    - name: No negative blob_index values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_blob_head FINAL
+        WHERE blob_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block root must not be empty
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_blob_head FINAL
         WHERE block_root = '' OR block_root IS NULL
@@ -52,7 +52,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No null or empty versioned hashes
+    - name: Versioned hash must not be empty
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_blob_head FINAL
         WHERE versioned_hash = '' OR versioned_hash IS NULL
@@ -60,7 +60,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: No null or empty kzg commitments
+    - name: KZG commitment must not be empty
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_blob_head FINAL
         WHERE kzg_commitment = '' OR kzg_commitment IS NULL
@@ -68,19 +68,19 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Block root, blob index and slot combination should be unique
+    - name: No duplicate slot block_root blob_index combinations
       sql: |
-        SELECT COUNT(*) AS duplicate_groups FROM (
-          SELECT slot_start_date_time, block_root, blob_index, COUNT(*) AS cnt
+        SELECT COUNT(*) AS dup_groups FROM (
+          SELECT slot_start_date_time, block_root, blob_index
           FROM fct_block_blob_head FINAL
           GROUP BY slot_start_date_time, block_root, blob_index
-          HAVING cnt > 1
+          HAVING COUNT(*) > 1
         )
       assertions:
         - type: equals
-          column: duplicate_groups
+          column: dup_groups
           value: 0
-    - name: Epoch start time should be less than or equal to slot start time
+    - name: Epoch start time must not be after slot start time
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_blob_head FINAL
         WHERE epoch_start_date_time > slot_start_date_time
