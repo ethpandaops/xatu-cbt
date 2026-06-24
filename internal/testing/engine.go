@@ -166,7 +166,7 @@ func (e *CBTEngine) flushRedisDB(ctx context.Context, dbNum int) error {
 	// Use redis-cli -n to select the DB, then FLUSHDB to clear it.
 	// dbNum is from a controlled pool (1-15), not user input.
 	dbNumStr := fmt.Sprintf("%d", dbNum)
-	args := []string{"exec", config.RedisContainerName, "redis-cli", "-n", dbNumStr, "FLUSHDB"}
+	args := redisComposeArgs("-n", dbNumStr, "FLUSHDB")
 
 	cmd := exec.CommandContext(ctx, "docker", args...) //nolint:gosec // G204: args are from trusted internal pool
 

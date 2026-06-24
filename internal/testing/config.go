@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	appconfig "github.com/ethpandaops/xatu-cbt/internal/config"
 )
 
 // TestConfig holds test execution operational parameters.
@@ -59,7 +61,7 @@ func DefaultTestConfig() *TestConfig {
 	return &TestConfig{
 		// Docker
 		DockerImage:   "ethpandaops/cbt:debian-latest",
-		DockerNetwork: "xatu_xatu-net",
+		DockerNetwork: appconfig.GetDockerNetworkName(),
 
 		// Execution timeouts
 		ExecutionTimeout:          30 * time.Minute,

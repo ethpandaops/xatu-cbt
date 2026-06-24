@@ -45,10 +45,12 @@ func Load() (*AppConfig, error) {
 		SafeHostnames:      safeHostnames,
 	}
 
-	// Parse numeric values
-	nativePort, err := strconv.Atoi(getEnv("CLICKHOUSE_NATIVE_PORT", "9000"))
+	// Parse numeric values. CBT setup/migrations must target the same host port
+	// docker-compose.platform.yml publishes for CBT node 01.
+	nativePortValue, nativePortKey := getFirstEnv([]string{ClickHouseCBT01NativePortEnvVar, ClickHouseNativePortEnvVar}, "9000")
+	nativePort, err := strconv.Atoi(nativePortValue)
 	if err != nil {
-		return nil, fmt.Errorf("invalid CLICKHOUSE_NATIVE_PORT: %w", err)
+		return nil, fmt.Errorf("invalid %s: %w", nativePortKey, err)
 	}
 	cfg.ClickhouseNativePort = nativePort
 
@@ -108,14 +110,7 @@ func GetCBTClickHouseURL() string {
 		host = "localhost"
 	}
 
-	// Check specific port for CBT cluster, then generic, then default
-	port := os.Getenv("CLICKHOUSE_CBT_01_NATIVE_PORT")
-	if port == "" {
-		port = os.Getenv("CLICKHOUSE_NATIVE_PORT")
-	}
-	if port == "" {
-		port = "9000"
-	}
+	port := getCBTNativePort()
 
 	return fmt.Sprintf("clickhouse://%s:%s@%s:%s", username, password, host, port)
 }
@@ -137,16 +132,33 @@ func GetXatuClickHouseURL() string {
 		host = "localhost"
 	}
 
-	// Check specific port for Xatu cluster, then generic, then default
-	port := os.Getenv("CLICKHOUSE_XATU_01_NATIVE_PORT")
-	if port == "" {
-		port = os.Getenv("CLICKHOUSE_NATIVE_PORT")
-	}
-	if port == "" {
-		port = "9002"
-	}
+	port := getXatuNativePort()
 
 	return fmt.Sprintf("clickhouse://%s:%s@%s:%s", username, password, host, port)
+}
+
+// GetRedisURL returns the Redis connection URL built from the compose host port.
+func GetRedisURL() string {
+	return fmt.Sprintf("redis://localhost:%s", getEnv(RedisPortEnvVar, "6380"))
+}
+
+// GetProjectName returns the Docker Compose project name, falling back to the default project.
+func GetProjectName() string {
+	return getEnv(ProjectNameEnvVar, ProjectName)
+}
+
+// GetDockerNetworkName returns the Docker Compose-managed network name for the project.
+func GetDockerNetworkName() string {
+	return fmt.Sprintf("%s_xatu-net", GetProjectName())
+}
+
+func getCBTNativePort() string {
+	port, _ := getFirstEnv([]string{ClickHouseCBT01NativePortEnvVar, ClickHouseNativePortEnvVar}, "9000")
+	return port
+}
+
+func getXatuNativePort() string {
+	return getEnv(ClickHouseXatu01NativePortEnvVar, "9002")
 }
 
 func getEnv(key, defaultValue string) string {
@@ -154,6 +166,20 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func getFirstEnv(keys []string, defaultValue string) (string, string) {
+	for _, key := range keys {
+		if value := os.Getenv(key); value != "" {
+			return value, key
+		}
+	}
+
+	if len(keys) == 0 {
+		return defaultValue, ""
+	}
+
+	return defaultValue, keys[0]
 }
 
 // parseSafeHostnames parses a comma-separated list of hostnames.

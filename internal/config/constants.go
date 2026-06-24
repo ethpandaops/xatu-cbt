@@ -10,18 +10,30 @@ const (
 	CBTClusterName = "cluster_2S_1R"
 	// ClickHouseLocalSuffix is the suffix appended to distributed table names to access local shards.
 	ClickHouseLocalSuffix = "_local"
-	// RedisContainerName is the name of the Redis container.
+	// RedisContainerName is the Redis Compose service name.
 	RedisContainerName = "xatu-cbt-redis"
 	// RedisContainerPort is the internal port Redis listens on within the container.
 	RedisContainerPort = "6379"
-	// ClickHouseContainer is the name of the CBT ClickHouse container.
+	// ClickHouseContainer is the CBT ClickHouse node 01 Compose service name.
 	ClickHouseContainer = "xatu-cbt-clickhouse-01"
 	// ClickHouseContainerHTTPPort is the internal HTTP port ClickHouse listens on within the container.
 	ClickHouseContainerHTTPPort = "8123"
+	// ClickHouseContainerNativePort is the internal native port ClickHouse listens on within the container.
+	ClickHouseContainerNativePort = "9000"
+	// ClickHouseNativePortEnvVar is the legacy ClickHouse native port environment variable.
+	ClickHouseNativePortEnvVar = "CLICKHOUSE_NATIVE_PORT"
+	// ClickHouseCBT01NativePortEnvVar is the CBT ClickHouse node 01 native host port environment variable.
+	ClickHouseCBT01NativePortEnvVar = "CLICKHOUSE_CBT_01_NATIVE_PORT"
+	// ClickHouseXatu01NativePortEnvVar is the Xatu ClickHouse node 01 native host port environment variable.
+	ClickHouseXatu01NativePortEnvVar = "CLICKHOUSE_XATU_01_NATIVE_PORT"
+	// RedisPortEnvVar is the Redis host port environment variable.
+	RedisPortEnvVar = "REDIS_PORT"
 	// PlatformComposeFile is the Docker Compose file for the platform infrastructure.
 	PlatformComposeFile = "docker-compose.platform.yml"
 	// ProjectName is the Docker Compose project name.
 	ProjectName = "xatu-cbt-platform"
+	// ProjectNameEnvVar is the environment variable used to override the Docker Compose project name.
+	ProjectNameEnvVar = "XATU_CBT_PROJECT_NAME"
 	// ModelsExternalDir is the directory path for external models.
 	ModelsExternalDir = "models/external"
 	// ModelsTransformationsDir is the directory path for transformation models.

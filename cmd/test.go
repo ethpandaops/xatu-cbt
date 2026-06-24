@@ -135,7 +135,7 @@ func init() {
 	testCmd.PersistentFlags().BoolVar(&testCleanupTestDB, "cleanup-test-db", false, "Cleanup test database on completion (useful for CI, disabled by default for debugging)")
 	testCmd.PersistentFlags().StringVar(&xatuClickhouseURL, "xatu-clickhouse-url", config.GetXatuClickHouseURL(), "Xatu ClickHouse cluster URL (external data)")
 	testCmd.PersistentFlags().StringVar(&cbtClickhouseURL, "cbt-clickhouse-url", config.GetCBTClickHouseURL(), "CBT ClickHouse cluster URL (transformations)")
-	testCmd.PersistentFlags().StringVar(&redisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
+	testCmd.PersistentFlags().StringVar(&redisURL, "redis-url", config.GetRedisURL(), "Redis connection URL")
 	testCmd.PersistentFlags().StringVar(&xatuRepoURL, "xatu-repo", config.XatuRepoURL, "Xatu repository URL")
 	testCmd.PersistentFlags().StringVar(&xatuRef, "xatu-ref", config.XatuDefaultRef, "Xatu repository ref (branch/tag/commit)")
 }
