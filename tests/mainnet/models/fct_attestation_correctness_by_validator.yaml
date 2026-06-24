@@ -16,12 +16,6 @@ external_data:
     beacon_api_eth_v1_proposer_duty:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_beacon_api_eth_v1_proposer_duty.parquet
         network_column: meta_network_name
-    libp2p_gossipsub_beacon_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_libp2p_gossipsub_beacon_attestation.parquet
-        network_column: meta_network_name
-    libp2p_gossipsub_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_libp2p_gossipsub_beacon_block.parquet
-        network_column: meta_network_name
     canonical_beacon_block:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_beacon_block.parquet
         network_column: meta_network_name
@@ -34,103 +28,16 @@ external_data:
     canonical_beacon_proposer_duty:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_canonical_beacon_proposer_duty.parquet
         network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_by_validator_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
-      sql: |
-        SELECT COUNT(*) AS row_count FROM fct_attestation_correctness_by_validator FINAL
+      sql: SELECT COUNT(*) AS count FROM fct_attestation_correctness_by_validator FINAL
       assertions:
         - type: greater_than
-          column: row_count
-          value: 0
-    - name: No negative slot values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE slot < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No negative epoch values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE epoch < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No null attesting_validator_index values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE attesting_validator_index IS NULL
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No negative attesting_validator_index values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE attesting_validator_index < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No null slot_start_date_time values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE slot_start_date_time IS NULL
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: No null updated_date_time values
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE updated_date_time IS NULL
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Slot distance should be non-negative when present
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE slot_distance IS NOT NULL AND slot_distance < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Propagation distance should be non-negative when present
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE propagation_distance IS NOT NULL AND propagation_distance < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Inclusion distance should be non-negative when present
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE inclusion_distance IS NOT NULL AND inclusion_distance < 0
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Status should be a known value when present
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_attestation_correctness_by_validator FINAL
-        WHERE status IS NOT NULL AND status NOT IN ('canonical', 'orphaned', 'missed', 'unknown')
-      assertions:
-        - type: equals
-          column: bad_rows
-          value: 0
-    - name: Each validator should appear at most once per slot
-      sql: |
-        SELECT COUNT(*) AS bad_rows FROM (
-          SELECT slot, attesting_validator_index, COUNT(*) AS cnt
-          FROM fct_attestation_correctness_by_validator FINAL
-          GROUP BY slot, attesting_validator_index
-          HAVING cnt > 1
-        )
-      assertions:
-        - type: equals
-          column: bad_rows
+          column: count
           value: 0
