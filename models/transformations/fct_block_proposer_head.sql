@@ -15,15 +15,21 @@ tags:
 dependencies:
   - "{{external}}.beacon_api_eth_v1_events_block_gossip"
   - "{{external}}.beacon_api_eth_v1_events_block"
-  - "{{external}}.beacon_api_eth_v1_proposer_duty"
+  - - "{{external}}.beacon_api_eth_v1_proposer_duty"
+    - "{{external}}.canonical_beacon_proposer_duty"
   - "{{external}}.libp2p_gossipsub_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
--- Pure real-time head: proposer duties are read only from the head-event
--- stream. Canonical duty backfill is no longer unioned in here; the canonical
--- backstop is provided downstream by the fct_block_proposer merge, which
--- AND-depends on int_block_proposer_canonical alongside this head model.
+-- Proposer duties are deterministic per epoch (fixed by the RANDAO seed
+-- epochs in advance), so the head-event stream and the canonical table can
+-- never disagree on CONTENT, only on presence. Unioning canonical in makes
+-- it a backstop: at the head its range is empty (it lags finalization) and
+-- it contributes nothing, while in backfilled history it fills slots whose
+-- head-event duty batches were lost to sentry outages. The two duty sources
+-- form an OR-group dependency, so forwardfill is not capped at canonical's
+-- lag. The outer DISTINCT collapses the union back to one row per slot
+-- because the sources' content is identical.
 WITH proposer_duties AS (
     SELECT DISTINCT
         slot,
@@ -32,9 +38,29 @@ WITH proposer_duties AS (
         epoch_start_date_time,
         proposer_validator_index,
         proposer_pubkey
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
+    FROM (
+        SELECT
+            slot,
+            slot_start_date_time,
+            epoch,
+            epoch_start_date_time,
+            proposer_validator_index,
+            proposer_pubkey
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }} FINAL
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+        UNION ALL
+        SELECT
+            slot,
+            slot_start_date_time,
+            epoch,
+            epoch_start_date_time,
+            proposer_validator_index,
+            proposer_pubkey
+        FROM {{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "helpers" "from" }} FINAL
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+    )
 ),
 
 -- Sentries publish a whole epoch's proposer duties as one batch around the
@@ -43,12 +69,12 @@ WITH proposer_duties AS (
 -- the slot loses its proposer pubkey, and a missed slot in the gap vanishes
 -- from the table entirely (nothing on either side of the join). Every slot
 -- has exactly one proposer, so completeness here is simply presence: require
--- every slot on the 12s grid inside the interval to have a head-event duty
--- row, and fail the task otherwise so the scheduler retries once ingestion
--- has settled.
+-- every slot on the 12s grid inside the interval to have a duty row in the
+-- union of both sources, and fail the task otherwise so the scheduler
+-- retries once ingestion has settled.
 --
--- This scan deliberately reads the source table directly (not
--- proposer_duties) and skips FINAL: duty PRESENCE is unaffected by
+-- These scans deliberately read the source tables directly (not
+-- proposer_duties) and skip FINAL: duty PRESENCE is unaffected by
 -- ReplacingMergeTree version replacement.
 --
 -- Bounds are not necessarily aligned to the 12s grid (backfill chunks are
@@ -66,6 +92,11 @@ duty_slots AS (
     FROM (
         SELECT slot, toUnixTimestamp(slot_start_date_time) AS slot_ts
         FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+        UNION ALL
+        SELECT slot, toUnixTimestamp(slot_start_date_time) AS slot_ts
+        FROM {{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "helpers" "from" }}
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
             AND meta_network_name = '{{ .env.NETWORK }}'
     )
@@ -180,9 +211,10 @@ FROM proposer_duties pd
 GLOBAL FULL OUTER JOIN deduplicated_blocks db ON pd.slot = db.slot
 -- The gate protects against ingestion RACES, which settle within seconds
 -- (emit-to-queryable p999 is under 30s). An interval whose end is more than
--- an hour old is settled: a slot absent from the head-event stream by then is
--- permanently absent at the head, and refusing it forever would stall backfill
--- at the first such gap. For settled intervals, bake what exists.
+-- an hour old is settled: a slot absent from BOTH the head-event stream and
+-- the canonical table by then is permanently absent, and refusing it forever
+-- would wedge backfill at the first such gap. For settled intervals, bake
+-- what exists.
 WHERE (
     SELECT throwIf(
         missing_slots > 0
