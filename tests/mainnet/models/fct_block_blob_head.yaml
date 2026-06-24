@@ -2,7 +2,7 @@ model: fct_block_blob_head
 network: mainnet
 external_data:
     beacon_api_eth_v1_events_blob_sidecar:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_head_beacon_api_eth_v1_events_blob_sidecar.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_head_beacon_api_eth_v1_events_blob_sidecar_v2.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
