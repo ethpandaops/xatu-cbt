@@ -1,0 +1,115 @@
+model: int_rocketpool_megapool
+network: mainnet
+external_data:
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_megapool_canonical_execution_logs.parquet
+        network_column: meta_network_name
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_megapool_canonical_execution_traces.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_rocketpool_megapool FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null or empty megapool addresses
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool FINAL
+        WHERE megapool_address = '' OR megapool_address IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null or empty node operators
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool FINAL
+        WHERE node_operator = '' OR node_operator IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null or empty transaction hashes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool FINAL
+        WHERE transaction_hash = '' OR transaction_hash IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Created block number must be positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool FINAL
+        WHERE created_block_number <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Megapool addresses must be lowercase hex of correct length
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool FINAL
+        WHERE megapool_address != lower(megapool_address)
+            OR length(megapool_address) != 42
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Node operator addresses must be lowercase hex of correct length
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool FINAL
+        WHERE node_operator != lower(node_operator)
+            OR length(node_operator) != 42
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Created date time should not be in the future
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool FINAL
+        WHERE created_date_time > now()
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each megapool address should map to a single node operator
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+            SELECT megapool_address
+            FROM int_rocketpool_megapool FINAL
+            GROUP BY megapool_address
+            HAVING uniqExact(node_operator) > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Updated date time must be populated and positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_megapool FINAL
+        WHERE toUnixTimestamp(updated_date_time) <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    # Golden value: the seed window (blocks 24479996-24480002, the Saturn launch
+    # cluster) decodes via RocketMegapoolFactory CREATE2 traces to exactly 22 megapools.
+    - name: Exactly 22 megapools in the seed window
+      sql: |
+        SELECT COUNT(*) AS megapool_count FROM int_rocketpool_megapool FINAL
+      assertions:
+        - type: equals
+          column: megapool_count
+          value: 22
+    # Golden mapping verified on-chain via RocketMegapool.getNodeAddress():
+    # megapool 0xd9933f... is owned by node operator 0x50fdd8ca...
+    - name: Known megapool maps to its on-chain node operator
+      sql: |
+        SELECT COUNT(*) AS match_count FROM int_rocketpool_megapool FINAL
+        WHERE megapool_address = '0xd9933f8200ca14d3f9226e9e3e2632c7295a659a'
+          AND node_operator = '0x50fdd8ca2a04b66230dd9ff892d89eb986b1553f'
+      assertions:
+        - type: equals
+          column: match_count
+          value: 1

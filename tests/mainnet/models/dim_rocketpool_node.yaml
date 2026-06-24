@@ -1,0 +1,125 @@
+model: dim_rocketpool_node
+network: mainnet
+external_data:
+    canonical_beacon_validators_pubkeys:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_beacon_validators_pubkeys.parquet
+        network_column: meta_network_name
+    canonical_beacon_validators_withdrawal_credentials:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_beacon_validators_withdrawal_credentials.parquet
+        network_column: meta_network_name
+    canonical_execution_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_execution_block.parquet
+        network_column: meta_network_name
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_execution_logs.parquet
+        network_column: meta_network_name
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_execution_traces.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/dim_rocketpool_node_canonical_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM dim_rocketpool_node FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No null or empty node_operator values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM dim_rocketpool_node FINAL
+        WHERE node_operator = '' OR node_operator IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Active minipool count never exceeds total minipool count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM dim_rocketpool_node FINAL
+        WHERE active_minipool_count > minipool_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Megapool validator count never exceeds total validator count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM dim_rocketpool_node FINAL
+        WHERE megapool_validator_count > validator_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative count columns
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM dim_rocketpool_node FINAL
+        WHERE minipool_count < 0
+           OR active_minipool_count < 0
+           OR validator_count < 0
+           OR megapool_validator_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: last_activity_date_time should not precede first_seen_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM dim_rocketpool_node FINAL
+        WHERE last_activity_date_time < first_seen_date_time
+          AND last_activity_date_time != fromUnixTimestamp(0)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: All rows share a single updated_date_time snapshot
+      sql: |
+        SELECT uniqExact(updated_date_time) AS distinct_updates FROM dim_rocketpool_node FINAL
+      assertions:
+        - type: less_than_or_equal
+          column: distinct_updates
+          value: 1
+        - type: greater_than_or_equal
+          column: distinct_updates
+          value: 1
+    - name: in_smoothing_pool is a valid boolean flag
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM dim_rocketpool_node FINAL
+        WHERE in_smoothing_pool NOT IN (0, 1)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: node_operator values are unique after FINAL dedup
+      sql: |
+        SELECT (COUNT(*) - uniqExact(node_operator)) AS duplicate_rows FROM dim_rocketpool_node FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: Total minipool count is non-negative across all nodes
+      sql: |
+        SELECT SUM(minipool_count) AS total_minipools FROM dim_rocketpool_node FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: total_minipools
+          value: 0
+    # Golden value: the seed's 22 megapools belong to 22 distinct node operators.
+    - name: Exactly 22 node operators in the seed
+      sql: |
+        SELECT COUNT(*) AS operator_count FROM dim_rocketpool_node FINAL
+      assertions:
+        - type: equals
+          column: operator_count
+          value: 22
+    # Golden rollup for the on-chain-verified operator 0x50fdd8ca... (owner of
+    # megapool 0xd9933f...): one megapool validator (2260000), no minipools.
+    - name: Known operator rollup matches on-chain ownership
+      sql: |
+        SELECT COUNT(*) AS match_count FROM dim_rocketpool_node FINAL
+        WHERE node_operator = '0x50fdd8ca2a04b66230dd9ff892d89eb986b1553f'
+          AND megapool_validator_count = 1
+          AND minipool_count = 0
+      assertions:
+        - type: equals
+          column: match_count
+          value: 1

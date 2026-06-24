@@ -1,0 +1,120 @@
+model: int_rocketpool_minipool
+network: mainnet
+external_data:
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_rocketpool_minipool_canonical_execution_logs_v3.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_rocketpool_minipool FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: event_name only contains expected values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE event_name NOT IN ('created', 'destroyed')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: event_block_number should be positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE event_block_number <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: minipool_address should be a valid hex address
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE minipool_address NOT LIKE '0x%' OR length(minipool_address) != 42
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: node_operator should be a valid hex address
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE node_operator NOT LIKE '0x%' OR length(node_operator) != 42
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: transaction_hash should not be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE transaction_hash = '' OR transaction_hash IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: log_index should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE log_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: created events should exist
+      sql: |
+        SELECT COUNT(*) AS created_count FROM int_rocketpool_minipool FINAL
+        WHERE event_name = 'created'
+      assertions:
+        - type: greater_than
+          column: created_count
+          value: 0
+    - name: event_date_time should be a plausible timestamp
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_rocketpool_minipool FINAL
+        WHERE event_date_time < toDateTime('2020-11-01 00:00:00')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate transaction_hash and log_index pairs
+      sql: |
+        SELECT COUNT(*) AS dup_rows FROM (
+          SELECT transaction_hash, log_index, COUNT(*) AS c
+          FROM int_rocketpool_minipool FINAL
+          GROUP BY transaction_hash, log_index
+          HAVING c > 1
+        )
+      assertions:
+        - type: equals
+          column: dup_rows
+          value: 0
+    # Golden values: the seed window (blocks 23745000-23768000) decodes to
+    # exactly 3 MinipoolCreated and 2 MinipoolDestroyed events.
+    - name: Exactly 3 created minipools in the seed window
+      sql: |
+        SELECT COUNT(*) AS created_count FROM int_rocketpool_minipool FINAL
+        WHERE event_name = 'created'
+      assertions:
+        - type: equals
+          column: created_count
+          value: 3
+    - name: Exactly 2 destroyed minipools in the seed window
+      sql: |
+        SELECT COUNT(*) AS destroyed_count FROM int_rocketpool_minipool FINAL
+        WHERE event_name = 'destroyed'
+      assertions:
+        - type: equals
+          column: destroyed_count
+          value: 2
+    # Golden mapping verified on-chain via RocketMinipool.getNodeAddress():
+    # minipool 0x66904f10... is owned by node operator 0xa54a5482...
+    - name: Known minipool maps to its on-chain node operator
+      sql: |
+        SELECT COUNT(*) AS match_count FROM int_rocketpool_minipool FINAL
+        WHERE event_name = 'created'
+          AND minipool_address = '0x66904f103acd78896432fc8b23e83213f13c568d'
+          AND node_operator = '0xa54a548272c278e60a560ad6597c920adc479556'
+      assertions:
+        - type: equals
+          column: match_count
+          value: 1

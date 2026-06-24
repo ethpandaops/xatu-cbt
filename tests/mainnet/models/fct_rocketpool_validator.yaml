@@ -1,0 +1,122 @@
+model: fct_rocketpool_validator
+network: mainnet
+external_data:
+    canonical_beacon_validators_pubkeys:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_beacon_validators_pubkeys.parquet
+        network_column: meta_network_name
+    canonical_beacon_validators_withdrawal_credentials:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_beacon_validators_withdrawal_credentials.parquet
+        network_column: meta_network_name
+    canonical_execution_logs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_execution_logs.parquet
+        network_column: meta_network_name
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_rocketpool_validator_canonical_execution_traces.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_rocketpool_validator FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No negative validator_index values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE validator_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: pool_type only contains valid enum values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE pool_type NOT IN ('minipool', 'megapool')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: node_operator should never be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE node_operator = '' OR node_operator IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: pool_address should never be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE pool_address = '' OR pool_address IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: validator_index should be unique per pool assignment
+      sql: |
+        SELECT COUNT(*) AS duplicate_rows FROM (
+          SELECT validator_index FROM fct_rocketpool_validator FINAL
+          GROUP BY validator_index
+          HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: updated_date_time should be consistent for the latest run
+      sql: |
+        SELECT COUNT(DISTINCT updated_date_time) AS distinct_updates
+        FROM fct_rocketpool_validator FINAL
+      assertions:
+        - type: equals
+          column: distinct_updates
+          value: 1
+    - name: created_date_time should not be after updated_date_time
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE created_date_time > updated_date_time
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: At least one megapool validator should exist
+      sql: |
+        SELECT COUNT(*) AS megapool_count FROM fct_rocketpool_validator FINAL
+        WHERE pool_type = 'megapool'
+      assertions:
+        - type: greater_than
+          column: megapool_count
+          value: 0
+    - name: pubkey when present should be a valid length hex string
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_rocketpool_validator FINAL
+        WHERE pubkey != '' AND length(pubkey) != 98
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    # Golden value: the seed links exactly 172 validators (via withdrawal-credential
+    # match) to the 22 megapools in the execution-side seed window.
+    - name: Exactly 172 megapool validators linked in the seed
+      sql: |
+        SELECT COUNT(*) AS megapool_validators FROM fct_rocketpool_validator FINAL
+        WHERE pool_type = 'megapool'
+      assertions:
+        - type: equals
+          column: megapool_validators
+          value: 172
+    # Golden mapping cross-validated across three independent sources: the beacon
+    # withdrawal credential (validator 2260000 -> 0xd9933f...), the execution-side
+    # megapool, and RocketMegapool.getNodeAddress() (-> operator 0x50fdd8ca...).
+    - name: Known validator maps to its megapool and on-chain operator
+      sql: |
+        SELECT COUNT(*) AS match_count FROM fct_rocketpool_validator FINAL
+        WHERE validator_index = 2260000
+          AND pool_type = 'megapool'
+          AND pool_address = '0xd9933f8200ca14d3f9226e9e3e2632c7295a659a'
+          AND node_operator = '0x50fdd8ca2a04b66230dd9ff892d89eb986b1553f'
+      assertions:
+        - type: equals
+          column: match_count
+          value: 1
