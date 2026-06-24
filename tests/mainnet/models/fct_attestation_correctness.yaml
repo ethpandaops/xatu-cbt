@@ -2,37 +2,37 @@ model: fct_attestation_correctness
 network: mainnet
 external_data:
     beacon_api_eth_v1_beacon_committee:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_beacon_committee_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_beacon_committee_j0624.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_events_attestation_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_events_attestation_j0624.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_block:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_events_block_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_events_block_j0624.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_events_block_gossip:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_events_block_gossip_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_events_block_gossip_j0624.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_proposer_duty_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_proposer_duty_j0624.parquet
         network_column: meta_network_name
     canonical_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_block_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_block_j0624.parquet
         network_column: meta_network_name
     canonical_beacon_committee:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_committee_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_committee_j0624.parquet
         network_column: meta_network_name
     canonical_beacon_elaborated_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_elaborated_attestation_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_elaborated_attestation_j0624.parquet
         network_column: meta_network_name
     canonical_beacon_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_proposer_duty_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_proposer_duty_j0624.parquet
         network_column: meta_network_name
     libp2p_gossipsub_beacon_attestation:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_libp2p_gossipsub_beacon_attestation_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_libp2p_gossipsub_beacon_attestation_j0624.parquet
         network_column: meta_network_name
     libp2p_gossipsub_beacon_block:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_libp2p_gossipsub_beacon_block_h0624.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_libp2p_gossipsub_beacon_block_j0624.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
