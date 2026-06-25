@@ -25,6 +25,8 @@ import (
 const (
 	xatuModeLocal    = "local"
 	xatuModeExternal = "external"
+
+	xatuClickHouseService = "xatu-clickhouse-01"
 )
 
 var (
@@ -34,9 +36,11 @@ var (
 	infraRedisURL       string
 	infraRunMigrations  bool
 	infraXatuRef        string
+	infraProjectName    string
 
-	errInvalidXatuMode = errors.New("invalid xatu-mode")
-	errXatuURLRequired = errors.New("xatu-url is required when xatu-source is external")
+	errInvalidXatuMode  = errors.New("invalid xatu-mode")
+	errXatuURLRequired  = errors.New("xatu-url is required when xatu-source is external")
+	errProjectNameEmpty = errors.New("project-name cannot be empty")
 )
 
 // infraCmd represents the infrastructure command
@@ -136,8 +140,9 @@ func init() {
 	infraCmd.AddCommand(infraResetCmd)
 	infraCmd.AddCommand(infraMigrateXatuCmd)
 	infraMigrateXatuCmd.Flags().StringVar(&infraXatuRef, "xatu-ref", config.XatuDefaultRef, "Xatu repository ref (branch/tag/commit)")
+	infraCmd.PersistentFlags().StringVar(&infraProjectName, "project-name", config.GetProjectName(), fmt.Sprintf("Docker Compose project name (env %s)", config.ProjectNameEnvVar))
 	infraCmd.PersistentFlags().StringVar(&infraClickhouseURL, "clickhouse-url", config.GetCBTClickHouseURL(), "CBT ClickHouse cluster URL")
-	infraCmd.PersistentFlags().StringVar(&infraRedisURL, "redis-url", config.DefaultRedisURL, "Redis connection URL")
+	infraCmd.PersistentFlags().StringVar(&infraRedisURL, "redis-url", config.GetRedisURL(), "Redis connection URL")
 	infraStopCmd.Flags().BoolVar(&infraCleanupTestDBs, "cleanup-test-dbs", true, "Cleanup ephemeral test databases")
 	infraStatusCmd.Flags().BoolVar(&infraVerbose, "verbose", false, "Show detailed container and database information")
 	infraStartCmd.Flags().String("xatu-source", xatuModeLocal, "Xatu data source: 'local' (start local cluster) or 'external' (connect to remote)")
@@ -146,12 +151,26 @@ func init() {
 	infraStartCmd.Flags().StringVar(&infraXatuRef, "xatu-ref", config.XatuDefaultRef, "Xatu repository ref (branch/tag/commit)")
 }
 
+func resolveInfraProjectName() (string, error) {
+	projectName := strings.TrimSpace(infraProjectName)
+	if projectName == "" {
+		return "", errProjectNameEmpty
+	}
+
+	return projectName, nil
+}
+
 // createInfraManagers creates and returns Docker and ClickHouse managers with the shared configuration.
-func createInfraManagers(log logrus.FieldLogger) (infra.DockerManager, infra.ClickHouseManager) {
+func createInfraManagers(log logrus.FieldLogger) (infra.DockerManager, infra.ClickHouseManager, error) {
+	projectName, err := resolveInfraProjectName()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	dockerManager := infra.NewDockerManager(
 		log,
 		config.PlatformComposeFile,
-		config.ProjectName,
+		projectName,
 	)
 
 	// Load config to get safe hostnames for infrastructure management
@@ -168,7 +187,7 @@ func createInfraManagers(log logrus.FieldLogger) (infra.DockerManager, infra.Cli
 		cfg.SafeHostnames,
 	)
 
-	return dockerManager, chManager
+	return dockerManager, chManager, nil
 }
 
 // ensureXatuRepo ensures the xatu repository exists and returns its path.
@@ -257,7 +276,10 @@ func runInfraStart(cmd *cobra.Command, _ []string) error {
 		log.Info("skipping local Xatu cluster (external source)")
 	}
 
-	dockerManager, chManager := createInfraManagers(log)
+	dockerManager, chManager, err := createInfraManagers(log)
+	if err != nil {
+		return err
+	}
 
 	// Start infrastructure with profiles
 	if startErr := chManager.Start(ctx, profiles...); startErr != nil {
@@ -271,7 +293,7 @@ func runInfraStart(cmd *cobra.Command, _ []string) error {
 
 	// Run migrations if requested
 	if infraRunMigrations {
-		if migErr := handleInfraMigrations(ctx, log, xatuSource); migErr != nil {
+		if migErr := handleInfraMigrations(ctx, log, dockerManager, xatuSource); migErr != nil {
 			return migErr
 		}
 	}
@@ -329,7 +351,10 @@ func runInfraStop(_ *cobra.Command, _ []string) error {
 	log := newLogger(false)
 	log.Info("stopping platform infrastructure")
 
-	dockerManager, chManager := createInfraManagers(log)
+	dockerManager, chManager, err := createInfraManagers(log)
+	if err != nil {
+		return err
+	}
 
 	running, err := dockerManager.IsRunning(ctx)
 	if err != nil {
@@ -364,7 +389,10 @@ func runInfraStatus(_ *cobra.Command, _ []string) error {
 
 	log := newLogger(infraVerbose)
 
-	dockerManager, chManager := createInfraManagers(log)
+	dockerManager, chManager, err := createInfraManagers(log)
+	if err != nil {
+		return err
+	}
 
 	running, err := dockerManager.IsRunning(ctx)
 	if err != nil {
@@ -401,7 +429,10 @@ func runInfraReset(_ *cobra.Command, _ []string) error {
 
 	log.Info("Resetting platform infrastructure")
 
-	dockerManager, _ := createInfraManagers(log)
+	dockerManager, _, err := createInfraManagers(log)
+	if err != nil {
+		return err
+	}
 
 	// Pass all known profiles to ensure complete cleanup
 	// This ensures profiled containers (like xatu-clickhouse) are also removed
@@ -416,7 +447,7 @@ func runInfraReset(_ *cobra.Command, _ []string) error {
 }
 
 // handleInfraMigrations orchestrates migrations for infrastructure startup.
-func handleInfraMigrations(ctx context.Context, log logrus.FieldLogger, xatuSource string) error {
+func handleInfraMigrations(ctx context.Context, log logrus.FieldLogger, dockerManager infra.DockerManager, xatuSource string) error {
 	fmt.Println("\n🔄 Running migrations...")
 
 	xatuRepoPath, repoErr := getXatuRepoPathForMigrations(log, xatuSource)
@@ -424,7 +455,7 @@ func handleInfraMigrations(ctx context.Context, log logrus.FieldLogger, xatuSour
 		return repoErr
 	}
 
-	if migErr := runInfraMigrations(ctx, log, xatuSource, xatuRepoPath); migErr != nil {
+	if migErr := runInfraMigrations(ctx, log, dockerManager, xatuSource, xatuRepoPath); migErr != nil {
 		return fmt.Errorf("running migrations: %w", migErr)
 	}
 
@@ -453,14 +484,23 @@ func getXatuRepoPathForMigrations(log logrus.FieldLogger, xatuSource string) (st
 }
 
 // runInfraMigrations runs migrations for both Xatu and CBT clusters.
-func runInfraMigrations(ctx context.Context, log logrus.FieldLogger, xatuSource, xatuRepoPath string) error {
+func runInfraMigrations(ctx context.Context, log logrus.FieldLogger, dockerManager infra.DockerManager, xatuSource, xatuRepoPath string) error {
+	projectName, projectErr := resolveInfraProjectName()
+	if projectErr != nil {
+		return projectErr
+	}
+
 	// Run Xatu migrations (only for local mode)
 	if xatuSource == xatuModeLocal && xatuRepoPath != "" {
 		fmt.Println("  → Running Xatu cluster migrations...")
 
 		xatuMigrationDir := fmt.Sprintf("%s/%s", xatuRepoPath, config.XatuMigrationsPath)
+		xatuConnStr, connErr := resolveXatuMigrationConnStr(ctx, dockerManager, projectName)
+		if connErr != nil {
+			return connErr
+		}
 
-		if err := runXatuMigrations(ctx, log, xatuMigrationDir); err != nil {
+		if err := runXatuMigrations(ctx, log, xatuMigrationDir, xatuConnStr); err != nil {
 			return fmt.Errorf("xatu migrations: %w", err)
 		}
 
@@ -469,6 +509,12 @@ func runInfraMigrations(ctx context.Context, log logrus.FieldLogger, xatuSource,
 
 	// Run CBT migrations
 	fmt.Println("  → Running CBT cluster migrations...")
+
+	restoreEnv, targetErr := configureCBTMigrationTarget(ctx, dockerManager, projectName)
+	if targetErr != nil {
+		return targetErr
+	}
+	defer restoreEnv()
 
 	if err := actions.Setup(false, true); err != nil {
 		return fmt.Errorf("cbt migrations: %w", err)
@@ -488,6 +534,16 @@ func runInfraMigrateXatu(_ *cobra.Command, _ []string) error {
 
 	log := newLogger(false)
 
+	dockerManager, _, err := createInfraManagers(log)
+	if err != nil {
+		return err
+	}
+
+	projectName, err := resolveInfraProjectName()
+	if err != nil {
+		return err
+	}
+
 	wd, wdErr := os.Getwd()
 	if wdErr != nil {
 		return fmt.Errorf("getting working directory: %w", wdErr)
@@ -499,10 +555,14 @@ func runInfraMigrateXatu(_ *cobra.Command, _ []string) error {
 	}
 
 	baseMigrationDir := filepath.Join(xatuRepoPath, config.XatuMigrationsPath)
+	xatuConnStr, connErr := resolveXatuMigrationConnStr(ctx, dockerManager, projectName)
+	if connErr != nil {
+		return connErr
+	}
 
 	fmt.Println("→ Running Xatu cluster migrations...")
 
-	if err := runXatuMigrations(ctx, log, baseMigrationDir); err != nil {
+	if err := runXatuMigrations(ctx, log, baseMigrationDir, xatuConnStr); err != nil {
 		return fmt.Errorf("xatu migrations: %w", err)
 	}
 
@@ -511,13 +571,72 @@ func runInfraMigrateXatu(_ *cobra.Command, _ []string) error {
 	return nil
 }
 
+func configureCBTMigrationTarget(ctx context.Context, dockerManager infra.DockerManager, projectName string) (func(), error) {
+	published, err := dockerManager.GetServicePort(ctx, config.ClickHouseContainer, config.ClickHouseContainerNativePort)
+	if err != nil {
+		return nil, fmt.Errorf("resolving CBT migration target for project %q: %w", projectName, err)
+	}
+
+	return applyEnv(map[string]string{
+		"CLICKHOUSE_HOST":                      published.Host,
+		config.ClickHouseCBT01NativePortEnvVar: published.Port,
+	}), nil
+}
+
+func resolveXatuMigrationConnStr(ctx context.Context, dockerManager infra.DockerManager, projectName string) (string, error) {
+	published, err := dockerManager.GetServicePort(ctx, xatuClickHouseService, config.ClickHouseContainerNativePort, "xatu-local")
+	if err != nil {
+		return "", fmt.Errorf("resolving Xatu migration target for project %q: %w", projectName, err)
+	}
+
+	return clickHouseURLForPublishedPort(published), nil
+}
+
+func clickHouseURLForPublishedPort(published infra.PublishedPort) string {
+	username := os.Getenv("CLICKHOUSE_USERNAME")
+	if username == "" {
+		username = "default"
+	}
+
+	password := os.Getenv("CLICKHOUSE_PASSWORD")
+	if password == "" {
+		password = "supersecret"
+	}
+
+	return fmt.Sprintf("clickhouse://%s:%s@%s:%s", username, password, published.Host, published.Port)
+}
+
+func applyEnv(overrides map[string]string) func() {
+	previous := make(map[string]*string, len(overrides))
+
+	for key, value := range overrides {
+		if current, ok := os.LookupEnv(key); ok {
+			currentCopy := current
+			previous[key] = &currentCopy
+		} else {
+			previous[key] = nil
+		}
+
+		_ = os.Setenv(key, value)
+	}
+
+	return func() {
+		for key, value := range previous {
+			if value == nil {
+				_ = os.Unsetenv(key)
+				continue
+			}
+
+			_ = os.Setenv(key, *value)
+		}
+	}
+}
+
 // runXatuMigrations runs xatu's per-schema migration sets against the Xatu
 // ClickHouse cluster. Each set is database-agnostic and applied to its target
 // database, tracked in its own schema_migrations_<set> table. baseMigrationDir is
 // the root migrations directory; each set lives in a subdirectory below it.
-func runXatuMigrations(ctx context.Context, log logrus.FieldLogger, baseMigrationDir string) error {
-	xatuConnStr := config.GetXatuClickHouseURL()
-
+func runXatuMigrations(ctx context.Context, log logrus.FieldLogger, baseMigrationDir, xatuConnStr string) error {
 	// Open connection to Xatu cluster
 	conn, openErr := sql.Open("clickhouse", xatuConnStr)
 	if openErr != nil {

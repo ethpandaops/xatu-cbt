@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethpandaops/xatu-cbt/internal/config"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/assertion"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/output"
 	"github.com/ethpandaops/xatu-cbt/internal/testing/testdef"
@@ -215,9 +214,8 @@ func (o *Orchestrator) Stop() error {
 
 	var errs []error
 
-	// Flush Redis cache once at shutdown
-	//nolint:gosec // G204: Docker command with trusted container name
-	flushCmd := exec.Command("docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHALL")
+	// Flush Redis cache once at shutdown.
+	flushCmd := exec.Command("docker", redisComposeArgs("FLUSHALL")...) //nolint:gosec // G204: Docker command with controlled arguments.
 	if err := flushCmd.Run(); err != nil {
 		o.log.WithError(err).Warn("failed to flush redis cache")
 		errs = append(errs, fmt.Errorf("flushing redis: %w", err))
@@ -891,9 +889,7 @@ func (o *Orchestrator) ensureTemplatesPrepared(ctx context.Context, network stri
 
 // flushRedisCache clears Redis cache to prevent stale cached values.
 func (o *Orchestrator) flushRedisCache(ctx context.Context) error {
-	// Use docker exec to flush Redis database
-	//nolint:gosec // G204: Docker command with trusted container name.
-	cmd := exec.CommandContext(ctx, "docker", "exec", config.RedisContainerName, "redis-cli", "FLUSHDB")
+	cmd := exec.CommandContext(ctx, "docker", redisComposeArgs("FLUSHDB")...) //nolint:gosec // G204: Docker command with controlled arguments.
 	if cmdOutput, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("flushing redis: %w (output: %s)", err, string(cmdOutput))
 	}

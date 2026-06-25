@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 	"time"
@@ -22,6 +23,12 @@ type ServiceInfo struct {
 	Ports  string
 }
 
+// PublishedPort holds a service port published on the host.
+type PublishedPort struct {
+	Host string
+	Port string
+}
+
 // DockerManager manages docker-compose lifecycle.
 type DockerManager interface {
 	Start(ctx context.Context, profiles ...string) error
@@ -30,6 +37,7 @@ type DockerManager interface {
 	IsRunning(ctx context.Context) (bool, error)
 	GetContainerStatus(ctx context.Context, service string) (string, error)
 	GetAllServices(ctx context.Context) ([]ServiceInfo, error)
+	GetServicePort(ctx context.Context, service, targetPort string, profiles ...string) (PublishedPort, error)
 }
 
 type dockerManager struct {
@@ -295,6 +303,38 @@ func (m *dockerManager) GetAllServices(ctx context.Context) ([]ServiceInfo, erro
 	return services, nil
 }
 
+// GetServicePort returns the host binding for a service target port.
+func (m *dockerManager) GetServicePort(ctx context.Context, service, targetPort string, profiles ...string) (PublishedPort, error) {
+	m.log.WithFields(logrus.Fields{
+		"service":     service,
+		"target_port": targetPort,
+	}).Debug("getting service port")
+
+	args := []string{
+		"compose",
+		"-f", m.composeFile,
+		"-p", m.projectName,
+	}
+
+	for _, profile := range profiles {
+		args = append(args, "--profile", profile)
+	}
+
+	args = append(args, "port", service, targetPort)
+
+	output, err := m.execComposeOutput(ctx, args...)
+	if err != nil {
+		return PublishedPort{}, fmt.Errorf("executing docker-compose port: %w", err)
+	}
+
+	published, err := parsePublishedPort(output)
+	if err != nil {
+		return PublishedPort{}, err
+	}
+
+	return published, nil
+}
+
 // execComposeOutput executes a docker-compose command and returns output.
 func (m *dockerManager) execComposeOutput(ctx context.Context, args ...string) ([]byte, error) {
 	execCtx, cancel := context.WithTimeout(ctx, commandTimeout)
@@ -309,4 +349,31 @@ func (m *dockerManager) execComposeOutput(ctx context.Context, args ...string) (
 	}
 
 	return output, nil
+}
+
+func parsePublishedPort(output []byte) (PublishedPort, error) {
+	line := strings.TrimSpace(string(output))
+	if line == "" {
+		return PublishedPort{}, fmt.Errorf("empty docker-compose port output") //nolint:err113 // Includes command context from caller.
+	}
+
+	firstLine := strings.Split(line, "\n")[0]
+	host, port, err := net.SplitHostPort(firstLine)
+	if err != nil {
+		return PublishedPort{}, fmt.Errorf("parsing docker-compose port output %q: %w", firstLine, err)
+	}
+
+	return PublishedPort{
+		Host: normalizePublishedHost(host),
+		Port: port,
+	}, nil
+}
+
+func normalizePublishedHost(host string) string {
+	switch host {
+	case "", "0.0.0.0", "::":
+		return "localhost"
+	default:
+		return host
+	}
 }

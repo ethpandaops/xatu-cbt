@@ -44,26 +44,17 @@
 
 networks:
   xatu-net:
-    name: xatu_xatu-net
     driver: bridge
 
 volumes:
-  clickhouse-01-data:
-    name: xatu-cbt-clickhouse-01-data
-  clickhouse-02-data:
-    name: xatu-cbt-clickhouse-02-data
-  xatu-clickhouse-01-data:
-    name: xatu-clickhouse-01-data
-  xatu-clickhouse-02-data:
-    name: xatu-clickhouse-02-data
-  clickhouse-keeper-01-data:
-    name: xatu-cbt-clickhouse-keeper-01-data
-  clickhouse-keeper-02-data:
-    name: xatu-cbt-clickhouse-keeper-02-data
-  clickhouse-keeper-03-data:
-    name: xatu-cbt-clickhouse-keeper-03-data
-  redis-data:
-    name: xatu-cbt-redis-data
+  clickhouse-01-data: {}
+  clickhouse-02-data: {}
+  xatu-clickhouse-01-data: {}
+  xatu-clickhouse-02-data: {}
+  clickhouse-keeper-01-data: {}
+  clickhouse-keeper-02-data: {}
+  clickhouse-keeper-03-data: {}
+  redis-data: {}
 
 services:
   # ---------------------------------------------------------------------------
@@ -72,7 +63,6 @@ services:
   # ---------------------------------------------------------------------------
   xatu-cbt-clickhouse-keeper-01:
     image: clickhouse/clickhouse-keeper:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-cbt-clickhouse-keeper-01
     hostname: xatu-cbt-clickhouse-keeper-01
     networks:
       - xatu-net
@@ -89,7 +79,6 @@ services:
 
   xatu-cbt-clickhouse-keeper-02:
     image: clickhouse/clickhouse-keeper:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-cbt-clickhouse-keeper-02
     hostname: xatu-cbt-clickhouse-keeper-02
     networks:
       - xatu-net
@@ -106,7 +95,6 @@ services:
 
   xatu-cbt-clickhouse-keeper-03:
     image: clickhouse/clickhouse-keeper:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-cbt-clickhouse-keeper-03
     hostname: xatu-cbt-clickhouse-keeper-03
     networks:
       - xatu-net
@@ -127,7 +115,6 @@ services:
   # ---------------------------------------------------------------------------
   xatu-cbt-clickhouse-01:
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-cbt-clickhouse-01
     hostname: xatu-cbt-clickhouse-01
     user: "101:101"
     extra_hosts:
@@ -165,7 +152,6 @@ services:
 
   xatu-cbt-clickhouse-02:
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-cbt-clickhouse-02
     hostname: xatu-cbt-clickhouse-02
     user: "101:101"
     extra_hosts:
@@ -211,7 +197,6 @@ services:
     profiles:
       - xatu-local
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-clickhouse-01
     hostname: xatu-clickhouse-01
     user: "101:101"
     networks:
@@ -249,7 +234,6 @@ services:
     profiles:
       - xatu-local
     image: clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}
-    container_name: xatu-clickhouse-02
     hostname: xatu-clickhouse-02
     user: "101:101"
     networks:
@@ -286,7 +270,6 @@ services:
   # Redis for CBT state management
   xatu-cbt-redis:
     image: redis:${REDIS_VERSION:-7-alpine}
-    container_name: xatu-cbt-redis
     hostname: xatu-cbt-redis
     networks:
       - xatu-net
