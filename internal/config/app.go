@@ -168,10 +168,10 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-func getFirstEnv(keys []string, defaultValue string) (string, string) {
+func getFirstEnv(keys []string, defaultValue string) (value, matchedKey string) {
 	for _, key := range keys {
-		if value := os.Getenv(key); value != "" {
-			return value, key
+		if v := os.Getenv(key); v != "" {
+			return v, key
 		}
 	}
 
