@@ -33,9 +33,8 @@ block_context AS (
         slot_start_date_time,
         execution_payload_block_hash
     FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} FINAL
-    -- Use wider window to ensure we catch all blocks that might match engine events
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 5 MINUTE
-        AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 5 MINUTE
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 65 MINUTE
+        AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 65 MINUTE
         AND execution_payload_block_hash IS NOT NULL AND execution_payload_block_hash != ''
 ),
 -- Fetch external data separately to avoid cross-cluster join pushdown issues
@@ -54,8 +53,8 @@ engine_payloads AS (
     FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }} FINAL
     WHERE meta_network_name = '{{ .env.NETWORK }}'
         AND meta_execution_implementation != ''
-        AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
-            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+        AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 65 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 65 MINUTE
 ),
 -- Join execution engine data with slot context locally
 enriched AS (
@@ -78,13 +77,14 @@ enriched AS (
     FROM engine_payloads ep
     GLOBAL LEFT JOIN block_context bc ON ep.block_hash = bc.execution_payload_block_hash
 ),
--- Find the hour boundaries from the enriched data
+-- Find the hour boundaries from the enriched data within the current bounds
 hour_bounds AS (
     SELECT
         toStartOfHour(min(slot_start_date_time)) AS min_hour,
         toStartOfHour(max(slot_start_date_time)) AS max_hour
     FROM enriched
     WHERE slot_start_date_time != toDateTime(0)
+        AND slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 -- Filter to complete hour boundaries
 events_in_hours AS (
