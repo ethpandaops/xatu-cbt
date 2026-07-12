@@ -3,10 +3,10 @@ table: int_engine_new_payload_fastest_execution_by_node_class
 type: incremental
 interval:
   type: slot
-  max: 50000
+  max: 200000
 schedules:
   forwardfill: "@every 5s"
-  backfill: "@every 30s"
+  backfill: "@every 5s"
 tags:
   - slot
   - engine

@@ -3,10 +3,10 @@ table: fct_engine_new_payload_winrate_hourly
 type: incremental
 interval:
   type: slot
-  max: 25200
+  max: 172800
 schedules:
   forwardfill: "@every 5m"
-  backfill: "@every 30s"
+  backfill: "@every 5s"
 tags:
   - hourly
   - execution

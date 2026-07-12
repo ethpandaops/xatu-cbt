@@ -6,7 +6,7 @@ interval:
   max: 604800
 schedules:
   forwardfill: "@every 1h"
-  backfill: "@every 30s"
+  backfill: "@every 5s"
 tags:
   - daily
   - execution
