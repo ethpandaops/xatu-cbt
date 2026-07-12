@@ -15,18 +15,31 @@ assertions:
         - type: greater_than
           column: count
           value: 0
-    - name: Each slot and node_class pair should be unique (fastest only)
+    - name: Each slot, node_class and implementation combination should be unique
       sql: |
         SELECT COUNT(*) AS duplicate_count
         FROM (
-            SELECT slot, node_class, COUNT(*) AS cnt
+            SELECT slot, node_class, meta_execution_implementation, COUNT(*) AS cnt
             FROM int_engine_new_payload_fastest_execution_by_node_class FINAL
-            GROUP BY slot, node_class
+            GROUP BY slot, node_class, meta_execution_implementation
             HAVING cnt > 1
         )
       assertions:
         - type: equals
           column: duplicate_count
+          value: 0
+    - name: All winners for a slot and node_class should share the minimum duration
+      sql: |
+        SELECT COUNT(*) AS mixed_duration_count
+        FROM (
+            SELECT slot, node_class
+            FROM int_engine_new_payload_fastest_execution_by_node_class FINAL
+            GROUP BY slot, node_class
+            HAVING uniqExact(duration_ms) > 1
+        )
+      assertions:
+        - type: equals
+          column: mixed_duration_count
           value: 0
     - name: duration_ms should be non-negative
       sql: |

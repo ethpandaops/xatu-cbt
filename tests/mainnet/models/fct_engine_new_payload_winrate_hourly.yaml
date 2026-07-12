@@ -55,16 +55,13 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Sum of win_count per hour per node_class should not exceed slots in an hour (3600/12 = 300)
+    - name: win_count per implementation should not exceed slots in an hour (3600/12 = 300)
       sql: |
-        SELECT COALESCE(MAX(total_wins), 0) AS max_wins_per_hour FROM (
-          SELECT hour_start_date_time, node_class, SUM(win_count) AS total_wins
-          FROM fct_engine_new_payload_winrate_hourly FINAL
-          GROUP BY hour_start_date_time, node_class
-        )
+        SELECT COALESCE(MAX(win_count), 0) AS max_win_count
+        FROM fct_engine_new_payload_winrate_hourly FINAL
       assertions:
         - type: less_than_or_equal
-          column: max_wins_per_hour
+          column: max_win_count
           value: 300
     - name: hour_start_date_time should not be in the future
       sql: |
