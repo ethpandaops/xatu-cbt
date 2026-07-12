@@ -12,7 +12,8 @@ tags:
   - block
   - engine
 dependencies:
-  - "{{external}}.execution_engine_new_payload"
+  - - "{{external}}.execution_engine_new_payload"
+    - "{{external}}.consensus_engine_api_new_payload"
   - "{{transformation}}.fct_block_head"
 ---
 INSERT INTO
@@ -43,8 +44,19 @@ block_context AS (
         AND execution_payload_block_hash != ''
 ),
 
--- Get raw engine_newPayload observations from the execution layer snooper
+-- Get raw engine_newPayload observations from two capture pipelines:
+-- the EL-side rpc-snooper (execution_engine_new_payload, live since 2026-03-27 on mainnet) and
+-- the CL-side tysm instrumentation (consensus_engine_api_new_payload, live since 2025-12-09).
+-- The snooper is the preferred source. Consensus observations are only used for slots
+-- older than the snooper capture start, derived per network from the snooper table itself,
+-- so the two pipelines never both contribute to the same slot.
 -- Fetch external data separately to avoid cross-cluster join pushdown issues
+snooper_capture_start AS (
+    SELECT min(event_date_time) AS boundary
+    FROM {{ index .dep "{{external}}" "execution_engine_new_payload" "helpers" "from" }}
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+),
+
 engine_payloads AS (
     SELECT
         updated_date_time AS source_updated_date_time,
@@ -80,6 +92,44 @@ engine_payloads AS (
         -- Filter execution events by the slot time window (with some buffer for timing differences)
         AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
             AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+
+    UNION ALL
+
+    SELECT
+        updated_date_time AS source_updated_date_time,
+        event_date_time,
+        requested_date_time,
+        duration_ms,
+        block_hash,
+        block_number,
+        parent_hash,
+        gas_used,
+        gas_limit,
+        tx_count,
+        blob_count,
+        status,
+        validation_error,
+        latest_valid_hash,
+        method_version,
+        meta_execution_version,
+        meta_execution_implementation,
+        meta_client_name,
+        meta_client_implementation,
+        meta_client_version,
+        meta_client_geo_city,
+        meta_client_geo_country,
+        meta_client_geo_country_code,
+        meta_client_geo_continent_code,
+        meta_client_geo_latitude,
+        meta_client_geo_longitude,
+        meta_client_geo_autonomous_system_number,
+        meta_client_geo_autonomous_system_organization
+    FROM {{ index .dep "{{external}}" "consensus_engine_api_new_payload" "helpers" "from" }} FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+        AND slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+        -- An empty snooper table yields a 1970 boundary, correctly excluding every consensus row
+        AND slot_start_date_time < (SELECT boundary FROM snooper_capture_start)
 ),
 
 -- Join external data with block context locally
