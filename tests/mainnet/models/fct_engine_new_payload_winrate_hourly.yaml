@@ -55,14 +55,20 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: win_count per implementation should not exceed slots in an hour (3600/12 = 300)
+    - name: win_count per implementation should not exceed distinct slots observed for that hour and node_class
       sql: |
-        SELECT COALESCE(MAX(win_count), 0) AS max_win_count
-        FROM fct_engine_new_payload_winrate_hourly FINAL
+        SELECT COUNT(*) AS violation_count
+        FROM fct_engine_new_payload_winrate_hourly AS w FINAL
+        GLOBAL INNER JOIN (
+          SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, node_class, uniqExact(slot) AS slot_count
+          FROM int_engine_new_payload_fastest_execution_by_node_class FINAL
+          GROUP BY hour_start_date_time, node_class
+        ) AS s ON w.hour_start_date_time = s.hour_start_date_time AND w.node_class = s.node_class
+        WHERE w.win_count > s.slot_count
       assertions:
-        - type: less_than_or_equal
-          column: max_win_count
-          value: 300
+        - type: equals
+          column: violation_count
+          value: 0
     - name: hour_start_date_time should not be in the future
       sql: |
         SELECT COUNT(*) AS count FROM fct_engine_new_payload_winrate_hourly FINAL WHERE hour_start_date_time > now()

@@ -69,15 +69,17 @@ assertions:
         - type: equals
           column: count
           value: 0
-    - name: Total win_count per day per node_class should not exceed slot count for that day
+    - name: win_count per implementation should not exceed distinct slots observed for that day and node_class
       sql: |
-        SELECT COUNT(*) AS count FROM (
-          SELECT day_start_date, node_class, COALESCE(SUM(win_count), 0) AS total_wins
-          FROM fct_engine_new_payload_winrate_daily FINAL
+        SELECT COUNT(*) AS violation_count
+        FROM fct_engine_new_payload_winrate_daily AS w FINAL
+        GLOBAL INNER JOIN (
+          SELECT toDate(slot_start_date_time) AS day_start_date, node_class, uniqExact(slot) AS slot_count
+          FROM int_engine_new_payload_fastest_execution_by_node_class FINAL
           GROUP BY day_start_date, node_class
-          HAVING total_wins > 7200
-        )
+        ) AS s ON w.day_start_date = s.day_start_date AND w.node_class = s.node_class
+        WHERE w.win_count > s.slot_count
       assertions:
         - type: equals
-          column: count
+          column: violation_count
           value: 0
