@@ -13,11 +13,11 @@ tags:
   - proposer
   - head
 dependencies:
-  - "{{external}}.beacon_api_eth_v1_events_block_gossip"
-  - "{{external}}.beacon_api_eth_v1_events_block"
+  - - "{{external}}.beacon_api_eth_v1_events_block_gossip"
+    - "{{external}}.beacon_api_eth_v1_events_block"
+    - "{{external}}.libp2p_gossipsub_beacon_block"
   - - "{{external}}.beacon_api_eth_v1_proposer_duty"
     - "{{external}}.canonical_beacon_proposer_duty"
-  - "{{external}}.libp2p_gossipsub_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -117,6 +117,14 @@ gate AS (
         ) - toInt64((SELECT count() FROM duty_slots)) AS missing_slots
 ),
 
+-- The three block-observation sources below (gossip event, block event, and
+-- libp2p gossipsub) redundantly report the same block root per slot, so they
+-- form an OR-group dependency: any one is sufficient and they are unioned and
+-- deduplicated in all_blocks. Grouping them keeps the model's range floor at
+-- the earliest source (events/gossipsub reach genesis) rather than pinning it
+-- to the gossip event stream, which only begins once a network has live
+-- collection. Where a source has no data for the interval its CTE is simply
+-- empty and contributes nothing.
 block_gossip AS (
     SELECT DISTINCT
         slot,
