@@ -1,0 +1,25 @@
+model: fct_transaction_inclusion_hourly
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_inclusion_hourly_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_inclusion_hourly_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_inclusion_hourly_canonical_beacon_block_execution_transaction.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_inclusion_hourly_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_inclusion_hourly_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: SELECT COUNT(*) AS count FROM fct_transaction_inclusion_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0

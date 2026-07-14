@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Hourly cohort outcomes for transactions first sighted in the public mempool, resolved at the fixed 7 day horizon
+
+message FctTransactionMempoolOutcomeHourly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the hour period, bucketed by first sighting time. Rows are complete once the 7 day horizon for the hour has been processed and never change afterwards
+  uint32 hour_start_date_time = 12;
+  // Transactions first sighted in the public mempool this hour
+  uint64 observed_count = 13;
+  // Observed transactions included within 7 days of first sighting
+  uint64 included_count = 14;
+  // Observed transactions whose nonce was consumed by a different transaction within 7 days
+  uint64 nonce_consumed_count = 15;
+  // Observed transactions with no inclusion of their nonce within 7 days
+  uint64 unincluded_count = 16;
+  // Included observed transactions whose block matched a known relay payload-delivered record
+  uint64 included_relay_delivered_count = 17;
+  // Included observed transactions whose block matched no known relay payload-delivered record. Not proof the block was locally built
+  uint64 included_unknown_build_count = 18;
+  // Unincluded transactions with a sighting in the final hour before the 7 day deadline
+  uint64 in_mempool_at_deadline_count = 19;
+  // Observed transactions that are self-transfers of zero value, the common wallet cancellation pattern
+  uint64 cancel_shape_count = 20;
+  // Observed transactions first sighted after their nonce had already been consumed
+  uint64 observed_after_nonce_consumed_count = 21;
+  // Median milliseconds from first sighting to inclusion slot start, over included transactions with non-negative waits
+  google.protobuf.DoubleValue wait_ms_p50 = 22;
+  // p90 milliseconds from first sighting to inclusion slot start, over included transactions with non-negative waits
+  google.protobuf.DoubleValue wait_ms_p90 = 23;
+  // p99 milliseconds from first sighting to inclusion slot start, over included transactions with non-negative waits
+  google.protobuf.DoubleValue wait_ms_p99 = 24;
+  // Number of included transactions contributing to the wait quantiles
+  uint64 wait_sample_count = 25;
+  // Included transactions first sighted after their inclusion slot started, excluded from the wait quantiles
+  uint64 negative_wait_count = 26;
+  // Observed blob type 3 transactions first sighted this hour
+  uint64 blob_observed_count = 27;
+  // Median wait milliseconds over included blob transactions with non-negative waits
+  google.protobuf.DoubleValue blob_wait_ms_p50 = 28;
+  // p90 wait milliseconds over included blob transactions with non-negative waits
+  google.protobuf.DoubleValue blob_wait_ms_p90 = 29;
+  // p99 wait milliseconds over included blob transactions with non-negative waits
+  google.protobuf.DoubleValue blob_wait_ms_p99 = 30;
+  // Number of included blob transactions contributing to the blob wait quantiles
+  uint64 blob_wait_sample_count = 31;
+  // Distinct from and nonce pairs across transactions first sighted this hour
+  uint64 nonce_group_count = 32;
+  // Nonce groups with at least two observed attempts, anchored to this hour by their earliest attempt sighting
+  uint64 multi_attempt_nonce_group_count = 33;
+  // Non-winning attempts across multi-attempt nonce groups anchored to this hour
+  uint64 replaced_attempt_count = 34;
+}
+
+// Request for listing fct_transaction_mempool_outcome_hourly records
+message ListFctTransactionMempoolOutcomeHourlyRequest {
+  // Filter by hour_start_date_time - Start of the hour period, bucketed by first sighting time. Rows are complete once the 7 day horizon for the hour has been processed and never change afterwards (PRIMARY KEY - required)
+  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by observed_count - Transactions first sighted in the public mempool this hour (optional)
+  UInt64Filter observed_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by included_count - Observed transactions included within 7 days of first sighting (optional)
+  UInt64Filter included_count = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by nonce_consumed_count - Observed transactions whose nonce was consumed by a different transaction within 7 days (optional)
+  UInt64Filter nonce_consumed_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by unincluded_count - Observed transactions with no inclusion of their nonce within 7 days (optional)
+  UInt64Filter unincluded_count = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by included_relay_delivered_count - Included observed transactions whose block matched a known relay payload-delivered record (optional)
+  UInt64Filter included_relay_delivered_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by included_unknown_build_count - Included observed transactions whose block matched no known relay payload-delivered record. Not proof the block was locally built (optional)
+  UInt64Filter included_unknown_build_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by in_mempool_at_deadline_count - Unincluded transactions with a sighting in the final hour before the 7 day deadline (optional)
+  UInt64Filter in_mempool_at_deadline_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by cancel_shape_count - Observed transactions that are self-transfers of zero value, the common wallet cancellation pattern (optional)
+  UInt64Filter cancel_shape_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by observed_after_nonce_consumed_count - Observed transactions first sighted after their nonce had already been consumed (optional)
+  UInt64Filter observed_after_nonce_consumed_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by wait_ms_p50 - Median milliseconds from first sighting to inclusion slot start, over included transactions with non-negative waits (optional)
+  google.protobuf.DoubleValue wait_ms_p50 = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by wait_ms_p90 - p90 milliseconds from first sighting to inclusion slot start, over included transactions with non-negative waits (optional)
+  google.protobuf.DoubleValue wait_ms_p90 = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by wait_ms_p99 - p99 milliseconds from first sighting to inclusion slot start, over included transactions with non-negative waits (optional)
+  google.protobuf.DoubleValue wait_ms_p99 = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by wait_sample_count - Number of included transactions contributing to the wait quantiles (optional)
+  UInt64Filter wait_sample_count = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by negative_wait_count - Included transactions first sighted after their inclusion slot started, excluded from the wait quantiles (optional)
+  UInt64Filter negative_wait_count = 16 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by blob_observed_count - Observed blob type 3 transactions first sighted this hour (optional)
+  UInt64Filter blob_observed_count = 17 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by blob_wait_ms_p50 - Median wait milliseconds over included blob transactions with non-negative waits (optional)
+  google.protobuf.DoubleValue blob_wait_ms_p50 = 18 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by blob_wait_ms_p90 - p90 wait milliseconds over included blob transactions with non-negative waits (optional)
+  google.protobuf.DoubleValue blob_wait_ms_p90 = 19 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by blob_wait_ms_p99 - p99 wait milliseconds over included blob transactions with non-negative waits (optional)
+  google.protobuf.DoubleValue blob_wait_ms_p99 = 20 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by blob_wait_sample_count - Number of included blob transactions contributing to the blob wait quantiles (optional)
+  UInt64Filter blob_wait_sample_count = 21 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by nonce_group_count - Distinct from and nonce pairs across transactions first sighted this hour (optional)
+  UInt64Filter nonce_group_count = 22 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by multi_attempt_nonce_group_count - Nonce groups with at least two observed attempts, anchored to this hour by their earliest attempt sighting (optional)
+  UInt64Filter multi_attempt_nonce_group_count = 23 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by replaced_attempt_count - Non-winning attempts across multi-attempt nonce groups anchored to this hour (optional)
+  UInt64Filter replaced_attempt_count = 24 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_transaction_mempool_outcome_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 25 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctTransactionMempoolOutcomeHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 26 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 27 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_transaction_mempool_outcome_hourly records
+message ListFctTransactionMempoolOutcomeHourlyResponse {
+  // The list of fct_transaction_mempool_outcome_hourly.
+  repeated FctTransactionMempoolOutcomeHourly fct_transaction_mempool_outcome_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_transaction_mempool_outcome_hourly record by primary key
+message GetFctTransactionMempoolOutcomeHourlyRequest {
+  // Start of the hour period, bucketed by first sighting time. Rows are complete once the 7 day horizon for the hour has been processed and never change afterwards
+  uint32 hour_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_transaction_mempool_outcome_hourly record
+message GetFctTransactionMempoolOutcomeHourlyResponse {
+  FctTransactionMempoolOutcomeHourly item = 1;
+}
+
+// Query fct_transaction_mempool_outcome_hourly data
+service FctTransactionMempoolOutcomeHourlyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctTransactionMempoolOutcomeHourlyRequest) returns (ListFctTransactionMempoolOutcomeHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_transaction_mempool_outcome_hourly"
+    };
+  }
+  // Get record | Retrieve a single record by hour_start_date_time
+  rpc Get(GetFctTransactionMempoolOutcomeHourlyRequest) returns (GetFctTransactionMempoolOutcomeHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_transaction_mempool_outcome_hourly/{hour_start_date_time}"
+    };
+  }
+}

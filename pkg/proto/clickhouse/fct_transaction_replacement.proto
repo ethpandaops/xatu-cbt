@@ -1,0 +1,163 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// One row per publicly observed attempt in nonce groups with at least two attempts, emitted when the group resolves. A nonce group is all transactions sharing a from address and nonce whose first sightings fall within 7 days of the group anchor
+
+message FctTransactionReplacement {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Earliest sighting of any attempt in the nonce group, the anchor of the group window
+  int64 group_first_seen_date_time = 12;
+  // The address of the account that sent the attempts
+  string from = 13;
+  // The nonce the attempts compete for
+  uint64 nonce = 14;
+  // The transaction hash of this attempt
+  string hash = 15;
+  // The 1-based rank of this attempt within the group, ordered by first sighting with ties broken by hash
+  uint32 attempt_index = 16;
+  // Total number of publicly observed attempts in the group window
+  uint32 group_attempt_count = 17;
+  // Earliest sighting of this attempt
+  int64 first_seen_date_time = 18;
+  // The hash of the attempt immediately before this one in the group, null for the first attempt
+  google.protobuf.StringValue previous_hash = 19;
+  // The address of the attempt recipient, null for contract creation
+  google.protobuf.StringValue to = 20;
+  // The type of the transaction
+  google.protobuf.UInt32Value type = 21;
+  // The gas price of the attempt in wei
+  string gas_price = 22;
+  // The priority fee (tip) of the attempt in wei
+  google.protobuf.StringValue gas_tip_cap = 23;
+  // The max fee of the attempt in wei
+  google.protobuf.StringValue gas_fee_cap = 24;
+  // The value transferred with the attempt in wei
+  string value = 25;
+  // This attempt gas_tip_cap minus the previous attempt gas_tip_cap, null for the first attempt or when either side is null
+  google.protobuf.StringValue gas_tip_cap_delta = 26;
+  // This attempt gas_fee_cap minus the previous attempt gas_fee_cap, null for the first attempt or when either side is null
+  google.protobuf.StringValue gas_fee_cap_delta = 27;
+  // Whether the attempt is a self-transfer of zero value, the common wallet cancellation pattern
+  bool is_cancel_shape = 28;
+  // Whether this attempt is the one that was included on chain
+  bool is_winner = 29;
+  // Outcome of the nonce group within 7 days of the group anchor: included or unincluded
+  string group_outcome = 30;
+  // The hash of the included attempt, null when the group resolved unincluded
+  google.protobuf.StringValue winner_hash = 31;
+  // When the group resolved: the winner inclusion slot start, or the group anchor plus 7 days when unincluded
+  int64 resolution_date_time = 32;
+  // Whether this attempt was first sighted after the group had already resolved
+  bool observed_after_resolution = 33;
+}
+
+// Request for listing fct_transaction_replacement records
+message ListFctTransactionReplacementRequest {
+  // Filter by group_first_seen_date_time - Earliest sighting of any attempt in the nonce group, the anchor of the group window (PRIMARY KEY - required unless using alternatives: hash, from)
+  Int64Filter group_first_seen_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by from - The address of the account that sent the attempts (ORDER BY column 2 - optional)
+  StringFilter from = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by nonce - The nonce the attempts compete for (ORDER BY column 3 - optional)
+  UInt64Filter nonce = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by hash - The transaction hash of this attempt (ORDER BY column 4 - optional)
+  StringFilter hash = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by attempt_index - The 1-based rank of this attempt within the group, ordered by first sighting with ties broken by hash (optional)
+  UInt32Filter attempt_index = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by group_attempt_count - Total number of publicly observed attempts in the group window (optional)
+  UInt32Filter group_attempt_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by first_seen_date_time - Earliest sighting of this attempt (optional)
+  Int64Filter first_seen_date_time = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by previous_hash - The hash of the attempt immediately before this one in the group, null for the first attempt (optional)
+  NullableStringFilter previous_hash = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by to - The address of the attempt recipient, null for contract creation (optional)
+  NullableStringFilter to = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by type - The type of the transaction (optional)
+  NullableUInt32Filter type = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_price - The gas price of the attempt in wei (optional)
+  StringFilter gas_price = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_tip_cap - The priority fee (tip) of the attempt in wei (optional)
+  NullableStringFilter gas_tip_cap = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_fee_cap - The max fee of the attempt in wei (optional)
+  NullableStringFilter gas_fee_cap = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by value - The value transferred with the attempt in wei (optional)
+  StringFilter value = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_tip_cap_delta - This attempt gas_tip_cap minus the previous attempt gas_tip_cap, null for the first attempt or when either side is null (optional)
+  NullableStringFilter gas_tip_cap_delta = 16 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_fee_cap_delta - This attempt gas_fee_cap minus the previous attempt gas_fee_cap, null for the first attempt or when either side is null (optional)
+  NullableStringFilter gas_fee_cap_delta = 17 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by is_cancel_shape - Whether the attempt is a self-transfer of zero value, the common wallet cancellation pattern (optional)
+  BoolFilter is_cancel_shape = 18 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by is_winner - Whether this attempt is the one that was included on chain (optional)
+  BoolFilter is_winner = 19 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by group_outcome - Outcome of the nonce group within 7 days of the group anchor: included or unincluded (optional)
+  StringFilter group_outcome = 20 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by winner_hash - The hash of the included attempt, null when the group resolved unincluded (optional)
+  NullableStringFilter winner_hash = 21 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by resolution_date_time - When the group resolved: the winner inclusion slot start, or the group anchor plus 7 days when unincluded (optional)
+  Int64Filter resolution_date_time = 22 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by observed_after_resolution - Whether this attempt was first sighted after the group had already resolved (optional)
+  BoolFilter observed_after_resolution = 23 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_transaction_replacement to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 24 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctTransactionReplacement` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 25 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 26 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_transaction_replacement records
+message ListFctTransactionReplacementResponse {
+  // The list of fct_transaction_replacement.
+  repeated FctTransactionReplacement fct_transaction_replacement = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_transaction_replacement record by primary key
+message GetFctTransactionReplacementRequest {
+  // Earliest sighting of any attempt in the nonce group, the anchor of the group window
+  int64 group_first_seen_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_transaction_replacement record
+message GetFctTransactionReplacementResponse {
+  FctTransactionReplacement item = 1;
+}
+
+// Query fct_transaction_replacement data
+service FctTransactionReplacementService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctTransactionReplacementRequest) returns (ListFctTransactionReplacementResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_transaction_replacement"
+    };
+  }
+  // Get record | Retrieve a single record by group_first_seen_date_time
+  rpc Get(GetFctTransactionReplacementRequest) returns (GetFctTransactionReplacementResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_transaction_replacement/{group_first_seen_date_time}"
+    };
+  }
+}
