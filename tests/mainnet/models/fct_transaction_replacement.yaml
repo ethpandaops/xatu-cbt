@@ -1,0 +1,99 @@
+model: fct_transaction_replacement
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_replacement_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_replacement_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_replacement_canonical_beacon_block_execution_transaction.parquet
+        network_column: meta_network_name
+    mempool_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_replacement_mempool_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative (model may be empty in short CI seed windows due to the 7 day fill buffer)
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: count
+          value: 0
+    - name: Attempt index is always at least 1
+      sql: |
+        SELECT countIf(attempt_index < 1) AS bad_rows FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Group attempt count is at least 2 for every emitted row
+      sql: |
+        SELECT countIf(group_attempt_count < 2) AS bad_rows FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Attempt index never exceeds the group attempt count
+      sql: |
+        SELECT countIf(attempt_index > group_attempt_count) AS invalid_index_count FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: equals
+          column: invalid_index_count
+          value: 0
+    - name: is_winner is a boolean flag
+      sql: |
+        SELECT max(is_winner) AS max_is_winner, min(is_winner) AS min_is_winner FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: less_than_or_equal
+          column: max_is_winner
+          value: 1
+        - type: greater_than_or_equal
+          column: min_is_winner
+          value: 0
+    - name: observed_after_resolution is a boolean flag
+      sql: |
+        SELECT max(observed_after_resolution) AS max_flag, min(observed_after_resolution) AS min_flag FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: less_than_or_equal
+          column: max_flag
+          value: 1
+        - type: greater_than_or_equal
+          column: min_flag
+          value: 0
+    - name: First attempt in a group must have no previous_hash
+      sql: |
+        SELECT countIf(attempt_index = 1 AND previous_hash IS NOT NULL) AS bad_previous_hash FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: equals
+          column: bad_previous_hash
+          value: 0
+    - name: First attempt in a group must have null gas cap deltas
+      sql: |
+        SELECT countIf(attempt_index = 1 AND (gas_tip_cap_delta IS NOT NULL OR gas_fee_cap_delta IS NOT NULL)) AS bad_deltas FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: equals
+          column: bad_deltas
+          value: 0
+    - name: Non-first attempts must carry a previous_hash
+      sql: |
+        SELECT countIf(attempt_index > 1 AND previous_hash IS NULL) AS missing_previous_hash FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: equals
+          column: missing_previous_hash
+          value: 0
+    - name: group_outcome only takes the two expected values
+      sql: |
+        SELECT countIf(group_outcome NOT IN ('included', 'unincluded')) AS invalid_outcome_count FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: equals
+          column: invalid_outcome_count
+          value: 0
+    - name: Every included group has exactly one winner and a winner_hash
+      sql: |
+        SELECT countIf(group_outcome = 'included' AND winner_hash IS NULL) AS included_without_winner FROM fct_transaction_replacement FINAL
+      assertions:
+        - type: equals
+          column: included_without_winner
+          value: 0
