@@ -174,150 +174,150 @@ func BuildListFctTransactionInclusionDailyQuery(req *ListFctTransactionInclusion
 		}
 	}
 
-	// Add filter for column: type_0_count
+	// Add filter for column: type0_count
 	if req.Type0Count != nil {
 		switch filter := req.Type0Count.Filter.(type) {
 		case *UInt64Filter_Eq:
-			qb.AddCondition("type_0_count", "=", filter.Eq)
+			qb.AddCondition("type0_count", "=", filter.Eq)
 		case *UInt64Filter_Ne:
-			qb.AddCondition("type_0_count", "!=", filter.Ne)
+			qb.AddCondition("type0_count", "!=", filter.Ne)
 		case *UInt64Filter_Lt:
-			qb.AddCondition("type_0_count", "<", filter.Lt)
+			qb.AddCondition("type0_count", "<", filter.Lt)
 		case *UInt64Filter_Lte:
-			qb.AddCondition("type_0_count", "<=", filter.Lte)
+			qb.AddCondition("type0_count", "<=", filter.Lte)
 		case *UInt64Filter_Gt:
-			qb.AddCondition("type_0_count", ">", filter.Gt)
+			qb.AddCondition("type0_count", ">", filter.Gt)
 		case *UInt64Filter_Gte:
-			qb.AddCondition("type_0_count", ">=", filter.Gte)
+			qb.AddCondition("type0_count", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("type_0_count", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("type0_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("type_0_count", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("type0_count", UInt64SliceToInterface(filter.In.Values))
 			}
 		case *UInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("type_0_count", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("type0_count", UInt64SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
 		}
 	}
 
-	// Add filter for column: type_1_count
+	// Add filter for column: type1_count
 	if req.Type1Count != nil {
 		switch filter := req.Type1Count.Filter.(type) {
 		case *UInt64Filter_Eq:
-			qb.AddCondition("type_1_count", "=", filter.Eq)
+			qb.AddCondition("type1_count", "=", filter.Eq)
 		case *UInt64Filter_Ne:
-			qb.AddCondition("type_1_count", "!=", filter.Ne)
+			qb.AddCondition("type1_count", "!=", filter.Ne)
 		case *UInt64Filter_Lt:
-			qb.AddCondition("type_1_count", "<", filter.Lt)
+			qb.AddCondition("type1_count", "<", filter.Lt)
 		case *UInt64Filter_Lte:
-			qb.AddCondition("type_1_count", "<=", filter.Lte)
+			qb.AddCondition("type1_count", "<=", filter.Lte)
 		case *UInt64Filter_Gt:
-			qb.AddCondition("type_1_count", ">", filter.Gt)
+			qb.AddCondition("type1_count", ">", filter.Gt)
 		case *UInt64Filter_Gte:
-			qb.AddCondition("type_1_count", ">=", filter.Gte)
+			qb.AddCondition("type1_count", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("type_1_count", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("type1_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("type_1_count", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("type1_count", UInt64SliceToInterface(filter.In.Values))
 			}
 		case *UInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("type_1_count", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("type1_count", UInt64SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
 		}
 	}
 
-	// Add filter for column: type_2_count
+	// Add filter for column: type2_count
 	if req.Type2Count != nil {
 		switch filter := req.Type2Count.Filter.(type) {
 		case *UInt64Filter_Eq:
-			qb.AddCondition("type_2_count", "=", filter.Eq)
+			qb.AddCondition("type2_count", "=", filter.Eq)
 		case *UInt64Filter_Ne:
-			qb.AddCondition("type_2_count", "!=", filter.Ne)
+			qb.AddCondition("type2_count", "!=", filter.Ne)
 		case *UInt64Filter_Lt:
-			qb.AddCondition("type_2_count", "<", filter.Lt)
+			qb.AddCondition("type2_count", "<", filter.Lt)
 		case *UInt64Filter_Lte:
-			qb.AddCondition("type_2_count", "<=", filter.Lte)
+			qb.AddCondition("type2_count", "<=", filter.Lte)
 		case *UInt64Filter_Gt:
-			qb.AddCondition("type_2_count", ">", filter.Gt)
+			qb.AddCondition("type2_count", ">", filter.Gt)
 		case *UInt64Filter_Gte:
-			qb.AddCondition("type_2_count", ">=", filter.Gte)
+			qb.AddCondition("type2_count", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("type_2_count", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("type2_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("type_2_count", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("type2_count", UInt64SliceToInterface(filter.In.Values))
 			}
 		case *UInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("type_2_count", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("type2_count", UInt64SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
 		}
 	}
 
-	// Add filter for column: type_3_count
+	// Add filter for column: type3_count
 	if req.Type3Count != nil {
 		switch filter := req.Type3Count.Filter.(type) {
 		case *UInt64Filter_Eq:
-			qb.AddCondition("type_3_count", "=", filter.Eq)
+			qb.AddCondition("type3_count", "=", filter.Eq)
 		case *UInt64Filter_Ne:
-			qb.AddCondition("type_3_count", "!=", filter.Ne)
+			qb.AddCondition("type3_count", "!=", filter.Ne)
 		case *UInt64Filter_Lt:
-			qb.AddCondition("type_3_count", "<", filter.Lt)
+			qb.AddCondition("type3_count", "<", filter.Lt)
 		case *UInt64Filter_Lte:
-			qb.AddCondition("type_3_count", "<=", filter.Lte)
+			qb.AddCondition("type3_count", "<=", filter.Lte)
 		case *UInt64Filter_Gt:
-			qb.AddCondition("type_3_count", ">", filter.Gt)
+			qb.AddCondition("type3_count", ">", filter.Gt)
 		case *UInt64Filter_Gte:
-			qb.AddCondition("type_3_count", ">=", filter.Gte)
+			qb.AddCondition("type3_count", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("type_3_count", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("type3_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("type_3_count", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("type3_count", UInt64SliceToInterface(filter.In.Values))
 			}
 		case *UInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("type_3_count", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("type3_count", UInt64SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
 		}
 	}
 
-	// Add filter for column: type_4_count
+	// Add filter for column: type4_count
 	if req.Type4Count != nil {
 		switch filter := req.Type4Count.Filter.(type) {
 		case *UInt64Filter_Eq:
-			qb.AddCondition("type_4_count", "=", filter.Eq)
+			qb.AddCondition("type4_count", "=", filter.Eq)
 		case *UInt64Filter_Ne:
-			qb.AddCondition("type_4_count", "!=", filter.Ne)
+			qb.AddCondition("type4_count", "!=", filter.Ne)
 		case *UInt64Filter_Lt:
-			qb.AddCondition("type_4_count", "<", filter.Lt)
+			qb.AddCondition("type4_count", "<", filter.Lt)
 		case *UInt64Filter_Lte:
-			qb.AddCondition("type_4_count", "<=", filter.Lte)
+			qb.AddCondition("type4_count", "<=", filter.Lte)
 		case *UInt64Filter_Gt:
-			qb.AddCondition("type_4_count", ">", filter.Gt)
+			qb.AddCondition("type4_count", ">", filter.Gt)
 		case *UInt64Filter_Gte:
-			qb.AddCondition("type_4_count", ">=", filter.Gte)
+			qb.AddCondition("type4_count", ">=", filter.Gte)
 		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("type_4_count", filter.Between.Min, filter.Between.Max.GetValue())
+			qb.AddBetweenCondition("type4_count", filter.Between.Min, filter.Between.Max.GetValue())
 		case *UInt64Filter_In:
 			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("type_4_count", UInt64SliceToInterface(filter.In.Values))
+				qb.AddInCondition("type4_count", UInt64SliceToInterface(filter.In.Values))
 			}
 		case *UInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("type_4_count", UInt64SliceToInterface(filter.NotIn.Values))
+				qb.AddNotInCondition("type4_count", UInt64SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -499,7 +499,7 @@ func BuildListFctTransactionInclusionDailyQuery(req *ListFctTransactionInclusion
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "day_start_date", "included_count", "relay_delivered_count", "unknown_build_count", "type_0_count", "type_1_count", "type_2_count", "type_3_count", "type_4_count", "type_other_count", "blob_count", "contract_creation_count", "cancel_shape_count", "unique_senders"}
+		validFields := []string{"updated_date_time", "day_start_date", "included_count", "relay_delivered_count", "unknown_build_count", "type0_count", "type1_count", "type2_count", "type3_count", "type4_count", "type_other_count", "blob_count", "contract_creation_count", "cancel_shape_count", "unique_senders"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -511,7 +511,7 @@ func BuildListFctTransactionInclusionDailyQuery(req *ListFctTransactionInclusion
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "included_count", "relay_delivered_count", "unknown_build_count", "type_0_count", "type_1_count", "type_2_count", "type_3_count", "type_4_count", "type_other_count", "blob_count", "contract_creation_count", "cancel_shape_count", "unique_senders"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "included_count", "relay_delivered_count", "unknown_build_count", "type0_count", "type1_count", "type2_count", "type3_count", "type4_count", "type_other_count", "blob_count", "contract_creation_count", "cancel_shape_count", "unique_senders"}
 
 	return BuildParameterizedQuery("fct_transaction_inclusion_daily", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -531,7 +531,7 @@ func BuildGetFctTransactionInclusionDailyQuery(req *GetFctTransactionInclusionDa
 	orderByClause := " ORDER BY day_start_date"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "included_count", "relay_delivered_count", "unknown_build_count", "type_0_count", "type_1_count", "type_2_count", "type_3_count", "type_4_count", "type_other_count", "blob_count", "contract_creation_count", "cancel_shape_count", "unique_senders"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "included_count", "relay_delivered_count", "unknown_build_count", "type0_count", "type1_count", "type2_count", "type3_count", "type4_count", "type_other_count", "blob_count", "contract_creation_count", "cancel_shape_count", "unique_senders"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_transaction_inclusion_daily", columns, qb, orderByClause, 1, 0, options...)

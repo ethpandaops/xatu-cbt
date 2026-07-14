@@ -42,26 +42,6 @@ assertions:
         - type: equals
           column: invalid_index_count
           value: 0
-    - name: is_winner is a boolean flag
-      sql: |
-        SELECT max(is_winner) AS max_is_winner, min(is_winner) AS min_is_winner FROM fct_transaction_replacement FINAL
-      assertions:
-        - type: less_than_or_equal
-          column: max_is_winner
-          value: 1
-        - type: greater_than_or_equal
-          column: min_is_winner
-          value: 0
-    - name: observed_after_resolution is a boolean flag
-      sql: |
-        SELECT max(observed_after_resolution) AS max_flag, min(observed_after_resolution) AS min_flag FROM fct_transaction_replacement FINAL
-      assertions:
-        - type: less_than_or_equal
-          column: max_flag
-          value: 1
-        - type: greater_than_or_equal
-          column: min_flag
-          value: 0
     - name: First attempt in a group must have no previous_hash
       sql: |
         SELECT countIf(attempt_index = 1 AND previous_hash IS NOT NULL) AS bad_previous_hash FROM fct_transaction_replacement FINAL

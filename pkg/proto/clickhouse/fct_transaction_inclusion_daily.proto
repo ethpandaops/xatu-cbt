@@ -22,15 +22,15 @@ message FctTransactionInclusionDaily {
   // Included transactions whose block matched no known relay payload-delivered record. Not proof the block was locally built
   uint64 unknown_build_count = 15;
   // Included legacy type 0 transactions
-  uint64 type_0_count = 16;
+  uint64 type0_count = 16;
   // Included access list type 1 transactions
-  uint64 type_1_count = 17;
+  uint64 type1_count = 17;
   // Included dynamic fee type 2 transactions
-  uint64 type_2_count = 18;
+  uint64 type2_count = 18;
   // Included blob type 3 transactions
-  uint64 type_3_count = 19;
+  uint64 type3_count = 19;
   // Included set code type 4 transactions
-  uint64 type_4_count = 20;
+  uint64 type4_count = 20;
   // Included transactions of any other type
   uint64 type_other_count = 21;
   // Total blob commitments across included transactions this day
@@ -56,16 +56,16 @@ message ListFctTransactionInclusionDailyRequest {
   UInt64Filter relay_delivered_count = 4 [(google.api.field_behavior) = OPTIONAL];
   // Filter by unknown_build_count - Included transactions whose block matched no known relay payload-delivered record. Not proof the block was locally built (optional)
   UInt64Filter unknown_build_count = 5 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by type_0_count - Included legacy type 0 transactions (optional)
-  UInt64Filter type_0_count = 6 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by type_1_count - Included access list type 1 transactions (optional)
-  UInt64Filter type_1_count = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by type_2_count - Included dynamic fee type 2 transactions (optional)
-  UInt64Filter type_2_count = 8 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by type_3_count - Included blob type 3 transactions (optional)
-  UInt64Filter type_3_count = 9 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by type_4_count - Included set code type 4 transactions (optional)
-  UInt64Filter type_4_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by type0_count - Included legacy type 0 transactions (optional)
+  UInt64Filter type0_count = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by type1_count - Included access list type 1 transactions (optional)
+  UInt64Filter type1_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by type2_count - Included dynamic fee type 2 transactions (optional)
+  UInt64Filter type2_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by type3_count - Included blob type 3 transactions (optional)
+  UInt64Filter type3_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by type4_count - Included set code type 4 transactions (optional)
+  UInt64Filter type4_count = 10 [(google.api.field_behavior) = OPTIONAL];
   // Filter by type_other_count - Included transactions of any other type (optional)
   UInt64Filter type_other_count = 11 [(google.api.field_behavior) = OPTIONAL];
   // Filter by blob_count - Total blob commitments across included transactions this day (optional)
