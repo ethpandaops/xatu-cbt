@@ -6,7 +6,7 @@ tags:
   - blob_submitter
   - transaction
 dependencies:
-  - "{{external}}.blob_submitter"
+  - "{{transformation}}.dim_blob_submitter"
   - "{{external}}.execution_transaction"
 ---
 INSERT INTO
@@ -53,7 +53,6 @@ FROM
 GLOBAL LEFT JOIN
 (
     SELECT address, name
-    FROM {{ index .dep "{{external}}" "blob_submitter" "helpers" "from" }} FINAL
-    WHERE meta_network_name = '{{ .env.NETWORK }}'
+    FROM {{ index .dep "{{transformation}}" "dim_blob_submitter" "helpers" "from" }} FINAL
 ) AS bs
 ON lower(et.address) = lower(bs.address);

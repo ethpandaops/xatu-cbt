@@ -1,0 +1,9 @@
+table: dim_blob_submitter
+type: scheduled
+schedule: "@every 6h"
+tags:
+  - blob_submitter
+  - transaction
+exec: "python3 ${MODELS_SCRIPTS_PATH:-/models/scripts}/dim_blob_submitter.py"
+dependencies:
+  - "{{external}}.execution_transaction"
