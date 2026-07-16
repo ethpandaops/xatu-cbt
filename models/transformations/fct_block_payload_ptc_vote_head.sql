@@ -20,7 +20,7 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 -- Gloas (ePBS): Payload Timeliness Committee votes observed on the live event
 -- stream, aggregated per attested block. Each PTC validator broadcasts one
--- payload attestation message per slot; multiple sentries observe the same
+-- payload attestation message per slot, and multiple sentries observe the same
 -- message, so counts deduplicate on validator index. slot here is the attested
 -- slot (the event stream reports it directly).
 SELECT

@@ -20,7 +20,7 @@ dependencies:
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 -- Gloas (ePBS): per-block PTC verdict. Canonical rows carry the on-chain
--- aggregated vote counts; blocks only ever seen on the live stream are tagged
+-- aggregated vote counts, while blocks only seen on the live stream are tagged
 -- orphaned with the stream-observed counts.
 WITH canonical_votes AS (
     SELECT

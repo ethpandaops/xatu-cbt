@@ -19,10 +19,10 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 -- Gloas (ePBS): the on-chain bid race, mirroring the relay-era
 -- fct_mev_bid_highest_value_by_builder_chunked_50ms but sourced from builder
--- bids on gossip. Multiple sentries observe the same bid; the earliest
+-- bids on gossip. Multiple sentries observe the same bid, so the earliest
 -- observation wins. Bids can arrive before the slot starts, so
 -- chunk_slot_start_diff is negative for pre-slot bids. Bid amounts are Gwei
--- on the wire; stored as wei to match the mev_relay bid tables.
+-- on the wire and stored as wei to match the mev_relay bid tables.
 WITH bids AS (
   SELECT
       slot_start_date_time,
