@@ -14,11 +14,13 @@ tags:
   - head
 dependencies:
   - "{{external}}.beacon_api_eth_v2_beacon_block"
-  # Gloas payload-hash source. OR-grouped with the beacon block table so
+  # Gloas payload-hash source. OR-grouped with the block SSE events (CBT
+  # rejects duplicate edges, so the v2 block table cannot appear twice) so
   # networks where the execution_payload events table is empty or absent
-  # schedule unaffected.
+  # schedule unaffected. The plain v2_beacon_block dependency above still
+  # caps the processable range - bounds take the minimum across deps.
   - - "{{external}}.beacon_api_eth_v1_events_execution_payload"
-    - "{{external}}.beacon_api_eth_v2_beacon_block"
+    - "{{external}}.beacon_api_eth_v1_events_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
