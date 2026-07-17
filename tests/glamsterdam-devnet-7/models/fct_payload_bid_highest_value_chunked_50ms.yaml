@@ -1,0 +1,92 @@
+model: fct_payload_bid_highest_value_chunked_50ms
+network: glamsterdam-devnet-7
+external_data:
+    beacon_api_eth_v1_events_execution_payload_bid:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_payload_bid_highest_value_chunked_50ms_beacon_api_eth_v1_events_execution_payload_bid.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: chunk_slot_start_diff is within the bounded propagation window
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+        WHERE chunk_slot_start_diff < -12000 OR chunk_slot_start_diff >= 12000
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: chunk_slot_start_diff is aligned to the 50ms grid
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+        WHERE modulo(chunk_slot_start_diff, 50) != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Bid value should never be negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+        WHERE `value` < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: builder_index should never be negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+        WHERE builder_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: slot and epoch should be positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+        WHERE slot <= 0 OR epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: block_hash should not be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+        WHERE block_hash = '' OR block_hash IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Only one row per slot and chunk combination
+      sql: |
+        SELECT max(dupes) AS max_dupes FROM (
+          SELECT COUNT(*) AS dupes
+          FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+          GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, chunk_slot_start_diff
+        )
+      assertions:
+        - type: less_than_or_equal
+          column: max_dupes
+          value: 1
+    - name: earliest_bid_date_time should not be null
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+        WHERE earliest_bid_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Highest bid value per slot is at least the max of any chunk in that slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT slot, max(`value`) AS slot_max
+          FROM fct_payload_bid_highest_value_chunked_50ms FINAL
+          GROUP BY slot
+        ) WHERE slot_max < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
