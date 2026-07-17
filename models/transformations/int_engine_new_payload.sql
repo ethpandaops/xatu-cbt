@@ -15,30 +15,53 @@ dependencies:
   - - "{{external}}.execution_engine_new_payload"
     - "{{external}}.consensus_engine_api_new_payload"
   - "{{transformation}}.fct_block_head"
+  # Gloas payload correlation source. OR-grouped with the beacon block table
+  # (already required transitively via fct_block_head) so networks where the
+  # execution_payload events table is empty or absent schedule unaffected.
+  - - "{{external}}.beacon_api_eth_v1_events_execution_payload"
+    - "{{external}}.beacon_api_eth_v2_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
+-- Gloas (ePBS): the beacon block no longer embeds the execution payload, so
+-- fct_block_head carries no execution_payload_block_hash there. The
+-- execution_payload SSE events map each revealed payload's block hash to its
+-- beacon block root. Empty on pre-gloas networks, where it contributes nothing.
+payload_events AS (
+    SELECT
+        block_root,
+        any(block_hash) AS payload_block_hash
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_execution_payload" "helpers" "from" }}
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+        AND slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 5 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 5 MINUTE
+        AND block_hash != ''
+    GROUP BY block_root
+),
 -- Get slot context and block metadata from fct_block_head
 -- This provides CL context (slot, epoch, block_root, proposer_index) that execution_engine lacks
 -- Join on execution_payload_block_hash to correlate EL block hash with CL slot
 block_context AS (
     SELECT
-        slot,
-        slot_start_date_time,
-        epoch,
-        epoch_start_date_time,
-        block_root,
-        parent_root,
-        proposer_index,
-        execution_payload_block_hash,
-        block_total_bytes,
-        block_total_bytes_compressed,
-        block_version
-    FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} FINAL
+        bh.slot AS slot,
+        bh.slot_start_date_time AS slot_start_date_time,
+        bh.epoch AS epoch,
+        bh.epoch_start_date_time AS epoch_start_date_time,
+        bh.block_root AS block_root,
+        bh.parent_root AS parent_root,
+        bh.proposer_index AS proposer_index,
+        -- Pre-gloas blocks carry their payload hash; gloas blocks fall back to
+        -- the payload observed for their block root on the SSE layer
+        coalesce(nullif(bh.execution_payload_block_hash, ''), nullif(pe.payload_block_hash, '')) AS execution_payload_block_hash,
+        bh.block_total_bytes AS block_total_bytes,
+        bh.block_total_bytes_compressed AS block_total_bytes_compressed,
+        bh.block_version AS block_version
+    FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} AS bh FINAL
+    GLOBAL LEFT JOIN payload_events pe ON bh.block_root = pe.block_root
     -- Use wider window to ensure we catch all blocks that might match engine events
     -- Engine events use event_date_time which may differ from slot_start_date_time
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 5 MINUTE
+    WHERE bh.slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 5 MINUTE
         AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 5 MINUTE
         AND execution_payload_block_hash IS NOT NULL
         AND execution_payload_block_hash != ''
