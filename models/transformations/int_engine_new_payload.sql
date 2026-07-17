@@ -51,7 +51,7 @@ block_context AS (
         bh.block_root AS block_root,
         bh.parent_root AS parent_root,
         bh.proposer_index AS proposer_index,
-        -- Pre-gloas blocks carry their payload hash; gloas blocks fall back to
+        -- Pre-gloas blocks carry their payload hash. Gloas blocks fall back to
         -- the payload observed for their block root on the SSE layer
         coalesce(nullif(bh.execution_payload_block_hash, ''), nullif(pe.payload_block_hash, '')) AS execution_payload_block_hash,
         bh.block_total_bytes AS block_total_bytes,
