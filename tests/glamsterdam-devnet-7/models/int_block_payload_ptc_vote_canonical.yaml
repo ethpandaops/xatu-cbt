@@ -1,0 +1,92 @@
+model: int_block_payload_ptc_vote_canonical
+network: glamsterdam-devnet-7
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/int_block_payload_ptc_vote_canonical_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_payload_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/int_block_payload_ptc_vote_canonical_canonical_beacon_block_payload_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_block_payload_ptc_vote_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No non-positive ptc_validators totals
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
+        WHERE ptc_validators <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative payload_present_votes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
+        WHERE payload_present_votes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative blob_data_available_votes
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
+        WHERE blob_data_available_votes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: payload_present_votes never exceeds ptc_validators
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
+        WHERE payload_present_votes > ptc_validators
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: blob_data_available_votes never exceeds ptc_validators
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
+        WHERE blob_data_available_votes > ptc_validators
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Attested slot is always earlier than the containing (included) slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
+        WHERE included_in_slot <= slot
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null or empty block_root keys
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
+        WHERE block_root IS NULL OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch is consistent with slot (32 slots per epoch)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Grouping key produces one row per attested block_root
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT block_root FROM int_block_payload_ptc_vote_canonical FINAL
+          GROUP BY block_root
+          HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

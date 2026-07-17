@@ -1,0 +1,90 @@
+model: fct_block_payload_available_by_node
+network: glamsterdam-devnet-7
+external_data:
+    beacon_api_eth_v1_events_execution_payload_available:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_available_by_node_beacon_api_eth_v1_events_execution_payload_available.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_payload_available_by_node FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Slot values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_available_by_node FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should equal slot divided by 32
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_available_by_node FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Classification should only contain known values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_available_by_node FINAL
+        WHERE classification NOT IN ('individual', 'corporate', 'internal', 'unclassified')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block root should not be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_available_by_node FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Node id should not be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_available_by_node FINAL
+        WHERE node_id = '' OR node_id IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: One row per node per slot (no duplicates)
+      sql: |
+        SELECT COUNT(*) AS duplicate_groups FROM (
+          SELECT slot_start_date_time, meta_client_name, COUNT(*) AS group_count
+          FROM fct_block_payload_available_by_node FINAL
+          GROUP BY slot_start_date_time, meta_client_name
+          HAVING group_count > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_groups
+          value: 0
+    - name: Geo latitude within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_available_by_node FINAL
+        WHERE meta_client_geo_latitude < -90 OR meta_client_geo_latitude > 90
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Geo longitude within valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_available_by_node FINAL
+        WHERE meta_client_geo_longitude < -180 OR meta_client_geo_longitude > 180
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Username should not be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_available_by_node FINAL
+        WHERE username = '' OR username IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -1,0 +1,89 @@
+model: fct_block_payload
+network: glamsterdam-devnet-7
+external_data:
+    canonical_beacon_block_execution_payload_bid:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_canonical_beacon_block_execution_payload_bid.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_canonical_beacon_block_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_payload FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Epoch should equal slot divided by 32
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No negative or zero slots
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Transaction counts must be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE transactions_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blob transactions count must not exceed total transactions count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE blob_transactions_count > transactions_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blob KZG commitment count must be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE blob_kzg_commitment_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Transactions total bytes must be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE transactions_total_bytes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Transactions total gas limit must not exceed block gas limit
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE transactions_count > 0 AND transactions_total_gas_limit > gas_limit
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block root must not be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Bid value stored as wei must be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE `value` < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
