@@ -66,6 +66,20 @@ chunked AS (
       floor(earliest_slot_start_diff / 50) * 50 AS chunk_slot_start_diff,
       earliest_event_ms
   FROM earliest_observation_per_bid
+),
+chunk_best AS (
+  SELECT
+      slot,
+      slot_start_date_time,
+      epoch,
+      epoch_start_date_time,
+      chunk_slot_start_diff,
+      max(`value`) AS max_value,
+      argMax(earliest_event_ms, `value`) AS earliest_event_ms,
+      argMax(block_hash, `value`) AS block_hash,
+      argMax(builder_index, `value`) AS builder_index
+  FROM chunked
+  GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, chunk_slot_start_diff
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
@@ -74,9 +88,8 @@ SELECT
     epoch,
     epoch_start_date_time,
     toInt32(chunk_slot_start_diff) AS chunk_slot_start_diff,
-    toDateTime64(argMax(earliest_event_ms, `value`) / 1000, 3) AS earliest_bid_date_time,
-    argMax(block_hash, `value`) AS block_hash,
-    argMax(builder_index, `value`) AS builder_index,
-    max(`value`) AS `value`
-FROM chunked
-GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, chunk_slot_start_diff
+    toDateTime64(earliest_event_ms / 1000, 3) AS earliest_bid_date_time,
+    block_hash,
+    builder_index,
+    max_value AS `value`
+FROM chunk_best
