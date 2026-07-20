@@ -90,10 +90,30 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: Canonical rows must carry an included_in_slot value
+    - name: Canonical rows whose votes reached the chain carry an included_in_slot value
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
-        WHERE status = 'canonical' AND included_in_slot IS NULL
+        WHERE status = 'canonical' AND ptc_validators > 0 AND included_in_slot IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Orphaned rows never carry an inclusion reference
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE status = 'orphaned'
+          AND (included_in_slot IS NOT NULL OR included_in_block_root IS NOT NULL)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blocks on the canonical chain are never labelled orphaned
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL v
+        WHERE v.status = 'orphaned'
+          AND v.block_root IN (
+            SELECT block_root FROM canonical_beacon_block
+          )
       assertions:
         - type: equals
           column: bad_rows

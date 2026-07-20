@@ -22,6 +22,11 @@ INSERT INTO
 -- Gloas (ePBS): per-block PTC verdict. Canonical rows carry the on-chain
 -- aggregated vote counts, while blocks only seen on the live stream are tagged
 -- orphaned with the stream-observed counts.
+--
+-- The canonical side holds every canonical block, including those whose votes
+-- never reached the chain because slot N+1 was missed. Such rows report zero
+-- counts and null included_in_*, so status stays 'canonical' and only blocks
+-- genuinely absent from the chain fall through to the orphaned branch.
 WITH canonical_votes AS (
     SELECT
         slot,
@@ -30,8 +35,8 @@ WITH canonical_votes AS (
         epoch_start_date_time,
         block_root,
         block_version,
-        included_in_slot,
-        included_in_block_root,
+        nullIf(included_in_slot, 0) AS included_in_slot,
+        nullIf(included_in_block_root, '') AS included_in_block_root,
         ptc_validators,
         payload_present_votes,
         blob_data_available_votes,
