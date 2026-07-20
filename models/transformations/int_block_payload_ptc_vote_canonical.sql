@@ -72,3 +72,5 @@ SELECT
 FROM attested_blocks b
 GLOBAL LEFT JOIN included_attestations a ON a.beacon_block_root = b.block_root
 GROUP BY b.slot, b.slot_start_date_time, b.epoch, b.epoch_start_date_time, b.block_root
+-- Unmatched LEFT JOIN rows must zero-fill so the sums land as 0, not NULL
+SETTINGS join_use_nulls = 0

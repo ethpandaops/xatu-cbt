@@ -109,9 +109,9 @@ assertions:
           value: 0
     - name: Blocks on the canonical chain are never labelled orphaned
       sql: |
-        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL v
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote AS v FINAL
         WHERE v.status = 'orphaned'
-          AND v.block_root IN (
+          AND v.block_root GLOBAL IN (
             SELECT block_root FROM canonical_beacon_block
           )
       assertions:
