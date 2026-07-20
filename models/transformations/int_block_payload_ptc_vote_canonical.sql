@@ -26,6 +26,12 @@ INSERT INTO
 -- past the interval end while output rows stay keyed inside the interval by
 -- the attested block's own slot. Aggregates are packed per vote combination
 -- with disjoint bitvectors, so attesting_validator_count sums cleanly.
+--
+-- Emits one row per canonical block, votes or not: when slot N+1 is missed the
+-- PTC votes for slot N never reach the chain, but slot N is still canonical.
+-- Those rows carry zero counts and empty included_in_*, which is what lets
+-- downstream models treat "absent from this table" as "not on the canonical
+-- chain" rather than "no votes were included".
 WITH included_attestations AS (
     SELECT
         slot AS included_in_slot,
@@ -63,6 +69,8 @@ SELECT
     SUM(a.attesting_validator_count) AS ptc_validators,
     sumIf(a.attesting_validator_count, a.payload_present) AS payload_present_votes,
     sumIf(a.attesting_validator_count, a.blob_data_available) AS blob_data_available_votes
-FROM included_attestations a
-GLOBAL INNER JOIN attested_blocks b ON a.beacon_block_root = b.block_root
+FROM attested_blocks b
+GLOBAL LEFT JOIN included_attestations a ON a.beacon_block_root = b.block_root
 GROUP BY b.slot, b.slot_start_date_time, b.epoch, b.epoch_start_date_time, b.block_root
+-- Unmatched LEFT JOIN rows must zero-fill so the sums land as 0, not NULL
+SETTINGS join_use_nulls = 0

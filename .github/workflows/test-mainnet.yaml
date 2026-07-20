@@ -33,6 +33,10 @@ jobs:
     runs-on:
       - self-hosted-ghr
       - size-l-x64
+    env:
+      # Must match the Checkout Xatu ref below. Passed as --xatu-ref because the
+      # CLI defaults to master and force-resets the existing checkout to it.
+      XATU_REF: ${{ github.event.inputs.xatu_ref || 'master' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Set up env
@@ -42,7 +46,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: ethpandaops/xatu
-          ref: ${{ github.event.inputs.xatu_ref || 'master' }}
+          ref: ${{ env.XATU_REF }}
           path: xatu
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
@@ -58,7 +62,7 @@ jobs:
         run: mkdir -p .parquet_cache
       - name: Start infrastructure
         id: start-infra
-        run: ./bin/xatu-cbt infra start
+        run: ./bin/xatu-cbt infra start --xatu-ref "$XATU_REF"
       - name: Run mainnet tests (full suite)
         if: needs.detect.outputs.models == 'all'
         # 2 shards do ~2x the per-test work (ON CLUSTER DDL + distributed inserts +
@@ -67,12 +71,12 @@ jobs:
         # the heavy libp2p_gossipsub_beacon_attestation parquet load lose its resource race and
         # blow the 5m QueryTimeout, while 10-wide loads it fine. DDL pool_size=4 keeps the
         # up-front clone phase fast regardless.
-        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 10 --timeout 60m
+        run: ./bin/xatu-cbt test all --network mainnet --verbose --concurrency 10 --timeout 60m --xatu-ref "$XATU_REF"
       - name: Run mainnet tests (impacted only)
         if: needs.detect.outputs.models != 'all'
         run: |
           echo "Running impacted models: ${{ needs.detect.outputs.models }}"
-          ./bin/xatu-cbt test models ${{ needs.detect.outputs.models }} --network mainnet --verbose --concurrency 10
+          ./bin/xatu-cbt test models ${{ needs.detect.outputs.models }} --network mainnet --verbose --concurrency 10 --xatu-ref "$XATU_REF"
       - name: Stop infrastructure
         if: always() && steps.start-infra.outcome != 'skipped'
         run: ./bin/xatu-cbt infra stop
