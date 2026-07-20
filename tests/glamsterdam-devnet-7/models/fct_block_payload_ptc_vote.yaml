@@ -108,11 +108,13 @@ assertions:
           column: bad_rows
           value: 0
     - name: Blocks on the canonical chain are never labelled orphaned
+      # int_block_canonical rather than canonical_beacon_block: assertions run
+      # against the CBT cluster only, where external tables do not exist.
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote AS v FINAL
         WHERE v.status = 'orphaned'
           AND v.block_root GLOBAL IN (
-            SELECT block_root FROM canonical_beacon_block
+            SELECT block_root FROM int_block_canonical
           )
       assertions:
         - type: equals
