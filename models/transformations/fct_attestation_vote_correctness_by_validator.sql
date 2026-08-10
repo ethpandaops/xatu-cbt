@@ -14,8 +14,12 @@ tags:
   - vote_correctness
   - validator_performance
 dependencies:
-  - "{{transformation}}.int_attestation_attested_canonical"
-  - "{{transformation}}.int_attestation_attested_head"
+  # OR group: head supplies gossip first-seen timing (LEFT JOINed, NULL when
+  # absent) and only exists from the event era; canonical reaches genesis and is
+  # the primary attestation source. Either satisfies coverage, so the model
+  # backfills to genesis with NULL gossip-timing columns pre-event.
+  - - "{{transformation}}.int_attestation_attested_head"
+    - "{{transformation}}.int_attestation_attested_canonical"
   - "{{transformation}}.fct_block_proposer"
   - "{{external}}.canonical_beacon_committee"
   - "{{external}}.canonical_beacon_block"

@@ -13,8 +13,12 @@ tags:
   - proposer
   - canonical
 dependencies:
-  - "{{transformation}}.int_block_proposer_canonical"
-  - "{{transformation}}.fct_block_proposer_head"
+  # OR group: head gives orphaned-block status but only exists from the
+  # gossip/event era; canonical reaches genesis and is the primary source (the
+  # SQL drives FROM it). Either satisfies coverage, so the model backfills to
+  # genesis (status falls back to canonical/missed when head is absent).
+  - - "{{transformation}}.fct_block_proposer_head"
+    - "{{transformation}}.int_block_proposer_canonical"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
