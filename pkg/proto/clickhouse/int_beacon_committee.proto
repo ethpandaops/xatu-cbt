@@ -5,6 +5,7 @@ package cbt;
 import "common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Beacon committee, canonical-preferred merge of the head-event stream and the canonical table
 
 message IntBeaconCommittee {
   // Timestamp when the record was last updated
