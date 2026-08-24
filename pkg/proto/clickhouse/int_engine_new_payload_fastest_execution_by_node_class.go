@@ -403,7 +403,7 @@ func BuildListIntEngineNewPayloadFastestExecutionByNodeClassQuery(req *ListIntEn
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", slot" + ", node_class"
+		orderByClause = " ORDER BY slot_start_date_time" + ", slot" + ", node_class" + ", meta_execution_implementation"
 	}
 
 	// Build column list
@@ -424,7 +424,7 @@ func BuildGetIntEngineNewPayloadFastestExecutionByNodeClassQuery(req *GetIntEngi
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, slot, node_class"
+	orderByClause := " ORDER BY slot_start_date_time, slot, node_class, meta_execution_implementation"
 
 	// Build column list
 	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "duration_ms", "node_class", "meta_execution_implementation", "meta_execution_version", "meta_client_name"}
