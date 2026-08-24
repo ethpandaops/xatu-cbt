@@ -12,9 +12,13 @@ tags:
   - block
 dependencies:
   - "{{external}}.beacon_api_eth_v1_events_block_gossip"
-  - "{{external}}.beacon_api_eth_v1_events_block"
   - "{{external}}.beacon_api_eth_v1_events_head"
-  - "{{external}}.libp2p_gossipsub_beacon_block"
+  # The libp2p pipeline is deployed independently of the beacon API sentries
+  # and can stop publishing (e.g. a sidecar that predates a fork's gossip
+  # changes). OR-grouping it with the block event keeps a dead gossip feed
+  # from stalling forwardfill; whichever source is fresher gates the interval.
+  - - "{{external}}.beacon_api_eth_v1_events_block"
+    - "{{external}}.libp2p_gossipsub_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -41,7 +45,7 @@ WITH combined_events AS (
         meta_consensus_version,
         meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
@@ -68,7 +72,7 @@ WITH combined_events AS (
         meta_consensus_version,
         meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
@@ -95,7 +99,7 @@ WITH combined_events AS (
         meta_consensus_version,
         meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_head" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
@@ -131,7 +135,7 @@ WITH combined_events AS (
                 ''
         END AS meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
 )
 SELECT
