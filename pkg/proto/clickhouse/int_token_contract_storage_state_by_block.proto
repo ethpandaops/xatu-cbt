@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Cumulative live storage slots owned by ERC20/ERC721 contracts per block, split by token_standard

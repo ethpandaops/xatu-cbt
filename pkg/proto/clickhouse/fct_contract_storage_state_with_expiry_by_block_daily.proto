@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Contract-level expiry state metrics aggregated by day
@@ -28,7 +28,7 @@ message FctContractStorageStateWithExpiryByBlockDaily {
 // Request for listing fct_contract_storage_state_with_expiry_by_block_daily records
 message ListFctContractStorageStateWithExpiryByBlockDailyRequest {
   // Filter by expiry_policy - Expiry policy identifier: 1m, 6m, 12m, 18m, 24m (PRIMARY KEY - required)
-  StringFilter expiry_policy = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  StringFilter expiry_policy = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by day_start_date - Start of the day period (ORDER BY column 2 - optional)
   StringFilter day_start_date = 2 [(google.api.field_behavior) = OPTIONAL];

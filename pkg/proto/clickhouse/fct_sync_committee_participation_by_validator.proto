@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Per-slot sync committee participation by validator
@@ -26,7 +26,7 @@ message FctSyncCommitteeParticipationByValidator {
 // Request for listing fct_sync_committee_participation_by_validator records
 message ListFctSyncCommitteeParticipationByValidatorRequest {
   // Filter by validator_index - Index of the validator (PRIMARY KEY - required)
-  UInt32Filter validator_index = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  UInt32Filter validator_index = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by slot_start_date_time - The start time of the slot (ORDER BY column 2 - optional)
   UInt32Filter slot_start_date_time = 2 [(google.api.field_behavior) = OPTIONAL];

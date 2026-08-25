@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Daily validator count by entity and status, derived from canonical_beacon_validators joined with dim_node
@@ -26,7 +26,7 @@ message FctValidatorCountByEntityByStatusDaily {
 // Request for listing fct_validator_count_by_entity_by_status_daily records
 message ListFctValidatorCountByEntityByStatusDailyRequest {
   // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
-  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by entity - Entity name from dim_node mapping (ORDER BY column 2 - optional)
   StringFilter entity = 2 [(google.api.field_behavior) = OPTIONAL];

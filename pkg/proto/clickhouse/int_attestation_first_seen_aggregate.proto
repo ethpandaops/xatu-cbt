@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Each row is one (slot, validator, vote) pair seen inside an aggregate attestation. Two rows for the same (slot, validator) indicate slashable double attestation.

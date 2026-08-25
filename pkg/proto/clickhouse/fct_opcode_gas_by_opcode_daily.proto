@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Daily per-opcode gas consumption for Top Opcodes by Gas charts
@@ -37,7 +37,7 @@ message FctOpcodeGasByOpcodeDaily {
 // Request for listing fct_opcode_gas_by_opcode_daily records
 message ListFctOpcodeGasByOpcodeDailyRequest {
   // Filter by day_start_date - Start of the day period (PRIMARY KEY - required unless using alternatives: opcode)
-  StringFilter day_start_date = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = OPTIONAL, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by opcode - The EVM opcode name (e.g., SLOAD, ADD, CALL) (ORDER BY column 2 - optional)
   StringFilter opcode = 2 [(google.api.field_behavior) = OPTIONAL];

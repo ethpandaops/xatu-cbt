@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Hourly execution client winrate based on fastest engine_newPayload duration per slot
@@ -26,7 +26,7 @@ message FctEngineNewPayloadWinrateHourly {
 // Request for listing fct_engine_new_payload_winrate_hourly records
 message ListFctEngineNewPayloadWinrateHourlyRequest {
   // Filter by hour_start_date_time - Start of the hour period (PRIMARY KEY - required)
-  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by node_class - Node classification for grouping observations (e.g., eip7870-block-builder, or empty for general nodes) (ORDER BY column 2 - optional)
   StringFilter node_class = 2 [(google.api.field_behavior) = OPTIONAL];

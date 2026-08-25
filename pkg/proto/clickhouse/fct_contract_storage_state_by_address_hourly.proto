@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Contract storage state metrics per address aggregated by hour
@@ -26,7 +26,7 @@ message FctContractStorageStateByAddressHourly {
 // Request for listing fct_contract_storage_state_by_address_hourly records
 message ListFctContractStorageStateByAddressHourlyRequest {
   // Filter by address - The contract address (PRIMARY KEY - required)
-  StringFilter address = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  StringFilter address = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by hour_start_date_time - Start of the hour period (ORDER BY column 2 - optional)
   UInt32Filter hour_start_date_time = 2 [(google.api.field_behavior) = OPTIONAL];

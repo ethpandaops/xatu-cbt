@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Contracts that have emitted ERC20/ERC721 Transfer events, classified into a single token_standard by their first transfer

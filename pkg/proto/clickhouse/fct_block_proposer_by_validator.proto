@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Block proposers re-indexed by validator for efficient validator lookups
@@ -35,7 +35,7 @@ message FctBlockProposerByValidator {
 // Request for listing fct_block_proposer_by_validator records
 message ListFctBlockProposerByValidatorRequest {
   // Filter by validator_index - The validator index of the proposer (PRIMARY KEY - required)
-  UInt32Filter validator_index = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  UInt32Filter validator_index = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by slot_start_date_time - The wall clock time when the slot started (ORDER BY column 2 - optional)
   UInt32Filter slot_start_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
