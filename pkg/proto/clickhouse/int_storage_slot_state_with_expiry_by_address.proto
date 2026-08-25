@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Cumulative storage slot state per block per address with expiry policies - ordered by address for efficient address lookups

@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Data column availability by day and column index
@@ -51,7 +51,7 @@ message FctDataColumnAvailabilityDaily {
 // Request for listing fct_data_column_availability_daily records
 message ListFctDataColumnAvailabilityDailyRequest {
   // Filter by date - Date of the aggregation (PRIMARY KEY - required)
-  StringFilter date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  StringFilter date = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by column_index - Column index (0-127) (ORDER BY column 2 - optional)
   UInt64Filter column_index = 2 [(google.api.field_behavior) = OPTIONAL];

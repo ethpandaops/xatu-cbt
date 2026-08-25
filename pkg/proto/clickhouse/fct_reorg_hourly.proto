@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Hourly reorg event counts by depth
@@ -24,7 +24,7 @@ message FctReorgHourly {
 // Request for listing fct_reorg_hourly records
 message ListFctReorgHourlyRequest {
   // Filter by hour_start_date_time - Start of the hour period (PRIMARY KEY - required)
-  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by depth - Reorg depth (number of consecutive orphaned slots) (ORDER BY column 2 - optional)
   UInt32Filter depth = 2 [(google.api.field_behavior) = OPTIONAL];

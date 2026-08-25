@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // engine_getBlobs observations aggregated by execution client and status for EL comparison
@@ -55,7 +55,7 @@ message FctEngineGetBlobsByElClient {
 // Request for listing fct_engine_get_blobs_by_el_client records
 message ListFctEngineGetBlobsByElClientRequest {
   // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
-  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by block_root - Root of the beacon block (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
   StringFilter block_root = 2 [(google.api.field_behavior) = OPTIONAL];

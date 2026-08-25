@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
@@ -18,7 +18,7 @@ message FctExecutionGasLimitSignallingDaily {
 // Request for listing fct_execution_gas_limit_signalling_daily records
 message ListFctExecutionGasLimitSignallingDailyRequest {
   // Filter by day_start_date (PRIMARY KEY - required)
-  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by updated_date_time (optional)
   UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];

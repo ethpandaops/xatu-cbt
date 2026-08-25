@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // engine_newPayload observations aggregated by execution client and status for EL comparison
@@ -60,7 +60,7 @@ message FctEngineNewPayloadByElClient {
 // Request for listing fct_engine_new_payload_by_el_client records
 message ListFctEngineNewPayloadByElClientRequest {
   // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
-  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by block_hash - Execution block hash (hex encoded with 0x prefix) (ORDER BY column 2 - optional)
   StringFilter block_hash = 2 [(google.api.field_behavior) = OPTIONAL];

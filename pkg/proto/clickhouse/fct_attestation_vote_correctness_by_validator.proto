@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Per-slot attestation vote correctness by validator
@@ -35,7 +35,7 @@ message FctAttestationVoteCorrectnessByValidator {
 // Request for listing fct_attestation_vote_correctness_by_validator records
 message ListFctAttestationVoteCorrectnessByValidatorRequest {
   // Filter by validator_index - The index of the validator (PRIMARY KEY - required unless using alternatives: slot_start_date_time)
-  UInt32Filter validator_index = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
+  UInt32Filter validator_index = 1 [(google.api.field_behavior) = OPTIONAL, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by slot_start_date_time - The start time of the slot (ORDER BY column 2 - optional)
   UInt32Filter slot_start_date_time = 2 [(google.api.field_behavior) = OPTIONAL];

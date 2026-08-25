@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Daily live storage slots owned by ERC20/ERC721 contracts, by token_standard
@@ -24,7 +24,7 @@ message FctTokenContractStorageStateByBlockDaily {
 // Request for listing fct_token_contract_storage_state_by_block_daily records
 message ListFctTokenContractStorageStateByBlockDailyRequest {
   // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
-  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by token_standard - Token standard: erc20 or erc721 (ORDER BY column 2 - optional)
   StringFilter token_standard = 2 [(google.api.field_behavior) = OPTIONAL];

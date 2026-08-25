@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Contract-level expiry state metrics per address aggregated by day
@@ -28,7 +28,7 @@ message FctContractStorageStateWithExpiryByAddressDaily {
 // Request for listing fct_contract_storage_state_with_expiry_by_address_daily records
 message ListFctContractStorageStateWithExpiryByAddressDailyRequest {
   // Filter by address - The contract address (PRIMARY KEY - required)
-  StringFilter address = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  StringFilter address = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by expiry_policy - Expiry policy identifier: 1m, 6m, 12m, 18m, 24m (ORDER BY column 2 - optional)
   StringFilter expiry_policy = 2 [(google.api.field_behavior) = OPTIONAL];

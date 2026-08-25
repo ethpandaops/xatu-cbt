@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package cbt;
 
-import "common.proto";
+import "cbt_common.proto";
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
-import "clickhouse/annotations.proto";
+import "clickhouse/cbt_annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 // Node network I/O per port per sub-slot window with node classification
@@ -43,7 +43,7 @@ message FctNodeNetworkIoByProcess {
 // Request for listing fct_node_network_io_by_process records
 message ListFctNodeNetworkIoByProcessRequest {
   // Filter by wallclock_slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required)
-  Int64Filter wallclock_slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+  Int64Filter wallclock_slot_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (cbt.clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by meta_client_name - Name of the observoor client that collected the data (ORDER BY column 2 - optional)
   StringFilter meta_client_name = 2 [(google.api.field_behavior) = OPTIONAL];
