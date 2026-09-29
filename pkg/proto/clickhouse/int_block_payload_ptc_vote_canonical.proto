@@ -20,11 +20,11 @@ message IntBlockPayloadPtcVoteCanonical {
   uint32 epoch_start_date_time = 15;
   // The beacon block root being attested by the PTC
   string block_root = 16;
-  // The beacon block version of the containing block
+  // The beacon block version of the containing block, empty when no votes were included
   string block_version = 17;
-  // Slot of the canonical block that included the payload attestations
+  // Slot of the canonical block that included the payload attestations, 0 when no votes were included
   uint32 included_in_slot = 18;
-  // Root of the canonical block that included the payload attestations
+  // Root of the canonical block that included the payload attestations, empty when no votes were included
   string included_in_block_root = 19;
   // Total PTC validators covered by the included payload attestation aggregates
   uint32 ptc_validators = 20;
@@ -50,11 +50,11 @@ message ListIntBlockPayloadPtcVoteCanonicalRequest {
   UInt32Filter epoch = 5;
   // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
   UInt32Filter epoch_start_date_time = 6;
-  // Filter by block_version - The beacon block version of the containing block (optional)
+  // Filter by block_version - The beacon block version of the containing block, empty when no votes were included (optional)
   StringFilter block_version = 7;
-  // Filter by included_in_slot - Slot of the canonical block that included the payload attestations (optional)
+  // Filter by included_in_slot - Slot of the canonical block that included the payload attestations, 0 when no votes were included (optional)
   UInt32Filter included_in_slot = 8;
-  // Filter by included_in_block_root - Root of the canonical block that included the payload attestations (optional)
+  // Filter by included_in_block_root - Root of the canonical block that included the payload attestations, empty when no votes were included (optional)
   StringFilter included_in_block_root = 9;
   // Filter by ptc_validators - Total PTC validators covered by the included payload attestation aggregates (optional)
   UInt32Filter ptc_validators = 10;

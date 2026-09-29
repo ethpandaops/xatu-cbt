@@ -6,7 +6,7 @@ on:
       xatu_ref:
         description: 'Xatu repository ref to checkout'
         required: false
-        default: 'release/glamsterdam-devnet-7'
+        default: 'master'
         type: string
 permissions:
   contents: read
@@ -36,7 +36,7 @@ jobs:
     env:
       # Must match the Checkout Xatu ref below. Passed as --xatu-ref because the
       # CLI defaults to master and force-resets the existing checkout to it.
-      XATU_REF: ${{ github.event.inputs.xatu_ref || 'release/glamsterdam-devnet-7' }}
+      XATU_REF: ${{ github.event.inputs.xatu_ref || 'master' }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Set up env
