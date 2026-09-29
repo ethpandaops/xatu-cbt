@@ -1,0 +1,88 @@
+model: fct_block_payload_bid
+network: glamsterdam-devnet-7
+external_data:
+    canonical_beacon_block_execution_payload_bid:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_bid_canonical_beacon_block_execution_payload_bid.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_payload_bid FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Slot values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_bid FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch should equal slot divided by 32
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_bid FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Builder index should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_bid FINAL
+        WHERE builder_index < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Gas limit should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_bid FINAL
+        WHERE gas_limit <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blob KZG commitment count should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_bid FINAL
+        WHERE blob_kzg_commitment_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Value should be stored as wei (Gwei scaled by 1e9) and non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_bid FINAL
+        WHERE value < 0 OR value % 1000000000 != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Execution payment should be stored as wei and non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_bid FINAL
+        WHERE execution_payment < 0 OR execution_payment % 1000000000 != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block root should not be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_bid FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: One bid per canonical block root
+      sql: |
+        SELECT COUNT(*) AS duplicate_roots FROM (
+          SELECT block_root, COUNT(*) AS c FROM fct_block_payload_bid FINAL
+          GROUP BY block_root HAVING c > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_roots
+          value: 0

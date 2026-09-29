@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// The winning gloas (ePBS) execution payload bid committed in each canonical beacon block, one per block
+
+message FctBlockPayloadBid {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The slot number of the block containing the bid
+  uint32 slot = 12;
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 13;
+  // The epoch number containing the slot
+  uint32 epoch = 14;
+  // The wall clock time when the epoch started
+  uint32 epoch_start_date_time = 15;
+  // The root of the beacon block containing the bid
+  string block_root = 16;
+  // The beacon block version, e.g. gloas
+  string block_version = 17;
+  // Validator index of the builder, equal to the block proposer index for self-built payloads
+  uint64 builder_index = 18;
+  // The execution block hash committed to in the bid
+  string block_hash = 19;
+  // The parent execution block hash
+  string parent_block_hash = 20;
+  // The parent beacon block root
+  string parent_block_root = 21;
+  // The bid value in wei
+  string value = 22;
+  // The execution payment in wei
+  string execution_payment = 23;
+  // The fee recipient address
+  string fee_recipient = 24;
+  // The gas limit for the execution payload
+  uint64 gas_limit = 25;
+  // Number of blob KZG commitments in the bid
+  uint32 blob_kzg_commitment_count = 26;
+}
+
+// Request for listing fct_block_payload_bid records
+message ListFctBlockPayloadBidRequest {
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: slot)
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by block_root - The root of the beacon block containing the bid (ORDER BY column 2 - optional)
+  StringFilter block_root = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by slot - The slot number of the block containing the bid (PROJECTION: p_by_slot - alternative to slot_start_date_time)
+  UInt32Filter slot = 4 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.projection_name) = "p_by_slot", (clickhouse.v1.projection_alternative_for) = "slot_start_date_time", (clickhouse.v1.required_group) = "primary_key"];
+  // Filter by epoch - The epoch number containing the slot (optional)
+  UInt32Filter epoch = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
+  UInt32Filter epoch_start_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_version - The beacon block version, e.g. gloas (optional)
+  StringFilter block_version = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by builder_index - Validator index of the builder, equal to the block proposer index for self-built payloads (optional)
+  UInt64Filter builder_index = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_hash - The execution block hash committed to in the bid (optional)
+  StringFilter block_hash = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by parent_block_hash - The parent execution block hash (optional)
+  StringFilter parent_block_hash = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by parent_block_root - The parent beacon block root (optional)
+  StringFilter parent_block_root = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by value - The bid value in wei (optional)
+  StringFilter value = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by execution_payment - The execution payment in wei (optional)
+  StringFilter execution_payment = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by fee_recipient - The fee recipient address (optional)
+  StringFilter fee_recipient = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_limit - The gas limit for the execution payload (optional)
+  UInt64Filter gas_limit = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by blob_kzg_commitment_count - Number of blob KZG commitments in the bid (optional)
+  UInt32Filter blob_kzg_commitment_count = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_block_payload_bid to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 17 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctBlockPayloadBid` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 18 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 19 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_block_payload_bid records
+message ListFctBlockPayloadBidResponse {
+  // The list of fct_block_payload_bid.
+  repeated FctBlockPayloadBid fct_block_payload_bid = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_block_payload_bid record by primary key
+message GetFctBlockPayloadBidRequest {
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_block_payload_bid record
+message GetFctBlockPayloadBidResponse {
+  FctBlockPayloadBid item = 1;
+}
+
+// Query fct_block_payload_bid data
+service FctBlockPayloadBidService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctBlockPayloadBidRequest) returns (ListFctBlockPayloadBidResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_payload_bid"
+    };
+  }
+  // Get record | Retrieve a single record by slot_start_date_time
+  rpc Get(GetFctBlockPayloadBidRequest) returns (GetFctBlockPayloadBidResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_payload_bid/{slot_start_date_time}"
+    };
+  }
+}

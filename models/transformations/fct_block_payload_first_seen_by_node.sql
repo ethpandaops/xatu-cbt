@@ -1,5 +1,5 @@
 ---
-table: fct_block_first_seen_by_node
+table: fct_block_payload_first_seen_by_node
 type: incremental
 interval:
   type: slot
@@ -10,27 +10,31 @@ schedules:
 tags:
   - slot
   - block
+  - payload
+  - epbs
 dependencies:
-  - "{{external}}.beacon_api_eth_v1_events_block_gossip"
-  - "{{external}}.beacon_api_eth_v1_events_head"
-  # The libp2p pipeline is deployed independently of the beacon API sentries
-  # and can stop publishing (e.g. a sidecar that predates a fork's gossip
-  # changes). OR-grouping it with the block event keeps a dead gossip feed
-  # from stalling forwardfill; whichever source is fresher gates the interval.
-  - - "{{external}}.beacon_api_eth_v1_events_block"
-    - "{{external}}.libp2p_gossipsub_beacon_block"
+  - "{{external}}.beacon_api_eth_v1_events_execution_payload_gossip"
+  - - "{{external}}.beacon_api_eth_v1_events_execution_payload"
+    - "{{external}}.libp2p_gossipsub_execution_payload_envelope"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
+-- Gloas (ePBS): the execution payload envelope is revealed by the builder
+-- separately from the beacon block. This mirrors fct_block_first_seen_by_node
+-- but for the envelope: one row per node per slot, first arrival wins.
+-- The libp2p gossip pipeline is OR-grouped with the beacon API import event so
+-- a stalled hermes deployment cannot stall the model.
 WITH combined_events AS (
     SELECT
-        'beacon_api_eth_v1_events_block' AS source,
+        'beacon_api_eth_v1_events_execution_payload_gossip' AS source,
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
         propagation_slot_start_diff,
-        block,
+        block_root,
+        block_hash,
+        builder_index,
         meta_client_name,
         meta_client_version,
         meta_client_implementation,
@@ -44,20 +48,22 @@ WITH combined_events AS (
         meta_client_geo_autonomous_system_organization,
         meta_consensus_version,
         meta_consensus_implementation
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }} FINAL
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_execution_payload_gossip" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
-    
+
     UNION ALL
-    
+
     SELECT
-        'beacon_api_eth_v1_events_block_gossip' AS source,
+        'beacon_api_eth_v1_events_execution_payload' AS source,
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
         propagation_slot_start_diff,
-        block,
+        block_root,
+        block_hash,
+        builder_index,
         meta_client_name,
         meta_client_version,
         meta_client_implementation,
@@ -71,47 +77,22 @@ WITH combined_events AS (
         meta_client_geo_autonomous_system_organization,
         meta_consensus_version,
         meta_consensus_implementation
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }} FINAL
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_execution_payload" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
-    
+
     UNION ALL
-    
+
     SELECT
-        'beacon_api_eth_v1_events_head' AS source,
+        'libp2p_gossipsub_execution_payload_envelope' AS source,
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
         propagation_slot_start_diff,
-        block,
-        meta_client_name,
-        meta_client_version,
-        meta_client_implementation,
-        meta_client_geo_city,
-        meta_client_geo_country,
-        meta_client_geo_country_code,
-        meta_client_geo_continent_code,
-        meta_client_geo_longitude,
-        meta_client_geo_latitude,
-        meta_client_geo_autonomous_system_number,
-        meta_client_geo_autonomous_system_organization,
-        meta_consensus_version,
-        meta_consensus_implementation
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_head" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
-    
-    UNION ALL
-    
-    SELECT
-        'libp2p_gossipsub_beacon_block' AS source,
-        slot,
-        slot_start_date_time,
-        epoch,
-        epoch_start_date_time,
-        propagation_slot_start_diff,
-        block,
+        block_root,
+        block_hash,
+        builder_index,
         meta_client_name,
         meta_client_version,
         meta_client_implementation,
@@ -134,7 +115,7 @@ WITH combined_events AS (
             ELSE
                 ''
         END AS meta_consensus_implementation
-    FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "helpers" "from" }} FINAL
+    FROM {{ index .dep "{{external}}" "libp2p_gossipsub_execution_payload_envelope" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
 )
@@ -146,7 +127,9 @@ SELECT
     argMin(epoch, propagation_slot_start_diff) AS epoch,
     argMin(epoch_start_date_time, propagation_slot_start_diff) AS epoch_start_date_time,
     MIN(propagation_slot_start_diff) as seen_slot_start_diff,
-    argMin(block, propagation_slot_start_diff) AS block_root,
+    argMin(block_root, propagation_slot_start_diff) AS block_root,
+    argMin(block_hash, propagation_slot_start_diff) AS block_hash,
+    argMin(builder_index, propagation_slot_start_diff) AS builder_index,
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
             splitByChar('/', meta_client_name)[2]

@@ -1,0 +1,100 @@
+model: fct_block_payload_ptc_vote
+network: glamsterdam-devnet-7
+external_data:
+    beacon_api_eth_v1_events_payload_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_ptc_vote_beacon_api_eth_v1_events_payload_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_ptc_vote_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_payload_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_ptc_vote_canonical_beacon_block_payload_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_payload_ptc_vote FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Slot values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch values should be non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Payload present votes should never be negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE payload_present_votes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blob data available votes should never be negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE blob_data_available_votes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: PTC validators count should never be negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE ptc_validators < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Payload present votes should not exceed total PTC validators
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE payload_present_votes > ptc_validators
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blob data available votes should not exceed total PTC validators
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE blob_data_available_votes > ptc_validators
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Status must only be canonical or orphaned
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE status NOT IN ('canonical', 'orphaned')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block root should never be empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Canonical rows must carry an included_in_slot value
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote FINAL
+        WHERE status = 'canonical' AND included_in_slot IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

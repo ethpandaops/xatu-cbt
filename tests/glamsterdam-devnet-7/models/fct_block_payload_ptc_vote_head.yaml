@@ -1,0 +1,90 @@
+model: fct_block_payload_ptc_vote_head
+network: glamsterdam-devnet-7
+external_data:
+    beacon_api_eth_v1_events_payload_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_ptc_vote_head_beacon_api_eth_v1_events_payload_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_payload_ptc_vote_head FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No non-positive PTC validators seen
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote_head FINAL
+        WHERE ptc_validators_seen <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Payload present votes never exceed total PTC validators seen
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote_head FINAL
+        WHERE payload_present_votes > ptc_validators_seen
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blob data available votes never exceed total PTC validators seen
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote_head FINAL
+        WHERE blob_data_available_votes > ptc_validators_seen
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Vote counts are never negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote_head FINAL
+        WHERE payload_present_votes < 0 OR blob_data_available_votes < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: First seen diff is never greater than last seen diff
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote_head FINAL
+        WHERE first_seen_slot_start_diff > last_seen_slot_start_diff
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot and epoch key columns are positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote_head FINAL
+        WHERE slot <= 0 OR epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block root is present and non-empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote_head FINAL
+        WHERE block_root = '' OR block_root IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: One row per slot and block root combination
+      sql: |
+        SELECT COUNT(*) AS duplicate_groups FROM (
+          SELECT slot, block_root, COUNT(*) AS group_rows
+          FROM fct_block_payload_ptc_vote_head FINAL
+          GROUP BY slot, block_root
+          HAVING group_rows > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_groups
+          value: 0
+    - name: Epoch is consistent with slot derivation
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_ptc_vote_head FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
