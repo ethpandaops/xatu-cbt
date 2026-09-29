@@ -1,0 +1,89 @@
+model: fct_payload_attestation_first_seen_chunked_50ms
+network: glamsterdam-devnet-7
+external_data:
+    beacon_api_eth_v1_events_payload_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_payload_attestation_first_seen_chunked_50ms_beacon_api_eth_v1_events_payload_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No non-positive attestation counts
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+        WHERE attestation_count <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Chunk slot start diff stays within observed propagation window
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+        WHERE chunk_slot_start_diff >= 12000
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Chunk slot start diff is a multiple of 50
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+        WHERE chunk_slot_start_diff % 50 != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch matches slot division by 32
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No null block roots
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+        WHERE block_root IS NULL OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot values are non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Total attestation count is positive across all chunks
+      sql: |
+        SELECT SUM(attestation_count) AS total_attestations FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+      assertions:
+        - type: greater_than
+          column: total_attestations
+          value: 0
+    - name: Updated date time is populated
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+        WHERE updated_date_time IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No duplicate slot block_root chunk groupings
+      sql: |
+        SELECT COUNT(*) AS dup_rows FROM (
+          SELECT slot, block_root, chunk_slot_start_diff, COUNT(*) AS c
+          FROM fct_payload_attestation_first_seen_chunked_50ms FINAL
+          GROUP BY slot, block_root, chunk_slot_start_diff
+          HAVING c > 1
+        )
+      assertions:
+        - type: equals
+          column: dup_rows
+          value: 0

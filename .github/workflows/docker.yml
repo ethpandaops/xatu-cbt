@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - master
+      # Per-devnet release branches (e.g. release/glamsterdam-devnet-7) publish
+      # persistent branch-ref tags like release-glamsterdam-devnet-7 so devnet
+      # deployments can pin models that must not ship to mainnet yet.
+      - 'release/**'
   workflow_dispatch:
     inputs:
       cbt_tag:

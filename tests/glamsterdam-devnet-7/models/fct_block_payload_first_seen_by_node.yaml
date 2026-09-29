@@ -1,0 +1,99 @@
+model: fct_block_payload_first_seen_by_node
+network: glamsterdam-devnet-7
+external_data:
+    beacon_api_eth_v1_events_execution_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_first_seen_by_node_beacon_api_eth_v1_events_execution_payload.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_execution_payload_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_first_seen_by_node_beacon_api_eth_v1_events_execution_payload_gossip.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_execution_payload_envelope:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_first_seen_by_node_libp2p_gossipsub_execution_payload_envelope.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_payload_first_seen_by_node FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: One row per node per slot (no duplicate slot_start_date_time + meta_client_name)
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT slot_start_date_time, meta_client_name, COUNT(*) AS dup_count
+          FROM fct_block_payload_first_seen_by_node FINAL
+          GROUP BY slot_start_date_time, meta_client_name
+          HAVING dup_count > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot values are non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_first_seen_by_node FINAL
+        WHERE slot < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch values are non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_first_seen_by_node FINAL
+        WHERE epoch < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Source is one of the expected origins
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_first_seen_by_node FINAL
+        WHERE source NOT IN (
+          'beacon_api_eth_v1_events_execution_payload_gossip',
+          'beacon_api_eth_v1_events_execution_payload',
+          'libp2p_gossipsub_execution_payload_envelope'
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Classification is one of the expected buckets
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_first_seen_by_node FINAL
+        WHERE classification NOT IN ('individual', 'corporate', 'internal', 'unclassified')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: seen_slot_start_diff equals the minimum propagation diff per group
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_first_seen_by_node FINAL
+        WHERE seen_slot_start_diff IS NULL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Key identity columns are never empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_first_seen_by_node FINAL
+        WHERE meta_client_name = '' OR node_id = '' OR username = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Block root and block hash are populated
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_first_seen_by_node FINAL
+        WHERE block_root = '' OR block_hash = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Distinct slots seen should be greater than zero
+      sql: |
+        SELECT COUNT(DISTINCT slot) AS distinct_slots FROM fct_block_payload_first_seen_by_node FINAL
+      assertions:
+        - type: greater_than
+          column: distinct_slots
+          value: 0

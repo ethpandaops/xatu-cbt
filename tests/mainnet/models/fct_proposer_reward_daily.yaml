@@ -1,6 +1,9 @@
 model: fct_proposer_reward_daily
 network: mainnet
 external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposal_status_hourly_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
     beacon_api_eth_v2_beacon_block:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_proposer_reward_daily_beacon_api_eth_v2_beacon_block.parquet
         network_column: meta_network_name

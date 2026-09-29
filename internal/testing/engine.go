@@ -20,6 +20,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const executionTypeScheduled = "scheduled"
+
 // CBTEngine manages CBT engine lifecycle and transformation execution.
 // This is the concrete implementation without an interface abstraction.
 type CBTEngine struct {
@@ -398,7 +400,7 @@ func (e *CBTEngine) buildTestOverrides(models []string) map[string]*modelOverrid
 			override := &modelOverrides{}
 
 			switch tm.ExecutionType {
-			case "scheduled":
+			case executionTypeScheduled:
 				override.Config.Schedule = "@every 5s"
 			default: // incremental or anything else
 				override.Config.Schedules = map[string]string{
@@ -655,7 +657,7 @@ func (e *CBTEngine) checkTransformationProgress(
 
 		var result bool
 
-		if tm.ExecutionType != "scheduled" {
+		if tm.ExecutionType != executionTypeScheduled {
 			// Incremental: complete once it has processed an interval.
 			_, result = incrementalTimes[model]
 		} else if runTime, ran := scheduledTimes[model]; ran {
@@ -698,7 +700,7 @@ func (e *CBTEngine) checkTransformationProgress(
 // modelReadyTime returns when a dependency's data became available: a scheduled
 // model's latest run start time, otherwise its incremental write time.
 func (e *CBTEngine) modelReadyTime(model string, incrementalTimes, scheduledTimes map[string]time.Time) time.Time {
-	if tm := e.modelCache.GetTransformationModel(model); tm != nil && tm.ExecutionType == "scheduled" {
+	if tm := e.modelCache.GetTransformationModel(model); tm != nil && tm.ExecutionType == executionTypeScheduled {
 		return scheduledTimes[model]
 	}
 
