@@ -15,10 +15,18 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: No non-positive ptc_validators totals
+    - name: Blocks whose votes were included carry a positive ptc_validators total
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
-        WHERE ptc_validators <= 0
+        WHERE included_in_slot != 0 AND ptc_validators <= 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Zero-vote rows and missing inclusion always agree
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
+        WHERE (ptc_validators = 0) != (included_in_slot = 0)
       assertions:
         - type: equals
           column: bad_rows
@@ -58,7 +66,7 @@ assertions:
     - name: Attested slot is always earlier than the containing (included) slot
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_payload_ptc_vote_canonical FINAL
-        WHERE included_in_slot <= slot
+        WHERE included_in_slot != 0 AND included_in_slot <= slot
       assertions:
         - type: equals
           column: bad_rows
