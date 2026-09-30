@@ -1,0 +1,108 @@
+model: fct_block_fast_confirmation_by_client_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_fast_confirmation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_fast_confirmation_by_client_daily_beacon_api_eth_v1_events_fast_confirmation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_finalized_checkpoint:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_fast_confirmation_by_client_daily_beacon_api_eth_v1_events_finalized_checkpoint.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_fast_confirmation_by_client_daily_canonical_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_fast_confirmation_by_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: No duplicate day and consensus implementation combinations
+      sql: |
+        SELECT COUNT(*) - uniqExact(day_start_date, meta_consensus_implementation) AS duplicate_rows
+        FROM fct_block_fast_confirmation_by_client_daily FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: Consensus implementation is never empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_client_daily FINAL
+        WHERE meta_consensus_implementation = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Day start date is within a valid range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_client_daily FINAL
+        WHERE day_start_date < toDate('2020-12-01')
+           OR day_start_date > today() + 1
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Confirmation type breakdown never exceeds canonical observation count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_client_daily FINAL
+        WHERE direct_count + descendant_count + unconfirmed_count > observation_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Distinct slot and node counts never exceed canonical observation count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_client_daily FINAL
+        WHERE slot_count > observation_count
+           OR node_count > observation_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Canonical counters are consistently zero or non-zero together
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_client_daily FINAL
+        WHERE (observation_count = 0) != (slot_count = 0)
+           OR (observation_count = 0) != (node_count = 0)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Fast confirmation latency statistics are monotonically ordered
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_client_daily FINAL
+        WHERE min_fast_confirmation_ms > p50_fast_confirmation_ms
+           OR p50_fast_confirmation_ms > p90_fast_confirmation_ms
+           OR p90_fast_confirmation_ms > p95_fast_confirmation_ms
+           OR p95_fast_confirmation_ms > p99_fast_confirmation_ms
+           OR p99_fast_confirmation_ms > max_fast_confirmation_ms
+           OR avg_fast_confirmation_ms < min_fast_confirmation_ms
+           OR avg_fast_confirmation_ms > max_fast_confirmation_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Finality latency statistics are monotonically ordered
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_client_daily FINAL
+        WHERE min_finality_ms > p50_finality_ms
+           OR p50_finality_ms > p95_finality_ms
+           OR p95_finality_ms > max_finality_ms
+           OR avg_finality_ms < min_finality_ms
+           OR avg_finality_ms > max_finality_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Latency values show no unsigned wraparound and speedup is non-negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_client_daily FINAL
+        WHERE max_fast_confirmation_ms > 4000000000
+           OR max_finality_ms > 4000000000
+           OR p50_speedup < 0
+           OR isNaN(p50_speedup)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
