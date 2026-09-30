@@ -3,6 +3,7 @@ syntax = "proto3";
 package cbt;
 
 import "common.proto";
+import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
@@ -25,8 +26,8 @@ message FctBlockPayloadBid {
   string block_root = 16;
   // The beacon block version, e.g. gloas
   string block_version = 17;
-  // Validator index of the builder, equal to the block proposer index for self-built payloads
-  uint64 builder_index = 18;
+  // Index of the builder in the builder registry that produced the bid, NULL for proposer self-builds (BUILDER_INDEX_SELF_BUILD)
+  google.protobuf.UInt64Value builder_index = 18;
   // The execution block hash committed to in the bid
   string block_hash = 19;
   // The parent execution block hash
@@ -63,8 +64,8 @@ message ListFctBlockPayloadBidRequest {
   UInt32Filter epoch_start_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_version - The beacon block version, e.g. gloas (optional)
   StringFilter block_version = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by builder_index - Validator index of the builder, equal to the block proposer index for self-built payloads (optional)
-  UInt64Filter builder_index = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by builder_index - Index of the builder in the builder registry that produced the bid, NULL for proposer self-builds (BUILDER_INDEX_SELF_BUILD) (optional)
+  NullableUInt64Filter builder_index = 8 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_hash - The execution block hash committed to in the bid (optional)
   StringFilter block_hash = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by parent_block_hash - The parent execution block hash (optional)

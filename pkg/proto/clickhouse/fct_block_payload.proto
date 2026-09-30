@@ -3,6 +3,7 @@ syntax = "proto3";
 package cbt;
 
 import "common.proto";
+import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
@@ -25,8 +26,8 @@ message FctBlockPayload {
   string block_root = 16;
   // The beacon block version, e.g. gloas
   string block_version = 17;
-  // Validator index of the builder, equal to the block proposer index for self-built payloads
-  uint64 builder_index = 18;
+  // Index of the builder in the builder registry that committed to the payload, NULL for proposer self-builds (BUILDER_INDEX_SELF_BUILD)
+  google.protobuf.UInt64Value builder_index = 18;
   // The execution block hash of the payload
   string block_hash = 19;
   // The parent execution block hash
@@ -37,7 +38,7 @@ message FctBlockPayload {
   uint64 gas_limit = 22;
   // Number of blob KZG commitments in the bid
   uint32 blob_kzg_commitment_count = 23;
-  // Number of transactions in the revealed payload
+  // Number of transactions in the revealed payload, only executed on chain when payload_status is full
   uint32 transactions_count = 24;
   // Total bytes of transactions in the revealed payload
   uint64 transactions_total_bytes = 25;
@@ -45,6 +46,8 @@ message FctBlockPayload {
   uint64 transactions_total_gas_limit = 26;
   // Number of type-3 blob transactions in the revealed payload
   uint32 blob_transactions_count = 27;
+  // Whether the payload became canonical: full when the next canonical block built on it (its transactions executed on chain), empty when that block built on the payload parent instead (withheld, late or not built upon, so its transactions never executed), unknown when no canonical child was found
+  string payload_status = 28;
 }
 
 // Request for listing fct_block_payload records
@@ -65,8 +68,8 @@ message ListFctBlockPayloadRequest {
   UInt32Filter epoch_start_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_version - The beacon block version, e.g. gloas (optional)
   StringFilter block_version = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by builder_index - Validator index of the builder, equal to the block proposer index for self-built payloads (optional)
-  UInt64Filter builder_index = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by builder_index - Index of the builder in the builder registry that committed to the payload, NULL for proposer self-builds (BUILDER_INDEX_SELF_BUILD) (optional)
+  NullableUInt64Filter builder_index = 8 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_hash - The execution block hash of the payload (optional)
   StringFilter block_hash = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by parent_block_hash - The parent execution block hash (optional)
@@ -77,7 +80,7 @@ message ListFctBlockPayloadRequest {
   UInt64Filter gas_limit = 12 [(google.api.field_behavior) = OPTIONAL];
   // Filter by blob_kzg_commitment_count - Number of blob KZG commitments in the bid (optional)
   UInt32Filter blob_kzg_commitment_count = 13 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by transactions_count - Number of transactions in the revealed payload (optional)
+  // Filter by transactions_count - Number of transactions in the revealed payload, only executed on chain when payload_status is full (optional)
   UInt32Filter transactions_count = 14 [(google.api.field_behavior) = OPTIONAL];
   // Filter by transactions_total_bytes - Total bytes of transactions in the revealed payload (optional)
   UInt64Filter transactions_total_bytes = 15 [(google.api.field_behavior) = OPTIONAL];
@@ -85,18 +88,20 @@ message ListFctBlockPayloadRequest {
   UInt64Filter transactions_total_gas_limit = 16 [(google.api.field_behavior) = OPTIONAL];
   // Filter by blob_transactions_count - Number of type-3 blob transactions in the revealed payload (optional)
   UInt32Filter blob_transactions_count = 17 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by payload_status - Whether the payload became canonical: full when the next canonical block built on it (its transactions executed on chain), empty when that block built on the payload parent instead (withheld, late or not built upon, so its transactions never executed), unknown when no canonical child was found (optional)
+  StringFilter payload_status = 18 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_block_payload to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 18 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 19 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctBlockPayload` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 19 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 20 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 20 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 21 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_block_payload records

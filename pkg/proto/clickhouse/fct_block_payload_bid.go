@@ -260,28 +260,32 @@ func BuildListFctBlockPayloadBidQuery(req *ListFctBlockPayloadBidRequest, option
 	// Add filter for column: builder_index
 	if req.BuilderIndex != nil {
 		switch filter := req.BuilderIndex.Filter.(type) {
-		case *UInt64Filter_Eq:
+		case *NullableUInt64Filter_Eq:
 			qb.AddCondition("builder_index", "=", filter.Eq)
-		case *UInt64Filter_Ne:
+		case *NullableUInt64Filter_Ne:
 			qb.AddCondition("builder_index", "!=", filter.Ne)
-		case *UInt64Filter_Lt:
+		case *NullableUInt64Filter_Lt:
 			qb.AddCondition("builder_index", "<", filter.Lt)
-		case *UInt64Filter_Lte:
+		case *NullableUInt64Filter_Lte:
 			qb.AddCondition("builder_index", "<=", filter.Lte)
-		case *UInt64Filter_Gt:
+		case *NullableUInt64Filter_Gt:
 			qb.AddCondition("builder_index", ">", filter.Gt)
-		case *UInt64Filter_Gte:
+		case *NullableUInt64Filter_Gte:
 			qb.AddCondition("builder_index", ">=", filter.Gte)
-		case *UInt64Filter_Between:
+		case *NullableUInt64Filter_Between:
 			qb.AddBetweenCondition("builder_index", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt64Filter_In:
+		case *NullableUInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("builder_index", UInt64SliceToInterface(filter.In.Values))
 			}
-		case *UInt64Filter_NotIn:
+		case *NullableUInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
 				qb.AddNotInCondition("builder_index", UInt64SliceToInterface(filter.NotIn.Values))
 			}
+		case *NullableUInt64Filter_IsNull:
+			qb.AddIsNullCondition("builder_index")
+		case *NullableUInt64Filter_IsNotNull:
+			qb.AddIsNotNullCondition("builder_index")
 		default:
 			// Unsupported filter type
 		}
