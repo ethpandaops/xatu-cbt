@@ -14,10 +14,24 @@ tags:
 dependencies:
   - "{{external}}.beacon_api_eth_v1_events_data_column_sidecar"
   - "{{external}}.libp2p_gossipsub_data_column_sidecar"
+  - "{{transformation}}.fct_block_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
-WITH combined_events AS (
+WITH
+-- Blob count of the block, from its blob gas on the head block (GAS_PER_BLOB =
+-- 2**17, on gloas the revealed payload's blobs). kzg_commitments_count is gone
+-- from gloas sidecars and being dropped from the SSE event for every fork, so
+-- the first sidecar's count is only a fallback for blocks never fetched.
+head_blob_counts AS (
+    SELECT
+        block_root AS head_block_root,
+        toUInt32(intDiv(execution_payload_blob_gas_used, 131072)) AS head_blob_count
+    FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND execution_payload_blob_gas_used IS NOT NULL
+),
+combined_events AS (
     SELECT
         'beacon_api_eth_v1_events_data_column_sidecar' AS source,
         slot,
@@ -95,7 +109,7 @@ WITH combined_events AS (
         MIN(propagation_slot_start_diff) as seen_slot_start_diff,
         block_root,
         column_index,
-        coalesce(argMin(kzg_commitments_count, propagation_slot_start_diff), 0) AS row_count,
+        coalesce(argMin(kzg_commitments_count, propagation_slot_start_diff), 0) AS sidecar_row_count,
         argMin(meta_client_name, propagation_slot_start_diff) AS first_seen_meta_client_name,
         argMin(meta_client_version, propagation_slot_start_diff) AS meta_client_version,
         argMin(meta_client_implementation, propagation_slot_start_diff) AS meta_client_implementation,
@@ -122,7 +136,7 @@ SELECT
     seen_slot_start_diff,
     block_root,
     column_index,
-    row_count,
+    coalesce(h.head_blob_count, sidecar_row_count) AS row_count,
     CASE
         WHEN startsWith(first_seen_meta_client_name, 'pub-') THEN
             splitByChar('/', first_seen_meta_client_name)[2]
@@ -163,3 +177,5 @@ SELECT
     meta_consensus_version,
     meta_consensus_implementation
 FROM aggregated
+GLOBAL LEFT JOIN head_blob_counts h ON aggregated.block_root = h.head_block_root
+SETTINGS join_use_nulls = 1

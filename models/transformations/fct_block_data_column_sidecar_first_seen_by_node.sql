@@ -14,10 +14,24 @@ tags:
 dependencies:
   - "{{external}}.beacon_api_eth_v1_events_data_column_sidecar"
   - "{{external}}.libp2p_gossipsub_data_column_sidecar"
+  - "{{transformation}}.fct_block_head"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
-WITH combined_events AS (
+WITH
+-- Blob count of the block, from its blob gas on the head block (GAS_PER_BLOB =
+-- 2**17, on gloas the revealed payload's blobs). kzg_commitments_count is gone
+-- from gloas sidecars and being dropped from the SSE event for every fork, so
+-- the first sidecar's count is only a fallback for blocks never fetched.
+head_blob_counts AS (
+    SELECT
+        block_root AS head_block_root,
+        toUInt32(intDiv(execution_payload_blob_gas_used, 131072)) AS head_blob_count
+    FROM {{ index .dep "{{transformation}}" "fct_block_head" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND execution_payload_blob_gas_used IS NOT NULL
+),
+combined_events AS (
     SELECT
         'beacon_api_eth_v1_events_data_column_sidecar' AS source,
         slot,
@@ -94,7 +108,7 @@ SELECT
     MIN(propagation_slot_start_diff) as seen_slot_start_diff,
     block_root,
     column_index,
-    coalesce(argMin(kzg_commitments_count, propagation_slot_start_diff), 0) AS row_count,
+    coalesce(any(h.head_blob_count), argMin(kzg_commitments_count, propagation_slot_start_diff), 0) AS row_count,
     CASE
         WHEN startsWith(meta_client_name, 'pub-') THEN
             splitByChar('/', meta_client_name)[2]
@@ -135,4 +149,6 @@ SELECT
     argMin(meta_consensus_version, propagation_slot_start_diff) AS meta_consensus_version,
     argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation
 FROM combined_events
+GLOBAL LEFT JOIN head_blob_counts h ON combined_events.block_root = h.head_block_root
 GROUP BY slot_start_date_time, meta_client_name, block_root, column_index
+SETTINGS join_use_nulls = 1

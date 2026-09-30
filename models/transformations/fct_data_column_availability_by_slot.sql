@@ -4,6 +4,10 @@ type: incremental
 interval:
   type: slot
   max: 50000
+# Custody probes for a slot keep arriving long after it. Stay 6h behind and
+# count only probes taken within 6h of the slot so re-runs are deterministic.
+fill:
+  buffer: 21600
 schedules:
   forwardfill: "@every 5s"
   backfill: "@every 30s"
@@ -15,9 +19,23 @@ tags:
 dependencies:
   - "{{transformation}}.int_custody_probe_order_by_slot"
   - "{{external}}.libp2p_gossipsub_data_column_sidecar"
+  - "{{transformation}}.int_block_canonical"
 ---
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
-WITH combined_sources AS (
+WITH
+-- Blob count of the canonical block, from its blob gas (GAS_PER_BLOB = 2**17).
+-- On gloas this is the bid's committed blob count. The sidecar's
+-- kzg_commitments_count is gone from gloas sidecars and being dropped from
+-- the SSE event for every fork, so it is only a fallback now.
+canonical_blob_counts AS (
+    SELECT
+        slot_start_date_time AS canonical_slot_start_date_time,
+        toUInt16(intDiv(execution_payload_blob_gas_used, 131072)) AS canonical_blob_count
+    FROM {{ index .dep "{{transformation}}" "int_block_canonical" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND execution_payload_blob_gas_used IS NOT NULL
+),
+combined_sources AS (
     -- Active custody probes (explicit results)
     -- These are direct RPC probes checking if peers have custody of specific columns
     -- Using int_custody_probe_order_by_slot which is ordered by slot_start_date_time for better query performance
@@ -47,6 +65,9 @@ WITH combined_sources AS (
         meta_client_implementation
     FROM {{ index .dep "{{transformation}}" "int_custody_probe_order_by_slot" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+      -- Only probes taken within the fill buffer (6h) of the slot, so forward
+      -- fill and later backfills/re-runs count the same probes.
+      AND probe_date_time <= slot_start_date_time + INTERVAL 6 HOUR
 
     UNION ALL
 
@@ -94,7 +115,7 @@ SELECT
     -- Track number of unique block roots (>1 indicates reorg/fork)
     -- Exclude empty strings from variant count (custody_probe doesn't have beacon_block_root)
     uniqExactIf(combined_sources.beacon_block_root, combined_sources.beacon_block_root != '') AS beacon_block_root_variants,
-    max(blob_count_raw) AS blob_count,
+    coalesce(any(cb.canonical_blob_count), max(blob_count_raw)) AS blob_count,
     countIf(result = 'success') AS success_count,
     countIf(result = 'failure') AS failure_count,
     countIf(result = 'missing') AS missing_count,
@@ -114,9 +135,11 @@ SELECT
     countIf(source = 'custody_probe') AS custody_probe_count,
     countIf(source = 'gossipsub') AS gossipsub_count
 FROM combined_sources
+GLOBAL LEFT JOIN canonical_blob_counts cb ON combined_sources.slot_start_date_time = cb.canonical_slot_start_date_time
 GROUP BY
     slot,
     slot_start_date_time,
     epoch,
     epoch_start_date_time,
     column_index
+SETTINGS join_use_nulls = 1
