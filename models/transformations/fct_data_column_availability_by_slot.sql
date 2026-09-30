@@ -4,6 +4,10 @@ type: incremental
 interval:
   type: slot
   max: 50000
+# Custody probes for a slot keep arriving long after it. Stay 6h behind and
+# count only probes taken within 6h of the slot so re-runs are deterministic.
+fill:
+  buffer: 21600
 schedules:
   forwardfill: "@every 5s"
   backfill: "@every 30s"
@@ -61,6 +65,9 @@ combined_sources AS (
         meta_client_implementation
     FROM {{ index .dep "{{transformation}}" "int_custody_probe_order_by_slot" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+      -- Only probes taken within the fill buffer (6h) of the slot, so forward
+      -- fill and later backfills/re-runs count the same probes.
+      AND probe_date_time <= slot_start_date_time + INTERVAL 6 HOUR
 
     UNION ALL
 
