@@ -4,6 +4,9 @@ external_data:
     canonical_beacon_block:
         url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/int_block_payload_ptc_vote_canonical_canonical_beacon_block.parquet
         network_column: meta_network_name
+    canonical_beacon_block_execution_payload_bid:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_canonical_beacon_block_execution_payload_bid.parquet
+        network_column: meta_network_name
     canonical_beacon_block_payload_attestation:
         url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/int_block_payload_ptc_vote_canonical_canonical_beacon_block_payload_attestation.parquet
         network_column: meta_network_name

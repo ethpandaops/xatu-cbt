@@ -1,0 +1,64 @@
+model: int_block_canonical
+network: glamsterdam-devnet-7
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/int_block_payload_ptc_vote_canonical_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_execution_payload_bid:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_canonical_beacon_block_execution_payload_bid.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_block_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Gloas blocks take the execution payload hash from their bid
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE block_version = 'gloas'
+          AND (execution_payload_block_hash = '' OR execution_payload_parent_hash = '')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Gloas blocks take the gas limit and fee recipient from their bid
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE block_version = 'gloas'
+          AND (execution_payload_gas_limit IS NULL OR execution_payload_gas_limit = 0
+            OR execution_payload_fee_recipient = '')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Gloas blob gas is a whole number of blobs
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE block_version = 'gloas'
+          AND (execution_payload_blob_gas_used IS NULL OR execution_payload_blob_gas_used % 131072 != 0)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Gloas blocks never report body transaction totals
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE block_version = 'gloas'
+          AND (execution_payload_transactions_total_bytes IS NOT NULL
+            OR execution_payload_transactions_total_bytes_compressed IS NOT NULL)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Payload hash differs from its parent hash
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_canonical FINAL
+        WHERE block_version = 'gloas'
+          AND execution_payload_block_hash = execution_payload_parent_hash
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
