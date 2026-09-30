@@ -19,6 +19,10 @@ dependencies:
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
+-- Gloas (ePBS): the beacon block commits to its payload through the winning
+-- bid, so int_block_canonical carries the committed payload hash on gloas
+-- blocks too and relay deliveries still match on it. Its block number is
+-- only known once the EL has seen the payload, so fall back to the relay's.
 WITH blocks AS (
     SELECT
         slot,
@@ -35,6 +39,7 @@ WITH blocks AS (
 proposer_payloads_raw AS (
   SELECT
     block_hash,
+    block_number AS relay_block_number,
     builder_pubkey,
     proposer_pubkey,
     proposer_fee_recipient,
@@ -59,6 +64,7 @@ bid_traces_raw AS (
 blocks_with_payloads AS (
   SELECT
     b.*,
+    p.relay_block_number,
     p.builder_pubkey,
     p.proposer_pubkey,
     p.proposer_fee_recipient,
@@ -80,6 +86,7 @@ payload_aggregated AS (
     block_root,
     parent_hash,
     block_number,
+    any(relay_block_number) AS relay_block_number,
     any(builder_pubkey) AS builder_pubkey,
     any(proposer_pubkey) AS proposer_pubkey,
     any(proposer_fee_recipient) AS proposer_fee_recipient,
@@ -106,7 +113,7 @@ SELECT
   END AS earliest_bid_date_time,
   pa.relay_names,
   pa.parent_hash,
-  pa.block_number,
+  if(pa.block_number != 0, pa.block_number, pa.relay_block_number) AS block_number,
   pa.block_hash,
   pa.builder_pubkey,
   pa.proposer_pubkey,
