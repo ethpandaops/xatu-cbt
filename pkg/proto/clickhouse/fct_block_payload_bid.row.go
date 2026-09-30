@@ -3,6 +3,10 @@
 
 package clickhouse
 
+import (
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+)
+
 // FctBlockPayloadBidRow is a ClickHouse-scannable result row for the fct_block_payload_bid table.
 // Field types match the SELECT column expressions produced by
 // BuildListFctBlockPayloadBidQuery and BuildGetFctBlockPayloadBidQuery: DateTime columns are unix
@@ -17,7 +21,7 @@ type FctBlockPayloadBidRow struct {
 	EpochStartDateTime uint32 `ch:"epoch_start_date_time" json:"epoch_start_date_time"`
 	BlockRoot string `ch:"block_root" json:"block_root"`
 	BlockVersion string `ch:"block_version" json:"block_version"`
-	BuilderIndex uint64 `ch:"builder_index" json:"builder_index"`
+	BuilderIndex *uint64 `ch:"builder_index" json:"builder_index"`
 	BlockHash *string `ch:"block_hash" json:"block_hash"`
 	ParentBlockHash *string `ch:"parent_block_hash" json:"parent_block_hash"`
 	ParentBlockRoot *string `ch:"parent_block_root" json:"parent_block_root"`
@@ -44,7 +48,9 @@ func (r *FctBlockPayloadBidRow) ToProto() *FctBlockPayloadBid {
 	p.EpochStartDateTime = r.EpochStartDateTime
 	p.BlockRoot = r.BlockRoot
 	p.BlockVersion = r.BlockVersion
-	p.BuilderIndex = r.BuilderIndex
+	if r.BuilderIndex != nil {
+		p.BuilderIndex = wrapperspb.UInt64(*r.BuilderIndex)
+	}
 	if r.BlockHash != nil {
 		p.BlockHash = *r.BlockHash
 	}
