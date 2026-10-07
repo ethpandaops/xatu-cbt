@@ -14,9 +14,10 @@ tags:
 dependencies:
   - "{{transformation}}.fct_block_mev"
 ---
--- Hourly aggregation of proposer reward (MEV relay block value).
+-- Hourly aggregation of proposer reward (builder block value).
 -- Converts wei values to ETH and computes percentiles, Bollinger bands, and
--- 6-hour moving averages. Only covers MEV relay blocks, not locally built blocks.
+-- 6-hour moving averages. Covers relay-delivered blocks and, from Gloas, blocks
+-- won by an external builder's bid. Locally built blocks are excluded.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     hour_bounds AS (

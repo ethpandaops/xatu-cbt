@@ -12,7 +12,12 @@ tags:
   - mev
   - bid
 dependencies:
-  - "{{external}}.mev_relay_bid_trace"
+  # From Gloas (ePBS) bids travel on gossip rather than through relays, so
+  # gossip bids keep the model advancing with no relay rows to count.
+  - [
+    "{{external}}.mev_relay_bid_trace",
+    "{{external}}.beacon_api_eth_v1_events_execution_payload_bid"
+  ]
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
