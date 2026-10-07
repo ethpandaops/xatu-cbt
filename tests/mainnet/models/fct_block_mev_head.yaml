@@ -85,7 +85,7 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    - name: relay_names array should never be empty since rows come from inner join
+    - name: relay_names should never be empty before Gloas, where every row is a relay delivery
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_mev_head FINAL
         WHERE length(relay_names) = 0
