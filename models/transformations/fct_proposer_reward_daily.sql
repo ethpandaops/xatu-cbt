@@ -17,7 +17,7 @@ dependencies:
 -- Daily aggregation of proposer reward (builder block value).
 -- Converts wei values to ETH and computes percentiles, Bollinger bands, and
 -- 7-day moving averages. Covers relay-delivered blocks and, from Gloas, blocks
--- won by an external builder's bid; locally built blocks are excluded.
+-- won by an external builder's bid. Locally built blocks are excluded.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
