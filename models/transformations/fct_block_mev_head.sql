@@ -14,6 +14,7 @@ tags:
   - head
 dependencies:
   - "{{transformation}}.fct_block_head"
+  - "{{external}}.beacon_api_eth_v2_beacon_block"
   # Each group is the relay source and its Gloas (ePBS) replacement: the
   # delivered payload or the revealed payload, the earliest bid trace or
   # gossip bid, and the builder pubkey from the relay or the builder registry.
@@ -34,10 +35,10 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 -- Relay-delivered blocks, plus Gloas blocks whose revealed payload came from
 -- an external builder. Self-built Gloas blocks are excluded, as locally built
--- blocks are before Gloas. The winning bid's terms come from gossip, so a bid
--- sent straight to the proposer leaves value and fee recipient unknown. A
--- Gloas block's value is the bid value plus its execution payment, Gwei on
--- the wire.
+-- blocks are before Gloas. A Gloas block's value comes from the bid it carries:
+-- the bid value plus its execution payment, Gwei on the wire. The first
+-- sighting, fee recipient, gas limit and parent hash come from the same bid on
+-- gossip, so they stay unknown for a bid sent straight to the proposer.
 WITH blocks AS (
     SELECT
         slot,
@@ -167,6 +168,17 @@ gossip_bids AS (
     AND meta_network_name = '{{ .env.NETWORK }}'
   GROUP BY block_hash
 ),
+block_bids AS (
+  SELECT
+    block_root,
+    toNullable((toUInt128(any(bid_value)) + toUInt128(any(execution_payment))) * 1000000000) AS block_bid_value
+  FROM {{ index .dep "{{external}}" "beacon_api_eth_v2_beacon_block" "helpers" "from" }} FINAL
+  WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
+    AND bid_value IS NOT NULL
+    AND execution_payment IS NOT NULL
+  GROUP BY block_root
+),
 builders AS (
   SELECT
     epoch,
@@ -196,11 +208,12 @@ builder_blocks AS (
     gb.bid_fee_recipient AS proposer_fee_recipient,
     gb.bid_gas_limit AS gas_limit,
     ifNull(b.execution_gas_used, 0) AS gas_used,
-    if(gb.bid_value != 0, gb.bid_value, NULL) AS `value`,
+    nullIf(coalesce(bbid.block_bid_value, gb.bid_value), 0) AS `value`,
     ifNull(b.execution_transaction_count, 0) AS transaction_count
   FROM blocks b
   GLOBAL INNER JOIN revealed_payloads rp ON b.block_root = rp.block_root
   GLOBAL LEFT JOIN gossip_bids gb ON rp.payload_block_hash = gb.block_hash
+  GLOBAL LEFT JOIN block_bids bbid ON b.block_root = bbid.block_root
   GLOBAL LEFT JOIN builders bu ON b.epoch = bu.epoch AND rp.payload_builder_index = bu.builder_index
   WHERE b.block_root GLOBAL NOT IN (SELECT block_root FROM relay_blocks)
 )
