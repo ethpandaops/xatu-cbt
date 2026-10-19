@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Canonical beacon block graffiti with the consensus and execution clients it names, parsed from the engine API client version codes or client default graffiti
+
+message FctBlockGraffiti {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The slot number of the block
+  uint32 slot = 12;
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 13;
+  // The epoch number containing the slot
+  uint32 epoch = 14;
+  // The wall clock time when the epoch started
+  uint32 epoch_start_date_time = 15;
+  // The root of the canonical beacon block
+  string block_root = 16;
+  // The validator index of the block proposer
+  uint32 proposer_index = 17;
+  // The block graffiti decoded as UTF-8 with trailing null bytes removed
+  string graffiti_text = 18;
+  // Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), none (unrecognised text) or empty
+  string graffiti_format = 19;
+  // Consensus client named by the graffiti, e.g. lighthouse, or unknown
+  string consensus_client = 20;
+  // Consensus client version from a version_string graffiti, e.g. v8.2.3, empty when the graffiti carries none
+  string consensus_client_version = 21;
+  // Consensus client commit prefix carried by the graffiti, empty when the graffiti carries none
+  string consensus_client_commit = 22;
+  // Execution client named by the graffiti, e.g. geth, or unknown
+  string execution_client = 23;
+  // Execution client commit prefix carried by the graffiti, empty when the graffiti carries none
+  string execution_client_commit = 24;
+}
+
+// Request for listing fct_block_graffiti records
+message ListFctBlockGraffitiRequest {
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: slot)
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by block_root - The root of the canonical beacon block (ORDER BY column 2 - optional)
+  StringFilter block_root = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by slot - The slot number of the block (PROJECTION: p_by_slot - alternative to slot_start_date_time)
+  UInt32Filter slot = 4 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.projection_name) = "p_by_slot", (clickhouse.v1.projection_alternative_for) = "slot_start_date_time", (clickhouse.v1.required_group) = "primary_key"];
+  // Filter by epoch - The epoch number containing the slot (optional)
+  UInt32Filter epoch = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
+  UInt32Filter epoch_start_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by proposer_index - The validator index of the block proposer (optional)
+  UInt32Filter proposer_index = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by graffiti_text - The block graffiti decoded as UTF-8 with trailing null bytes removed (optional)
+  StringFilter graffiti_text = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by graffiti_format - Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), none (unrecognised text) or empty (optional)
+  StringFilter graffiti_format = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by consensus_client - Consensus client named by the graffiti, e.g. lighthouse, or unknown (optional)
+  StringFilter consensus_client = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by consensus_client_version - Consensus client version from a version_string graffiti, e.g. v8.2.3, empty when the graffiti carries none (optional)
+  StringFilter consensus_client_version = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by consensus_client_commit - Consensus client commit prefix carried by the graffiti, empty when the graffiti carries none (optional)
+  StringFilter consensus_client_commit = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by execution_client - Execution client named by the graffiti, e.g. geth, or unknown (optional)
+  StringFilter execution_client = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by execution_client_commit - Execution client commit prefix carried by the graffiti, empty when the graffiti carries none (optional)
+  StringFilter execution_client_commit = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_block_graffiti to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 15 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctBlockGraffiti` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 16 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 17 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_block_graffiti records
+message ListFctBlockGraffitiResponse {
+  // The list of fct_block_graffiti.
+  repeated FctBlockGraffiti fct_block_graffiti = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_block_graffiti record by primary key
+message GetFctBlockGraffitiRequest {
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_block_graffiti record
+message GetFctBlockGraffitiResponse {
+  FctBlockGraffiti item = 1;
+}
+
+// Query fct_block_graffiti data
+service FctBlockGraffitiService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctBlockGraffitiRequest) returns (ListFctBlockGraffitiResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_graffiti"
+    };
+  }
+  // Get record | Retrieve a single record by slot_start_date_time
+  rpc Get(GetFctBlockGraffitiRequest) returns (GetFctBlockGraffitiResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_graffiti/{slot_start_date_time}"
+    };
+  }
+}

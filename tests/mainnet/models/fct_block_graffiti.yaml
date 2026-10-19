@@ -1,0 +1,388 @@
+model: fct_block_graffiti
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti.parquet
+        network_column: meta_network_name
+assertions:
+    - name: One row per source block
+      sql: |
+        SELECT COUNT(*) AS row_count, uniqExact(block_root) AS block_count FROM fct_block_graffiti FINAL
+      assertions:
+        - type: equals
+          column: row_count
+          value: 615
+        - type: equals
+          column: block_count
+          value: 615
+    - name: Epoch is consistent with slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_graffiti FINAL WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Formats and client names come from the known sets
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_graffiti FINAL
+        WHERE graffiti_format NOT IN ('codes_full', 'codes_long', 'codes_short', 'codes_min', 'version_string', 'none', 'empty')
+          OR consensus_client NOT IN ('caplin', 'grandine', 'lighthouse', 'lodestar', 'nimbus', 'prysm', 'teku', 'unknown')
+          OR execution_client NOT IN ('besu', 'ethereumjs', 'erigon', 'ethrex', 'geth', 'nethermind', 'nimbusel', 'trin-execution', 'reth', 'unknown')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Unmatched graffiti names no client, version or commit
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_graffiti FINAL
+        WHERE graffiti_format IN ('none', 'empty')
+          AND (consensus_client != 'unknown' OR execution_client != 'unknown' OR consensus_client_version != ''
+            OR consensus_client_commit != '' OR execution_client_commit != '')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Matched graffiti names at least one client
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_graffiti FINAL
+        WHERE graffiti_format NOT IN ('none', 'empty') AND consensus_client = 'unknown' AND execution_client = 'unknown'
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: "Client codes with 4 character commits: NM9205LHe423"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_long', 'lighthouse', '', 'e423', 'nethermind', '9205')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'NM9205LHe423'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes followed by the grandine version string: GEa579GRe60b Grandine/3.0.0"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_long', 'grandine', '3.0.0', 'e60b', 'geth', 'a579')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'GEa579GRe60b Grandine/3.0.0'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes before operator text (caplin): EG8b41CN8b41 Erigon-Lido-1"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_long', 'caplin', '', '8b41', 'erigon', '8b41')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'EG8b41CN8b41 Erigon-Lido-1'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes before operator text: NM80ecLH3dea libc.fi"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_long', 'lighthouse', '', '3dea', 'nethermind', '80ec')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'NM80ecLH3dea libc.fi'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes with surrounding whitespace:  NM28cbLH6db6"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_long', 'lighthouse', '', '6db6', 'nethermind', '28cb')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = ' NM28cbLH6db6'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Consensus code and commit without an execution client: Galaxy-Lido TKf863"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_long', 'teku', '', 'f863', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Galaxy-Lido TKf863'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes with 2 character commits: charon/v1.10.3-e60c838 GE11PM54"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_short', 'prysm', '', '54', 'geth', '11')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'charon/v1.10.3-e60c838 GE11PM54'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes with 2 character commits glued to operator text: Block by Stakely lido023NM28PM51"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_short', 'prysm', '', '51', 'nethermind', '28')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Block by Stakely lido023NM28PM51'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes with 8 character commits, consensus first (teku 2024): TK56440a82GEf3c696fa"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_full', 'teku', '', '56440a82', 'geth', 'f3c696fa')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'TK56440a82GEf3c696fa'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Consensus code with 8 character commit (teku 2024): TKa9f98260"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_full', 'teku', '', 'a9f98260', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'TKa9f98260'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes without commits: 𝕡𝟚𝕡․𝕠𝕣𝕘 GEPM"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_min', 'prysm', '', '', 'geth', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = '𝕡𝟚𝕡․𝕠𝕣𝕘 GEPM'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes without commits, consensus first (teku 2024): 🧱🔥 Kiln.fi 🔥🧱 TKNM"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_min', 'teku', '', '', 'nethermind', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = '🧱🔥 Kiln.fi 🔥🧱 TKNM'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes after an underscore: EthPillar_NMNB"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_min', 'nimbus', '', '', 'nethermind', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'EthPillar_NMNB'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Lone execution client code: validating_from_dappnode_TDSF RH"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_min', 'unknown', '', '', 'reth', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'validating_from_dappnode_TDSF RH'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Lone consensus client code: validating_from_dappnode_TDSF LS"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('codes_min', 'lodestar', '', '', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'validating_from_dappnode_TDSF LS'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Lighthouse default graffiti: Lighthouse/v8.2.3-6db6ae9"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('version_string', 'lighthouse', 'v8.2.3', '6db6ae9', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Lighthouse/v8.2.3-6db6ae9'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Lighthouse release candidate default graffiti: Lighthouse/v8.3.0-rc.0-af16796"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('version_string', 'lighthouse', 'v8.3.0-rc.0', 'af16796', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Lighthouse/v8.3.0-rc.0-af16796'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Nimbus default graffiti: Nimbus/v26.7.0-4110bc-stateofus"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('version_string', 'nimbus', 'v26.7.0', '4110bc', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Nimbus/v26.7.0-4110bc-stateofus'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Grandine default graffiti: Grandine/3.0.0-72161651"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('version_string', 'grandine', '3.0.0', '72161651', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Grandine/3.0.0-72161651'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Teku legacy default graffiti: teku/v24.3.1"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('version_string', 'teku', 'v24.3.1', '', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'teku/v24.3.1'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Lodestar legacy default graffiti: Lodestar-v1.18.1/eefb711"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('version_string', 'lodestar', 'v1.18.1', 'eefb711', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Lodestar-v1.18.1/eefb711'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Empty graffiti: "
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('empty', 'unknown', '', '', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = ''
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Operator text: Solstice"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('none', 'unknown', '', '', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Solstice'
+      assertions:
+        - type: greater_than
+          column: rows_with_text
+          value: 0
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Unregistered client code: GE117ePR1756"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('none', 'unknown', '', '', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'GE117ePR1756'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client codes glued to operator text without commits: graffitiwall:456:484:#4D785CNMTK"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('none', 'unknown', '', '', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'graffitiwall:456:484:#4D785CNMTK'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client names in operator text: chungus-lighthouse-geth-1"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('none', 'unknown', '', '', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'chungus-lighthouse-geth-1'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Client names separated by a slash: Besu/Nimbus"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('none', 'unknown', '', '', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Besu/Nimbus'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Non-hex commit: SOAM-TEST GEa5b9PMLoca"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('none', 'unknown', '', '', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'SOAM-TEST GEa5b9PMLoca'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
