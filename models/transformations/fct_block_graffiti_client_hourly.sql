@@ -35,3 +35,5 @@ FROM {{ index .dep "{{transformation}}" "fct_block_graffiti" "helpers" "from" }}
 WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
   AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
 GROUP BY hour_start_date_time, consensus_client, execution_client
+-- Merge counts across shards before inserting instead of each shard inserting its partial counts.
+SETTINGS parallel_distributed_insert_select = 0

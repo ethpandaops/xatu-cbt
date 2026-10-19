@@ -35,3 +35,5 @@ FROM {{ index .dep "{{transformation}}" "fct_block_graffiti" "helpers" "from" }}
 WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
   AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
 GROUP BY day_start_date, consensus_client, execution_client
+-- Merge counts across shards before inserting instead of each shard inserting its partial counts.
+SETTINGS parallel_distributed_insert_select = 0
