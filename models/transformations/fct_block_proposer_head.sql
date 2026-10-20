@@ -39,10 +39,9 @@ WITH duty_candidates AS (
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
-        proposer_validator_index,
-        proposer_pubkey,
-        0 AS canonical,
-        uniqExact(meta_client_name) AS reporters
+        proposer_validator_index AS candidate_index,
+        proposer_pubkey AS candidate_pubkey,
+        (0, uniqExact(meta_client_name), proposer_validator_index) AS candidate_rank
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
@@ -53,10 +52,9 @@ WITH duty_candidates AS (
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
-        proposer_validator_index,
-        proposer_pubkey,
-        1 AS canonical,
-        0 AS reporters
+        proposer_validator_index AS candidate_index,
+        proposer_pubkey AS candidate_pubkey,
+        (1, toUInt64(0), proposer_validator_index) AS candidate_rank
     FROM {{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
@@ -65,13 +63,13 @@ WITH duty_candidates AS (
 proposer_duties AS (
     SELECT
         slot,
-        any(slot_start_date_time) AS slot_start_date_time,
-        any(epoch) AS epoch,
-        any(epoch_start_date_time) AS epoch_start_date_time,
-        argMax(proposer_validator_index, (canonical, reporters, proposer_validator_index)) AS proposer_validator_index,
-        argMax(proposer_pubkey, (canonical, reporters, proposer_validator_index)) AS proposer_pubkey
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        argMax(candidate_index, candidate_rank) AS proposer_validator_index,
+        argMax(candidate_pubkey, candidate_rank) AS proposer_pubkey
     FROM duty_candidates
-    GROUP BY slot
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time
 ),
 
 -- Sentries publish a whole epoch's proposer duties as one batch around the
