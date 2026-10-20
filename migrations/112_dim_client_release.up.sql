@@ -4,7 +4,7 @@ CREATE TABLE dim_client_release_local on cluster '{cluster}' (
     `layer` LowCardinality(String) COMMENT 'Client layer: consensus or execution' CODEC(ZSTD(1)),
     `version` String COMMENT 'Release version taken from the tag, e.g. v8.2.3' CODEC(ZSTD(1)),
     `tag` String COMMENT 'Git tag of the release in the client repository' CODEC(ZSTD(1)),
-    `commit_sha` String COMMENT 'Full commit hash the release tag points at; graffiti commit prefixes resolve against it' CODEC(ZSTD(1)),
+    `commit_sha` String COMMENT 'Full commit hash the release tag points at, which graffiti commit prefixes resolve against' CODEC(ZSTD(1)),
     `release_date` Nullable(DateTime) COMMENT 'When the GitHub release was published, NULL when unknown' CODEC(ZSTD(1)),
     `prerelease` Bool COMMENT 'Whether the release is a pre-release (GitHub flag, or a pre-release suffix on the version)' CODEC(ZSTD(1))
 ) ENGINE = ReplicatedReplacingMergeTree(

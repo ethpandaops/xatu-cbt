@@ -36,7 +36,7 @@ type DimClientRelease struct {
 	Version string `protobuf:"bytes,14,opt,name=version,proto3" json:"version,omitempty"`
 	// Git tag of the release in the client repository
 	Tag string `protobuf:"bytes,15,opt,name=tag,proto3" json:"tag,omitempty"`
-	// Full commit hash the release tag points at; graffiti commit prefixes resolve against it
+	// Full commit hash the release tag points at, which graffiti commit prefixes resolve against
 	CommitSha string `protobuf:"bytes,16,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`
 	// When the GitHub release was published, NULL when unknown
 	ReleaseDate *wrapperspb.UInt32Value `protobuf:"bytes,17,opt,name=release_date,json=releaseDate,proto3" json:"release_date,omitempty"`
@@ -140,7 +140,7 @@ type ListDimClientReleaseRequest struct {
 
 	// Filter by client - Client name as used by fct_block_graffiti, e.g. lighthouse or geth (PRIMARY KEY - required)
 	Client *StringFilter `protobuf:"bytes,1,opt,name=client,proto3" json:"client,omitempty"`
-	// Filter by commit_sha - Full commit hash the release tag points at; graffiti commit prefixes resolve against it (ORDER BY column 2 - optional)
+	// Filter by commit_sha - Full commit hash the release tag points at, which graffiti commit prefixes resolve against (ORDER BY column 2 - optional)
 	CommitSha *StringFilter `protobuf:"bytes,2,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`
 	// Filter by tag - Git tag of the release in the client repository (ORDER BY column 3 - optional)
 	Tag *StringFilter `protobuf:"bytes,3,opt,name=tag,proto3" json:"tag,omitempty"`

@@ -19,7 +19,7 @@ message DimClientRelease {
   string version = 14;
   // Git tag of the release in the client repository
   string tag = 15;
-  // Full commit hash the release tag points at; graffiti commit prefixes resolve against it
+  // Full commit hash the release tag points at, which graffiti commit prefixes resolve against
   string commit_sha = 16;
   // When the GitHub release was published, NULL when unknown
   google.protobuf.UInt32Value release_date = 17;
@@ -32,7 +32,7 @@ message ListDimClientReleaseRequest {
   // Filter by client - Client name as used by fct_block_graffiti, e.g. lighthouse or geth (PRIMARY KEY - required)
   StringFilter client = 1;
 
-  // Filter by commit_sha - Full commit hash the release tag points at; graffiti commit prefixes resolve against it (ORDER BY column 2 - optional)
+  // Filter by commit_sha - Full commit hash the release tag points at, which graffiti commit prefixes resolve against (ORDER BY column 2 - optional)
   StringFilter commit_sha = 2;
 
   // Filter by tag - Git tag of the release in the client repository (ORDER BY column 3 - optional)
