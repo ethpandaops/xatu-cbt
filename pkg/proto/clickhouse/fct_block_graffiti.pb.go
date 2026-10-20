@@ -43,7 +43,7 @@ type FctBlockGraffiti struct {
 	ProposerIndex uint32 `protobuf:"varint,17,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty"`
 	// The block graffiti decoded as UTF-8 with trailing null bytes removed
 	GraffitiText string `protobuf:"bytes,18,opt,name=graffiti_text,json=graffitiText,proto3" json:"graffiti_text,omitempty"`
-	// Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), none (unrecognised text) or empty
+	// Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), rocketpool (the Rocket Pool smartnode default RP-<EL><CL> v<version>), none (unrecognised text) or empty
 	GraffitiFormat string `protobuf:"bytes,19,opt,name=graffiti_format,json=graffitiFormat,proto3" json:"graffiti_format,omitempty"`
 	// Consensus client named by the graffiti, e.g. lighthouse, or unknown
 	ConsensusClient string `protobuf:"bytes,20,opt,name=consensus_client,json=consensusClient,proto3" json:"consensus_client,omitempty"`
@@ -209,7 +209,7 @@ type ListFctBlockGraffitiRequest struct {
 	ProposerIndex *UInt32Filter `protobuf:"bytes,7,opt,name=proposer_index,json=proposerIndex,proto3" json:"proposer_index,omitempty"`
 	// Filter by graffiti_text - The block graffiti decoded as UTF-8 with trailing null bytes removed (optional)
 	GraffitiText *StringFilter `protobuf:"bytes,8,opt,name=graffiti_text,json=graffitiText,proto3" json:"graffiti_text,omitempty"`
-	// Filter by graffiti_format - Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), none (unrecognised text) or empty (optional)
+	// Filter by graffiti_format - Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), rocketpool (the Rocket Pool smartnode default RP-<EL><CL> v<version>), none (unrecognised text) or empty (optional)
 	GraffitiFormat *StringFilter `protobuf:"bytes,9,opt,name=graffiti_format,json=graffitiFormat,proto3" json:"graffiti_format,omitempty"`
 	// Filter by consensus_client - Consensus client named by the graffiti, e.g. lighthouse, or unknown (optional)
 	ConsensusClient *StringFilter `protobuf:"bytes,10,opt,name=consensus_client,json=consensusClient,proto3" json:"consensus_client,omitempty"`
