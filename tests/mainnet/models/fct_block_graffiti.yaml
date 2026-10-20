@@ -4,6 +4,9 @@ external_data:
     canonical_beacon_block_graffiti:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v2.parquet
         network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
 assertions:
     - name: One row per source block
       sql: |
@@ -491,6 +494,16 @@ assertions:
         - type: equals
           column: rows_with_text
           value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Any entity set on a block matches the proposer's dim_node mapping
+      sql: |
+        SELECT COUNT(*) AS mismatched
+        FROM fct_block_graffiti AS g FINAL
+        GLOBAL LEFT JOIN (SELECT validator_index, source FROM dim_node FINAL) AS d ON g.proposer_index = d.validator_index
+        WHERE g.entity != '' AND g.entity != d.source
+      assertions:
         - type: equals
           column: mismatched
           value: 0

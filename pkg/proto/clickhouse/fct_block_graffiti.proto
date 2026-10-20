@@ -39,6 +39,8 @@ message FctBlockGraffiti {
   string execution_client = 23;
   // Execution client commit prefix carried by the graffiti, empty when the graffiti carries none
   string execution_client_commit = 24;
+  // Staking entity of the proposer from dim_node (ethseer on public networks), empty when the validator has none
+  string entity = 25;
 }
 
 // Request for listing fct_block_graffiti records
@@ -73,18 +75,20 @@ message ListFctBlockGraffitiRequest {
   StringFilter execution_client = 13 [(google.api.field_behavior) = OPTIONAL];
   // Filter by execution_client_commit - Execution client commit prefix carried by the graffiti, empty when the graffiti carries none (optional)
   StringFilter execution_client_commit = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by entity - Staking entity of the proposer from dim_node (ethseer on public networks), empty when the validator has none (optional)
+  StringFilter entity = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_block_graffiti to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 15 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 16 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctBlockGraffiti` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 16 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 17 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 17 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 18 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_block_graffiti records

@@ -4,6 +4,9 @@ external_data:
     canonical_beacon_block_graffiti:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v2.parquet
         network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
       sql: |

@@ -24,6 +24,7 @@ type FctBlockGraffitiRow struct {
 	ConsensusClientCommit string `ch:"consensus_client_commit" json:"consensus_client_commit"`
 	ExecutionClient string `ch:"execution_client" json:"execution_client"`
 	ExecutionClientCommit string `ch:"execution_client_commit" json:"execution_client_commit"`
+	Entity string `ch:"entity" json:"entity"`
 }
 
 // TableName returns the ClickHouse table this row maps to.
@@ -49,5 +50,6 @@ func (r *FctBlockGraffitiRow) ToProto() *FctBlockGraffiti {
 	p.ConsensusClientCommit = r.ConsensusClientCommit
 	p.ExecutionClient = r.ExecutionClient
 	p.ExecutionClientCommit = r.ExecutionClientCommit
+	p.Entity = r.Entity
 	return p
 }
