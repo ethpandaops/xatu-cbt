@@ -124,16 +124,12 @@ WITH combined_events AS (
         meta_client_geo_autonomous_system_number,
         meta_client_geo_autonomous_system_organization,
         '' AS meta_consensus_version,
-        CASE
-            WHEN hasSubsequence(meta_client_implementation, 'tysm') THEN
-                'prysm'
-            WHEN hasSubsequence(meta_client_implementation, 'dimhouse') THEN
-                'lighthouse'
-            WHEN hasSubsequence(meta_client_implementation, 'temu') THEN
-                'teku'
-            ELSE
-                ''
-        END AS meta_consensus_implementation
+        multiIf(
+            position(meta_client_implementation, 'tysm') > 0, 'prysm',
+            position(meta_client_implementation, 'temu') > 0, 'teku',
+            position(meta_client_implementation, 'dimhouse') > 0, 'lighthouse',
+            lower(extract(meta_client_implementation, '\\(([A-Za-z]+)\\)'))
+        ) AS meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
