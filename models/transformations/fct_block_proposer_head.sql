@@ -30,7 +30,7 @@ INSERT INTO
 -- sync publishes a whole epoch of duties nobody else reports. Prefer the
 -- canonical duty, which covers finalized slots, and otherwise take the duty
 -- reported by the most sentries. The canonical source is unioned in as a
--- backstop for head-event batches lost to sentry outages; the two duty
+-- backstop for head-event batches lost to sentry outages. The two duty
 -- sources form an OR-group dependency, so forwardfill is not capped at
 -- canonical's lag.
 WITH duty_candidates AS (
