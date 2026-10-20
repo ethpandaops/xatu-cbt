@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
 Node Data Collection for Validators
-Collects validator node data from ethpandaops cartographoor and ethseer
+Collects validator node data from ethpandaops cartographoor, dora and ethseer
 
 This script:
 1. Downloads validator ranges data from cartographoor for the network
-2. Queries ethseer_validator_entity table for additional validator mappings
-3. Expands validator ranges into individual validator rows
-4. Merges data from both sources, with cartographoor taking precedence
-5. Inserts combined data into dim_node table
+2. Downloads validator names from the dora repository for the network
+3. Queries ethseer_validator_entity table for additional validator mappings
+4. Expands validator ranges into individual validator rows
+5. Merges data from all sources (cartographoor > dora > ethseer)
+6. Inserts combined data into dim_node table
 """
 
 import os
@@ -18,6 +19,7 @@ import urllib.error
 import urllib.parse
 import json
 import base64
+import re
 from datetime import datetime
 
 def execute_clickhouse_query(url, query):
@@ -111,6 +113,34 @@ def parse_validator_ranges_data(json_data, database_name):
 
     return validators
 
+DORA_NAMES_URL = "https://raw.githubusercontent.com/ethpandaops/dora/master/config/{network}.names.yml"
+DORA_NAME_LINE = re.compile(r'^"?(\d+)(?:-(\d+))?"?\s*:\s*"([^"]*)"')
+
+def parse_dora_names(content):
+    """Parse dora validator names yaml (index and range entries) into individual validator rows"""
+    validators = {}
+
+    for line in content.splitlines():
+        match = DORA_NAME_LINE.match(line.strip())
+        if not match:
+            continue
+
+        start = int(match.group(1))
+        end = int(match.group(2)) if match.group(2) else start
+        source = match.group(3)
+
+        for validator_index in range(start, end + 1):
+            validators[validator_index] = {
+                'name': None,
+                'groups': [],
+                'tags': ['source:dora'],
+                'attributes': {},
+                'validator_index': validator_index,
+                'source': source
+            }
+
+    return validators
+
 def fetch_ethseer_validators(ch_url, database_name, external_database, external_cluster):
     """Fetch validator data from ethseer_validator_entity table"""
     db = external_database if external_database else 'default'
@@ -147,12 +177,18 @@ def fetch_ethseer_validators(ch_url, database_name, external_database, external_
         print(f"Warning: Failed to fetch ethseer validators: {e}", file=sys.stderr)
         return {}
 
-def merge_validator_data(cartographoor_validators, ethseer_validators):
-    """Merge validator data from both sources, with cartographoor taking precedence"""
+def merge_validator_data(cartographoor_validators, dora_validators, ethseer_validators):
+    """Merge validator data from all sources, with cartographoor > dora > ethseer precedence"""
     # Start with all cartographoor validators (they have richer metadata)
     merged = dict(cartographoor_validators)
 
-    # Add ethseer validators that are not in cartographoor
+    dora_only_count = 0
+    for validator_index, dora_data in dora_validators.items():
+        if validator_index not in merged:
+            merged[validator_index] = dora_data
+            dora_only_count += 1
+
+    # Add ethseer validators that are not in cartographoor or dora
     ethseer_only_count = 0
     for validator_index, ethseer_data in ethseer_validators.items():
         if validator_index not in merged:
@@ -160,6 +196,7 @@ def merge_validator_data(cartographoor_validators, ethseer_validators):
             ethseer_only_count += 1
 
     print(f"  Validators from cartographoor: {len(cartographoor_validators)}")
+    print(f"  Validators from dora (gap-filled): {dora_only_count}")
     print(f"  Validators from ethseer only (gap-filled): {ethseer_only_count}")
     print(f"  Total unique validators: {len(merged)}")
 
@@ -231,14 +268,24 @@ def main():
             print(f"WARNING: Failed to fetch/parse cartographoor data: {e}", file=sys.stderr)
             print("Continuing with ethseer data only...", file=sys.stderr)
 
+        dora_names_url = DORA_NAMES_URL.format(network=network_name)
+        print(f"\nFetching dora validator names from {dora_names_url}")
+        dora_validators = {}
+        try:
+            dora_validators = parse_dora_names(fetch_url(dora_names_url))
+            print(f"Found {len(dora_validators)} validator entries from dora")
+        except Exception as e:
+            print(f"WARNING: Failed to fetch dora validator names: {e}", file=sys.stderr)
+            print("Continuing without dora data...", file=sys.stderr)
+
         # Step 4: Fetch ethseer validators
         print(f"\nFetching validators from ethseer_validator_entity table...")
         ethseer_validators = fetch_ethseer_validators(ch_url, network_name, external_database, external_cluster)
         print(f"Found {len(ethseer_validators)} validator entries from ethseer")
 
-        # Step 5: Merge data from both sources
-        print(f"\nMerging validator data from both sources...")
-        merged_validators = merge_validator_data(cartographoor_validators, ethseer_validators)
+        # Step 5: Merge data from all sources
+        print(f"\nMerging validator data from all sources...")
+        merged_validators = merge_validator_data(cartographoor_validators, dora_validators, ethseer_validators)
         validators_to_insert = list(merged_validators.values())
 
         if not validators_to_insert:
