@@ -80,6 +80,13 @@ assertions:
         - type: equals
           column: duplicate_count
           value: 0
+    - name: Each slot should have exactly one row
+      sql: |
+        SELECT COUNT(*) AS duplicate_count FROM (SELECT slot, COUNT(*) AS row_count FROM fct_block_proposer_head FINAL GROUP BY slot HAVING row_count > 1)
+      assertions:
+        - type: equals
+          column: duplicate_count
+          value: 0
     - name: Updated date time should not be null
       sql: |
         SELECT COUNT(*) AS null_count FROM fct_block_proposer_head FINAL WHERE updated_date_time IS NULL

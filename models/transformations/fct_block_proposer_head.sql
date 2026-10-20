@@ -25,46 +25,53 @@ dependencies:
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
--- Proposer duties are deterministic per epoch (fixed by the RANDAO seed
--- epochs in advance), so the head-event stream and the canonical table can
--- never disagree on CONTENT, only on presence. Unioning canonical in makes
--- it a backstop: at the head its range is empty (it lags finalization) and
--- it contributes nothing, while in backfilled history it fills slots whose
--- head-event duty batches were lost to sentry outages. The two duty sources
--- form an OR-group dependency, so forwardfill is not capped at canonical's
--- lag. The outer DISTINCT collapses the union back to one row per slot
--- because the sources' content is identical.
-WITH proposer_duties AS (
-    SELECT DISTINCT
+-- The table holds one row per slot, so each slot needs exactly one duty. The
+-- sources can disagree: a sentry whose beacon node is on a fork or out of
+-- sync publishes a whole epoch of duties nobody else reports. Prefer the
+-- canonical duty, which covers finalized slots, and otherwise take the duty
+-- reported by the most sentries. The canonical source is unioned in as a
+-- backstop for head-event batches lost to sentry outages; the two duty
+-- sources form an OR-group dependency, so forwardfill is not capped at
+-- canonical's lag.
+WITH duty_candidates AS (
+    SELECT
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
         proposer_validator_index,
-        proposer_pubkey
-    FROM (
-        SELECT
-            slot,
-            slot_start_date_time,
-            epoch,
-            epoch_start_date_time,
-            proposer_validator_index,
-            proposer_pubkey
-        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
-            AND meta_network_name = '{{ .env.NETWORK }}'
-        UNION ALL
-        SELECT
-            slot,
-            slot_start_date_time,
-            epoch,
-            epoch_start_date_time,
-            proposer_validator_index,
-            proposer_pubkey
-        FROM {{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
-            AND meta_network_name = '{{ .env.NETWORK }}'
-    )
+        proposer_pubkey,
+        0 AS canonical,
+        uniqExact(meta_client_name) AS reporters
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, proposer_validator_index, proposer_pubkey
+    UNION ALL
+    SELECT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        proposer_validator_index,
+        proposer_pubkey,
+        1 AS canonical,
+        0 AS reporters
+    FROM {{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+),
+
+proposer_duties AS (
+    SELECT
+        slot,
+        any(slot_start_date_time) AS slot_start_date_time,
+        any(epoch) AS epoch,
+        any(epoch_start_date_time) AS epoch_start_date_time,
+        argMax(proposer_validator_index, (canonical, reporters, proposer_validator_index)) AS proposer_validator_index,
+        argMax(proposer_pubkey, (canonical, reporters, proposer_validator_index)) AS proposer_pubkey
+    FROM duty_candidates
+    GROUP BY slot
 ),
 
 -- Sentries publish a whole epoch's proposer duties as one batch around the
