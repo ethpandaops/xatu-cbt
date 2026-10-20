@@ -1,0 +1,51 @@
+model: fct_block_data_column_sidecar_first_seen_by_node
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_data_column_sidecar_first_seen_by_node_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_data_column_sidecar_first_seen_by_node_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_data_column_completed:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_data_column_sidecar_first_seen_by_node_libp2p_data_column_completed.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Rows exist and keys are unique
+      sql: |
+        SELECT COUNT(*) AS row_count, COUNT(*) - uniqExact(slot_start_date_time, block_root, column_index, meta_client_name) AS duplicate_rows
+        FROM fct_block_data_column_sidecar_first_seen_by_node FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 1000
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: completed_via matches the source
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_data_column_sidecar_first_seen_by_node FINAL
+        WHERE (source = 'beacon_api_eth_v1_events_data_column_sidecar' AND completed_via != '')
+           OR (source = 'libp2p_gossipsub_data_column_sidecar' AND completed_via != 'FULL_GOSSIP')
+           OR (source = 'libp2p_data_column_completed' AND completed_via NOT IN ('FULL_GOSSIP', 'PARTIAL_GOSSIP', 'EL', 'RECONSTRUCTION', 'UNKNOWN'))
+           OR source NOT IN ('beacon_api_eth_v1_events_data_column_sidecar', 'libp2p_gossipsub_data_column_sidecar', 'libp2p_data_column_completed')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Column completions are counted as first seen
+      sql: |
+        SELECT countIf(source = 'libp2p_data_column_completed') AS completion_rows
+        FROM fct_block_data_column_sidecar_first_seen_by_node FINAL
+      assertions:
+        - type: greater_than
+          column: completion_rows
+          value: 0
+    - name: Epoch and column index are valid
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_data_column_sidecar_first_seen_by_node FINAL
+        WHERE epoch != intDiv(slot, 32) OR column_index >= 128
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

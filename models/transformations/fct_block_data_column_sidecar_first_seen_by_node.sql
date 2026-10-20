@@ -13,13 +13,18 @@ tags:
   - data_column
 dependencies:
   - "{{external}}.beacon_api_eth_v1_events_data_column_sidecar"
-  - "{{external}}.libp2p_gossipsub_data_column_sidecar"
+  # Completions also cover columns assembled from partial messages, which never arrive as gossip.
+  - [
+    "{{external}}.libp2p_gossipsub_data_column_sidecar",
+    "{{external}}.libp2p_data_column_completed"
+  ]
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH combined_events AS (
     SELECT
         'beacon_api_eth_v1_events_data_column_sidecar' AS source,
+        '' AS completed_via,
         slot,
         slot_start_date_time,
         epoch,
@@ -49,6 +54,7 @@ WITH combined_events AS (
 
     SELECT
         'libp2p_gossipsub_data_column_sidecar' AS source,
+        'FULL_GOSSIP' AS completed_via,
         slot,
         slot_start_date_time,
         epoch,
@@ -80,6 +86,46 @@ WITH combined_events AS (
                 ''
         END AS meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_data_column_sidecar" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND beacon_block_root != ''
+        AND meta_network_name = '{{ .env.NETWORK }}'
+
+    UNION ALL
+
+    SELECT
+        'libp2p_data_column_completed' AS source,
+        completed_via,
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        propagation_slot_start_diff,
+        beacon_block_root AS block_root,
+        column_index,
+        kzg_commitments_count,
+        meta_client_name,
+        meta_client_version,
+        meta_client_implementation,
+        meta_client_geo_city,
+        meta_client_geo_country,
+        meta_client_geo_country_code,
+        meta_client_geo_continent_code,
+        meta_client_geo_longitude,
+        meta_client_geo_latitude,
+        meta_client_geo_autonomous_system_number,
+        meta_client_geo_autonomous_system_organization,
+        '' AS meta_consensus_version,
+        CASE
+            WHEN hasSubsequence(meta_client_implementation, 'tysm') THEN
+                'prysm'
+            WHEN hasSubsequence(meta_client_implementation, 'dimhouse') THEN
+                'lighthouse'
+            WHEN hasSubsequence(meta_client_implementation, 'temu') THEN
+                'teku'
+            ELSE
+                ''
+        END AS meta_consensus_implementation
+    FROM {{ index .dep "{{external}}" "libp2p_data_column_completed" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND beacon_block_root != ''
         AND meta_network_name = '{{ .env.NETWORK }}'
@@ -133,6 +179,7 @@ SELECT
     argMin(meta_client_geo_autonomous_system_number, propagation_slot_start_diff) AS meta_client_geo_autonomous_system_number,
     argMin(meta_client_geo_autonomous_system_organization, propagation_slot_start_diff) AS meta_client_geo_autonomous_system_organization,
     argMin(meta_consensus_version, propagation_slot_start_diff) AS meta_consensus_version,
-    argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation
+    argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation,
+    argMin(completed_via, propagation_slot_start_diff) AS completed_via
 FROM combined_events
 GROUP BY slot_start_date_time, meta_client_name, block_root, column_index

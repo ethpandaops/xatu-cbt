@@ -40,6 +40,7 @@ type FctBlockDataColumnSidecarFirstSeenRow struct {
 	MetaClientGeoAutonomousSystemOrganization *string `ch:"meta_client_geo_autonomous_system_organization" json:"meta_client_geo_autonomous_system_organization"`
 	MetaConsensusVersion string `ch:"meta_consensus_version" json:"meta_consensus_version"`
 	MetaConsensusImplementation string `ch:"meta_consensus_implementation" json:"meta_consensus_implementation"`
+	CompletedVia string `ch:"completed_via" json:"completed_via"`
 }
 
 // TableName returns the ClickHouse table this row maps to.
@@ -85,5 +86,6 @@ func (r *FctBlockDataColumnSidecarFirstSeenRow) ToProto() *FctBlockDataColumnSid
 	}
 	p.MetaConsensusVersion = r.MetaConsensusVersion
 	p.MetaConsensusImplementation = r.MetaConsensusImplementation
+	p.CompletedVia = r.CompletedVia
 	return p
 }
