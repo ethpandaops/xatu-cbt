@@ -258,6 +258,36 @@ func BuildListDimClientReleaseQuery(req *ListDimClientReleaseRequest, options ..
 		}
 	}
 
+	// Add filter for column: repository
+	if req.Repository != nil {
+		switch filter := req.Repository.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("repository", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("repository", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("repository", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("repository", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("repository", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("repository", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("repository", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("repository", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("repository", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -283,7 +313,7 @@ func BuildListDimClientReleaseQuery(req *ListDimClientReleaseRequest, options ..
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "client", "layer", "version", "tag", "commit_sha", "release_date", "prerelease"}
+		validFields := []string{"updated_date_time", "client", "layer", "version", "tag", "commit_sha", "release_date", "prerelease", "repository"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -295,7 +325,7 @@ func BuildListDimClientReleaseQuery(req *ListDimClientReleaseRequest, options ..
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "client", "layer", "version", "tag", "commit_sha", "toUnixTimestamp(`release_date`) AS `release_date`", "prerelease"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "client", "layer", "version", "tag", "commit_sha", "toUnixTimestamp(`release_date`) AS `release_date`", "prerelease", "repository"}
 
 	return BuildParameterizedQuery("dim_client_release", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -315,7 +345,7 @@ func BuildGetDimClientReleaseQuery(req *GetDimClientReleaseRequest, options ...Q
 	orderByClause := " ORDER BY client, commit_sha, tag"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "client", "layer", "version", "tag", "commit_sha", "toUnixTimestamp(`release_date`) AS `release_date`", "prerelease"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "client", "layer", "version", "tag", "commit_sha", "toUnixTimestamp(`release_date`) AS `release_date`", "prerelease", "repository"}
 
 	// Return single record
 	return BuildParameterizedQuery("dim_client_release", columns, qb, orderByClause, 1, 0, options...)

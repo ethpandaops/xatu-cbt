@@ -15,6 +15,7 @@ assertions:
     sql: |
       SELECT COUNT(*) AS bad_rows FROM dim_client_release FINAL
       WHERE NOT match(commit_sha, '^[0-9a-f]{40}$') OR layer NOT IN ('consensus', 'execution') OR version = ''
+        OR NOT match(repository, '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$')
     assertions:
       - type: equals
         column: bad_rows
@@ -23,6 +24,7 @@ assertions:
     sql: |
       SELECT COUNT(*) AS matches FROM dim_client_release FINAL
       WHERE client = 'lighthouse' AND version = 'v8.2.3' AND commit_sha = '6db6ae9382b7d6f5bd1e0ca0d349bc0dc94adba2'
+        AND repository = 'sigp/lighthouse'
     assertions:
       - type: equals
         column: matches
