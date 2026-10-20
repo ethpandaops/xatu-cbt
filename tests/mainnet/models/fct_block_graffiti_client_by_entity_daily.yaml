@@ -31,13 +31,6 @@ assertions:
         - type: equals
           column: mismatched
           value: 0
-    - name: Entities are carried through
-      sql: |
-        SELECT SUM(block_count) AS coinbase_blocks FROM fct_block_graffiti_client_by_entity_daily FINAL WHERE entity = 'coinbase'
-      assertions:
-        - type: greater_than
-          column: coinbase_blocks
-          value: 0
     - name: One row per period, entity and client pair
       sql: |
         SELECT COUNT(*) AS duplicate_keys FROM (

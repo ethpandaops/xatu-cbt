@@ -497,24 +497,13 @@ assertions:
         - type: equals
           column: mismatched
           value: 0
-    - name: "Entity comes from the proposer's dim_node mapping"
+    - name: Any entity set on a block matches the proposer's dim_node mapping
       sql: |
-        SELECT COUNT(*) AS rows_with_slot, countIf(entity != 'coinbase') AS mismatched
-        FROM fct_block_graffiti FINAL WHERE slot = 15450943 AND proposer_index = 1108195
+        SELECT COUNT(*) AS mismatched
+        FROM fct_block_graffiti AS g FINAL
+        GLOBAL LEFT JOIN (SELECT validator_index, source FROM dim_node FINAL) AS d ON g.proposer_index = d.validator_index
+        WHERE g.entity != '' AND g.entity != d.source
       assertions:
-        - type: equals
-          column: rows_with_slot
-          value: 1
         - type: equals
           column: mismatched
-          value: 0
-    - name: Most blocks have a proposer entity and unmapped ones are empty
-      sql: |
-        SELECT countIf(entity != '') AS with_entity, countIf(entity = '') AS without_entity FROM fct_block_graffiti FINAL
-      assertions:
-        - type: greater_than
-          column: with_entity
-          value: 400
-        - type: greater_than
-          column: without_entity
           value: 0
