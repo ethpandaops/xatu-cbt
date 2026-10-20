@@ -2,7 +2,7 @@ model: canonical_beacon_block_graffiti
 network: mainnet
 external_data:
     canonical_beacon_block_graffiti:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v2.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v3.parquet
         network_column: meta_network_name
 assertions:
     - name: total count
@@ -10,4 +10,4 @@ assertions:
         SELECT COUNT(*) AS count
         FROM cluster('{raw}', default.canonical_beacon_block_graffiti)
       expected:
-        count: 621
+        count: 623

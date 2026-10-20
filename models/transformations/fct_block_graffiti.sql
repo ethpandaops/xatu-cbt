@@ -107,7 +107,7 @@ FROM (
                 match(trimmed, '^Nimbus/v[0-9]'), ['nimbus'] || extractGroups(trimmed, '^Nimbus/(?P<version>v[0-9][^\\s-]*)-(?P<commit>[0-9a-f]+)(?:-\\S+)?$'),
                 match(trimmed, '^teku/v[0-9]'), ['teku'] || extractGroups(trimmed, '^teku/(?P<version>v[0-9]\\S*)(?P<commit>)$'),
                 match(trimmed, '^Lodestar-v[0-9]'), ['lodestar'] || extractGroups(trimmed, '^Lodestar-(?P<version>v[0-9][^/\\s]*)(?:.*/(?P<commit>[0-9a-f]{7}))?$'),
-                match(trimmed, '(?:^|\\s)Grandine/[0-9]'), ['grandine'] || extractGroups(trimmed, '(?:^|\\s)Grandine/(?P<version>[0-9][^\\s-]*)(?:-(?P<commit>[0-9a-f]{8}))?$'),
+                match(trimmed, '(?:^|\\s)Grandine/[0-9]'), ['grandine'] || extractGroups(trimmed, '(?:^|\\s)Grandine/(?P<version>[0-9][^\\s-]*)(?:-(?P<commit>[0-9a-f]{7,8}))?$'),
                 []
             ) AS version_parts,
             if(length(version_parts) = 3, version_parts, ['', '', '']) AS version_match,

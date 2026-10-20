@@ -2,7 +2,7 @@ model: fct_block_graffiti
 network: mainnet
 external_data:
     canonical_beacon_block_graffiti:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v2.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v3.parquet
         network_column: meta_network_name
     ethseer_validator_entity:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
@@ -14,10 +14,10 @@ assertions:
       assertions:
         - type: equals
           column: row_count
-          value: 621
+          value: 623
         - type: equals
           column: block_count
-          value: 621
+          value: 623
     - name: Epoch is consistent with slot
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_graffiti FINAL WHERE epoch != intDiv(slot, 32)
@@ -274,6 +274,30 @@ assertions:
         SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
           consensus_client_commit, execution_client, execution_client_commit) != ('version_string', 'grandine', '3.0.0', '72161651', 'unknown', '')) AS mismatched
         FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Grandine/3.0.0-72161651'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Grandine default graffiti with a 7 character commit: Grandine/1.1.1-f0e281a"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('version_string', 'grandine', '1.1.1', 'f0e281a', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Grandine/1.1.1-f0e281a'
+      assertions:
+        - type: equals
+          column: rows_with_text
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Grandine default graffiti with a 7 character commit: Grandine/1.0.0-4cad0c2"
+      sql: |
+        SELECT COUNT(*) AS rows_with_text, countIf((graffiti_format, consensus_client, consensus_client_version,
+          consensus_client_commit, execution_client, execution_client_commit) != ('version_string', 'grandine', '1.0.0', '4cad0c2', 'unknown', '')) AS mismatched
+        FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Grandine/1.0.0-4cad0c2'
       assertions:
         - type: equals
           column: rows_with_text
