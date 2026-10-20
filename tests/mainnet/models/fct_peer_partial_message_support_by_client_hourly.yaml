@@ -1,0 +1,66 @@
+model: fct_peer_partial_message_support_by_client_hourly
+network: mainnet
+external_data:
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_peer_partial_message_support_by_client_hourly_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    libp2p_rpc_meta_subscription:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_peer_partial_message_support_by_client_hourly_libp2p_rpc_meta_subscription.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Rows exist for the fixture hour
+      sql: |
+        SELECT COUNT(*) AS row_count, uniqExact(hour_start_date_time) AS hour_count
+        FROM fct_peer_partial_message_support_by_client_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 20
+        - type: equals
+          column: hour_count
+          value: 1
+    - name: Hours are aligned
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_peer_partial_message_support_by_client_hourly FINAL
+        WHERE toStartOfHour(hour_start_date_time) != hour_start_date_time
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Subsets never exceed their population
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_peer_partial_message_support_by_client_hourly FINAL
+        WHERE gossipsub_v13_peer_count > connected_peer_count
+           OR requests_partial_peer_count > subscribed_peer_count
+           OR supports_sending_partial_peer_count > subscribed_peer_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Lighthouse and Prysm peers request partial messages
+      sql: |
+        SELECT
+          sumIf(requests_partial_peer_count, peer_implementation = 'lighthouse') AS lighthouse_peers,
+          sumIf(requests_partial_peer_count, peer_implementation = 'prysm') AS prysm_peers,
+          sumIf(requests_partial_peer_count, peer_implementation = 'teku') AS teku_peers
+        FROM fct_peer_partial_message_support_by_client_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: lighthouse_peers
+          value: 0
+        - type: greater_than
+          column: prysm_peers
+          value: 0
+        - type: equals
+          column: teku_peers
+          value: 0
+    - name: Versions are parsed into major.minor.patch
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_peer_partial_message_support_by_client_hourly FINAL
+        WHERE peer_implementation IN ('lighthouse', 'prysm')
+          AND peer_version != 'Unknown'
+          AND NOT match(peer_version, '^[0-9]+\\.[0-9]+\\.[0-9]+$')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -1,0 +1,109 @@
+model: fct_data_column_completion_by_slot
+network: mainnet
+external_data:
+    libp2p_data_column_completed:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_data_column_completion_by_slot_libp2p_data_column_completed.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_partial_data_column:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_data_column_completion_by_slot_libp2p_gossipsub_partial_data_column.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_partial_data_column_outcome:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_data_column_completion_by_slot_libp2p_gossipsub_partial_data_column_outcome.parquet
+        network_column: meta_network_name
+assertions:
+    - name: One row per block column across the fixture slots
+      sql: |
+        SELECT COUNT(*) AS row_count, uniqExact(slot_start_date_time, block_root, column_index) AS key_count, uniqExact(slot) AS slot_count
+        FROM fct_data_column_completion_by_slot FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 2000
+        - type: greater_than
+          column: slot_count
+          value: 15
+    - name: Every completion row counts each node once by path
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_data_column_completion_by_slot FINAL
+        WHERE full_gossip_completion_count + partial_gossip_completion_count + el_completion_count
+            + reconstruction_completion_count + unknown_completion_count != completion_node_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Gossip and EL cells never exceed the completed cells
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_data_column_completion_by_slot FINAL
+        WHERE cells_from_gossip + cells_from_el > cells_total
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Completion time percentiles are ordered
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_data_column_completion_by_slot FINAL
+        WHERE completion_node_count > 0
+          AND NOT (min_completion_slot_start_diff <= p50_completion_slot_start_diff
+            AND p50_completion_slot_start_diff <= p90_completion_slot_start_diff
+            AND p90_completion_slot_start_diff <= max_completion_slot_start_diff)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Completions arrive by partial gossip and the EL as well as full gossip
+      sql: |
+        SELECT
+          sum(full_gossip_completion_count) AS full_gossip,
+          sum(partial_gossip_completion_count) AS partial_gossip,
+          sum(el_completion_count) AS el
+        FROM fct_data_column_completion_by_slot FINAL
+      assertions:
+        - type: greater_than
+          column: full_gossip
+          value: 0
+        - type: greater_than
+          column: partial_gossip
+          value: 0
+        - type: greater_than
+          column: el
+          value: 0
+    - name: Partial traffic and verdicts are joined onto the columns
+      sql: |
+        SELECT
+          sum(partial_received_cells) AS received_cells,
+          sum(partial_new_cells) AS new_cells,
+          sum(partial_accept_verdict_count) AS accepted,
+          countIf(partial_received_message_count > 0 AND partial_sender_peer_count = 0) AS senderless_rows
+        FROM fct_data_column_completion_by_slot FINAL
+      assertions:
+        - type: greater_than
+          column: received_cells
+          value: 0
+        - type: greater_than
+          column: new_cells
+          value: 0
+        - type: greater_than
+          column: accepted
+          value: 0
+        - type: equals
+          column: senderless_rows
+          value: 0
+    - name: Useful cells stay below received cells overall
+      sql: |
+        SELECT if(sum(partial_new_cells) <= sum(partial_received_cells), 0, 1) AS bad
+        FROM fct_data_column_completion_by_slot FINAL
+      assertions:
+        - type: equals
+          column: bad
+          value: 0
+    - name: Column index, blob count and epoch are valid
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_data_column_completion_by_slot FINAL
+        WHERE column_index >= 128
+           OR (completion_node_count > 0 AND blob_count = 0)
+           OR epoch != intDiv(slot, 32)
+           OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
