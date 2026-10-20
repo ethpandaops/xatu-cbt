@@ -1,0 +1,81 @@
+model: fct_block_data_column_completion
+network: mainnet
+external_data:
+    libp2p_data_column_completed:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_data_column_completion_by_slot_libp2p_data_column_completed.parquet
+        network_column: meta_network_name
+assertions:
+    - name: One row per block
+      sql: |
+        SELECT COUNT(*) AS row_count, uniqExact(slot_start_date_time, block_root) AS block_count
+        FROM fct_block_data_column_completion FINAL
+      assertions:
+        - type: equals
+          column: row_count
+          value: 18
+        - type: equals
+          column: block_count
+          value: 18
+    - name: Completions add up to every source completion
+      sql: |
+        SELECT SUM(completion_count) AS completions FROM fct_block_data_column_completion FINAL
+      assertions:
+        - type: equals
+          column: completions
+          value: 9343
+    - name: Every completion counts once by path
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_data_column_completion FINAL
+        WHERE full_gossip_completion_count + partial_gossip_completion_count + el_completion_count
+            + reconstruction_completion_count + unknown_completion_count != completion_count
+           OR cells_from_gossip + cells_from_el > cells_total
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Completions by path add up to the source completions
+      sql: |
+        SELECT
+          SUM(full_gossip_completion_count) AS full_gossip,
+          SUM(partial_gossip_completion_count) AS partial_gossip,
+          SUM(el_completion_count) AS el,
+          SUM(reconstruction_completion_count) AS reconstruction,
+          SUM(cells_from_el) AS cells_from_el
+        FROM fct_block_data_column_completion FINAL
+      assertions:
+        - type: equals
+          column: full_gossip
+          value: 6289
+        - type: equals
+          column: partial_gossip
+          value: 1285
+        - type: equals
+          column: el
+          value: 1380
+        - type: equals
+          column: reconstruction
+          value: 389
+        - type: equals
+          column: cells_from_el
+          value: 7368
+    - name: Completion times are ordered
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_data_column_completion FINAL
+        WHERE NOT (min_completion_slot_start_diff <= p50_completion_slot_start_diff
+          AND p50_completion_slot_start_diff <= p90_completion_slot_start_diff
+          AND p90_completion_slot_start_diff <= max_completion_slot_start_diff
+          AND p50_node_last_completion_slot_start_diff <= p90_node_last_completion_slot_start_diff
+          AND p90_node_last_completion_slot_start_diff <= max_completion_slot_start_diff)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Columns, blobs and epochs are valid
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_data_column_completion FINAL
+        WHERE column_count = 0 OR column_count > 128 OR blob_count = 0 OR node_count = 0
+           OR epoch != intDiv(slot, 32) OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
