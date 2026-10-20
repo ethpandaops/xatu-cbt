@@ -1,0 +1,8 @@
+table: dim_client_release
+type: scheduled
+schedule: "@every 12h"
+tags:
+  - client
+  - release
+  - graffiti
+exec: "python3 ${MODELS_SCRIPTS_PATH:-/models/scripts}/dim_client_release.py"

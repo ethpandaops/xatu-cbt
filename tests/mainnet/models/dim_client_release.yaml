@@ -1,0 +1,57 @@
+model: dim_client_release
+network: mainnet
+assertions:
+  - name: Collects release tags for every client
+    sql: |
+      SELECT COUNT(*) AS row_count, uniqExact(client) AS clients FROM dim_client_release FINAL
+    assertions:
+      - type: greater_than
+        column: row_count
+        value: 1000
+      - type: equals
+        column: clients
+        value: 16
+  - name: Every release points at a full commit hash
+    sql: |
+      SELECT COUNT(*) AS bad_rows FROM dim_client_release FINAL
+      WHERE NOT match(commit_sha, '^[0-9a-f]{40}$') OR layer NOT IN ('consensus', 'execution') OR version = ''
+    assertions:
+      - type: equals
+        column: bad_rows
+        value: 0
+  - name: "Known release: lighthouse v8.2.3"
+    sql: |
+      SELECT COUNT(*) AS matches FROM dim_client_release FINAL
+      WHERE client = 'lighthouse' AND version = 'v8.2.3' AND commit_sha = '6db6ae9382b7d6f5bd1e0ca0d349bc0dc94adba2'
+    assertions:
+      - type: equals
+        column: matches
+        value: 1
+  - name: "Known release: prysm v7.2.1"
+    sql: |
+      SELECT COUNT(*) AS matches FROM dim_client_release FINAL
+      WHERE client = 'prysm' AND version = 'v7.2.1' AND commit_sha = 'fea24b41265542905352ab45fe2291d8eea010cc'
+    assertions:
+      - type: equals
+        column: matches
+        value: 1
+  - name: "Caplin shares erigon's releases"
+    sql: |
+      SELECT
+        (SELECT COUNT(*) FROM dim_client_release FINAL WHERE client = 'caplin') AS caplin_rows,
+        (SELECT COUNT(*) FROM dim_client_release FINAL WHERE client = 'erigon') AS erigon_rows
+    assertions:
+      - type: greater_than
+        column: caplin_rows
+        value: 0
+      - type: greater_than
+        column: erigon_rows
+        value: 0
+  - name: Has been scheduled at least once
+    sql: |
+      SELECT COUNT(*) AS count FROM admin_cbt_scheduled FINAL
+      WHERE table = 'dim_client_release'
+    assertions:
+      - type: equals
+        column: count
+        value: 1

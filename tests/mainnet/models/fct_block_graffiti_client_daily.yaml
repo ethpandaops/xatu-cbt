@@ -2,7 +2,7 @@ model: fct_block_graffiti_client_daily
 network: mainnet
 external_data:
     canonical_beacon_block_graffiti:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v2.parquet
         network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
@@ -18,7 +18,7 @@ assertions:
       assertions:
         - type: equals
           column: total_blocks
-          value: 615
+          value: 621
     - name: Counts match the per-block table for every day and client pair
       sql: |
         SELECT COUNT(*) AS mismatched FROM (

@@ -27,7 +27,7 @@ message FctBlockGraffiti {
   uint32 proposer_index = 17;
   // The block graffiti decoded as UTF-8 with trailing null bytes removed
   string graffiti_text = 18;
-  // Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), none (unrecognised text) or empty
+  // Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), rocketpool (the Rocket Pool smartnode default RP-<EL><CL> v<version>), none (unrecognised text) or empty
   string graffiti_format = 19;
   // Consensus client named by the graffiti, e.g. lighthouse, or unknown
   string consensus_client = 20;
@@ -61,7 +61,7 @@ message ListFctBlockGraffitiRequest {
   UInt32Filter proposer_index = 7 [(google.api.field_behavior) = OPTIONAL];
   // Filter by graffiti_text - The block graffiti decoded as UTF-8 with trailing null bytes removed (optional)
   StringFilter graffiti_text = 8 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by graffiti_format - Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), none (unrecognised text) or empty (optional)
+  // Filter by graffiti_format - Which graffiti format identified the clients: codes_full, codes_long, codes_short or codes_min (client version codes with 8, 4, 2 or no commit characters), version_string (a client default such as Lighthouse/v8.2.3-6db6ae9), rocketpool (the Rocket Pool smartnode default RP-<EL><CL> v<version>), none (unrecognised text) or empty (optional)
   StringFilter graffiti_format = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by consensus_client - Consensus client named by the graffiti, e.g. lighthouse, or unknown (optional)
   StringFilter consensus_client = 10 [(google.api.field_behavior) = OPTIONAL];

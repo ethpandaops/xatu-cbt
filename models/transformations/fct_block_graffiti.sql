@@ -33,12 +33,14 @@ SELECT
         codes_ok AND length(code_commits[1]) = 2, 'codes_short',
         codes_ok, 'codes_min',
         version_client != '', 'version_string',
+        rp_ok, 'rocketpool',
         trimmed = '', 'empty',
         'none'
     ) AS graffiti_format,
     multiIf(
         cl_index > 0, cl_names[indexOf(cl_codes, codes[cl_index])],
         version_client != '', version_client,
+        rp_ok, rp_cl_names[indexOf(rp_cl_codes, rp_codes[2])],
         'unknown'
     ) AS consensus_client,
     if(consensus_client = version_client, version, '') AS consensus_client_version,
@@ -47,7 +49,11 @@ SELECT
         consensus_client = version_client, version_commit,
         ''
     ) AS consensus_client_commit,
-    if(el_index > 0, el_names[indexOf(el_codes, codes[el_index])], 'unknown') AS execution_client,
+    multiIf(
+        el_index > 0, el_names[indexOf(el_codes, codes[el_index])],
+        rp_ok AND has(rp_el_codes, rp_codes[1]), rp_el_names[indexOf(rp_el_codes, rp_codes[1])],
+        'unknown'
+    ) AS execution_client,
     if(el_index > 0, code_commits[el_index], '') AS execution_client_commit
 FROM (
     SELECT
@@ -60,7 +66,8 @@ FROM (
         arrayFirstIndex(c -> has(cl_codes, c), codes) AS cl_index,
         version_match[1] AS version_client,
         version_match[2] AS version,
-        version_match[3] AS version_commit
+        version_match[3] AS version_commit,
+        NOT codes_ok AND version_client = '' AND length(rp_codes) = 2 AS rp_ok
     FROM (
         SELECT
             slot,
@@ -101,7 +108,13 @@ FROM (
                 match(trimmed, '(?:^|\\s)Grandine/[0-9]'), ['grandine'] || extractGroups(trimmed, '(?:^|\\s)Grandine/(?P<version>[0-9][^\\s-]*)(?:-(?P<commit>[0-9a-f]{8}))?$'),
                 []
             ) AS version_parts,
-            if(length(version_parts) = 3, version_parts, ['', '', '']) AS version_match
+            if(length(version_parts) = 3, version_parts, ['', '', '']) AS version_match,
+            -- Rocket Pool smartnode default RP-<EL initial><CL initial> v<version>, X marks an external EL.
+            extractGroups(trimmed, '^RP-(?P<el>[GNBREX])(?P<cl>[LSNPT]) v[0-9]') AS rp_codes,
+            ['G', 'N', 'B', 'R', 'E'] AS rp_el_codes,
+            ['geth', 'nethermind', 'besu', 'reth', 'erigon'] AS rp_el_names,
+            ['L', 'S', 'N', 'P', 'T'] AS rp_cl_codes,
+            ['lighthouse', 'lodestar', 'nimbus', 'prysm', 'teku'] AS rp_cl_names
         FROM {{ index .dep "{{external}}" "canonical_beacon_block_graffiti" "helpers" "from" }} FINAL
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
             AND meta_network_name = '{{ .env.NETWORK }}'
