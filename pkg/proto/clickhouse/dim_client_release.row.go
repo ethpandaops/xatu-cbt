@@ -22,6 +22,7 @@ type DimClientReleaseRow struct {
 	CommitSha string `ch:"commit_sha" json:"commit_sha"`
 	ReleaseDate *uint32 `ch:"release_date" json:"release_date"`
 	Prerelease bool `ch:"prerelease" json:"prerelease"`
+	Repository string `ch:"repository" json:"repository"`
 }
 
 // TableName returns the ClickHouse table this row maps to.
@@ -43,5 +44,6 @@ func (r *DimClientReleaseRow) ToProto() *DimClientRelease {
 		p.ReleaseDate = wrapperspb.UInt32(*r.ReleaseDate)
 	}
 	p.Prerelease = r.Prerelease
+	p.Repository = r.Repository
 	return p
 }
