@@ -4,6 +4,9 @@ external_data:
     canonical_beacon_block_graffiti:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v2.parquet
         network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
 assertions:
     - name: One row per source block
       sql: |
@@ -493,4 +496,25 @@ assertions:
           value: 1
         - type: equals
           column: mismatched
+          value: 0
+    - name: "Entity comes from the proposer's dim_node mapping"
+      sql: |
+        SELECT COUNT(*) AS rows_with_slot, countIf(entity != 'coinbase') AS mismatched
+        FROM fct_block_graffiti FINAL WHERE slot = 15450943 AND proposer_index = 1108195
+      assertions:
+        - type: equals
+          column: rows_with_slot
+          value: 1
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Most blocks have a proposer entity and unmapped ones are empty
+      sql: |
+        SELECT countIf(entity != '') AS with_entity, countIf(entity = '') AS without_entity FROM fct_block_graffiti FINAL
+      assertions:
+        - type: greater_than
+          column: with_entity
+          value: 400
+        - type: greater_than
+          column: without_entity
           value: 0

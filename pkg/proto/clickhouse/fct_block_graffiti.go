@@ -467,6 +467,36 @@ func BuildListFctBlockGraffitiQuery(req *ListFctBlockGraffitiRequest, options ..
 		}
 	}
 
+	// Add filter for column: entity
+	if req.Entity != nil {
+		switch filter := req.Entity.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("entity", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("entity", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("entity", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("entity", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("entity", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("entity", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("entity", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("entity", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("entity", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -492,7 +522,7 @@ func BuildListFctBlockGraffitiQuery(req *ListFctBlockGraffitiRequest, options ..
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "proposer_index", "graffiti_text", "graffiti_format", "consensus_client", "consensus_client_version", "consensus_client_commit", "execution_client", "execution_client_commit"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "proposer_index", "graffiti_text", "graffiti_format", "consensus_client", "consensus_client_version", "consensus_client_commit", "execution_client", "execution_client_commit", "entity"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -504,7 +534,7 @@ func BuildListFctBlockGraffitiQuery(req *ListFctBlockGraffitiRequest, options ..
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "proposer_index", "graffiti_text", "graffiti_format", "consensus_client", "consensus_client_version", "consensus_client_commit", "execution_client", "execution_client_commit"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "proposer_index", "graffiti_text", "graffiti_format", "consensus_client", "consensus_client_version", "consensus_client_commit", "execution_client", "execution_client_commit", "entity"}
 
 	return BuildParameterizedQuery("fct_block_graffiti", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -524,7 +554,7 @@ func BuildGetFctBlockGraffitiQuery(req *GetFctBlockGraffitiRequest, options ...Q
 	orderByClause := " ORDER BY slot_start_date_time, block_root"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "proposer_index", "graffiti_text", "graffiti_format", "consensus_client", "consensus_client_version", "consensus_client_commit", "execution_client", "execution_client_commit"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "proposer_index", "graffiti_text", "graffiti_format", "consensus_client", "consensus_client_version", "consensus_client_commit", "execution_client", "execution_client_commit", "entity"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_graffiti", columns, qb, orderByClause, 1, 0, options...)

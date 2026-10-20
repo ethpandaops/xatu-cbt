@@ -15,6 +15,7 @@ tags:
   - canonical
 dependencies:
   - "{{external}}.canonical_beacon_block_graffiti"
+  - "{{transformation}}.dim_node"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
@@ -54,7 +55,8 @@ SELECT
         rp_ok AND has(rp_el_codes, rp_codes[1]), rp_el_names[indexOf(rp_el_codes, rp_codes[1])],
         'unknown'
     ) AS execution_client,
-    if(el_index > 0, code_commits[el_index], '') AS execution_client_commit
+    if(el_index > 0, code_commits[el_index], '') AS execution_client_commit,
+    ifNull(node.source, '') AS entity
 FROM (
     SELECT
         *,
@@ -119,4 +121,10 @@ FROM (
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
             AND meta_network_name = '{{ .env.NETWORK }}'
     )
-)
+) AS parsed
+-- Entity is the current dim_node mapping of the proposer, not a historical snapshot.
+LEFT JOIN (
+    SELECT validator_index, source
+    FROM {{ index .dep "{{transformation}}" "dim_node" "helpers" "from" }} FINAL
+) AS node ON parsed.proposer_index = node.validator_index
+SETTINGS join_use_nulls = 1
