@@ -2,7 +2,7 @@ model: fct_block_graffiti_client_hourly
 network: mainnet
 external_data:
     canonical_beacon_block_graffiti:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v2.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v3.parquet
         network_column: meta_network_name
     ethseer_validator_entity:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
@@ -21,7 +21,7 @@ assertions:
       assertions:
         - type: equals
           column: total_blocks
-          value: 621
+          value: 623
     - name: Counts match the per-block table for every hour and client pair
       sql: |
         SELECT COUNT(*) AS mismatched FROM (
