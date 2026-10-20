@@ -8,7 +8,7 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_head_beacon_api_eth_v1_events_block_gossip.parquet
         network_column: meta_network_name
     beacon_api_eth_v1_proposer_duty:
-        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_head_beacon_api_eth_v1_proposer_duty.parquet
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_head_beacon_api_eth_v1_proposer_duty_v2.parquet
         network_column: meta_network_name
     canonical_beacon_proposer_duty:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_proposer_duty.parquet
@@ -87,6 +87,13 @@ assertions:
         - type: equals
           column: duplicate_count
           value: 0
+    - name: Sentry duties tied on reporter count go to the higher index, then the greater pubkey
+      sql: |
+        SELECT countIf(slot = 13217400 AND proposer_validator_index = 111 AND proposer_pubkey = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb') + countIf(slot = 13217401 AND proposer_validator_index = 7 AND proposer_pubkey = '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000') AS tie_winners FROM fct_block_proposer_head FINAL
+      assertions:
+        - type: equals
+          column: tie_winners
+          value: 2
     - name: Updated date time should not be null
       sql: |
         SELECT COUNT(*) AS null_count FROM fct_block_proposer_head FINAL WHERE updated_date_time IS NULL

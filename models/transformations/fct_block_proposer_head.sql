@@ -29,10 +29,11 @@ INSERT INTO
 -- sources can disagree: a sentry whose beacon node is on a fork or out of
 -- sync publishes a whole epoch of duties nobody else reports. Prefer the
 -- canonical duty, which covers finalized slots, and otherwise take the duty
--- reported by the most sentries. The canonical source is unioned in as a
--- backstop for head-event batches lost to sentry outages. The two duty
--- sources form an OR-group dependency, so forwardfill is not capped at
--- canonical's lag.
+-- reported by the most sentries. Ties go to the higher index, then the
+-- greater pubkey, so the rank is a total order and every run keeps the same
+-- duty. The canonical source is unioned in as a backstop for head-event
+-- batches lost to sentry outages. The two duty sources form an OR-group
+-- dependency, so forwardfill is not capped at canonical's lag.
 WITH duty_candidates AS (
     SELECT
         slot,
@@ -41,7 +42,7 @@ WITH duty_candidates AS (
         epoch_start_date_time,
         proposer_validator_index AS candidate_index,
         proposer_pubkey AS candidate_pubkey,
-        (0, uniqExact(meta_client_name), proposer_validator_index) AS candidate_rank
+        (0, uniqExact(meta_client_name), proposer_validator_index, proposer_pubkey) AS candidate_rank
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
@@ -54,7 +55,7 @@ WITH duty_candidates AS (
         epoch_start_date_time,
         proposer_validator_index AS candidate_index,
         proposer_pubkey AS candidate_pubkey,
-        (1, toUInt64(0), proposer_validator_index) AS candidate_rank
+        (1, toUInt64(0), proposer_validator_index, proposer_pubkey) AS candidate_rank
     FROM {{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
