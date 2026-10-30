@@ -17,6 +17,7 @@ type FctAttestationRewardByValidatorDailyRow struct {
 	Head int64 `ch:"head" json:"head"`
 	Target int64 `ch:"target" json:"target"`
 	Source int64 `ch:"source" json:"source"`
+	InclusionDelay int64 `ch:"inclusion_delay" json:"inclusion_delay"`
 	Inactivity int64 `ch:"inactivity" json:"inactivity"`
 	Total int64 `ch:"total" json:"total"`
 	Penalty int64 `ch:"penalty" json:"penalty"`
@@ -39,6 +40,7 @@ func (r *FctAttestationRewardByValidatorDailyRow) ToProto() *FctAttestationRewar
 	p.Head = r.Head
 	p.Target = r.Target
 	p.Source = r.Source
+	p.InclusionDelay = r.InclusionDelay
 	p.Inactivity = r.Inactivity
 	p.Total = r.Total
 	p.Penalty = r.Penalty

@@ -11,7 +11,26 @@ SELECT
     {{ if .cache.is_incremental_scan }}
       '{{ .cache.previous_min }}' as min,
     {{ else }}
-      toUnixTimestamp(min(epoch_start_date_time)) as min,
+      -- Rewards before Altair (phase0) are in their own table. They are included
+      -- once both tables join up: this table reaches the Altair fork (the first
+      -- block reward) and phase0 reaches the epoch before it. Until then the
+      -- range starts at this table's earliest epoch.
+      toUnixTimestamp(if(
+        min(epoch_start_date_time) <= (
+          SELECT min(epoch_start_date_time) FROM {{ .self.helpers.from | replace (printf "`%s" .self.table) "`canonical_beacon_block_reward" }}
+          WHERE meta_network_name = '{{ .env.NETWORK }}'
+        )
+        AND (
+          SELECT max(epoch_start_date_time) FROM {{ .self.helpers.from | replace (printf "`%s" .self.table) "`canonical_beacon_phase0_attestation_reward" }}
+          WHERE meta_network_name = '{{ .env.NETWORK }}'
+        ) >= min(epoch_start_date_time) - INTERVAL 384 SECOND,
+        (
+          SELECT min(epoch_start_date_time) FROM {{ .self.helpers.from | replace (printf "`%s" .self.table) "`canonical_beacon_phase0_attestation_reward" }}
+          WHERE meta_network_name = '{{ .env.NETWORK }}'
+            AND epoch_start_date_time >= fromUnixTimestamp({{ default "0" .env.EXTERNAL_MODEL_MIN_TIMESTAMP }})
+        ),
+        min(epoch_start_date_time)
+      )) as min,
     {{ end }}
     toUnixTimestamp(max(epoch_start_date_time)) as max
 FROM {{ .self.helpers.from }}

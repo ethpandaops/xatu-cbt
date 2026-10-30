@@ -204,6 +204,36 @@ func BuildListFctValidatorRewardTotalDailyQuery(req *ListFctValidatorRewardTotal
 		}
 	}
 
+	// Add filter for column: attestation_inclusion_delay
+	if req.AttestationInclusionDelay != nil {
+		switch filter := req.AttestationInclusionDelay.Filter.(type) {
+		case *Int64Filter_Eq:
+			qb.AddCondition("attestation_inclusion_delay", "=", filter.Eq)
+		case *Int64Filter_Ne:
+			qb.AddCondition("attestation_inclusion_delay", "!=", filter.Ne)
+		case *Int64Filter_Lt:
+			qb.AddCondition("attestation_inclusion_delay", "<", filter.Lt)
+		case *Int64Filter_Lte:
+			qb.AddCondition("attestation_inclusion_delay", "<=", filter.Lte)
+		case *Int64Filter_Gt:
+			qb.AddCondition("attestation_inclusion_delay", ">", filter.Gt)
+		case *Int64Filter_Gte:
+			qb.AddCondition("attestation_inclusion_delay", ">=", filter.Gte)
+		case *Int64Filter_Between:
+			qb.AddBetweenCondition("attestation_inclusion_delay", filter.Between.Min, filter.Between.Max.GetValue())
+		case *Int64Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("attestation_inclusion_delay", Int64SliceToInterface(filter.In.Values))
+			}
+		case *Int64Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("attestation_inclusion_delay", Int64SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: attestation_inactivity
 	if req.AttestationInactivity != nil {
 		switch filter := req.AttestationInactivity.Filter.(type) {
@@ -529,7 +559,7 @@ func BuildListFctValidatorRewardTotalDailyQuery(req *ListFctValidatorRewardTotal
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "day_start_date", "attesting_validator_count", "attestation_head", "attestation_target", "attestation_source", "attestation_inactivity", "attestation_total", "attestation_penalty", "sync_committee_reward", "sync_committee_penalty", "block_count", "proposer_total", "proposer_attestations", "proposer_sync_aggregate", "proposer_slashings"}
+		validFields := []string{"updated_date_time", "day_start_date", "attesting_validator_count", "attestation_head", "attestation_target", "attestation_source", "attestation_inclusion_delay", "attestation_inactivity", "attestation_total", "attestation_penalty", "sync_committee_reward", "sync_committee_penalty", "block_count", "proposer_total", "proposer_attestations", "proposer_sync_aggregate", "proposer_slashings"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -541,7 +571,7 @@ func BuildListFctValidatorRewardTotalDailyQuery(req *ListFctValidatorRewardTotal
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "attesting_validator_count", "attestation_head", "attestation_target", "attestation_source", "attestation_inactivity", "attestation_total", "attestation_penalty", "sync_committee_reward", "sync_committee_penalty", "block_count", "proposer_total", "proposer_attestations", "proposer_sync_aggregate", "proposer_slashings"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "attesting_validator_count", "attestation_head", "attestation_target", "attestation_source", "attestation_inclusion_delay", "attestation_inactivity", "attestation_total", "attestation_penalty", "sync_committee_reward", "sync_committee_penalty", "block_count", "proposer_total", "proposer_attestations", "proposer_sync_aggregate", "proposer_slashings"}
 
 	return BuildParameterizedQuery("fct_validator_reward_total_daily", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -561,7 +591,7 @@ func BuildGetFctValidatorRewardTotalDailyQuery(req *GetFctValidatorRewardTotalDa
 	orderByClause := " ORDER BY day_start_date"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "attesting_validator_count", "attestation_head", "attestation_target", "attestation_source", "attestation_inactivity", "attestation_total", "attestation_penalty", "sync_committee_reward", "sync_committee_penalty", "block_count", "proposer_total", "proposer_attestations", "proposer_sync_aggregate", "proposer_slashings"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "attesting_validator_count", "attestation_head", "attestation_target", "attestation_source", "attestation_inclusion_delay", "attestation_inactivity", "attestation_total", "attestation_penalty", "sync_committee_reward", "sync_committee_penalty", "block_count", "proposer_total", "proposer_attestations", "proposer_sync_aggregate", "proposer_slashings"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_validator_reward_total_daily", columns, qb, orderByClause, 1, 0, options...)
