@@ -22,7 +22,8 @@ dependencies:
 -- are a primary key range. It covers the same range as the per-duty rows in
 -- fct_attestation_vote_correctness_by_validator (a dependency for its bounds).
 -- A reward never changes once Cannon stores it, so the table has no
--- updated_date_time: at about 117B rows on mainnet it would be the largest column.
+-- updated_date_time, and total is an ALIAS column computed on read: at about 117B
+-- rows on mainnet each stored column costs tens of GiB.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 SELECT
     epoch,
@@ -32,8 +33,7 @@ SELECT
     target,
     source,
     inclusion_delay,
-    inactivity,
-    head + target + source + inclusion_delay + inactivity AS total
+    inactivity
 FROM (
     SELECT epoch, epoch_start_date_time, validator_index, head, target, source, toInt64(0) AS inclusion_delay, inactivity
     FROM {{ index .dep "{{external}}" "canonical_beacon_attestation_reward" "helpers" "from" }} FINAL
