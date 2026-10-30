@@ -37,6 +37,7 @@ WITH
             sum(head) AS head,
             sum(target) AS target,
             sum(source) AS source,
+            sum(inclusion_delay) AS inclusion_delay,
             sum(inactivity) AS inactivity,
             sum(total) AS total,
             sum(penalty) AS penalty
@@ -73,6 +74,7 @@ SELECT
     ifNull(a.head, 0) AS attestation_head,
     ifNull(a.target, 0) AS attestation_target,
     ifNull(a.source, 0) AS attestation_source,
+    ifNull(a.inclusion_delay, 0) AS attestation_inclusion_delay,
     ifNull(a.inactivity, 0) AS attestation_inactivity,
     ifNull(a.total, 0) AS attestation_total,
     ifNull(a.penalty, 0) AS attestation_penalty,

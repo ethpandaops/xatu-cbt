@@ -23,26 +23,28 @@ message FctValidatorRewardTotalWeekly {
   int64 attestation_target = 15;
   // Source vote rewards in Gwei
   int64 attestation_source = 16;
+  // Inclusion delay rewards in Gwei (phase0 only, 0 from Altair)
+  int64 attestation_inclusion_delay = 17;
   // Inactivity penalties in Gwei
-  int64 attestation_inactivity = 17;
+  int64 attestation_inactivity = 18;
   // Net attestation rewards in Gwei
-  int64 attestation_total = 18;
+  int64 attestation_total = 19;
   // Negative attestation components in Gwei
-  int64 attestation_penalty = 19;
+  int64 attestation_penalty = 20;
   // Positive sync committee rewards in Gwei
-  int64 sync_committee_reward = 20;
+  int64 sync_committee_reward = 21;
   // Sync committee penalties in Gwei
-  int64 sync_committee_penalty = 21;
+  int64 sync_committee_penalty = 22;
   // Canonical blocks in the week
-  uint32 block_count = 22;
+  uint32 block_count = 23;
   // Consensus layer proposer rewards in Gwei
-  uint64 proposer_total = 23;
+  uint64 proposer_total = 24;
   // Proposer rewards for attestations in Gwei
-  uint64 proposer_attestations = 24;
+  uint64 proposer_attestations = 25;
   // Proposer rewards for sync aggregates in Gwei
-  uint64 proposer_sync_aggregate = 25;
+  uint64 proposer_sync_aggregate = 26;
   // Proposer rewards for slashings in Gwei
-  uint64 proposer_slashings = 26;
+  uint64 proposer_slashings = 27;
 }
 
 // Request for listing fct_validator_reward_total_weekly records
@@ -60,38 +62,40 @@ message ListFctValidatorRewardTotalWeeklyRequest {
   Int64Filter attestation_target = 5 [(google.api.field_behavior) = OPTIONAL];
   // Filter by attestation_source - Source vote rewards in Gwei (optional)
   Int64Filter attestation_source = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by attestation_inclusion_delay - Inclusion delay rewards in Gwei (phase0 only, 0 from Altair) (optional)
+  Int64Filter attestation_inclusion_delay = 7 [(google.api.field_behavior) = OPTIONAL];
   // Filter by attestation_inactivity - Inactivity penalties in Gwei (optional)
-  Int64Filter attestation_inactivity = 7 [(google.api.field_behavior) = OPTIONAL];
+  Int64Filter attestation_inactivity = 8 [(google.api.field_behavior) = OPTIONAL];
   // Filter by attestation_total - Net attestation rewards in Gwei (optional)
-  Int64Filter attestation_total = 8 [(google.api.field_behavior) = OPTIONAL];
+  Int64Filter attestation_total = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by attestation_penalty - Negative attestation components in Gwei (optional)
-  Int64Filter attestation_penalty = 9 [(google.api.field_behavior) = OPTIONAL];
+  Int64Filter attestation_penalty = 10 [(google.api.field_behavior) = OPTIONAL];
   // Filter by sync_committee_reward - Positive sync committee rewards in Gwei (optional)
-  Int64Filter sync_committee_reward = 10 [(google.api.field_behavior) = OPTIONAL];
+  Int64Filter sync_committee_reward = 11 [(google.api.field_behavior) = OPTIONAL];
   // Filter by sync_committee_penalty - Sync committee penalties in Gwei (optional)
-  Int64Filter sync_committee_penalty = 11 [(google.api.field_behavior) = OPTIONAL];
+  Int64Filter sync_committee_penalty = 12 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_count - Canonical blocks in the week (optional)
-  UInt32Filter block_count = 12 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter block_count = 13 [(google.api.field_behavior) = OPTIONAL];
   // Filter by proposer_total - Consensus layer proposer rewards in Gwei (optional)
-  UInt64Filter proposer_total = 13 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter proposer_total = 14 [(google.api.field_behavior) = OPTIONAL];
   // Filter by proposer_attestations - Proposer rewards for attestations in Gwei (optional)
-  UInt64Filter proposer_attestations = 14 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter proposer_attestations = 15 [(google.api.field_behavior) = OPTIONAL];
   // Filter by proposer_sync_aggregate - Proposer rewards for sync aggregates in Gwei (optional)
-  UInt64Filter proposer_sync_aggregate = 15 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter proposer_sync_aggregate = 16 [(google.api.field_behavior) = OPTIONAL];
   // Filter by proposer_slashings - Proposer rewards for slashings in Gwei (optional)
-  UInt64Filter proposer_slashings = 16 [(google.api.field_behavior) = OPTIONAL];
+  UInt64Filter proposer_slashings = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_validator_reward_total_weekly to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 17 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 18 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctValidatorRewardTotalWeekly` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 18 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 19 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 19 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 20 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_validator_reward_total_weekly records

@@ -204,6 +204,36 @@ func BuildListFctAttestationRewardByValidatorQuery(req *ListFctAttestationReward
 		}
 	}
 
+	// Add filter for column: inclusion_delay
+	if req.InclusionDelay != nil {
+		switch filter := req.InclusionDelay.Filter.(type) {
+		case *Int64Filter_Eq:
+			qb.AddCondition("inclusion_delay", "=", filter.Eq)
+		case *Int64Filter_Ne:
+			qb.AddCondition("inclusion_delay", "!=", filter.Ne)
+		case *Int64Filter_Lt:
+			qb.AddCondition("inclusion_delay", "<", filter.Lt)
+		case *Int64Filter_Lte:
+			qb.AddCondition("inclusion_delay", "<=", filter.Lte)
+		case *Int64Filter_Gt:
+			qb.AddCondition("inclusion_delay", ">", filter.Gt)
+		case *Int64Filter_Gte:
+			qb.AddCondition("inclusion_delay", ">=", filter.Gte)
+		case *Int64Filter_Between:
+			qb.AddBetweenCondition("inclusion_delay", filter.Between.Min, filter.Between.Max.GetValue())
+		case *Int64Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("inclusion_delay", Int64SliceToInterface(filter.In.Values))
+			}
+		case *Int64Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("inclusion_delay", Int64SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: inactivity
 	if req.Inactivity != nil {
 		switch filter := req.Inactivity.Filter.(type) {
@@ -289,7 +319,7 @@ func BuildListFctAttestationRewardByValidatorQuery(req *ListFctAttestationReward
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"epoch", "epoch_start_date_time", "validator_index", "head", "target", "source", "inactivity", "total"}
+		validFields := []string{"epoch", "epoch_start_date_time", "validator_index", "head", "target", "source", "inclusion_delay", "inactivity", "total"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -301,7 +331,7 @@ func BuildListFctAttestationRewardByValidatorQuery(req *ListFctAttestationReward
 	}
 
 	// Build column list
-	columns := []string{"epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "validator_index", "head", "target", "source", "inactivity", "total"}
+	columns := []string{"epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "validator_index", "head", "target", "source", "inclusion_delay", "inactivity", "total"}
 
 	return BuildParameterizedQuery("fct_attestation_reward_by_validator", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -321,7 +351,7 @@ func BuildGetFctAttestationRewardByValidatorQuery(req *GetFctAttestationRewardBy
 	orderByClause := " ORDER BY validator_index, epoch_start_date_time"
 
 	// Build column list
-	columns := []string{"epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "validator_index", "head", "target", "source", "inactivity", "total"}
+	columns := []string{"epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "validator_index", "head", "target", "source", "inclusion_delay", "inactivity", "total"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_attestation_reward_by_validator", columns, qb, orderByClause, 1, 0, options...)

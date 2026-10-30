@@ -25,14 +25,16 @@ message FctAttestationRewardByValidatorWeekly {
   int64 target = 16;
   // Source vote reward in Gwei (negative when penalised)
   int64 source = 17;
+  // Inclusion delay reward in Gwei (phase0 only, 0 from Altair)
+  int64 inclusion_delay = 18;
   // Inactivity penalty in Gwei
-  int64 inactivity = 18;
-  // head + target + source + inactivity in Gwei
-  int64 total = 19;
+  int64 inactivity = 19;
+  // head + target + source + inclusion_delay + inactivity in Gwei
+  int64 total = 20;
   // Sum of the negative components in Gwei
-  int64 penalty = 20;
+  int64 penalty = 21;
   // Epochs with any negative component
-  uint32 penalized_epoch_count = 21;
+  uint32 penalized_epoch_count = 22;
 }
 
 // Request for listing fct_attestation_reward_by_validator_weekly records
@@ -53,26 +55,28 @@ message ListFctAttestationRewardByValidatorWeeklyRequest {
   Int64Filter target = 6 [(google.api.field_behavior) = OPTIONAL];
   // Filter by source - Source vote reward in Gwei (negative when penalised) (optional)
   Int64Filter source = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by inclusion_delay - Inclusion delay reward in Gwei (phase0 only, 0 from Altair) (optional)
+  Int64Filter inclusion_delay = 8 [(google.api.field_behavior) = OPTIONAL];
   // Filter by inactivity - Inactivity penalty in Gwei (optional)
-  Int64Filter inactivity = 8 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by total - head + target + source + inactivity in Gwei (optional)
-  Int64Filter total = 9 [(google.api.field_behavior) = OPTIONAL];
+  Int64Filter inactivity = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total - head + target + source + inclusion_delay + inactivity in Gwei (optional)
+  Int64Filter total = 10 [(google.api.field_behavior) = OPTIONAL];
   // Filter by penalty - Sum of the negative components in Gwei (optional)
-  Int64Filter penalty = 10 [(google.api.field_behavior) = OPTIONAL];
+  Int64Filter penalty = 11 [(google.api.field_behavior) = OPTIONAL];
   // Filter by penalized_epoch_count - Epochs with any negative component (optional)
-  UInt32Filter penalized_epoch_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  UInt32Filter penalized_epoch_count = 12 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_attestation_reward_by_validator_weekly to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 12 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 13 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctAttestationRewardByValidatorWeekly` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 13 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 14 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 14 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 15 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_attestation_reward_by_validator_weekly records

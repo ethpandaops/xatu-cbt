@@ -33,6 +33,7 @@ SELECT
     sum(head) AS head,
     sum(target) AS target,
     sum(source) AS source,
+    sum(inclusion_delay) AS inclusion_delay,
     sum(inactivity) AS inactivity,
     sum(total) AS total,
     sum(penalty) AS penalty,
@@ -40,7 +41,7 @@ SELECT
 FROM (
     SELECT
         day_start_date, validator_index,
-        epoch_count, head, target, source, inactivity, total, penalty, penalized_epoch_count
+        epoch_count, head, target, source, inclusion_delay, inactivity, total, penalty, penalized_epoch_count
     FROM {{ index .dep "{{transformation}}" "fct_attestation_reward_by_validator_daily" "helpers" "from" }} FINAL
     WHERE day_start_date >= (SELECT min_week FROM week_bounds)
       AND day_start_date < (SELECT max_week FROM week_bounds) + 7

@@ -16,8 +16,9 @@ dependencies:
   - "{{external}}.canonical_beacon_attestation_reward"
   - "{{transformation}}.fct_attestation_vote_correctness_by_validator"
 ---
--- Attestation reward of each validator in each epoch, from the Beacon API
--- attestation rewards Cannon stores, keyed by validator so one validator's epochs
+-- Attestation reward of each validator in each epoch, from the attestation
+-- rewards Cannon stores (Beacon API from Altair, computed from beacon states for
+-- phase0, which has an inclusion delay component), keyed by validator so one validator's epochs
 -- are a primary key range. It covers the same range as the per-duty rows in
 -- fct_attestation_vote_correctness_by_validator (a dependency for its bounds).
 -- A reward never changes once Cannon stores it, so the table has no
@@ -30,8 +31,17 @@ SELECT
     head,
     target,
     source,
+    inclusion_delay,
     inactivity,
-    head + target + source + inactivity AS total
-FROM {{ index .dep "{{external}}" "canonical_beacon_attestation_reward" "helpers" "from" }} FINAL
-WHERE meta_network_name = '{{ .env.NETWORK }}'
-  AND epoch_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    head + target + source + inclusion_delay + inactivity AS total
+FROM (
+    SELECT epoch, epoch_start_date_time, validator_index, head, target, source, toInt64(0) AS inclusion_delay, inactivity
+    FROM {{ index .dep "{{external}}" "canonical_beacon_attestation_reward" "helpers" "from" }} FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+      AND epoch_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    UNION ALL
+    SELECT epoch, epoch_start_date_time, validator_index, head, target, source, toInt64(inclusion_delay) AS inclusion_delay, inactivity
+    FROM {{ index .dep "{{external}}" "canonical_beacon_attestation_reward" "helpers" "from" | replace "`canonical_beacon_attestation_reward" "`canonical_beacon_phase0_attestation_reward" }} FINAL
+    WHERE meta_network_name = '{{ .env.NETWORK }}'
+      AND epoch_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+)

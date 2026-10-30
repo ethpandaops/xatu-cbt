@@ -11,7 +11,21 @@ SELECT
     {{ if .cache.is_incremental_scan }}
       '{{ .cache.previous_min }}' as min,
     {{ else }}
-      toUnixTimestamp(min(slot_start_date_time)) as min,
+      -- Block rewards before Altair (phase0) are in their own table. They are
+      -- included once phase0 reaches the epoch before this table's first epoch
+      -- (the Altair fork). Until then the range starts at this table's first block.
+      toUnixTimestamp(if(
+        (
+          SELECT max(epoch_start_date_time) FROM {{ .self.helpers.from | replace (printf "`%s" .self.table) "`canonical_beacon_phase0_block_reward" }}
+          WHERE meta_network_name = '{{ .env.NETWORK }}'
+        ) >= min(epoch_start_date_time) - INTERVAL 384 SECOND,
+        (
+          SELECT min(slot_start_date_time) FROM {{ .self.helpers.from | replace (printf "`%s" .self.table) "`canonical_beacon_phase0_block_reward" }}
+          WHERE meta_network_name = '{{ .env.NETWORK }}'
+            AND slot_start_date_time >= fromUnixTimestamp({{ default "0" .env.EXTERNAL_MODEL_MIN_TIMESTAMP }})
+        ),
+        min(slot_start_date_time)
+      )) as min,
     {{ end }}
     toUnixTimestamp(max(slot_start_date_time)) as max
 FROM {{ .self.helpers.from }}
