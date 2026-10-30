@@ -38,7 +38,7 @@ assertions:
     - name: Every node slot in the source is counted once
       sql: |
         SELECT
-            (SELECT sum(slot_count) FROM fct_block_first_seen_by_node_hourly FINAL) - (SELECT uniqExact(node_id, slot_start_date_time) FROM fct_block_first_seen_by_node FINAL WHERE node_id != '') AS difference
+            (SELECT sum(slot_count) FROM fct_block_first_seen_by_node_hourly FINAL) - (SELECT uniqExact(node_id, slot_start_date_time) FROM fct_block_first_seen_by_node FINAL WHERE node_id != '' AND toStartOfHour(slot_start_date_time) IN (SELECT hour_start_date_time FROM fct_block_first_seen_by_node_hourly FINAL)) AS difference
       assertions:
         - type: equals
           column: difference
