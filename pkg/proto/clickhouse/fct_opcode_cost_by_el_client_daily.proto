@@ -40,7 +40,7 @@ message FctOpcodeCostByElClientDaily {
   double ns_per_op_lower = 23;
   // 95th percentile of ns_per_op over an hourly bootstrap
   double ns_per_op_upper = 24;
-  // ns_per_gas divided by the client average ns per gas; 1 means gas prices this opcode group in line with the rest of execution
+  // ns_per_gas divided by the client average ns per gas, where 1 means gas prices this opcode group in line with the rest of execution
   double price_ratio = 25;
   // 5th percentile of price_ratio over an hourly bootstrap
   double price_ratio_lower = 26;
@@ -90,7 +90,7 @@ message ListFctOpcodeCostByElClientDailyRequest {
   google.protobuf.DoubleValue ns_per_op_lower = 13 [(google.api.field_behavior) = OPTIONAL];
   // Filter by ns_per_op_upper - 95th percentile of ns_per_op over an hourly bootstrap (optional)
   google.protobuf.DoubleValue ns_per_op_upper = 14 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by price_ratio - ns_per_gas divided by the client average ns per gas; 1 means gas prices this opcode group in line with the rest of execution (optional)
+  // Filter by price_ratio - ns_per_gas divided by the client average ns per gas, where 1 means gas prices this opcode group in line with the rest of execution (optional)
   google.protobuf.DoubleValue price_ratio = 15 [(google.api.field_behavior) = OPTIONAL];
   // Filter by price_ratio_lower - 5th percentile of price_ratio over an hourly bootstrap (optional)
   google.protobuf.DoubleValue price_ratio_lower = 16 [(google.api.field_behavior) = OPTIONAL];

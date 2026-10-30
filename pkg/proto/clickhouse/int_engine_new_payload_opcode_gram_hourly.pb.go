@@ -46,11 +46,11 @@ type IntEngineNewPayloadOpcodeGramHourly struct {
 	MaxBlockNumber uint64 `protobuf:"varint,19,opt,name=max_block_number,json=maxBlockNumber,proto3" json:"max_block_number,omitempty"`
 	// Regression features, in order: INTERCEPT (1 per block), TX_COUNT (transactions / 100), NON_OPCODE_GAS (gas used minus opcode gas, in Mgas), then gas per opcode group in Mgas
 	FeatureNames []string `protobuf:"bytes,20,rep,name=feature_names,json=featureNames,proto3" json:"feature_names,omitempty"`
-	// Upper triangle (row-major, including the diagonal) of X'X, where X is blocks by feature_names
+	// Upper triangle (row-major, including the diagonal) of X^T X, where X is blocks by feature_names
 	Xtx []float64 `protobuf:"fixed64,21,rep,packed,name=xtx,proto3" json:"xtx,omitempty"`
-	// X'y, where y is the median engine_newPayload duration in milliseconds across the node class
+	// X^T y, where y is the median engine_newPayload duration in milliseconds across the node class
 	Xty []float64 `protobuf:"fixed64,22,rep,packed,name=xty,proto3" json:"xty,omitempty"`
-	// y'y, the sum of squared durations in ms^2
+	// y^T y, the sum of squared durations in ms^2
 	Yty float64 `protobuf:"fixed64,23,opt,name=yty,proto3" json:"yty,omitempty"`
 	// Executions per opcode group, aligned with feature_names after the first three features
 	OpcodeCount []uint64 `protobuf:"varint,24,rep,packed,name=opcode_count,json=opcodeCount,proto3" json:"opcode_count,omitempty"`
@@ -212,11 +212,11 @@ type ListIntEngineNewPayloadOpcodeGramHourlyRequest struct {
 	MaxBlockNumber *UInt64Filter `protobuf:"bytes,9,opt,name=max_block_number,json=maxBlockNumber,proto3" json:"max_block_number,omitempty"`
 	// Filter by feature_names - Regression features, in order: INTERCEPT (1 per block), TX_COUNT (transactions / 100), NON_OPCODE_GAS (gas used minus opcode gas, in Mgas), then gas per opcode group in Mgas (optional)
 	FeatureNames *ArrayStringFilter `protobuf:"bytes,10,opt,name=feature_names,json=featureNames,proto3" json:"feature_names,omitempty"`
-	// Filter by xtx - Upper triangle (row-major, including the diagonal) of X'X, where X is blocks by feature_names (optional)
+	// Filter by xtx - Upper triangle (row-major, including the diagonal) of X^T X, where X is blocks by feature_names (optional)
 	Xtx []float64 `protobuf:"fixed64,11,rep,packed,name=xtx,proto3" json:"xtx,omitempty"`
-	// Filter by xty - X'y, where y is the median engine_newPayload duration in milliseconds across the node class (optional)
+	// Filter by xty - X^T y, where y is the median engine_newPayload duration in milliseconds across the node class (optional)
 	Xty []float64 `protobuf:"fixed64,12,rep,packed,name=xty,proto3" json:"xty,omitempty"`
-	// Filter by yty - y'y, the sum of squared durations in ms^2 (optional)
+	// Filter by yty - y^T y, the sum of squared durations in ms^2 (optional)
 	Yty *wrapperspb.DoubleValue `protobuf:"bytes,13,opt,name=yty,proto3" json:"yty,omitempty"`
 	// Filter by opcode_count - Executions per opcode group, aligned with feature_names after the first three features (optional)
 	OpcodeCount *ArrayUInt64Filter `protobuf:"bytes,14,opt,name=opcode_count,json=opcodeCount,proto3" json:"opcode_count,omitempty"`

@@ -56,7 +56,7 @@ type FctOpcodeCostByElClientDaily struct {
 	NsPerOpLower float64 `protobuf:"fixed64,23,opt,name=ns_per_op_lower,json=nsPerOpLower,proto3" json:"ns_per_op_lower,omitempty"`
 	// 95th percentile of ns_per_op over an hourly bootstrap
 	NsPerOpUpper float64 `protobuf:"fixed64,24,opt,name=ns_per_op_upper,json=nsPerOpUpper,proto3" json:"ns_per_op_upper,omitempty"`
-	// ns_per_gas divided by the client average ns per gas; 1 means gas prices this opcode group in line with the rest of execution
+	// ns_per_gas divided by the client average ns per gas, where 1 means gas prices this opcode group in line with the rest of execution
 	PriceRatio float64 `protobuf:"fixed64,25,opt,name=price_ratio,json=priceRatio,proto3" json:"price_ratio,omitempty"`
 	// 5th percentile of price_ratio over an hourly bootstrap
 	PriceRatioLower float64 `protobuf:"fixed64,26,opt,name=price_ratio_lower,json=priceRatioLower,proto3" json:"price_ratio_lower,omitempty"`
@@ -285,7 +285,7 @@ type ListFctOpcodeCostByElClientDailyRequest struct {
 	NsPerOpLower *wrapperspb.DoubleValue `protobuf:"bytes,13,opt,name=ns_per_op_lower,json=nsPerOpLower,proto3" json:"ns_per_op_lower,omitempty"`
 	// Filter by ns_per_op_upper - 95th percentile of ns_per_op over an hourly bootstrap (optional)
 	NsPerOpUpper *wrapperspb.DoubleValue `protobuf:"bytes,14,opt,name=ns_per_op_upper,json=nsPerOpUpper,proto3" json:"ns_per_op_upper,omitempty"`
-	// Filter by price_ratio - ns_per_gas divided by the client average ns per gas; 1 means gas prices this opcode group in line with the rest of execution (optional)
+	// Filter by price_ratio - ns_per_gas divided by the client average ns per gas, where 1 means gas prices this opcode group in line with the rest of execution (optional)
 	PriceRatio *wrapperspb.DoubleValue `protobuf:"bytes,15,opt,name=price_ratio,json=priceRatio,proto3" json:"price_ratio,omitempty"`
 	// Filter by price_ratio_lower - 5th percentile of price_ratio over an hourly bootstrap (optional)
 	PriceRatioLower *wrapperspb.DoubleValue `protobuf:"bytes,16,opt,name=price_ratio_lower,json=priceRatioLower,proto3" json:"price_ratio_lower,omitempty"`

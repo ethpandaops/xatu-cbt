@@ -29,11 +29,11 @@ message IntEngineNewPayloadOpcodeGramHourly {
   uint64 max_block_number = 19;
   // Regression features, in order: INTERCEPT (1 per block), TX_COUNT (transactions / 100), NON_OPCODE_GAS (gas used minus opcode gas, in Mgas), then gas per opcode group in Mgas
   repeated string feature_names = 20;
-  // Upper triangle (row-major, including the diagonal) of X'X, where X is blocks by feature_names
+  // Upper triangle (row-major, including the diagonal) of X^T X, where X is blocks by feature_names
   repeated double xtx = 21;
-  // X'y, where y is the median engine_newPayload duration in milliseconds across the node class
+  // X^T y, where y is the median engine_newPayload duration in milliseconds across the node class
   repeated double xty = 22;
-  // y'y, the sum of squared durations in ms^2
+  // y^T y, the sum of squared durations in ms^2
   double yty = 23;
   // Executions per opcode group, aligned with feature_names after the first three features
   repeated uint64 opcode_count = 24;
@@ -65,11 +65,11 @@ message ListIntEngineNewPayloadOpcodeGramHourlyRequest {
   UInt64Filter max_block_number = 9;
   // Filter by feature_names - Regression features, in order: INTERCEPT (1 per block), TX_COUNT (transactions / 100), NON_OPCODE_GAS (gas used minus opcode gas, in Mgas), then gas per opcode group in Mgas (optional)
   ArrayStringFilter feature_names = 10;
-  // Filter by xtx - Upper triangle (row-major, including the diagonal) of X'X, where X is blocks by feature_names (optional)
+  // Filter by xtx - Upper triangle (row-major, including the diagonal) of X^T X, where X is blocks by feature_names (optional)
   repeated double xtx = 11;
-  // Filter by xty - X'y, where y is the median engine_newPayload duration in milliseconds across the node class (optional)
+  // Filter by xty - X^T y, where y is the median engine_newPayload duration in milliseconds across the node class (optional)
   repeated double xty = 12;
-  // Filter by yty - y'y, the sum of squared durations in ms^2 (optional)
+  // Filter by yty - y^T y, the sum of squared durations in ms^2 (optional)
   google.protobuf.DoubleValue yty = 13;
   // Filter by opcode_count - Executions per opcode group, aligned with feature_names after the first three features (optional)
   ArrayUInt64Filter opcode_count = 14;
