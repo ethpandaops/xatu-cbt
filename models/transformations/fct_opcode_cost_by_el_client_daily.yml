@@ -1,0 +1,20 @@
+table: fct_opcode_cost_by_el_client_daily
+type: incremental
+interval:
+  type: block
+  max: 7200
+schedules:
+  forwardfill: "@every 1h"
+  backfill: "@every 20s"
+tags:
+  - daily
+  - execution
+  - engine_api
+  - new_payload
+  - opcode
+  - gas
+dependencies:
+  - "{{transformation}}.int_engine_new_payload_opcode_gram_hourly"
+exec: "python3 ${MODELS_SCRIPTS_PATH:-/models/scripts}/fct_opcode_cost.py"
+env:
+  OPCODE_COST_MODE: daily
