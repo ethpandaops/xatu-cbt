@@ -1,0 +1,34 @@
+---
+table: canonical_beacon_block_execution_request_consolidation
+cache:
+  incremental_scan_interval: 1m
+  full_scan_interval: 24h
+interval:
+  type: slot
+lag: 1920
+---
+-- Consolidation requests are sparse (days can pass without a row), so this table's
+-- own min/max cannot tell how far Cannon has processed. Every block Cannon
+-- processes is written to canonical_beacon_block, so its bounds are used instead.
+SELECT
+    {{ if .cache.is_incremental_scan }}
+      '{{ .cache.previous_min }}' as min,
+    {{ else }}
+      toUnixTimestamp(min(slot_start_date_time)) as min,
+    {{ end }}
+    toUnixTimestamp(max(slot_start_date_time)) as max
+FROM {{ .self.helpers.from | replace (printf "`%s" .self.table) "`canonical_beacon_block" }}
+WHERE
+    meta_network_name = '{{ .env.NETWORK }}'
+
+    -- previous_max if incremental scan and is set, otherwise default/env
+    {{- $ts := default "0" .env.EXTERNAL_MODEL_MIN_TIMESTAMP -}}
+    {{- if .cache.is_incremental_scan -}}
+      {{- if .cache.previous_max -}}
+        {{- $ts = .cache.previous_max -}}
+      {{- end -}}
+    {{- end }}
+    AND slot_start_date_time >= fromUnixTimestamp({{ $ts }})
+    {{- if .cache.is_incremental_scan }}
+      AND slot_start_date_time <= fromUnixTimestamp({{ $ts }}) + {{ default "100000" .env.EXTERNAL_MODEL_SCAN_SIZE_TIMESTAMP }}
+    {{- end }}
