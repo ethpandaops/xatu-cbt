@@ -1,0 +1,57 @@
+model: fct_block_data_column_sidecar_first_seen_by_node_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_data_column_sidecar_first_seen_by_node_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_data_column_sidecar_first_seen_by_node_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+    libp2p_data_column_completed:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_data_column_sidecar_first_seen_by_node_libp2p_data_column_completed.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_data_column_sidecar_first_seen_by_node_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: One row per period and node
+      sql: |
+        SELECT COUNT(*) - uniqExact(day_start_date, node_id) AS duplicate_rows FROM fct_block_data_column_sidecar_first_seen_by_node_daily FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: No empty node IDs
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_data_column_sidecar_first_seen_by_node_daily FINAL WHERE node_id = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Every node slot in the source is counted once
+      sql: |
+        SELECT
+            (SELECT sum(slot_count) FROM fct_block_data_column_sidecar_first_seen_by_node_daily FINAL) - (SELECT uniqExact(node_id, slot_start_date_time) FROM fct_block_data_column_sidecar_first_seen_by_node FINAL WHERE node_id != '') AS difference
+      assertions:
+        - type: equals
+          column: difference
+          value: 0
+    - name: Percentiles are ordered from p10_last_seen_slot_start_diff to max_last_seen_slot_start_diff
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_data_column_sidecar_first_seen_by_node_daily FINAL
+        WHERE p10_last_seen_slot_start_diff > p50_last_seen_slot_start_diff OR p50_last_seen_slot_start_diff > p90_last_seen_slot_start_diff OR p90_last_seen_slot_start_diff > p95_last_seen_slot_start_diff OR p95_last_seen_slot_start_diff > max_last_seen_slot_start_diff
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Custody set fits the 128 columns
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_data_column_sidecar_first_seen_by_node_daily FINAL WHERE column_count = 0 OR column_count > 128 OR avg_columns_per_slot > column_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

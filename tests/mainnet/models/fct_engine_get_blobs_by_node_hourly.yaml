@@ -1,0 +1,61 @@
+model: fct_engine_get_blobs_by_node_hourly
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_blob:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_get_blobs_beacon_api_eth_v1_beacon_blob.parquet
+        network_column: meta_network_name
+    execution_engine_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_get_blobs_execution_engine_get_blobs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_engine_get_blobs_by_node_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: One row per period and node
+      sql: |
+        SELECT COUNT(*) - uniqExact(hour_start_date_time, node_id) AS duplicate_rows FROM fct_engine_get_blobs_by_node_hourly FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: No empty node IDs
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_node_hourly FINAL WHERE node_id = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Every call in the source is counted once
+      sql: |
+        SELECT
+            (SELECT sum(call_count) FROM fct_engine_get_blobs_by_node_hourly FINAL) - (SELECT count() FROM int_engine_get_blobs FINAL WHERE meta_client_name != '') AS difference
+      assertions:
+        - type: equals
+          column: difference
+          value: 0
+    - name: Percentiles are ordered from p50_duration_ms to max_duration_ms
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_node_hourly FINAL
+        WHERE p50_duration_ms > p90_duration_ms OR p90_duration_ms > p95_duration_ms OR p95_duration_ms > max_duration_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Hour start date time should be aligned to hour boundaries
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_node_hourly FINAL WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: A node never gets back more blobs than it asked for
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_node_hourly FINAL WHERE returned_count > requested_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
