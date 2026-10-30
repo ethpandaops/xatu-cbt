@@ -32,7 +32,7 @@ assertions:
     - name: Every call in the source is counted once
       sql: |
         SELECT
-            (SELECT sum(call_count) FROM fct_engine_get_blobs_by_node_daily FINAL) - (SELECT count() FROM int_engine_get_blobs FINAL WHERE meta_client_name != '' AND toDate(slot_start_date_time) IN (SELECT day_start_date FROM fct_engine_get_blobs_by_node_daily FINAL)) AS difference
+            (SELECT sum(call_count) FROM fct_engine_get_blobs_by_node_daily FINAL) - (SELECT count() FROM int_engine_get_blobs FINAL WHERE meta_client_name != '' AND toDate(slot_start_date_time) GLOBAL IN (SELECT day_start_date FROM fct_engine_get_blobs_by_node_daily FINAL)) AS difference
       assertions:
         - type: equals
           column: difference

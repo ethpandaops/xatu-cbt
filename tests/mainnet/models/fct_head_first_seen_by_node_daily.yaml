@@ -29,7 +29,7 @@ assertions:
     - name: Every node slot in the source is counted once
       sql: |
         SELECT
-            (SELECT sum(slot_count) FROM fct_head_first_seen_by_node_daily FINAL) - (SELECT uniqExact(node_id, slot_start_date_time) FROM fct_head_first_seen_by_node FINAL WHERE node_id != '' AND toDate(slot_start_date_time) IN (SELECT day_start_date FROM fct_head_first_seen_by_node_daily FINAL)) AS difference
+            (SELECT sum(slot_count) FROM fct_head_first_seen_by_node_daily FINAL) - (SELECT uniqExact(node_id, slot_start_date_time) FROM fct_head_first_seen_by_node FINAL WHERE node_id != '' AND toDate(slot_start_date_time) GLOBAL IN (SELECT day_start_date FROM fct_head_first_seen_by_node_daily FINAL)) AS difference
       assertions:
         - type: equals
           column: difference
