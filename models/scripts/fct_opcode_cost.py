@@ -300,7 +300,7 @@ GRAM_COLUMNS = """
 
 def run_daily(url, db, gram_table, start, end, task_start, out_table):
     days = [r['day'] for r in query(url, f"""
-        SELECT DISTINCT toString(toDate(hour_start_date_time)) AS day
+        SELECT DISTINCT toString(toDate(hour_start_date_time, 'UTC')) AS day
         FROM `{db}`.`{gram_table}` FINAL
         WHERE max_block_number >= {start} AND min_block_number <= {end}
     """)]
@@ -309,9 +309,9 @@ def run_daily(url, db, gram_table, start, end, task_start, out_table):
         return 0
     day_list = ','.join(f"'{d}'" for d in days)
     rows = query(url, f"""
-        SELECT {GRAM_COLUMNS}, toString(toDate(hour_start_date_time)) AS day
+        SELECT {GRAM_COLUMNS}, toString(toDate(hour_start_date_time, 'UTC')) AS day
         FROM `{db}`.`{gram_table}` FINAL
-        WHERE toDate(hour_start_date_time) IN ({day_list})
+        WHERE toDate(hour_start_date_time, 'UTC') IN ({day_list})
     """)
 
     groups = {}
@@ -345,7 +345,7 @@ def run_daily(url, db, gram_table, start, end, task_start, out_table):
                 'hour_count': len(units),
             })
             out.append(row)
-        print(f'  {day} {impl}: {entry["hours"] and sum(u.blocks for u in units)} blocks over {len(units)} hours')
+        print(f'  {day} {impl}: {fitted[0]["block_count"]} blocks over {len(units)} hours')
 
     insert(url, db, out_table, out)
     return len(out)
