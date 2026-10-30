@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Attestation reward of each validator in each epoch. Rows never change, so there is no version column
+
+message FctAttestationRewardByValidator {
+  // The epoch number
+  uint32 epoch = 11;
+  // The wall clock time when the epoch started
+  uint32 epoch_start_date_time = 12;
+  // The index of the validator
+  uint32 validator_index = 13;
+  // Head vote reward in Gwei
+  int64 head = 14;
+  // Target vote reward in Gwei (negative when penalised)
+  int64 target = 15;
+  // Source vote reward in Gwei (negative when penalised)
+  int64 source = 16;
+  // Inactivity penalty in Gwei
+  int64 inactivity = 17;
+  // head + target + source + inactivity in Gwei
+  int64 total = 18;
+}
+
+// Request for listing fct_attestation_reward_by_validator records
+message ListFctAttestationRewardByValidatorRequest {
+  // Filter by validator_index - The index of the validator (PRIMARY KEY - required)
+  UInt32Filter validator_index = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by epoch_start_date_time - The wall clock time when the epoch started (ORDER BY column 2 - optional)
+  UInt32Filter epoch_start_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by epoch - The epoch number (optional)
+  UInt32Filter epoch = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by head - Head vote reward in Gwei (optional)
+  Int64Filter head = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by target - Target vote reward in Gwei (negative when penalised) (optional)
+  Int64Filter target = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by source - Source vote reward in Gwei (negative when penalised) (optional)
+  Int64Filter source = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by inactivity - Inactivity penalty in Gwei (optional)
+  Int64Filter inactivity = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total - head + target + source + inactivity in Gwei (optional)
+  Int64Filter total = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_attestation_reward_by_validator to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 9 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctAttestationRewardByValidator` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 10 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 11 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_attestation_reward_by_validator records
+message ListFctAttestationRewardByValidatorResponse {
+  // The list of fct_attestation_reward_by_validator.
+  repeated FctAttestationRewardByValidator fct_attestation_reward_by_validator = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_attestation_reward_by_validator record by primary key
+message GetFctAttestationRewardByValidatorRequest {
+  // The index of the validator
+  uint32 validator_index = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_attestation_reward_by_validator record
+message GetFctAttestationRewardByValidatorResponse {
+  FctAttestationRewardByValidator item = 1;
+}
+
+// Query fct_attestation_reward_by_validator data
+service FctAttestationRewardByValidatorService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctAttestationRewardByValidatorRequest) returns (ListFctAttestationRewardByValidatorResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_reward_by_validator"
+    };
+  }
+  // Get record | Retrieve a single record by validator_index
+  rpc Get(GetFctAttestationRewardByValidatorRequest) returns (GetFctAttestationRewardByValidatorResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_reward_by_validator/{validator_index}"
+    };
+  }
+}

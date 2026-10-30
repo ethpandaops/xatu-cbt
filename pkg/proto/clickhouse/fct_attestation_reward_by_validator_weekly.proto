@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Attestation rewards and penalties per validator per week
+
+message FctAttestationRewardByValidatorWeekly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The start of the week (Monday, UTC)
+  string week_start_date = 12;
+  // The index of the validator
+  uint32 validator_index = 13;
+  // Epochs of the week the validator was active (had an attestation reward)
+  uint32 epoch_count = 14;
+  // Head vote reward in Gwei
+  int64 head = 15;
+  // Target vote reward in Gwei (negative when penalised)
+  int64 target = 16;
+  // Source vote reward in Gwei (negative when penalised)
+  int64 source = 17;
+  // Inactivity penalty in Gwei
+  int64 inactivity = 18;
+  // head + target + source + inactivity in Gwei
+  int64 total = 19;
+  // Sum of the negative components in Gwei
+  int64 penalty = 20;
+  // Epochs with any negative component
+  uint32 penalized_epoch_count = 21;
+}
+
+// Request for listing fct_attestation_reward_by_validator_weekly records
+message ListFctAttestationRewardByValidatorWeeklyRequest {
+  // Filter by validator_index - The index of the validator (PRIMARY KEY - required)
+  UInt32Filter validator_index = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by week_start_date - The start of the week (Monday, UTC) (ORDER BY column 2 - optional)
+  StringFilter week_start_date = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch_count - Epochs of the week the validator was active (had an attestation reward) (optional)
+  UInt32Filter epoch_count = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by head - Head vote reward in Gwei (optional)
+  Int64Filter head = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by target - Target vote reward in Gwei (negative when penalised) (optional)
+  Int64Filter target = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by source - Source vote reward in Gwei (negative when penalised) (optional)
+  Int64Filter source = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by inactivity - Inactivity penalty in Gwei (optional)
+  Int64Filter inactivity = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total - head + target + source + inactivity in Gwei (optional)
+  Int64Filter total = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by penalty - Sum of the negative components in Gwei (optional)
+  Int64Filter penalty = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by penalized_epoch_count - Epochs with any negative component (optional)
+  UInt32Filter penalized_epoch_count = 11 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_attestation_reward_by_validator_weekly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 12 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctAttestationRewardByValidatorWeekly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 13 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 14 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_attestation_reward_by_validator_weekly records
+message ListFctAttestationRewardByValidatorWeeklyResponse {
+  // The list of fct_attestation_reward_by_validator_weekly.
+  repeated FctAttestationRewardByValidatorWeekly fct_attestation_reward_by_validator_weekly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_attestation_reward_by_validator_weekly record by primary key
+message GetFctAttestationRewardByValidatorWeeklyRequest {
+  // The index of the validator
+  uint32 validator_index = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_attestation_reward_by_validator_weekly record
+message GetFctAttestationRewardByValidatorWeeklyResponse {
+  FctAttestationRewardByValidatorWeekly item = 1;
+}
+
+// Query fct_attestation_reward_by_validator_weekly data
+service FctAttestationRewardByValidatorWeeklyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctAttestationRewardByValidatorWeeklyRequest) returns (ListFctAttestationRewardByValidatorWeeklyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_reward_by_validator_weekly"
+    };
+  }
+  // Get record | Retrieve a single record by validator_index
+  rpc Get(GetFctAttestationRewardByValidatorWeeklyRequest) returns (GetFctAttestationRewardByValidatorWeeklyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_reward_by_validator_weekly/{validator_index}"
+    };
+  }
+}
