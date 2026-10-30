@@ -1,0 +1,44 @@
+model: fct_head_first_seen_by_node_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_head_first_seen_by_node_beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_head_first_seen_by_node_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: One row per period and node
+      sql: |
+        SELECT COUNT(*) - uniqExact(day_start_date, node_id) AS duplicate_rows FROM fct_head_first_seen_by_node_daily FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: No empty node IDs
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node_daily FINAL WHERE node_id = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Every node slot in the source is counted once
+      sql: |
+        SELECT
+            (SELECT sum(slot_count) FROM fct_head_first_seen_by_node_daily FINAL) - (SELECT uniqExact(node_id, slot_start_date_time) FROM fct_head_first_seen_by_node FINAL WHERE node_id != '' AND toDate(slot_start_date_time) GLOBAL IN (SELECT day_start_date FROM fct_head_first_seen_by_node_daily FINAL)) AS difference
+      assertions:
+        - type: equals
+          column: difference
+          value: 0
+    - name: Percentiles are ordered from min_seen_slot_start_diff to max_seen_slot_start_diff
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_head_first_seen_by_node_daily FINAL
+        WHERE min_seen_slot_start_diff > p10_seen_slot_start_diff OR p10_seen_slot_start_diff > p50_seen_slot_start_diff OR p50_seen_slot_start_diff > p90_seen_slot_start_diff OR p90_seen_slot_start_diff > p95_seen_slot_start_diff OR p95_seen_slot_start_diff > max_seen_slot_start_diff
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
