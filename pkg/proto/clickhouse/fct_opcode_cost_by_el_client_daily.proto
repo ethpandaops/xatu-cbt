@@ -1,0 +1,155 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily execution cost per opcode group by execution client, fitted from engine_newPayload durations
+
+message FctOpcodeCostByElClientDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period, by block timestamp
+  string day_start_date = 12;
+  // Node classification the timings come from (e.g., eip7870-block-builder)
+  string node_class = 13;
+  // Execution client implementation (e.g., Geth, Nethermind, Besu, Reth)
+  string meta_execution_implementation = 14;
+  // Opcode, or opcode group (LOG, ARITHMETIC, CONTROL, ENVIRONMENT, MEMORY, STACK)
+  string opcode_group = 15;
+  // Client versions that ran during the day, most blocks first
+  repeated string meta_execution_versions = 16;
+  // Block observations in the fit
+  uint32 block_count = 17;
+  // Hours with data in the fit
+  uint32 hour_count = 18;
+  // Share of all opcode and non-opcode gas spent on this opcode group
+  double gas_share = 19;
+  // Average gas charged per execution of this opcode group
+  double gas_per_op = 20;
+  // Fitted execution time per unit of gas for this opcode group, in nanoseconds
+  double ns_per_gas = 21;
+  // Fitted execution time per execution of this opcode group, in nanoseconds
+  double ns_per_op = 22;
+  // 5th percentile of ns_per_op over an hourly bootstrap
+  double ns_per_op_lower = 23;
+  // 95th percentile of ns_per_op over an hourly bootstrap
+  double ns_per_op_upper = 24;
+  // ns_per_gas divided by the client average ns per gas, where 1 means gas prices this opcode group in line with the rest of execution
+  double price_ratio = 25;
+  // 5th percentile of price_ratio over an hourly bootstrap
+  double price_ratio_lower = 26;
+  // 95th percentile of price_ratio over an hourly bootstrap
+  double price_ratio_upper = 27;
+  // Client average execution time per unit of gas, in nanoseconds
+  double client_ns_per_gas = 28;
+  // Fitted fixed cost per block, in milliseconds
+  double overhead_ms = 29;
+  // Fitted cost per transaction, in microseconds
+  double per_tx_us = 30;
+  // Share of block duration variance the fit explains
+  double r_squared = 31;
+}
+
+// Request for listing fct_opcode_cost_by_el_client_daily records
+message ListFctOpcodeCostByElClientDailyRequest {
+  // Filter by day_start_date - Start of the day period, by block timestamp (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by node_class - Node classification the timings come from (e.g., eip7870-block-builder) (ORDER BY column 2 - optional)
+  StringFilter node_class = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by meta_execution_implementation - Execution client implementation (e.g., Geth, Nethermind, Besu, Reth) (ORDER BY column 3 - optional)
+  StringFilter meta_execution_implementation = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by opcode_group - Opcode, or opcode group (LOG, ARITHMETIC, CONTROL, ENVIRONMENT, MEMORY, STACK) (ORDER BY column 4 - optional)
+  StringFilter opcode_group = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by meta_execution_versions - Client versions that ran during the day, most blocks first (optional)
+  ArrayStringFilter meta_execution_versions = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Block observations in the fit (optional)
+  UInt32Filter block_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by hour_count - Hours with data in the fit (optional)
+  UInt32Filter hour_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_share - Share of all opcode and non-opcode gas spent on this opcode group (optional)
+  google.protobuf.DoubleValue gas_share = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by gas_per_op - Average gas charged per execution of this opcode group (optional)
+  google.protobuf.DoubleValue gas_per_op = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by ns_per_gas - Fitted execution time per unit of gas for this opcode group, in nanoseconds (optional)
+  google.protobuf.DoubleValue ns_per_gas = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by ns_per_op - Fitted execution time per execution of this opcode group, in nanoseconds (optional)
+  google.protobuf.DoubleValue ns_per_op = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by ns_per_op_lower - 5th percentile of ns_per_op over an hourly bootstrap (optional)
+  google.protobuf.DoubleValue ns_per_op_lower = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by ns_per_op_upper - 95th percentile of ns_per_op over an hourly bootstrap (optional)
+  google.protobuf.DoubleValue ns_per_op_upper = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by price_ratio - ns_per_gas divided by the client average ns per gas, where 1 means gas prices this opcode group in line with the rest of execution (optional)
+  google.protobuf.DoubleValue price_ratio = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by price_ratio_lower - 5th percentile of price_ratio over an hourly bootstrap (optional)
+  google.protobuf.DoubleValue price_ratio_lower = 16 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by price_ratio_upper - 95th percentile of price_ratio over an hourly bootstrap (optional)
+  google.protobuf.DoubleValue price_ratio_upper = 17 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by client_ns_per_gas - Client average execution time per unit of gas, in nanoseconds (optional)
+  google.protobuf.DoubleValue client_ns_per_gas = 18 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by overhead_ms - Fitted fixed cost per block, in milliseconds (optional)
+  google.protobuf.DoubleValue overhead_ms = 19 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by per_tx_us - Fitted cost per transaction, in microseconds (optional)
+  google.protobuf.DoubleValue per_tx_us = 20 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by r_squared - Share of block duration variance the fit explains (optional)
+  google.protobuf.DoubleValue r_squared = 21 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_opcode_cost_by_el_client_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 22 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctOpcodeCostByElClientDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 23 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 24 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_opcode_cost_by_el_client_daily records
+message ListFctOpcodeCostByElClientDailyResponse {
+  // The list of fct_opcode_cost_by_el_client_daily.
+  repeated FctOpcodeCostByElClientDaily fct_opcode_cost_by_el_client_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_opcode_cost_by_el_client_daily record by primary key
+message GetFctOpcodeCostByElClientDailyRequest {
+  // Start of the day period, by block timestamp
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_opcode_cost_by_el_client_daily record
+message GetFctOpcodeCostByElClientDailyResponse {
+  FctOpcodeCostByElClientDaily item = 1;
+}
+
+// Query fct_opcode_cost_by_el_client_daily data
+service FctOpcodeCostByElClientDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctOpcodeCostByElClientDailyRequest) returns (ListFctOpcodeCostByElClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_opcode_cost_by_el_client_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctOpcodeCostByElClientDailyRequest) returns (GetFctOpcodeCostByElClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_opcode_cost_by_el_client_daily/{day_start_date}"
+    };
+  }
+}
