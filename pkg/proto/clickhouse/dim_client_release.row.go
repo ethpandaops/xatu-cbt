@@ -23,6 +23,9 @@ type DimClientReleaseRow struct {
 	ReleaseDate *uint32 `ch:"release_date" json:"release_date"`
 	Prerelease bool `ch:"prerelease" json:"prerelease"`
 	Repository string `ch:"repository" json:"repository"`
+	Name string `ch:"name" json:"name"`
+	HtmlUrl string `ch:"html_url" json:"html_url"`
+	IsLatest bool `ch:"is_latest" json:"is_latest"`
 }
 
 // TableName returns the ClickHouse table this row maps to.
@@ -45,5 +48,8 @@ func (r *DimClientReleaseRow) ToProto() *DimClientRelease {
 	}
 	p.Prerelease = r.Prerelease
 	p.Repository = r.Repository
+	p.Name = r.Name
+	p.HtmlUrl = r.HtmlUrl
+	p.IsLatest = r.IsLatest
 	return p
 }
