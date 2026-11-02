@@ -288,6 +288,78 @@ func BuildListDimClientReleaseQuery(req *ListDimClientReleaseRequest, options ..
 		}
 	}
 
+	// Add filter for column: name
+	if req.Name != nil {
+		switch filter := req.Name.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("name", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("name", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("name", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("name", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("name", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("name", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("name", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("name", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("name", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: html_url
+	if req.HtmlUrl != nil {
+		switch filter := req.HtmlUrl.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("html_url", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("html_url", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("html_url", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("html_url", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("html_url", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("html_url", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("html_url", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("html_url", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("html_url", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: is_latest
+	if req.IsLatest != nil {
+		switch filter := req.IsLatest.Filter.(type) {
+		case *BoolFilter_Eq:
+			qb.AddCondition("is_latest", "=", filter.Eq)
+		case *BoolFilter_Ne:
+			qb.AddCondition("is_latest", "!=", filter.Ne)
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -313,7 +385,7 @@ func BuildListDimClientReleaseQuery(req *ListDimClientReleaseRequest, options ..
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "client", "layer", "version", "tag", "commit_sha", "release_date", "prerelease", "repository"}
+		validFields := []string{"updated_date_time", "client", "layer", "version", "tag", "commit_sha", "release_date", "prerelease", "repository", "name", "html_url", "is_latest"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -325,7 +397,7 @@ func BuildListDimClientReleaseQuery(req *ListDimClientReleaseRequest, options ..
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "client", "layer", "version", "tag", "commit_sha", "toUnixTimestamp(`release_date`) AS `release_date`", "prerelease", "repository"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "client", "layer", "version", "tag", "commit_sha", "toUnixTimestamp(`release_date`) AS `release_date`", "prerelease", "repository", "name", "html_url", "is_latest"}
 
 	return BuildParameterizedQuery("dim_client_release", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -345,7 +417,7 @@ func BuildGetDimClientReleaseQuery(req *GetDimClientReleaseRequest, options ...Q
 	orderByClause := " ORDER BY client, commit_sha, tag"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "client", "layer", "version", "tag", "commit_sha", "toUnixTimestamp(`release_date`) AS `release_date`", "prerelease", "repository"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "client", "layer", "version", "tag", "commit_sha", "toUnixTimestamp(`release_date`) AS `release_date`", "prerelease", "repository", "name", "html_url", "is_latest"}
 
 	// Return single record
 	return BuildParameterizedQuery("dim_client_release", columns, qb, orderByClause, 1, 0, options...)

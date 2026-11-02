@@ -49,6 +49,29 @@ assertions:
       - type: greater_than
         column: erigon_rows
         value: 0
+  - name: Each client has exactly one latest release
+    sql: |
+      SELECT uniqExact(client) AS clients, COUNT(*) AS latest_rows FROM dim_client_release FINAL WHERE is_latest
+    assertions:
+      - type: equals
+        column: clients
+        value: 18
+      - type: equals
+        column: latest_rows
+        value: 18
+  - name: Release pages link to the release of their own tag
+    sql: |
+      SELECT
+        countIf(html_url != '') AS linked_rows,
+        countIf(html_url != '' AND NOT startsWith(html_url, concat('https://github.com/', repository, '/releases/tag/'))) AS bad_rows
+      FROM dim_client_release FINAL
+    assertions:
+      - type: greater_than
+        column: linked_rows
+        value: 100
+      - type: equals
+        column: bad_rows
+        value: 0
   - name: Has been scheduled at least once
     sql: |
       SELECT COUNT(*) AS count FROM admin_cbt_scheduled FINAL

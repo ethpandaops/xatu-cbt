@@ -78,22 +78,48 @@ def list_tags(repo):
 
 
 def api_release_dates(repo, token):
-    """Returns {tag: (published datetime, prerelease)} for the latest 100 releases from the REST API."""
+    """Returns {tag: (published datetime, prerelease, name, html_url)} for every published release from the REST API."""
     headers = {"Accept": "application/vnd.github+json", "User-Agent": USER_AGENT}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    req = urllib.request.Request(f"https://api.github.com/repos/{repo}/releases?per_page=100", headers=headers)
-    releases = json.loads(urllib.request.urlopen(req, timeout=HTTP_TIMEOUT).read())
     dates = {}
-    for release in releases:
-        if release.get("published_at"):
-            published = datetime.strptime(release["published_at"], "%Y-%m-%dT%H:%M:%SZ")
-            dates[release["tag_name"]] = (published, bool(release.get("prerelease")))
+    url = f"https://api.github.com/repos/{repo}/releases?per_page=100"
+    while url:
+        resp = urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=HTTP_TIMEOUT)
+        for release in json.loads(resp.read()):
+            if release.get("published_at"):
+                published = datetime.strptime(release["published_at"], "%Y-%m-%dT%H:%M:%SZ")
+                dates[release["tag_name"]] = (
+                    published, bool(release.get("prerelease")), release.get("name") or "", release.get("html_url") or "",
+                )
+        url = next_page(resp.headers.get("Link", ""))
     return dates
 
 
+def api_latest_tag(repo, token):
+    """Returns the tag of the release GitHub marks as latest, or None when the API is unavailable."""
+    headers = {"Accept": "application/vnd.github+json", "User-Agent": USER_AGENT}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(f"https://api.github.com/repos/{repo}/releases/latest", headers=headers)
+    try:
+        return json.loads(urllib.request.urlopen(req, timeout=HTTP_TIMEOUT).read()).get("tag_name")
+    except (urllib.error.URLError, ValueError) as e:
+        print(f"  {repo}: latest release unavailable ({e})")
+        return None
+
+
+def next_page(link_header):
+    """Returns the rel="next" URL from a GitHub Link header, or None on the last page."""
+    for part in link_header.split(","):
+        url, _, rel = part.partition(";")
+        if rel.strip() == 'rel="next"':
+            return url.strip().strip("<>")
+    return None
+
+
 def atom_release_dates(repo):
-    """Returns {tag: (updated datetime, None)} for the latest releases from the releases Atom feed."""
+    """Returns {tag: (updated datetime, None, title, link)} for the latest releases from the releases Atom feed."""
     req = urllib.request.Request(f"https://github.com/{repo}/releases.atom", headers={"User-Agent": USER_AGENT})
     root = ET.fromstring(urllib.request.urlopen(req, timeout=HTTP_TIMEOUT).read())
     ns = {"a": "http://www.w3.org/2005/Atom"}
@@ -103,13 +129,15 @@ def atom_release_dates(repo):
         updated = entry.findtext("a:updated", default="", namespaces=ns)
         if link is None or not updated:
             continue
-        tag = urllib.parse.unquote(link.get("href", "").rsplit("/releases/tag/", 1)[-1])
-        dates[tag] = (datetime.fromisoformat(updated.replace("Z", "+00:00")).replace(tzinfo=None), None)
+        href = link.get("href", "")
+        tag = urllib.parse.unquote(href.rsplit("/releases/tag/", 1)[-1])
+        title = entry.findtext("a:title", default="", namespaces=ns)
+        dates[tag] = (datetime.fromisoformat(updated.replace("Z", "+00:00")).replace(tzinfo=None), None, title, href)
     return dates
 
 
 def release_dates(repo, token):
-    """Returns (dates, exact): REST API publish dates, or Atom feed update dates when the API is unavailable."""
+    """Returns (releases, exact): REST API releases, or Atom feed releases (update dates) when the API is unavailable."""
     try:
         return api_release_dates(repo, token), True
     except (urllib.error.URLError, ValueError) as e:
@@ -138,43 +166,47 @@ def clickhouse(url, query, data=None):
     return urllib.request.urlopen(req, timeout=300).read().decode()
 
 
-def stored_dates(url, database, table):
-    """Returns {(client, tag): release datetime} already stored, so a failed date lookup keeps them."""
+def stored_releases(url, database, table):
+    """Returns {(client, tag): (release datetime or None, name, html_url)} already stored, so a failed lookup keeps them."""
     out = clickhouse(
         url,
-        f"SELECT client, tag, toString(release_date) FROM `{database}`.`{table}` FINAL "
-        f"WHERE release_date IS NOT NULL FORMAT JSONCompact",
+        f"SELECT client, tag, toString(release_date), name, html_url FROM `{database}`.`{table}` FINAL "
+        f"WHERE release_date IS NOT NULL OR html_url != '' FORMAT JSONCompact",
     )
     rows = json.loads(out).get("data", []) if out.strip() else []
-    return {(c, t): datetime.strptime(d, "%Y-%m-%d %H:%M:%S") for c, t, d in rows}
+    return {
+        (c, t): (datetime.strptime(d, "%Y-%m-%d %H:%M:%S") if d else None, n, h)
+        for c, t, d, n, h in rows
+    }
 
 
-def build_rows(task_start, token, previous_dates):
+def build_rows(task_start, token, previous):
     """Collects one row per client release tag."""
     tags_by_repo = {}
-    dates_by_repo = {}
+    releases_by_repo = {}
+    latest_by_repo = {}
     rows = []
     for client, layer, repo, prefix in CLIENTS:
         if repo not in tags_by_repo:
             tags_by_repo[repo] = list_tags(repo)
-            dates_by_repo[repo] = release_dates(repo, token)
-        tags, (dates, exact) = tags_by_repo[repo], dates_by_repo[repo]
+            releases_by_repo[repo] = release_dates(repo, token)
+            latest_by_repo[repo] = api_latest_tag(repo, token)
+        tags, (releases, exact) = tags_by_repo[repo], releases_by_repo[repo]
 
-        count = 0
+        client_rows = []
         for tag, commit in tags.items():
             if not tag.startswith(prefix):
                 continue
             version = tag[len(prefix):]
             if not VERSION_RE.match(version):
                 continue
-            published, prerelease_flag = dates.get(tag, (None, None))
+            published, prerelease_flag, name, html_url = releases.get(tag, (None, None, "", ""))
+            stored_date, stored_name, stored_url = previous.get((client, tag), (None, "", ""))
             # Atom feed dates are update times, so a stored API date wins over them.
-            if not exact and (client, tag) in previous_dates:
-                published = previous_dates[(client, tag)]
-            elif published is None:
-                published = previous_dates.get((client, tag))
+            if (not exact and stored_date) or published is None:
+                published = stored_date or published
             prerelease = prerelease_flag if prerelease_flag is not None else "-" in version.split("+")[0]
-            rows.append({
+            client_rows.append({
                 "updated_date_time": task_start,
                 "client": client,
                 "layer": layer,
@@ -184,9 +216,19 @@ def build_rows(task_start, token, previous_dates):
                 "commit_sha": commit,
                 "release_date": published.strftime("%Y-%m-%d %H:%M:%S") if published else None,
                 "prerelease": prerelease,
+                "name": name or stored_name,
+                "html_url": html_url or stored_url,
+                "is_latest": False,
             })
-            count += 1
-        print(f"  {client}: {count} release tags from {repo}")
+
+        # GitHub's latest release for the repository, else (a monorepo whose latest is another package, or no API)
+        # the client's most recently published stable release.
+        latest = [r for r in client_rows if r["tag"] == latest_by_repo[repo]]
+        stable = [r for r in client_rows if not r["prerelease"] and r["release_date"]]
+        if latest or stable:
+            (latest or [max(stable, key=lambda r: r["release_date"])])[0]["is_latest"] = True
+        rows.extend(client_rows)
+        print(f"  {client}: {len(client_rows)} release tags from {repo}")
     return rows
 
 
@@ -196,13 +238,13 @@ def main():
     task_start = task_start.strftime("%Y-%m-%d %H:%M:%S")
     token = os.environ.get("GITHUB_TOKEN", "")
 
-    previous_dates = {}
+    previous = {}
     if not dry_run:
         url, database, table = os.environ["CLICKHOUSE_URL"], os.environ["SELF_DATABASE"], os.environ["SELF_TABLE"]
-        previous_dates = stored_dates(url, database, table)
+        previous = stored_releases(url, database, table)
 
     print("=== Client release collection ===")
-    rows = build_rows(task_start, token, previous_dates)
+    rows = build_rows(task_start, token, previous)
     if not rows:
         print("ERROR: no release tags collected", file=sys.stderr)
         sys.exit(1)
