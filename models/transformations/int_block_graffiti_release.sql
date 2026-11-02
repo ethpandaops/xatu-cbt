@@ -25,8 +25,9 @@ dependencies:
 -- A commit no release tag points at falls back to dim_client_commit (default and release branch commits): if one
 -- commit committed by the block time matches, the block takes the release that commit builds on (commit_untagged).
 -- Prefixes under 7 characters also need the commit to be from the 180 days before the block, since a 4 character
--- prefix collides with some commit in most repositories' full history. Unresolved blocks keep an empty version
--- and a release status saying why.
+-- prefix collides with some commit in most repositories' full history. A resolved commit wins over a version the
+-- graffiti states (commit_mismatch when they disagree), and commits that do not resolve keep the stated version. Blocks
+-- with neither keep an empty version and a release status saying why.
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
@@ -141,14 +142,14 @@ resolved AS (
         cl.any_version AS cl_any_version,
         cl.published_version AS cl_published_version,
         clb.branch_commit_count AS cl_branch_commit_count,
-        clb.branch_base_version AS cl_branch_version,
+        clb.branch_base_version AS cl_branch_version_raw,
         clv.release_version AS cl_version_release,
         el.commit_count AS el_commit_count,
         el.published_commit_count AS el_published_commit_count,
         el.any_version AS el_any_version,
         el.published_version AS el_published_version,
         elb.branch_commit_count AS el_branch_commit_count,
-        elb.branch_base_version AS el_branch_version
+        elb.branch_base_version AS el_branch_version_raw
     FROM blocks AS b
     GLOBAL LEFT JOIN commit_releases AS cl
         ON b.consensus_client = cl.client AND b.consensus_commit = cl.commit AND b.slot_start_date_time = cl.seen_at
@@ -172,17 +173,20 @@ SELECT
     entity,
     graffiti_format,
     consensus_client,
+    -- A resolved commit wins over a version the graffiti states (Grandine/2.0.5), which some clients leave stale:
+    -- Grandine builds at the 2.0.6 tag still report 2.0.5. commit_mismatch flags the disagreement. Commits that do not
+    -- resolve keep the stated version.
     ifNull(multiIf(
-        consensus_status = 'commit_match', if(cl_commit_count = 1, cl_any_version, cl_published_version),
-        consensus_status = 'commit_untagged', cl_branch_version,
-        consensus_status = 'version_match', cl_version_release,
+        consensus_status IN ('commit_match', 'commit_mismatch', 'commit_untagged') AND cl_tag_version IS NOT NULL, cl_tag_version,
+        consensus_status IN ('commit_mismatch', 'commit_untagged') AND cl_branch_version != '', cl_branch_version,
+        graffiti_version != '', ifNull(cl_version_release, graffiti_version),
         ''
     ), '') AS consensus_client_version,
     consensus_commit AS consensus_client_commit,
     consensus_status AS consensus_client_release_status,
     execution_client,
     ifNull(multiIf(
-        execution_status = 'commit_match', if(el_commit_count = 1, el_any_version, el_published_version),
+        execution_status = 'commit_match', el_tag_version,
         execution_status = 'commit_untagged', el_branch_version,
         ''
     ), '') AS execution_client_version,
@@ -191,13 +195,19 @@ SELECT
 FROM (
     SELECT
         *,
+        if(cl_commit_count = 1 OR cl_published_commit_count = 1, if(cl_commit_count = 1, cl_any_version, cl_published_version), NULL) AS cl_tag_version,
+        if(cl_branch_commit_count = 1, cl_branch_version_raw, NULL) AS cl_branch_version,
+        if(el_commit_count = 1 OR el_published_commit_count = 1, if(el_commit_count = 1, el_any_version, el_published_version), NULL) AS el_tag_version,
+        if(el_branch_commit_count = 1, el_branch_version_raw, NULL) AS el_branch_version,
         multiIf(
             consensus_client = 'unknown', 'none',
             length(consensus_commit) BETWEEN 1 AND 3, 'commit_short',
             match(consensus_commit, '^0+$'), 'commit_zero',
-            consensus_commit != '' AND (cl_commit_count = 1 OR cl_published_commit_count = 1), 'commit_match',
+            cl_tag_version IS NOT NULL AND (graffiti_version = '' OR replaceRegexpOne(replaceRegexpOne(cl_tag_version, '^[vV]', ''), '[-+].*$', '') = replaceRegexpOne(replaceRegexpOne(graffiti_version, '^[vV]', ''), '[-+].*$', '')), 'commit_match',
+            cl_tag_version IS NOT NULL, 'commit_mismatch',
             consensus_commit != '' AND cl_commit_count > 1, 'commit_ambiguous',
-            consensus_commit != '' AND cl_branch_commit_count = 1, 'commit_untagged',
+            cl_branch_version IS NOT NULL AND (graffiti_version = '' OR cl_branch_version = '' OR replaceRegexpOne(replaceRegexpOne(cl_branch_version, '^[vV]', ''), '[-+].*$', '') = replaceRegexpOne(replaceRegexpOne(graffiti_version, '^[vV]', ''), '[-+].*$', '')), 'commit_untagged',
+            cl_branch_version IS NOT NULL, 'commit_mismatch',
             consensus_commit != '' AND cl_branch_commit_count > 1, 'commit_ambiguous',
             consensus_commit != '', 'commit_unmatched',
             graffiti_version != '' AND cl_version_release IS NOT NULL, 'version_match',
@@ -209,9 +219,9 @@ FROM (
             execution_client = 'unknown', 'none',
             length(execution_commit) BETWEEN 1 AND 3, 'commit_short',
             match(execution_commit, '^0+$'), 'commit_zero',
-            execution_commit != '' AND (el_commit_count = 1 OR el_published_commit_count = 1), 'commit_match',
+            el_tag_version IS NOT NULL, 'commit_match',
             execution_commit != '' AND el_commit_count > 1, 'commit_ambiguous',
-            execution_commit != '' AND el_branch_commit_count = 1, 'commit_untagged',
+            el_branch_version IS NOT NULL, 'commit_untagged',
             execution_commit != '' AND el_branch_commit_count > 1, 'commit_ambiguous',
             execution_commit != '', 'commit_unmatched',
             graffiti_format = 'codes_min', 'codes_min',

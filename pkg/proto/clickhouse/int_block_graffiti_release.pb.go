@@ -45,7 +45,7 @@ type IntBlockGraffitiRelease struct {
 	GraffitiFormat string `protobuf:"bytes,19,opt,name=graffiti_format,json=graffitiFormat,proto3" json:"graffiti_format,omitempty"`
 	// Consensus client named by the graffiti, e.g. lighthouse, or unknown
 	ConsensusClient string `protobuf:"bytes,20,opt,name=consensus_client,json=consensusClient,proto3" json:"consensus_client,omitempty"`
-	// Consensus client release version from dim_client_release (or the release a branch commit builds on), empty when unresolved
+	// Consensus client release version from dim_client_release (or the release a branch commit builds on), else the version the graffiti states, empty when unresolved
 	ConsensusClientVersion string `protobuf:"bytes,21,opt,name=consensus_client_version,json=consensusClientVersion,proto3" json:"consensus_client_version,omitempty"`
 	// Consensus client commit prefix from the graffiti, lowercase, empty when there is none
 	ConsensusClientCommit string `protobuf:"bytes,22,opt,name=consensus_client_commit,json=consensusClientCommit,proto3" json:"consensus_client_commit,omitempty"`
@@ -238,7 +238,7 @@ type ListIntBlockGraffitiReleaseRequest struct {
 	GraffitiFormat *StringFilter `protobuf:"bytes,9,opt,name=graffiti_format,json=graffitiFormat,proto3" json:"graffiti_format,omitempty"`
 	// Filter by consensus_client - Consensus client named by the graffiti, e.g. lighthouse, or unknown (optional)
 	ConsensusClient *StringFilter `protobuf:"bytes,10,opt,name=consensus_client,json=consensusClient,proto3" json:"consensus_client,omitempty"`
-	// Filter by consensus_client_version - Consensus client release version from dim_client_release (or the release a branch commit builds on), empty when unresolved (optional)
+	// Filter by consensus_client_version - Consensus client release version from dim_client_release (or the release a branch commit builds on), else the version the graffiti states, empty when unresolved (optional)
 	ConsensusClientVersion *StringFilter `protobuf:"bytes,11,opt,name=consensus_client_version,json=consensusClientVersion,proto3" json:"consensus_client_version,omitempty"`
 	// Filter by consensus_client_commit - Consensus client commit prefix from the graffiti, lowercase, empty when there is none (optional)
 	ConsensusClientCommit *StringFilter `protobuf:"bytes,12,opt,name=consensus_client_commit,json=consensusClientCommit,proto3" json:"consensus_client_commit,omitempty"`

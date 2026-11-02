@@ -20,7 +20,7 @@ message DimClientCommit {
   string commit_sha = 15;
   // Committer date of the commit
   uint32 commit_date = 16;
-  // Release tag the commit builds on: the tag reachable in the fewest parent steps, as git describe picks it, empty before the first tag
+  // Release tag the commit builds on: the tag reachable in the fewest parent steps, as git describe picks it, empty before the first tag or when that tag was committed over 120 days before the commit (a branch without recent tags, e.g. erigon main)
   string base_tag = 17;
   // Version of base_tag, as in dim_client_release
   string base_version = 18;
@@ -46,7 +46,7 @@ message ListDimClientCommitRequest {
   StringFilter repository = 5;
   // Filter by commit_date - Committer date of the commit (optional)
   UInt32Filter commit_date = 6;
-  // Filter by base_tag - Release tag the commit builds on: the tag reachable in the fewest parent steps, as git describe picks it, empty before the first tag (optional)
+  // Filter by base_tag - Release tag the commit builds on: the tag reachable in the fewest parent steps, as git describe picks it, empty before the first tag or when that tag was committed over 120 days before the commit (a branch without recent tags, e.g. erigon main) (optional)
   StringFilter base_tag = 7;
   // Filter by base_version - Version of base_tag, as in dim_client_release (optional)
   StringFilter base_version = 8;

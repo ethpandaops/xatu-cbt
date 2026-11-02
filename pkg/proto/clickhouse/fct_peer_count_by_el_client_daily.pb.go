@@ -35,7 +35,7 @@ type FctPeerCountByElClientDaily struct {
 	Client string `protobuf:"bytes,13,opt,name=client,proto3" json:"client,omitempty"`
 	// Release version from dim_client_release when the commit or version resolved (for commit_untagged the release the commit builds on), else the version the agent reports, empty when it reports none
 	Version string `protobuf:"bytes,14,opt,name=version,proto3" json:"version,omitempty"`
-	// How the version was resolved: commit_match (a release tag commit), commit_untagged (a default or release branch commit, version is the release it builds on), commit_ambiguous, commit_unmatched (a custom or fork build), commit_zero, version_match, version_unmatched or none
+	// How the version was resolved: commit_match (a release tag commit agreeing with any stated version), commit_untagged (a default or release branch commit, version is the release it builds on, else the stated version), commit_mismatch (the commit resolves to another release than the stated version, version is the commit release), commit_ambiguous, commit_unmatched (a custom or fork build, the stated version is kept), commit_zero, version_match, version_unmatched or none. Rows whose commit does not resolve keep the version the agent states
 	ReleaseStatus string `protobuf:"bytes,15,opt,name=release_status,json=releaseStatus,proto3" json:"release_status,omitempty"`
 	// Nodes
 	PeerCount uint32 `protobuf:"varint,16,opt,name=peer_count,json=peerCount,proto3" json:"peer_count,omitempty"`
@@ -127,7 +127,7 @@ type ListFctPeerCountByElClientDailyRequest struct {
 	Client *StringFilter `protobuf:"bytes,2,opt,name=client,proto3" json:"client,omitempty"`
 	// Filter by version - Release version from dim_client_release when the commit or version resolved (for commit_untagged the release the commit builds on), else the version the agent reports, empty when it reports none (ORDER BY column 3 - optional)
 	Version *StringFilter `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
-	// Filter by release_status - How the version was resolved: commit_match (a release tag commit), commit_untagged (a default or release branch commit, version is the release it builds on), commit_ambiguous, commit_unmatched (a custom or fork build), commit_zero, version_match, version_unmatched or none (ORDER BY column 4 - optional)
+	// Filter by release_status - How the version was resolved: commit_match (a release tag commit agreeing with any stated version), commit_untagged (a default or release branch commit, version is the release it builds on, else the stated version), commit_mismatch (the commit resolves to another release than the stated version, version is the commit release), commit_ambiguous, commit_unmatched (a custom or fork build, the stated version is kept), commit_zero, version_match, version_unmatched or none. Rows whose commit does not resolve keep the version the agent states (ORDER BY column 4 - optional)
 	ReleaseStatus *StringFilter `protobuf:"bytes,4,opt,name=release_status,json=releaseStatus,proto3" json:"release_status,omitempty"`
 	// Filter by updated_date_time - Timestamp when the record was last updated (optional)
 	UpdatedDateTime *UInt32Filter `protobuf:"bytes,5,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`

@@ -19,6 +19,9 @@ from dim_client_release import CLIENTS, HTTP_TIMEOUT, USER_AGENT, VERSION_RE, cl
 RELEASE_BRANCH_RE = re.compile(r"^(release|releases|stable|hotfix|backport)([/_.-]|$)|^v?\d+\.\d+")
 # Graffiti only exists since the beacon chain launched, so older commits are left out.
 MIN_COMMIT_TIME = int(datetime(2020, 1, 1, tzinfo=timezone.utc).timestamp())
+# A base tag committed this long before the commit is not the release it builds on: the branch carries no recent
+# tags (erigon tags only release branches, so main describes to v3.0.0-beta1), so the commit has no base.
+MAX_BASE_AGE = 120 * 86400
 
 
 def upload_pack(repo, body):
@@ -255,6 +258,8 @@ def build_rows(task_start):
             if committed < MIN_COMMIT_TIME:
                 continue
             base_tag, distance = bases.get(sha, ("", 0))
+            if base_tag and committed - commits[tags[base_tag]][0] > MAX_BASE_AGE:
+                base_tag, distance = "", 0
             rows.append({
                 "updated_date_time": task_start,
                 "client": client,

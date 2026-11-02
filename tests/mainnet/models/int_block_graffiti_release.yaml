@@ -103,14 +103,16 @@ assertions:
         - type: equals
           column: resolved
           value: 2
-    - name: Unresolved reasons are kept with an empty version
+    - name: Commits that do not resolve keep the version the graffiti states, and only those
       sql: |
         SELECT
           countIf(execution_client_release_status = 'commit_zero') AS zero_commits,
           countIf(consensus_client_release_status = 'codes_min') AS codes_min,
-          countIf(consensus_client_release_status IN ('commit_zero', 'codes_min', 'no_commit', 'commit_unmatched', 'commit_ambiguous', 'commit_short')
-            AND consensus_client_version != '') AS versioned_unresolved
-        FROM int_block_graffiti_release FINAL
+          countIf(consensus_client_release_status IN ('commit_zero', 'commit_unmatched', 'commit_ambiguous', 'commit_short', 'version_unmatched', 'codes_min', 'no_commit', 'none')
+            AND replaceRegexpOne(consensus_client_version, '^v', '') != replaceRegexpOne(stated_version, '^v', '')) AS not_stated,
+          countIf(consensus_client_release_status = 'commit_unmatched' AND stated_version != '' AND consensus_client_version != '') AS unmatched_with_stated
+        FROM (SELECT block_root, consensus_client_version, consensus_client_release_status, execution_client_release_status FROM int_block_graffiti_release FINAL) AS r
+        GLOBAL INNER JOIN (SELECT block_root, consensus_client_version AS stated_version FROM fct_block_graffiti FINAL) AS g USING (block_root)
       assertions:
         - type: equals
           column: zero_commits
@@ -119,13 +121,15 @@ assertions:
           column: codes_min
           value: 20
         - type: equals
-          column: versioned_unresolved
+          column: not_stated
+          value: 0
+        - type: greater_than
+          column: unmatched_with_stated
           value: 0
     - name: Status and version agree
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_block_graffiti_release FINAL
-        WHERE (consensus_client_release_status IN ('commit_match', 'version_match') AND consensus_client_version = '')
-           OR (consensus_client_release_status NOT IN ('commit_match', 'version_match', 'commit_untagged') AND consensus_client_version != '')
+        WHERE (consensus_client_release_status IN ('commit_match', 'commit_mismatch', 'version_match') AND consensus_client_version = '')
            OR (execution_client_release_status = 'commit_match' AND execution_client_version = '')
            OR (execution_client_release_status NOT IN ('commit_match', 'commit_untagged') AND execution_client_version != '')
            OR (consensus_client = 'unknown' AND consensus_client_release_status != 'none')
