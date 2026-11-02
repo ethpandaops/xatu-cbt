@@ -87,3 +87,21 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    - name: Every call is within 300 seconds after its slot start
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_get_blobs FINAL
+        WHERE event_date_time < slot_start_date_time OR event_date_time > slot_start_date_time + INTERVAL 300 SECOND
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each call is attributed to one slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+            SELECT meta_client_name, event_date_time FROM int_engine_get_blobs FINAL
+            GROUP BY meta_client_name, event_date_time HAVING uniqExact(slot_start_date_time) > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

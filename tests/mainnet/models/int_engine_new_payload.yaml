@@ -90,3 +90,11 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    - name: No observation more than 300 seconds after its slot start
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE event_date_time > slot_start_date_time + INTERVAL 300 SECOND
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

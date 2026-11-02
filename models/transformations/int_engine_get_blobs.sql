@@ -18,13 +18,13 @@ dependencies:
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
--- Deduplicate beacon blob sidecar data to get versioned_hash -> slot context mapping
--- GROUP BY versioned_hash, take any() for slot context fields
+-- Deduplicate beacon blob sidecar data to one row per (versioned_hash, slot)
 blob_context AS (
     SELECT
         versioned_hash,
+        slot_start_date_time,
+        toDateTime64(slot_start_date_time, 3) AS slot_start_date_time64,
         any(slot) AS slot,
-        any(slot_start_date_time) AS slot_start_date_time,
         any(epoch) AS epoch,
         any(epoch_start_date_time) AS epoch_start_date_time,
         any(block_root) AS block_root,
@@ -34,11 +34,12 @@ blob_context AS (
         SELECT *
         FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_beacon_blob" "helpers" "from" }}
         WHERE meta_network_name = '{{ .env.NETWORK }}'
-            -- Use wider window to ensure we catch all blobs that might match engine events
-            AND slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 5 MINUTE
+            -- Look back 65 minutes so a late call is matched to its own slot (and then dropped by
+            -- the lateness cutoff) rather than to a later slot that re-included one of its blobs.
+            AND slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 65 MINUTE
                 AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 5 MINUTE
     )
-    GROUP BY versioned_hash
+    GROUP BY versioned_hash, slot_start_date_time
 ),
 
 -- Get raw engine_getBlobs observations from the execution layer snooper
@@ -91,13 +92,13 @@ enriched AS (
         eg.event_date_time,
         eg.requested_date_time,
         eg.duration_ms,
-        COALESCE(any(bc.slot), 0) AS slot,
-        COALESCE(any(bc.slot_start_date_time), toDateTime(0)) AS slot_start_date_time,
-        COALESCE(any(bc.epoch), 0) AS epoch,
-        COALESCE(any(bc.epoch_start_date_time), toDateTime(0)) AS epoch_start_date_time,
-        COALESCE(any(bc.block_root), '') AS block_root,
-        COALESCE(any(bc.block_parent_root), '') AS block_parent_root,
-        COALESCE(any(bc.proposer_index), 0) AS proposer_index,
+        argMinIf(bc.slot, bc.slot_start_date_time, bc.slot_start_date_time != toDateTime(0)) AS slot,
+        argMinIf(bc.slot_start_date_time, bc.slot_start_date_time, bc.slot_start_date_time != toDateTime(0)) AS slot_start_date_time,
+        argMinIf(bc.epoch, bc.slot_start_date_time, bc.slot_start_date_time != toDateTime(0)) AS epoch,
+        argMinIf(bc.epoch_start_date_time, bc.slot_start_date_time, bc.slot_start_date_time != toDateTime(0)) AS epoch_start_date_time,
+        argMinIf(bc.block_root, bc.slot_start_date_time, bc.slot_start_date_time != toDateTime(0)) AS block_root,
+        argMinIf(bc.block_parent_root, bc.slot_start_date_time, bc.slot_start_date_time != toDateTime(0)) AS block_parent_root,
+        argMinIf(bc.proposer_index, bc.slot_start_date_time, bc.slot_start_date_time != toDateTime(0)) AS proposer_index,
         eg.requested_count,
         eg.versioned_hashes,
         eg.returned_count,
@@ -120,7 +121,10 @@ enriched AS (
         eg.meta_client_geo_autonomous_system_number,
         eg.meta_client_geo_autonomous_system_organization
     FROM engine_get_blobs eg
-    GLOBAL LEFT JOIN blob_context bc ON eg.vh = bc.versioned_hash
+    -- A versioned hash can be included in more than one slot (re-included or spammed blobs).
+    -- Match each hash to the latest slot at or before the call, then take the earliest of
+    -- those across the call's hashes: the block that held all of them.
+    GLOBAL ASOF LEFT JOIN blob_context bc ON eg.vh = bc.versioned_hash AND eg.event_date_time >= bc.slot_start_date_time64
     GROUP BY
         eg.source_updated_date_time,
         eg.event_date_time,
@@ -188,5 +192,9 @@ SELECT
 FROM enriched
 -- Filter out records without slot context (orphaned or timing issues)
 -- These will be picked up in subsequent backfill runs when the blob context becomes available
+-- Count only observations made within 300 seconds of their slot start: the latest a
+-- live (5s forwardfill) run is guaranteed to see. Later events are catch-up calls after
+-- node restarts, and wide backfill or re-run bounds would otherwise pick them up.
 WHERE slot_start_date_time != toDateTime(0)
+    AND event_date_time <= slot_start_date_time + INTERVAL 300 SECOND
 GROUP BY slot_start_date_time, block_root, meta_client_name, event_date_time
