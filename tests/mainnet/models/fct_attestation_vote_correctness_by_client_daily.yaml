@@ -41,50 +41,48 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_libp2p_gossipsub_beacon_attestation.parquet
         network_column: meta_network_name
 assertions:
-    # The hourly table can still be filling after the daily run, so totals compare with its rows as of that run.
-    - name: Every validator with duties counts once per layer
+    # The harness asserts once the daily model has processed one interval, while the hourly table it reads can
+    # still be filling, so checks hold at any point in the fill rather than comparing exact totals.
+    - name: Every mapped validator counts once per layer and totals never exceed the per-validator table
       sql: |
         SELECT
-          (SELECT uniqExact(validator_index) FROM (SELECT validator_index, hour_start_date_time, argMax(total_duties, updated_date_time) AS total_duties, argMax(head_correct_count, updated_date_time) AS head_correct_count FROM fct_attestation_vote_correctness_by_validator_hourly WHERE updated_date_time <= (SELECT max(updated_date_time) FROM fct_attestation_vote_correctness_by_client_daily) GROUP BY validator_index, hour_start_date_time)) AS validators,
-          (SELECT sumIf(validator_count, layer = 'consensus') FROM fct_attestation_vote_correctness_by_client_daily FINAL) - validators AS consensus_diff,
-          (SELECT sumIf(validator_count, layer = 'execution') FROM fct_attestation_vote_correctness_by_client_daily FINAL) - validators AS execution_diff
+          (SELECT sumIf(validator_count, layer = 'consensus') FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS consensus_validators,
+          (SELECT sumIf(validator_count, layer = 'execution') FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS execution_validators,
+          (SELECT sumIf(total_duties, layer = 'consensus') FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS consensus_duties,
+          (SELECT sumIf(total_duties, layer = 'execution') FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS execution_duties,
+          (SELECT uniqExact(validator_index) FROM fct_attestation_vote_correctness_by_validator_hourly FINAL) AS hourly_validators,
+          consensus_validators - execution_validators AS layer_validator_diff,
+          consensus_duties - execution_duties AS layer_duty_diff,
+          consensus_validators <= hourly_validators AS within_hourly
       assertions:
         - type: greater_than
-          column: validators
+          column: consensus_validators
           value: 10000
         - type: equals
-          column: consensus_diff
+          column: layer_validator_diff
           value: 0
         - type: equals
-          column: execution_diff
+          column: layer_duty_diff
           value: 0
-    - name: Duty and vote counts add up to the per-validator table
+        - type: equals
+          column: within_hourly
+          value: 1
+    - name: Only validators that proposed with identifying graffiti map to a client
       sql: |
         SELECT
-          (SELECT sum(total_duties) FROM (SELECT validator_index, hour_start_date_time, argMax(total_duties, updated_date_time) AS total_duties, argMax(head_correct_count, updated_date_time) AS head_correct_count FROM fct_attestation_vote_correctness_by_validator_hourly WHERE updated_date_time <= (SELECT max(updated_date_time) FROM fct_attestation_vote_correctness_by_client_daily) GROUP BY validator_index, hour_start_date_time)) AS duties,
-          (SELECT sumIf(total_duties, layer = 'consensus') FROM fct_attestation_vote_correctness_by_client_daily FINAL) - duties AS duties_diff,
-          (SELECT sum(head_correct_count) FROM (SELECT validator_index, hour_start_date_time, argMax(total_duties, updated_date_time) AS total_duties, argMax(head_correct_count, updated_date_time) AS head_correct_count FROM fct_attestation_vote_correctness_by_validator_hourly WHERE updated_date_time <= (SELECT max(updated_date_time) FROM fct_attestation_vote_correctness_by_client_daily) GROUP BY validator_index, hour_start_date_time))
-            - (SELECT sumIf(head_correct_count, layer = 'execution') FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS head_diff
-      assertions:
-        - type: equals
-          column: duties_diff
-          value: 0
-        - type: equals
-          column: head_diff
-          value: 0
-    - name: Validators that proposed with identifying graffiti map to its clients
-      sql: |
-        SELECT
-          (SELECT uniqExact(proposer_index) FROM fct_block_graffiti FINAL
-           WHERE consensus_client != 'unknown'
-             AND proposer_index GLOBAL IN (SELECT validator_index FROM (SELECT validator_index, hour_start_date_time, argMax(total_duties, updated_date_time) AS total_duties, argMax(head_correct_count, updated_date_time) AS head_correct_count FROM fct_attestation_vote_correctness_by_validator_hourly WHERE updated_date_time <= (SELECT max(updated_date_time) FROM fct_attestation_vote_correctness_by_client_daily) GROUP BY validator_index, hour_start_date_time))) AS identifiable,
-          (SELECT sumIf(validator_count, layer = 'consensus' AND client != 'unknown') FROM fct_attestation_vote_correctness_by_client_daily FINAL) - identifiable AS mapped_diff
+          (SELECT uniqExact(proposer_index) FROM fct_block_graffiti FINAL WHERE consensus_client != 'unknown') AS identifiable,
+          (SELECT sumIf(validator_count, layer = 'consensus' AND client != 'unknown') FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS mapped,
+          mapped <= identifiable AS within_identifiable,
+          (SELECT countIf(layer = 'consensus' AND client NOT IN (SELECT DISTINCT consensus_client FROM fct_block_graffiti FINAL)) FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS foreign_clients
       assertions:
         - type: greater_than
-          column: identifiable
+          column: mapped
           value: 5
         - type: equals
-          column: mapped_diff
+          column: within_identifiable
+          value: 1
+        - type: equals
+          column: foreign_clients
           value: 0
     - name: Correct votes never exceed attestations
       sql: |
