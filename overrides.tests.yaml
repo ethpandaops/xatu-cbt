@@ -17,3 +17,9 @@ models:
         schedules:
           forwardfill: "@every 10s"
           backfill: "@every 10s"
+    # Wait for the first dim_client_release and dim_client_commit runs (they fetch every client's tags and commits from GitHub).
+    int_block_graffiti_release:
+      config:
+        schedules:
+          forwardfill: "@every 90s"
+          backfill: "@every 90s"

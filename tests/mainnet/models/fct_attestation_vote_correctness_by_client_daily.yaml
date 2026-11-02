@@ -1,0 +1,96 @@
+model: fct_attestation_vote_correctness_by_client_daily
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block_graffiti.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    # The hourly table can still be filling after the daily run, so totals compare with its rows as of that run.
+    - name: Every validator with duties counts once per layer
+      sql: |
+        SELECT
+          (SELECT uniqExact(validator_index) FROM (SELECT validator_index, hour_start_date_time, argMax(total_duties, updated_date_time) AS total_duties, argMax(head_correct_count, updated_date_time) AS head_correct_count FROM fct_attestation_vote_correctness_by_validator_hourly WHERE updated_date_time <= (SELECT max(updated_date_time) FROM fct_attestation_vote_correctness_by_client_daily) GROUP BY validator_index, hour_start_date_time)) AS validators,
+          (SELECT sumIf(validator_count, layer = 'consensus') FROM fct_attestation_vote_correctness_by_client_daily FINAL) - validators AS consensus_diff,
+          (SELECT sumIf(validator_count, layer = 'execution') FROM fct_attestation_vote_correctness_by_client_daily FINAL) - validators AS execution_diff
+      assertions:
+        - type: greater_than
+          column: validators
+          value: 10000
+        - type: equals
+          column: consensus_diff
+          value: 0
+        - type: equals
+          column: execution_diff
+          value: 0
+    - name: Duty and vote counts add up to the per-validator table
+      sql: |
+        SELECT
+          (SELECT sum(total_duties) FROM (SELECT validator_index, hour_start_date_time, argMax(total_duties, updated_date_time) AS total_duties, argMax(head_correct_count, updated_date_time) AS head_correct_count FROM fct_attestation_vote_correctness_by_validator_hourly WHERE updated_date_time <= (SELECT max(updated_date_time) FROM fct_attestation_vote_correctness_by_client_daily) GROUP BY validator_index, hour_start_date_time)) AS duties,
+          (SELECT sumIf(total_duties, layer = 'consensus') FROM fct_attestation_vote_correctness_by_client_daily FINAL) - duties AS duties_diff,
+          (SELECT sum(head_correct_count) FROM (SELECT validator_index, hour_start_date_time, argMax(total_duties, updated_date_time) AS total_duties, argMax(head_correct_count, updated_date_time) AS head_correct_count FROM fct_attestation_vote_correctness_by_validator_hourly WHERE updated_date_time <= (SELECT max(updated_date_time) FROM fct_attestation_vote_correctness_by_client_daily) GROUP BY validator_index, hour_start_date_time))
+            - (SELECT sumIf(head_correct_count, layer = 'execution') FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS head_diff
+      assertions:
+        - type: equals
+          column: duties_diff
+          value: 0
+        - type: equals
+          column: head_diff
+          value: 0
+    - name: Validators that proposed with identifying graffiti map to its clients
+      sql: |
+        SELECT
+          (SELECT uniqExact(proposer_index) FROM fct_block_graffiti FINAL
+           WHERE consensus_client != 'unknown'
+             AND proposer_index GLOBAL IN (SELECT validator_index FROM (SELECT validator_index, hour_start_date_time, argMax(total_duties, updated_date_time) AS total_duties, argMax(head_correct_count, updated_date_time) AS head_correct_count FROM fct_attestation_vote_correctness_by_validator_hourly WHERE updated_date_time <= (SELECT max(updated_date_time) FROM fct_attestation_vote_correctness_by_client_daily) GROUP BY validator_index, hour_start_date_time))) AS identifiable,
+          (SELECT sumIf(validator_count, layer = 'consensus' AND client != 'unknown') FROM fct_attestation_vote_correctness_by_client_daily FINAL) - identifiable AS mapped_diff
+      assertions:
+        - type: greater_than
+          column: identifiable
+          value: 5
+        - type: equals
+          column: mapped_diff
+          value: 0
+    - name: Correct votes never exceed attestations
+      sql: |
+        SELECT countIf(head_correct_count > attested_count OR target_correct_count > attested_count OR attested_count + missed_count != total_duties) AS bad_rows
+        FROM fct_attestation_vote_correctness_by_client_daily FINAL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

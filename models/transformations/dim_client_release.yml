@@ -1,6 +1,6 @@
 table: dim_client_release
 type: scheduled
-schedule: "@every 12h"
+schedule: "@every 1h"
 tags:
   - client
   - release

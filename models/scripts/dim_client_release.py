@@ -77,8 +77,9 @@ def list_tags(repo):
     return tags
 
 
-def api_release_dates(repo, token):
-    """Returns {tag: (published datetime, prerelease, name, html_url)} for every published release from the REST API."""
+def api_release_dates(repo, token, known_tags=frozenset()):
+    """Returns {tag: (published datetime, prerelease, name, html_url)} for published releases from the REST API, newest
+    first, stopping after a page whose releases are all in `known_tags` (stored already, so older pages are too)."""
     headers = {"Accept": "application/vnd.github+json", "User-Agent": USER_AGENT}
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -86,12 +87,15 @@ def api_release_dates(repo, token):
     url = f"https://api.github.com/repos/{repo}/releases?per_page=100"
     while url:
         resp = urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=HTTP_TIMEOUT)
-        for release in json.loads(resp.read()):
+        page = json.loads(resp.read())
+        for release in page:
             if release.get("published_at"):
                 published = datetime.strptime(release["published_at"], "%Y-%m-%dT%H:%M:%SZ")
                 dates[release["tag_name"]] = (
                     published, bool(release.get("prerelease")), release.get("name") or "", release.get("html_url") or "",
                 )
+        if all(release["tag_name"] in known_tags for release in page):
+            break
         url = next_page(resp.headers.get("Link", ""))
     return dates
 
@@ -136,10 +140,10 @@ def atom_release_dates(repo):
     return dates
 
 
-def release_dates(repo, token):
+def release_dates(repo, token, known_tags=frozenset()):
     """Returns (releases, exact): REST API releases, or Atom feed releases (update dates) when the API is unavailable."""
     try:
-        return api_release_dates(repo, token), True
+        return api_release_dates(repo, token, known_tags), True
     except (urllib.error.URLError, ValueError) as e:
         print(f"  {repo}: releases API unavailable ({e}), using the Atom feed")
     try:
@@ -189,7 +193,8 @@ def build_rows(task_start, token, previous):
     for client, layer, repo, prefix in CLIENTS:
         if repo not in tags_by_repo:
             tags_by_repo[repo] = list_tags(repo)
-            releases_by_repo[repo] = release_dates(repo, token)
+            known = {t for (c, t), (d, _, h) in previous.items() if d and h and c in {x[0] for x in CLIENTS if x[2] == repo}}
+            releases_by_repo[repo] = release_dates(repo, token, known)
             latest_by_repo[repo] = api_latest_tag(repo, token)
         tags, (releases, exact) = tags_by_repo[repo], releases_by_repo[repo]
 
@@ -222,11 +227,15 @@ def build_rows(task_start, token, previous):
             })
 
         # GitHub's latest release for the repository, else (a monorepo whose latest is another package, or no API)
-        # the client's most recently published stable release.
+        # the client's most recently published stable release, else its most recently published release, else (no dates
+        # at all) its highest stable version.
         latest = [r for r in client_rows if r["tag"] == latest_by_repo[repo]]
-        stable = [r for r in client_rows if not r["prerelease"] and r["release_date"]]
-        if latest or stable:
-            (latest or [max(stable, key=lambda r: r["release_date"])])[0]["is_latest"] = True
+        dated = [r for r in client_rows if r["release_date"]]
+        stable = [r for r in dated if not r["prerelease"]]
+        if latest or dated:
+            (latest or [max(stable or dated, key=lambda r: r["release_date"])])[0]["is_latest"] = True
+        elif client_rows:
+            max(client_rows, key=lambda r: (not r["prerelease"], [int(n) for n in re.findall(r"\d+", r["version"])]))["is_latest"] = True
         rows.extend(client_rows)
         print(f"  {client}: {len(client_rows)} release tags from {repo}")
     return rows
