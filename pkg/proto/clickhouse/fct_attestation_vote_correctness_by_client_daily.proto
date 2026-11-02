@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily attestation vote correctness and inclusion per consensus and execution client. Validators map to the clients of their most recent identifying graffiti (a proposed block naming the client) in the 365 days before the end of the day. Only validators that proposed with identifying graffiti are covered, the rest are the unknown client.
+
+message FctAttestationVoteCorrectnessByClientDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Client layer: consensus or execution
+  string layer = 13;
+  // Client of the validator most recent identifying graffiti in the 365 days before the end of the day, or unknown
+  string client = 14;
+  // Validators with attestation duties in the day mapped to this client
+  uint32 validator_count = 15;
+  // Attestation duties
+  uint64 total_duties = 16;
+  // Attestations included on chain
+  uint64 attested_count = 17;
+  // Attestations missed
+  uint64 missed_count = 18;
+  // Head votes that were correct
+  uint64 head_correct_count = 19;
+  // Target votes that were correct
+  uint64 target_correct_count = 20;
+  // Source votes that were correct
+  uint64 source_correct_count = 21;
+  // Mean inclusion distance per included attestation, NULL when there were none
+  google.protobuf.DoubleValue avg_inclusion_distance = 22;
+}
+
+// Request for listing fct_attestation_vote_correctness_by_client_daily records
+message ListFctAttestationVoteCorrectnessByClientDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by layer - Client layer: consensus or execution (ORDER BY column 2 - optional)
+  StringFilter layer = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by client - Client of the validator most recent identifying graffiti in the 365 days before the end of the day, or unknown (ORDER BY column 3 - optional)
+  StringFilter client = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by validator_count - Validators with attestation duties in the day mapped to this client (optional)
+  UInt32Filter validator_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total_duties - Attestation duties (optional)
+  UInt64Filter total_duties = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by attested_count - Attestations included on chain (optional)
+  UInt64Filter attested_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by missed_count - Attestations missed (optional)
+  UInt64Filter missed_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by head_correct_count - Head votes that were correct (optional)
+  UInt64Filter head_correct_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by target_correct_count - Target votes that were correct (optional)
+  UInt64Filter target_correct_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by source_correct_count - Source votes that were correct (optional)
+  UInt64Filter source_correct_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by avg_inclusion_distance - Mean inclusion distance per included attestation, NULL when there were none (optional)
+  google.protobuf.DoubleValue avg_inclusion_distance = 12 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_attestation_vote_correctness_by_client_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 13 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctAttestationVoteCorrectnessByClientDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 14 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 15 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_attestation_vote_correctness_by_client_daily records
+message ListFctAttestationVoteCorrectnessByClientDailyResponse {
+  // The list of fct_attestation_vote_correctness_by_client_daily.
+  repeated FctAttestationVoteCorrectnessByClientDaily fct_attestation_vote_correctness_by_client_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_attestation_vote_correctness_by_client_daily record by primary key
+message GetFctAttestationVoteCorrectnessByClientDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_attestation_vote_correctness_by_client_daily record
+message GetFctAttestationVoteCorrectnessByClientDailyResponse {
+  FctAttestationVoteCorrectnessByClientDaily item = 1;
+}
+
+// Query fct_attestation_vote_correctness_by_client_daily data
+service FctAttestationVoteCorrectnessByClientDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctAttestationVoteCorrectnessByClientDailyRequest) returns (ListFctAttestationVoteCorrectnessByClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_vote_correctness_by_client_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctAttestationVoteCorrectnessByClientDailyRequest) returns (GetFctAttestationVoteCorrectnessByClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_attestation_vote_correctness_by_client_daily/{day_start_date}"
+    };
+  }
+}

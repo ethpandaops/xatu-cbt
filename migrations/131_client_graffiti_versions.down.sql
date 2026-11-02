@@ -1,0 +1,16 @@
+DROP TABLE IF EXISTS fct_attestation_vote_correctness_by_client_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_attestation_vote_correctness_by_client_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_proposal_by_client_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_proposal_by_client_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_by_entity_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_by_entity_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_by_entity_hourly ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_by_entity_hourly_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_hourly ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_hourly_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_graffiti_release ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_graffiti_release_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS dim_client_commit ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS dim_client_commit_local ON CLUSTER '{cluster}' SYNC;

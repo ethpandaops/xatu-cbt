@@ -1,0 +1,53 @@
+model: dim_client_commit
+network: mainnet
+assertions:
+  - name: Collects branch commits for every client
+    sql: |
+      SELECT COUNT(*) AS row_count, uniqExact(client) AS clients, countIf(is_tagged) AS tagged
+      FROM dim_client_commit FINAL
+    assertions:
+      - type: greater_than
+        column: row_count
+        value: 100000
+      - type: equals
+        column: clients
+        value: 18
+      - type: greater_than
+        column: tagged
+        value: 2000
+  - name: Rows are well formed
+    sql: |
+      SELECT COUNT(*) AS bad_rows FROM dim_client_commit FINAL
+      WHERE NOT match(commit_sha, '^[0-9a-f]{40}$') OR layer NOT IN ('consensus', 'execution')
+        OR commit_date < '2020-01-01' OR (is_tagged AND (commits_since_base != 0 OR base_tag = ''))
+        OR (base_tag = '' AND base_version != '')
+    assertions:
+      - type: equals
+        column: bad_rows
+        value: 0
+  - name: "Matches git describe: lighthouse 8789462 is v8.3.0-rc.0-3, 54a5589 builds on v8.2.2, 6db6ae9 is v8.2.3"
+    sql: |
+      SELECT
+        countIf(commit_sha = '8789462615dc296537cf0f887b7976bbaf035dd2' AND base_version = 'v8.3.0-rc.0' AND commits_since_base = 3 AND NOT is_tagged) AS rc_descendant,
+        countIf(commit_sha = '54a558917638b138feb6bb1b999db1802f19d4bb' AND base_version = 'v8.2.2' AND NOT is_tagged) AS release_descendant,
+        countIf(commit_sha = '6db6ae9382b7d6f5bd1e0ca0d349bc0dc94adba2' AND base_version = 'v8.2.3' AND is_tagged) AS tagged
+      FROM dim_client_commit FINAL
+      WHERE client = 'lighthouse'
+    assertions:
+      - type: equals
+        column: rc_descendant
+        value: 1
+      - type: equals
+        column: release_descendant
+        value: 1
+      - type: equals
+        column: tagged
+        value: 1
+  - name: Has been scheduled at least once
+    sql: |
+      SELECT COUNT(*) AS count FROM admin_cbt_scheduled FINAL
+      WHERE table = 'dim_client_commit'
+    assertions:
+      - type: equals
+        column: count
+        value: 1
