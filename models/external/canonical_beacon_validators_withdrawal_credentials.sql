@@ -6,6 +6,11 @@ cache:
 interval:
   type: slot
 ---
+-- Cannon rewrites every validator's withdrawal credentials at every epoch and merges keep
+-- one row per validator and value, so this table's own min is a recent epoch that
+-- keeps moving, not how far Cannon has processed. A rising min blocks dependents'
+-- backfill, so canonical_beacon_validators (every validator, every epoch) bounds
+-- are used instead.
 SELECT
     {{ if .cache.is_incremental_scan }}
       '{{ .cache.previous_min }}' as min,
@@ -13,7 +18,7 @@ SELECT
       toUnixTimestamp(min(epoch_start_date_time)) as min,
     {{ end }}
     toUnixTimestamp(max(epoch_start_date_time)) as max
-FROM {{ .self.helpers.from }}
+FROM {{ .self.helpers.from | replace (printf "`%s" .self.table) "`canonical_beacon_validators" }}
 WHERE
     meta_network_name = '{{ .env.NETWORK }}'
 
