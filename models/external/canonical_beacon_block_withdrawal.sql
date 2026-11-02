@@ -7,6 +7,9 @@ interval:
   type: slot
 lag: 1920
 ---
+-- Withdrawals only exist from Capella and are sparse, so this table's own min/max
+-- cannot tell how far Cannon has processed. Every block Cannon processes is
+-- written to canonical_beacon_block, so its bounds are used instead.
 SELECT
     {{ if .cache.is_incremental_scan }}
       '{{ .cache.previous_min }}' as min,
@@ -14,7 +17,7 @@ SELECT
       toUnixTimestamp(min(slot_start_date_time)) as min,
     {{ end }}
     toUnixTimestamp(max(slot_start_date_time)) as max
-FROM {{ .self.helpers.from }}
+FROM {{ .self.helpers.from | replace (printf "`%s" .self.table) "`canonical_beacon_block" }}
 WHERE
     meta_network_name = '{{ .env.NETWORK }}'
 
