@@ -5,7 +5,7 @@ cache:
   full_scan_interval: 24h
 interval:
   type: slot
-lag: 1920
+lag: 384
 ---
 -- Deposits are sparse (days can pass without a row), so this table's own min/max
 -- cannot tell how far Cannon has processed. Every block Cannon processes is
