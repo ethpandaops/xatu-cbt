@@ -75,9 +75,11 @@ engine_get_blobs AS (
         arrayJoin(versioned_hashes) AS vh
     FROM {{ index .dep "{{external}}" "execution_engine_get_blobs" "helpers" "from" }} FINAL
     WHERE meta_network_name = '{{ .env.NETWORK }}'
-        -- Filter execution events by the slot time window (with some buffer for timing differences)
+        -- Calls up to the bounds end only: CBT guarantees beacon_api_eth_v1_beacon_blob covers it, so
+        -- each call's own slot is visible. A call past it could be matched to an earlier slot that
+        -- re-included one of its blobs, and that row would never be replaced. The next task picks it up.
         AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 1 MINUTE
-            AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1 MINUTE
+            AND fromUnixTimestamp({{ .bounds.end }})
         -- Skip events with empty versioned_hashes (arrayJoin on empty array produces 0 rows naturally,
         -- but this makes intent explicit)
         AND length(versioned_hashes) > 0
