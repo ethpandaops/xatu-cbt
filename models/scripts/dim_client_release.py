@@ -21,6 +21,8 @@ CLIENTS = [
     ("lodestar", "consensus", "ChainSafe/lodestar", ""),
     ("grandine", "consensus", "grandinetech/grandine", ""),
     ("caplin", "consensus", "erigontech/erigon", ""),
+    ("silver", "consensus", "gattaca-com/silver", ""),
+    ("ethlambda", "consensus", "lambdaclass/ethlambda", ""),
     ("geth", "execution", "ethereum/go-ethereum", ""),
     ("nethermind", "execution", "NethermindEth/nethermind", ""),
     ("besu", "execution", "besu-eth/besu", ""),

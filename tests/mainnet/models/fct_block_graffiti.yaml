@@ -29,7 +29,7 @@ assertions:
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_block_graffiti FINAL
         WHERE graffiti_format NOT IN ('codes_full', 'codes_long', 'codes_short', 'codes_min', 'version_string', 'rocketpool', 'none', 'empty')
-          OR consensus_client NOT IN ('caplin', 'grandine', 'lighthouse', 'lodestar', 'nimbus', 'prysm', 'teku', 'unknown')
+          OR consensus_client NOT IN ('caplin', 'ethlambda', 'grandine', 'lighthouse', 'lodestar', 'nimbus', 'prysm', 'teku', 'unknown')
           OR execution_client NOT IN ('besu', 'ethereumjs', 'erigon', 'ethrex', 'geth', 'nethermind', 'nimbusel', 'trin-execution', 'reth', 'unknown')
       assertions:
         - type: equals

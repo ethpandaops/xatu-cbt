@@ -83,8 +83,8 @@ FROM (
             -- ClientCode list from execution-apis src/engine/identification.md
             ['BU', 'EJ', 'EG', 'EX', 'GE', 'NM', 'NE', 'TE', 'RH'] AS el_codes,
             ['besu', 'ethereumjs', 'erigon', 'ethrex', 'geth', 'nethermind', 'nimbusel', 'trin-execution', 'reth'] AS el_names,
-            ['CN', 'GR', 'LH', 'LS', 'NB', 'PM', 'TK'] AS cl_codes,
-            ['caplin', 'grandine', 'lighthouse', 'lodestar', 'nimbus', 'prysm', 'teku'] AS cl_names,
+            ['CN', 'LA', 'GR', 'LH', 'LS', 'NB', 'PM', 'TK'] AS cl_codes,
+            ['caplin', 'ethlambda', 'grandine', 'lighthouse', 'lodestar', 'nimbus', 'prysm', 'teku'] AS cl_names,
             -- Code pair with commits ending a word, e.g. GEa579LH6db6, NMb3PM03, EGbaacCNbaac Erigon.
             arrayElement(extractAllGroups(trimmed, '(?P<code1>[A-Z]{2})(?P<commit1>[0-9a-f]{8}|[0-9a-f]{4}|[0-9a-f]{2})(?P<code2>[A-Z]{2})(?P<commit2>[0-9a-f]{8}|[0-9a-f]{4}|[0-9a-f]{2})(?:\\s|$)'), -1) AS pair,
             -- Last word: a code pair, one code or one code with a commit, e.g. GEPM, GE, TKf863.

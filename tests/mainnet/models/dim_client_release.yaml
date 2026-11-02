@@ -10,7 +10,7 @@ assertions:
         value: 1000
       - type: equals
         column: clients
-        value: 16
+        value: 18
   - name: Every release points at a full commit hash
     sql: |
       SELECT COUNT(*) AS bad_rows FROM dim_client_release FINAL
