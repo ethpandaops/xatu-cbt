@@ -6,7 +6,7 @@ cache:
   full_scan_interval: 1h
 interval:
   type: slot
-lag: 1920
+lag: 384
 ---
 SELECT
     {{ if .cache.is_incremental_scan }}

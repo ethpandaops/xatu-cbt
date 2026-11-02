@@ -5,7 +5,7 @@ cache:
   full_scan_interval: 24h
 interval:
   type: slot
-lag: 1920
+lag: 384
 ---
 -- Pending consolidation queue snapshots are sparse (days can pass without a row),
 -- so this table's own min/max cannot tell how far Cannon has processed. An empty
