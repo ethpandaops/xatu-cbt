@@ -1,0 +1,62 @@
+model: fct_custody_probe_by_client_daily
+network: mainnet
+external_data:
+    libp2p_rpc_data_column_custody_probe:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    blob_submitter:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_blob_submitter.parquet
+        network_column: meta_network_name
+    execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: "Every probe of a consensus peer counts once"
+      sql: |
+        SELECT
+          (SELECT sum(probe_count) FROM fct_custody_probe_by_client_daily FINAL) AS probes,
+          (SELECT countIf(lower(meta_peer_implementation) NOT IN ('tysm', 'hermes', 'nebula', 'eth2-crawler', 'enrscout', 'oft-probe', 'migalabs-kumo', 'xrpc-basel1lc', 'geth-blsync', 'nimbus-verified-proxy')) FROM int_custody_probe FINAL) AS raw_probes,
+          probes - raw_probes AS probe_diff,
+          (SELECT countIf(success_count + missing_count + failure_count != probe_count OR missing_peer_count > peer_count) FROM fct_custody_probe_by_client_daily FINAL) AS bad_rows
+      assertions:
+        - type: greater_than
+          column: probes
+          value: 1000
+        - type: equals
+          column: probe_diff
+          value: 0
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: "Lighthouse peers are probed and resolve to releases"
+      sql: |
+        SELECT
+          sumIf(peer_count, client = 'lighthouse') AS lighthouse_peers,
+          sumIf(peer_count, client = 'lighthouse' AND release_status IN ('commit_match', 'version_match')) AS lighthouse_resolved,
+          sumIf(success_count, client = 'lighthouse') / sumIf(probe_count, client = 'lighthouse') AS lighthouse_success_rate
+        FROM fct_custody_probe_by_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: lighthouse_peers
+          value: 100
+        - type: greater_than
+          column: lighthouse_resolved
+          value: 100
+        - type: greater_than
+          column: lighthouse_success_rate
+          value: 0.8
+    - name: "One row per key"
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT day_start_date, client, version, release_status FROM fct_custody_probe_by_client_daily FINAL GROUP BY day_start_date, client, version, release_status HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

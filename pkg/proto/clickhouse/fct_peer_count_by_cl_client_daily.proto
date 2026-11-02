@@ -1,0 +1,139 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily consensus peer census by client and release. Consensus peers our libp2p sentries saw in the day (heartbeats and identify exchanges), one count per peer with its latest agent and address. Crawlers, probes, light clients and our own sentries are excluded. Custody group counts come from metadata responses to our outbound requests. How the version was resolved: commit_match (a release tag commit), commit_untagged (a default or release branch commit, version is the release it builds on), commit_ambiguous, commit_unmatched (a custom or fork build), commit_zero, version_match, version_unmatched or none
+
+message FctPeerCountByClClientDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Consensus client from the peer agent (erigon reported as caplin), unknown when the agent was never seen, other for unparseable names
+  string client = 13;
+  // Release version from dim_client_release when the commit or version resolved (for commit_untagged the release the commit builds on), else the version the agent reports, empty when it reports none
+  string version = 14;
+  // How the version was resolved: commit_match (a release tag commit), commit_untagged (a default or release branch commit, version is the release it builds on), commit_ambiguous, commit_unmatched (a custom or fork build), commit_zero, version_match, version_unmatched or none
+  string release_status = 15;
+  // Peers
+  uint32 peer_count = 16;
+  // Peers our sentries dialled (outbound connections), so publicly reachable
+  uint32 dialled_peer_count = 17;
+  // Peers connected to over QUIC
+  uint32 quic_connected_peer_count = 18;
+  // Peers advertising a QUIC listen address in identify
+  uint32 quic_listen_peer_count = 19;
+  // Peers whose custody group count is known from a metadata response
+  uint32 custody_known_peer_count = 20;
+  // Peers custodying 4 or fewer groups (the minimum)
+  uint32 custody_4_peer_count = 21;
+  // Peers custodying 5 to 8 groups
+  uint32 custody_5_8_peer_count = 22;
+  // Peers custodying 9 to 127 groups
+  uint32 custody_9_127_peer_count = 23;
+  // Peers custodying all 128 groups (supernodes)
+  uint32 custody_128_peer_count = 24;
+  // Median over peers of each peer median heartbeat latency in ms, NULL without heartbeats
+  google.protobuf.DoubleValue latency_p50_ms = 25;
+  // 90th percentile over peers of each peer median heartbeat latency in ms
+  google.protobuf.DoubleValue latency_p90_ms = 26;
+  // Median over peers of each peer longest connection age in ms
+  google.protobuf.DoubleValue connection_age_p50_ms = 27;
+}
+
+// Request for listing fct_peer_count_by_cl_client_daily records
+message ListFctPeerCountByClClientDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by client - Consensus client from the peer agent (erigon reported as caplin), unknown when the agent was never seen, other for unparseable names (ORDER BY column 2 - optional)
+  StringFilter client = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by version - Release version from dim_client_release when the commit or version resolved (for commit_untagged the release the commit builds on), else the version the agent reports, empty when it reports none (ORDER BY column 3 - optional)
+  StringFilter version = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by release_status - How the version was resolved: commit_match (a release tag commit), commit_untagged (a default or release branch commit, version is the release it builds on), commit_ambiguous, commit_unmatched (a custom or fork build), commit_zero, version_match, version_unmatched or none (ORDER BY column 4 - optional)
+  StringFilter release_status = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by peer_count - Peers (optional)
+  UInt32Filter peer_count = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by dialled_peer_count - Peers our sentries dialled (outbound connections), so publicly reachable (optional)
+  UInt32Filter dialled_peer_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by quic_connected_peer_count - Peers connected to over QUIC (optional)
+  UInt32Filter quic_connected_peer_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by quic_listen_peer_count - Peers advertising a QUIC listen address in identify (optional)
+  UInt32Filter quic_listen_peer_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by custody_known_peer_count - Peers whose custody group count is known from a metadata response (optional)
+  UInt32Filter custody_known_peer_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by custody_4_peer_count - Peers custodying 4 or fewer groups (the minimum) (optional)
+  UInt32Filter custody_4_peer_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by custody_5_8_peer_count - Peers custodying 5 to 8 groups (optional)
+  UInt32Filter custody_5_8_peer_count = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by custody_9_127_peer_count - Peers custodying 9 to 127 groups (optional)
+  UInt32Filter custody_9_127_peer_count = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by custody_128_peer_count - Peers custodying all 128 groups (supernodes) (optional)
+  UInt32Filter custody_128_peer_count = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by latency_p50_ms - Median over peers of each peer median heartbeat latency in ms, NULL without heartbeats (optional)
+  google.protobuf.DoubleValue latency_p50_ms = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by latency_p90_ms - 90th percentile over peers of each peer median heartbeat latency in ms (optional)
+  google.protobuf.DoubleValue latency_p90_ms = 16 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by connection_age_p50_ms - Median over peers of each peer longest connection age in ms (optional)
+  google.protobuf.DoubleValue connection_age_p50_ms = 17 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_peer_count_by_cl_client_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 18 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPeerCountByClClientDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 19 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 20 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_peer_count_by_cl_client_daily records
+message ListFctPeerCountByClClientDailyResponse {
+  // The list of fct_peer_count_by_cl_client_daily.
+  repeated FctPeerCountByClClientDaily fct_peer_count_by_cl_client_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_peer_count_by_cl_client_daily record by primary key
+message GetFctPeerCountByClClientDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_peer_count_by_cl_client_daily record
+message GetFctPeerCountByClClientDailyResponse {
+  FctPeerCountByClClientDaily item = 1;
+}
+
+// Query fct_peer_count_by_cl_client_daily data
+service FctPeerCountByClClientDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctPeerCountByClClientDailyRequest) returns (ListFctPeerCountByClClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_count_by_cl_client_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctPeerCountByClClientDailyRequest) returns (GetFctPeerCountByClClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_count_by_cl_client_daily/{day_start_date}"
+    };
+  }
+}

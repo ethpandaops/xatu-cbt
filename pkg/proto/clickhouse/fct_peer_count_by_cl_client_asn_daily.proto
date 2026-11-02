@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Daily consensus peer census by client and autonomous system. Consensus peers our libp2p sentries saw in the day (heartbeats and identify exchanges), one count per peer with its latest agent and address. Crawlers, probes, light clients and our own sentries are excluded. Autonomous systems under 3 peers roll into an other bucket per network type.
+
+message FctPeerCountByClClientAsnDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Consensus client from the peer agent (erigon reported as caplin), unknown when the agent was never seen, other for unparseable names
+  string client = 13;
+  // Autonomous system number of the address, 0 for other and unknown
+  uint32 autonomous_system_number = 14;
+  // Autonomous system organisation, other when the AS has under 3 peers, unknown when not geolocated
+  string autonomous_system_organization = 15;
+  // hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
+  string network_type = 16;
+  // Peers
+  uint32 peer_count = 17;
+}
+
+// Request for listing fct_peer_count_by_cl_client_asn_daily records
+message ListFctPeerCountByClClientAsnDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by client - Consensus client from the peer agent (erigon reported as caplin), unknown when the agent was never seen, other for unparseable names (ORDER BY column 2 - optional)
+  StringFilter client = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (ORDER BY column 3 - optional)
+  StringFilter network_type = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by autonomous_system_organization - Autonomous system organisation, other when the AS has under 3 peers, unknown when not geolocated (ORDER BY column 4 - optional)
+  StringFilter autonomous_system_organization = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by autonomous_system_number - Autonomous system number of the address, 0 for other and unknown (ORDER BY column 5 - optional)
+  UInt32Filter autonomous_system_number = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by peer_count - Peers (optional)
+  UInt32Filter peer_count = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_peer_count_by_cl_client_asn_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 8 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPeerCountByClClientAsnDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 9 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 10 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_peer_count_by_cl_client_asn_daily records
+message ListFctPeerCountByClClientAsnDailyResponse {
+  // The list of fct_peer_count_by_cl_client_asn_daily.
+  repeated FctPeerCountByClClientAsnDaily fct_peer_count_by_cl_client_asn_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_peer_count_by_cl_client_asn_daily record by primary key
+message GetFctPeerCountByClClientAsnDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_peer_count_by_cl_client_asn_daily record
+message GetFctPeerCountByClClientAsnDailyResponse {
+  FctPeerCountByClClientAsnDaily item = 1;
+}
+
+// Query fct_peer_count_by_cl_client_asn_daily data
+service FctPeerCountByClClientAsnDailyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctPeerCountByClClientAsnDailyRequest) returns (ListFctPeerCountByClClientAsnDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_count_by_cl_client_asn_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctPeerCountByClClientAsnDailyRequest) returns (GetFctPeerCountByClClientAsnDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_count_by_cl_client_asn_daily/{day_start_date}"
+    };
+  }
+}
