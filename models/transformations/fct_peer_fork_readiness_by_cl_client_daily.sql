@@ -73,6 +73,9 @@ WITH
             -- Stable before pre-release, then the numerically highest version.
             (NOT prerelease, arrayMap(x -> toUInt32OrZero(x), extractAll(version, '\\d+'))) AS version_rank
         FROM {{ index .dep "{{transformation}}" "dim_client_release" "helpers" "from" }} FINAL
+        -- Fail until both dimension tables have run once, so a fresh deployment retries instead of storing unresolved rows.
+        WHERE throwIf((SELECT count() FROM {{ index .dep "{{transformation}}" "dim_client_release" "helpers" "from" }}) = 0, 'dim_client_release is empty') = 0
+          AND throwIf((SELECT count() FROM {{ index .dep "{{transformation}}" "dim_client_commit" "helpers" "from" }}) = 0, 'dim_client_commit is empty') = 0
     ),
     -- One row per release and commit prefix length, so a prefix lookup is an equality join.
     release_prefixes AS (

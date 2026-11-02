@@ -73,7 +73,7 @@ assertions:
           (SELECT uniqExact(proposer_index) FROM fct_block_graffiti FINAL WHERE consensus_client != 'unknown') AS identifiable,
           (SELECT sumIf(validator_count, layer = 'consensus' AND client != 'unknown') FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS mapped,
           mapped <= identifiable AS within_identifiable,
-          (SELECT countIf(layer = 'consensus' AND client NOT IN (SELECT DISTINCT consensus_client FROM fct_block_graffiti FINAL)) FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS foreign_clients
+          (SELECT countIf(layer = 'consensus' AND client GLOBAL NOT IN (SELECT DISTINCT consensus_client FROM fct_block_graffiti FINAL)) FROM fct_attestation_vote_correctness_by_client_daily FINAL) AS foreign_clients
       assertions:
         - type: greater_than
           column: mapped
