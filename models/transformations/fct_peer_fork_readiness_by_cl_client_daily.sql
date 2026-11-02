@@ -133,11 +133,20 @@ WITH
     resolved AS (
         SELECT
             p.*,
+            if(c.commit_count = 1 OR c.published_commit_count = 1, if(c.commit_count = 1, c.any_version, c.published_version), NULL) AS tag_version,
+            if(b.branch_commit_count = 1, b.branch_base_version, NULL) AS branch_version,
+            -- A resolved commit wins over the version the agent states, which some clients leave stale (Grandine builds
+            -- at the 2.0.6 tag report 2.0.5). commit_mismatch flags the disagreement, and unresolved commits keep the stated
+            -- version. Cores drop the v and any suffix, so 3.0.0 agrees with 3.0.0-rc.0.
+            if(p.semver != '', ifNull(v.release_version, p.semver), '') AS stated_version,
+            replaceRegexpOne(replaceRegexpOne(p.semver, '^[vV]', ''), '[-+].*$', '') AS stated_core,
             multiIf(
                 match(p.commit, '^0+$'), 'commit_zero',
-                p.commit != '' AND (c.commit_count = 1 OR c.published_commit_count = 1), 'commit_match',
+                tag_version IS NOT NULL AND (p.semver = '' OR replaceRegexpOne(replaceRegexpOne(tag_version, '^[vV]', ''), '[-+].*$', '') = stated_core), 'commit_match',
+                tag_version IS NOT NULL, 'commit_mismatch',
                 p.commit != '' AND c.commit_count > 1, 'commit_ambiguous',
-                p.commit != '' AND b.branch_commit_count = 1, 'commit_untagged',
+                branch_version IS NOT NULL AND (p.semver = '' OR branch_version = '' OR replaceRegexpOne(replaceRegexpOne(branch_version, '^[vV]', ''), '[-+].*$', '') = stated_core), 'commit_untagged',
+                branch_version IS NOT NULL, 'commit_mismatch',
                 p.commit != '' AND b.branch_commit_count > 1, 'commit_ambiguous',
                 p.commit != '', 'commit_unmatched',
                 p.semver != '' AND v.release_version IS NOT NULL, 'version_match',
@@ -145,10 +154,9 @@ WITH
                 'none'
             ) AS release_status,
             ifNull(multiIf(
-                release_status = 'commit_match', if(c.commit_count = 1, c.any_version, c.published_version),
-                release_status = 'commit_untagged' AND b.branch_base_version != '', b.branch_base_version,
-                release_status = 'version_match', v.release_version,
-                p.semver
+                tag_version IS NOT NULL, tag_version,
+                branch_version != '', branch_version,
+                stated_version
             ), '') AS version
         FROM enr_peers AS p
         GLOBAL LEFT JOIN commit_releases AS c

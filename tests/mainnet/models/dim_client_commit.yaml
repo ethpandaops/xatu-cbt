@@ -43,6 +43,20 @@ assertions:
       - type: equals
         column: tagged
         value: 1
+  - name: "Branches without recent tags have no base: erigon main does not describe to v3.0.0-beta1"
+    sql: |
+      SELECT
+        countIf(base_tag != '' AND commit_date > '2025-06-01' AND base_version = 'v3.0.0-beta1') AS stale_bases,
+        countIf(base_tag = '' AND commit_date > '2026-01-01') AS unbased_recent
+      FROM dim_client_commit FINAL
+      WHERE client = 'caplin'
+    assertions:
+      - type: equals
+        column: stale_bases
+        value: 0
+      - type: greater_than
+        column: unbased_recent
+        value: 1000
   - name: Has been scheduled at least once
     sql: |
       SELECT COUNT(*) AS count FROM admin_cbt_scheduled FINAL

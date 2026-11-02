@@ -37,7 +37,7 @@ type DimClientCommit struct {
 	CommitSha string `protobuf:"bytes,15,opt,name=commit_sha,json=commitSha,proto3" json:"commit_sha,omitempty"`
 	// Committer date of the commit
 	CommitDate uint32 `protobuf:"varint,16,opt,name=commit_date,json=commitDate,proto3" json:"commit_date,omitempty"`
-	// Release tag the commit builds on: the tag reachable in the fewest parent steps, as git describe picks it, empty before the first tag
+	// Release tag the commit builds on: the tag reachable in the fewest parent steps, as git describe picks it, empty before the first tag or when that tag was committed over 120 days before the commit (a branch without recent tags, e.g. erigon main)
 	BaseTag string `protobuf:"bytes,17,opt,name=base_tag,json=baseTag,proto3" json:"base_tag,omitempty"`
 	// Version of base_tag, as in dim_client_release
 	BaseVersion string `protobuf:"bytes,18,opt,name=base_version,json=baseVersion,proto3" json:"base_version,omitempty"`
@@ -167,7 +167,7 @@ type ListDimClientCommitRequest struct {
 	Repository *StringFilter `protobuf:"bytes,5,opt,name=repository,proto3" json:"repository,omitempty"`
 	// Filter by commit_date - Committer date of the commit (optional)
 	CommitDate *UInt32Filter `protobuf:"bytes,6,opt,name=commit_date,json=commitDate,proto3" json:"commit_date,omitempty"`
-	// Filter by base_tag - Release tag the commit builds on: the tag reachable in the fewest parent steps, as git describe picks it, empty before the first tag (optional)
+	// Filter by base_tag - Release tag the commit builds on: the tag reachable in the fewest parent steps, as git describe picks it, empty before the first tag or when that tag was committed over 120 days before the commit (a branch without recent tags, e.g. erigon main) (optional)
 	BaseTag *StringFilter `protobuf:"bytes,7,opt,name=base_tag,json=baseTag,proto3" json:"base_tag,omitempty"`
 	// Filter by base_version - Version of base_tag, as in dim_client_release (optional)
 	BaseVersion *StringFilter `protobuf:"bytes,8,opt,name=base_version,json=baseVersion,proto3" json:"base_version,omitempty"`

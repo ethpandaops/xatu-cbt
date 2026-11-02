@@ -35,7 +35,7 @@ type FctBlockGraffitiClientVersionHourly struct {
 	Layer string `protobuf:"bytes,13,opt,name=layer,proto3" json:"layer,omitempty"`
 	// Client named by the block graffiti, or unknown
 	Client string `protobuf:"bytes,14,opt,name=client,proto3" json:"client,omitempty"`
-	// Release version the graffiti resolves to, empty when unresolved
+	// Release version the graffiti resolves to, else the version it states, empty when unresolved
 	Version string `protobuf:"bytes,15,opt,name=version,proto3" json:"version,omitempty"`
 	// Commit prefix from the graffiti, lowercase, empty when there is none
 	CommitPrefix string `protobuf:"bytes,16,opt,name=commit_prefix,json=commitPrefix,proto3" json:"commit_prefix,omitempty"`
@@ -145,7 +145,7 @@ type ListFctBlockGraffitiClientVersionHourlyRequest struct {
 	Layer *StringFilter `protobuf:"bytes,2,opt,name=layer,proto3" json:"layer,omitempty"`
 	// Filter by client - Client named by the block graffiti, or unknown (ORDER BY column 3 - optional)
 	Client *StringFilter `protobuf:"bytes,3,opt,name=client,proto3" json:"client,omitempty"`
-	// Filter by version - Release version the graffiti resolves to, empty when unresolved (ORDER BY column 4 - optional)
+	// Filter by version - Release version the graffiti resolves to, else the version it states, empty when unresolved (ORDER BY column 4 - optional)
 	Version *StringFilter `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
 	// Filter by commit_prefix - Commit prefix from the graffiti, lowercase, empty when there is none (ORDER BY column 5 - optional)
 	CommitPrefix *StringFilter `protobuf:"bytes,5,opt,name=commit_prefix,json=commitPrefix,proto3" json:"commit_prefix,omitempty"`

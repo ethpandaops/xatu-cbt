@@ -48,6 +48,19 @@ assertions:
         - type: greater_than
           column: custom_geth
           value: 500
+    - name: "Geth agents parse -stable-<commit>: the v1.16.7 tag commit b9f3a3d9 matches, the non-upstream c7a5f611 keeps its stated version"
+      sql: |
+        SELECT
+          sumIf(peer_count, client = 'geth' AND version = 'v1.16.7' AND release_status = 'commit_match') AS tagged,
+          sumIf(peer_count, client = 'geth' AND version = 'v1.16.7' AND release_status = 'commit_unmatched') AS custom
+        FROM fct_peer_count_by_el_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: tagged
+          value: 450
+        - type: greater_than
+          column: custom
+          value: 887
     - name: "One row per key"
       sql: |
         SELECT COUNT(*) AS duplicate_keys FROM (
