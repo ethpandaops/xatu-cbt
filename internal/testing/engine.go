@@ -578,16 +578,19 @@ func (e *CBTEngine) pollUntilAllCompleted(
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
+	// readyAt persists across polls; see checkTransformationProgress.
+	readyAt := make(map[string]time.Time, len(allModels))
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-timeout.C:
-			pending := e.getPendingModels(ctx, conn, dbName, allModels)
+			pending, _ := e.checkTransformationProgress(ctx, conn, dbName, allModels, readyAt)
 
 			return fmt.Errorf("timeout waiting for transformations: %v still pending", pending) //nolint:err113 // Dynamic timeout message
 		case <-ticker.C:
-			pending, err := e.checkTransformationProgress(ctx, conn, dbName, allModels)
+			pending, err := e.checkTransformationProgress(ctx, conn, dbName, allModels, readyAt)
 			if err != nil {
 				continue
 			}
@@ -606,11 +609,18 @@ func (e *CBTEngine) pollUntilAllCompleted(
 }
 
 // checkTransformationProgress checks admin tables and returns pending models.
+//
+// readyAt records, for each scheduled model, the start time of the first run
+// seen to complete. It must persist across polls: a scheduled model keeps
+// re-running, so its latest start time keeps moving, and a scheduled dependent
+// on the same schedule (e.g. both "@every 5s") ticks at the same instant and
+// would never start strictly after it.
 func (e *CBTEngine) checkTransformationProgress(
 	ctx context.Context,
 	conn *sql.DB,
 	dbName string,
 	allModels map[string]bool,
+	readyAt map[string]time.Time,
 ) ([]string, error) {
 	// incrementalTimes maps each incremental model to when it last wrote data;
 	// presence in the map means it has processed at least one interval.
@@ -668,11 +678,15 @@ func (e *CBTEngine) checkTransformationProgress(
 					continue // external deps are seeded up front, always ready
 				}
 
-				if !isComplete(dep) || !runTime.After(e.modelReadyTime(dep, incrementalTimes, scheduledTimes)) {
+				if !isComplete(dep) || !runTime.After(e.modelReadyTime(dep, incrementalTimes, readyAt)) {
 					result = false
 
 					break
 				}
+			}
+
+			if _, seen := readyAt[model]; result && !seen {
+				readyAt[model] = runTime
 			}
 		}
 
@@ -697,11 +711,12 @@ func (e *CBTEngine) checkTransformationProgress(
 	return pending, nil
 }
 
-// modelReadyTime returns when a dependency's data became available: a scheduled
-// model's latest run start time, otherwise its incremental write time.
-func (e *CBTEngine) modelReadyTime(model string, incrementalTimes, scheduledTimes map[string]time.Time) time.Time {
+// modelReadyTime returns when a complete dependency's data became available: a
+// scheduled model's first complete run start time, otherwise its incremental
+// write time.
+func (e *CBTEngine) modelReadyTime(model string, incrementalTimes, readyAt map[string]time.Time) time.Time {
 	if tm := e.modelCache.GetTransformationModel(model); tm != nil && tm.ExecutionType == executionTypeScheduled {
-		return scheduledTimes[model]
+		return readyAt[model]
 	}
 
 	return incrementalTimes[model]
@@ -734,12 +749,6 @@ func (e *CBTEngine) getModelTimes(ctx context.Context, conn *sql.DB, dbName, adm
 	}
 
 	return times, nil
-}
-
-// getPendingModels returns models that haven't appeared in admin tables yet.
-func (e *CBTEngine) getPendingModels(ctx context.Context, conn *sql.DB, dbName string, allModels map[string]bool) []string {
-	pending, _ := e.checkTransformationProgress(ctx, conn, dbName, allModels)
-	return pending
 }
 
 // waitForAdminTables waits for CBT admin tables to be created

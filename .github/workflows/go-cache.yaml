@@ -1,0 +1,34 @@
+name: go-cache
+# Seeds the setup-go module and build cache on master. PR runs can restore
+# caches saved on their base branch but nothing else ran setup-go on master,
+# so most test jobs missed the cache and spent ~20s on a cold `make build`.
+# Uses the same runner labels as the test jobs: the cache only restores where
+# the Go cache paths match.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.github/workflows/go-cache.yaml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: Seed Go cache
+    runs-on:
+      - self-hosted-ghr
+      - size-l-x64
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: '1.26'
+          check-latest: true
+      # Same package and flags as `make build` in the test workflows, without
+      # its CBT image pull.
+      - name: Build xatu-cbt
+        run: go build -o ./bin/xatu-cbt ./cmd/xatu-cbt
