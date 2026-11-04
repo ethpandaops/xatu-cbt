@@ -109,3 +109,41 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    - name: Every canonical block with blob gas has a canonical row whose count is its blob gas over 131072
+      sql: |
+        SELECT
+          countIf(b.gas > 0) AS blob_blocks,
+          countIf(b.gas > 0 AND c.blob_count IS NULL) AS missing,
+          countIf(b.gas > 0 AND c.blob_count IS NOT NULL AND c.blob_count != intDiv(b.gas, 131072)) AS wrong_count
+        FROM (
+          SELECT slot_start_date_time, toString(block_root) AS block_root, ifNull(execution_payload_blob_gas_used, 0) AS gas
+          FROM int_block_canonical FINAL
+          WHERE slot_start_date_time BETWEEN (SELECT min(slot_start_date_time) FROM fct_block_blob_count FINAL)
+            AND (SELECT max(slot_start_date_time) FROM fct_block_blob_count FINAL)
+        ) AS b
+        LEFT JOIN (
+          SELECT slot_start_date_time, block_root, blob_count FROM fct_block_blob_count FINAL WHERE status = 'canonical'
+        ) AS c USING (slot_start_date_time, block_root)
+        SETTINGS join_use_nulls = 1
+      assertions:
+        - type: greater_than
+          column: blob_blocks
+          value: 0
+        - type: equals
+          column: missing
+          value: 0
+        - type: equals
+          column: wrong_count
+          value: 0
+    - name: No orphaned row is a canonical block
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM fct_block_blob_count AS f FINAL
+        WHERE f.status = 'orphaned'
+          AND (f.slot_start_date_time, f.block_root) GLOBAL IN (
+            SELECT slot_start_date_time, toString(block_root) FROM int_block_canonical FINAL
+          )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
