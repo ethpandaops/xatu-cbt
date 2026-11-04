@@ -1,0 +1,41 @@
+model: fct_engine_new_payload_duration_chunked_50ms_hourly
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_duration_chunked_50ms_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    execution_engine_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_duration_chunked_50ms_execution_engine_new_payload.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Counts every observation once
+      sql: |
+        SELECT
+          (SELECT count() FROM int_engine_new_payload FINAL) AS source_observations,
+          (SELECT sum(observation_count) FROM fct_engine_new_payload_duration_chunked_50ms_hourly FINAL) - source_observations AS observation_diff
+      assertions:
+        - type: greater_than
+          column: source_observations
+          value: 0
+        - type: equals
+          column: observation_diff
+          value: 0
+    - name: Counts match int_engine_new_payload per hour, node class, client version and chunk
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT hour_start_date_time, node_class, meta_execution_implementation, meta_execution_version, chunk_duration_ms, observation_count, valid_count, invalid_count FROM fct_engine_new_payload_duration_chunked_50ms_hourly FINAL WHERE observation_count > 0
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, node_class, meta_execution_implementation, meta_execution_version,
+                 toInt64(floor(duration_ms / 50) * 50) AS chunk_duration_ms, count() AS observation_count, countIf(status = 'VALID') AS valid_count, countIf(status = 'INVALID' OR status = 'INVALID_BLOCK_HASH') AS invalid_count
+          FROM int_engine_new_payload FINAL
+          GROUP BY hour_start_date_time, node_class, meta_execution_implementation, meta_execution_version, chunk_duration_ms
+        ) AS b USING (hour_start_date_time, node_class, meta_execution_implementation, meta_execution_version, chunk_duration_ms)
+        WHERE a.observation_count != b.observation_count OR a.valid_count != b.valid_count OR a.invalid_count != b.invalid_count
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0

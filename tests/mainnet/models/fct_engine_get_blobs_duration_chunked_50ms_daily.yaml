@@ -1,0 +1,38 @@
+model: fct_engine_get_blobs_duration_chunked_50ms_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_blob:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_get_blobs_duration_chunked_50ms_beacon_api_eth_v1_beacon_blob.parquet
+        network_column: meta_network_name
+    execution_engine_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_get_blobs_duration_chunked_50ms_execution_engine_get_blobs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Counts every observation once
+      sql: |
+        SELECT
+          (SELECT count() FROM int_engine_get_blobs FINAL) AS source_observations,
+          (SELECT sum(observation_count) FROM fct_engine_get_blobs_duration_chunked_50ms_daily FINAL) - source_observations AS observation_diff
+      assertions:
+        - type: greater_than
+          column: source_observations
+          value: 0
+        - type: equals
+          column: observation_diff
+          value: 0
+    - name: Counts match int_engine_get_blobs per day, node class, client version and chunk
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT day_start_date, node_class, meta_execution_implementation, meta_execution_version, chunk_duration_ms, observation_count, success_count, partial_count, empty_count, error_count FROM fct_engine_get_blobs_duration_chunked_50ms_daily FINAL WHERE observation_count > 0
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT toDate(slot_start_date_time) AS day_start_date, node_class, meta_execution_implementation, meta_execution_version,
+                 toInt64(floor(duration_ms / 50) * 50) AS chunk_duration_ms, count() AS observation_count, countIf(status = 'SUCCESS') AS success_count, countIf(status = 'PARTIAL') AS partial_count, countIf(status = 'EMPTY') AS empty_count, countIf(status = 'ERROR' OR status = 'UNSUPPORTED') AS error_count
+          FROM int_engine_get_blobs FINAL
+          GROUP BY day_start_date, node_class, meta_execution_implementation, meta_execution_version, chunk_duration_ms
+        ) AS b USING (day_start_date, node_class, meta_execution_implementation, meta_execution_version, chunk_duration_ms)
+        WHERE a.observation_count != b.observation_count OR a.success_count != b.success_count OR a.partial_count != b.partial_count OR a.empty_count != b.empty_count OR a.error_count != b.error_count
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0

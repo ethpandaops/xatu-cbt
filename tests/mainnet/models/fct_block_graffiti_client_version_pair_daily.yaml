@@ -1,0 +1,47 @@
+model: fct_block_graffiti_client_version_pair_daily
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v3.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Counts every block once
+      sql: |
+        SELECT sum(block_count) AS blocks FROM fct_block_graffiti_client_version_pair_daily FINAL
+      assertions:
+        - type: equals
+          column: blocks
+          value: 623
+    - name: Counts match the per-block model
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT day_start_date, consensus_client, consensus_version, consensus_release_status,
+                 execution_client, execution_version, execution_release_status, block_count
+          FROM fct_block_graffiti_client_version_pair_daily FINAL
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT toDate(slot_start_date_time) AS day_start_date,
+                 consensus_client, consensus_client_version AS consensus_version, consensus_client_release_status AS consensus_release_status,
+                 execution_client, execution_client_version AS execution_version, execution_client_release_status AS execution_release_status,
+                 toUInt32(count()) AS block_count
+          FROM int_block_graffiti_release FINAL
+          GROUP BY day_start_date, consensus_client, consensus_version, consensus_release_status,
+                   execution_client, execution_version, execution_release_status
+        ) AS b USING (day_start_date, consensus_client, consensus_version, consensus_release_status,
+                      execution_client, execution_version, execution_release_status)
+        WHERE a.block_count != b.block_count
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Pairs a resolved consensus release with a resolved execution release
+      sql: |
+        SELECT sum(block_count) AS blocks FROM fct_block_graffiti_client_version_pair_daily FINAL
+        WHERE consensus_version != '' AND execution_version != ''
+      assertions:
+        - type: greater_than
+          column: blocks
+          value: 0
