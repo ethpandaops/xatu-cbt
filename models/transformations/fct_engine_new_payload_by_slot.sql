@@ -53,3 +53,5 @@ FROM {{ index .dep "{{transformation}}" "int_engine_new_payload" "helpers" "from
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 6 MINUTE
     AND fromUnixTimestamp({{ .bounds.end }})
 GROUP BY slot_start_date_time, block_hash, status, node_class
+-- Merge each key across shards before inserting instead of each shard inserting its partial aggregate.
+SETTINGS parallel_distributed_insert_select = 0

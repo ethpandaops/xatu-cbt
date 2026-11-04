@@ -50,3 +50,5 @@ WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTE
     AND fromUnixTimestamp({{ .bounds.end }})
     AND meta_execution_implementation != ''
 GROUP BY slot_start_date_time, block_root, meta_execution_implementation, meta_execution_version, status, node_class
+-- Merge each key across shards before inserting instead of each shard inserting its partial aggregate.
+SETTINGS parallel_distributed_insert_select = 0
