@@ -32,6 +32,8 @@ message FctEpochSummaryCanonical {
   uint32 votes_other = 19;
   // Share of scheduled attestations included on chain, (votes_head + votes_other) / votes_max from 0 to 1, NULL when none were scheduled
   google.protobuf.DoubleValue participation_rate = 20;
+  // participation_rate in basis points from 0 to 10000, rounded down, 0 when none were scheduled. Integer so the API can filter on it
+  uint32 participation_bps = 21;
 }
 
 // Request for listing fct_epoch_summary_canonical records
@@ -57,18 +59,20 @@ message ListFctEpochSummaryCanonicalRequest {
   UInt32Filter votes_other = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by participation_rate - Share of scheduled attestations included on chain, (votes_head + votes_other) / votes_max from 0 to 1, NULL when none were scheduled (optional)
   google.protobuf.DoubleValue participation_rate = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by participation_bps - participation_rate in basis points from 0 to 10000, rounded down, 0 when none were scheduled. Integer so the API can filter on it (optional)
+  UInt32Filter participation_bps = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_epoch_summary_canonical to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 11 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 12 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctEpochSummaryCanonical` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 12 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 13 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 13 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 14 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_epoch_summary_canonical records

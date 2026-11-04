@@ -175,7 +175,8 @@ CREATE TABLE fct_epoch_summary_canonical_local on cluster '{cluster}' (
     `votes_max` UInt32 COMMENT 'Attestations scheduled across the epoch slots' CODEC(ZSTD(1)),
     `votes_head` UInt32 COMMENT 'Attestations included on chain that voted for the block of their own slot' CODEC(ZSTD(1)),
     `votes_other` UInt32 COMMENT 'Attestations included on chain that voted for another block' CODEC(ZSTD(1)),
-    `participation_rate` Nullable(Float64) COMMENT 'Share of scheduled attestations included on chain, (votes_head + votes_other) / votes_max from 0 to 1, NULL when none were scheduled' CODEC(ZSTD(1))
+    `participation_rate` Nullable(Float64) COMMENT 'Share of scheduled attestations included on chain, (votes_head + votes_other) / votes_max from 0 to 1, NULL when none were scheduled' CODEC(ZSTD(1)),
+    `participation_bps` UInt16 COMMENT 'participation_rate in basis points from 0 to 10000, rounded down, 0 when none were scheduled. Integer so the API can filter on it' CODEC(ZSTD(1))
 ) ENGINE = ReplicatedReplacingMergeTree(
     '/clickhouse/{installation}/{cluster}/tables/{shard}/{database}/{table}',
     '{replica}',

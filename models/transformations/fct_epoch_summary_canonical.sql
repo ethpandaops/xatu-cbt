@@ -60,7 +60,8 @@ SELECT
     ifNull(v.votes_max, 0) AS votes_max,
     ifNull(v.votes_head, 0) AS votes_head,
     ifNull(v.votes_other, 0) AS votes_other,
-    if(ifNull(v.votes_max, 0) > 0, (v.votes_head + v.votes_other) / v.votes_max, NULL) AS participation_rate
+    if(ifNull(v.votes_max, 0) > 0, (v.votes_head + v.votes_other) / v.votes_max, NULL) AS participation_rate,
+    toUInt16(if(ifNull(v.votes_max, 0) > 0, intDiv((toUInt64(v.votes_head) + v.votes_other) * 10000, v.votes_max), 0)) AS participation_bps
 FROM slots AS s
 GLOBAL LEFT JOIN votes AS v ON s.epoch = v.epoch
 SETTINGS join_use_nulls = 1

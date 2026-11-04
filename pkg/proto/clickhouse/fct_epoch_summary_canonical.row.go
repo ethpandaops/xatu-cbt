@@ -24,6 +24,7 @@ type FctEpochSummaryCanonicalRow struct {
 	VotesHead uint32 `ch:"votes_head" json:"votes_head"`
 	VotesOther uint32 `ch:"votes_other" json:"votes_other"`
 	ParticipationRate *float64 `ch:"participation_rate" json:"participation_rate"`
+	ParticipationBps uint32 `ch:"participation_bps" json:"participation_bps"`
 }
 
 // TableName returns the ClickHouse table this row maps to.
@@ -47,5 +48,6 @@ func (r *FctEpochSummaryCanonicalRow) ToProto() *FctEpochSummaryCanonical {
 	if r.ParticipationRate != nil {
 		p.ParticipationRate = wrapperspb.Double(*r.ParticipationRate)
 	}
+	p.ParticipationBps = r.ParticipationBps
 	return p
 }

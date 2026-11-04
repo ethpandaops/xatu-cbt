@@ -304,6 +304,36 @@ func BuildListFctEpochSummaryCanonicalQuery(req *ListFctEpochSummaryCanonicalReq
 
 	// Add filter for column: participation_rate
 
+	// Add filter for column: participation_bps
+	if req.ParticipationBps != nil {
+		switch filter := req.ParticipationBps.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("participation_bps", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("participation_bps", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("participation_bps", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("participation_bps", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("participation_bps", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("participation_bps", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("participation_bps", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("participation_bps", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("participation_bps", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -329,7 +359,7 @@ func BuildListFctEpochSummaryCanonicalQuery(req *ListFctEpochSummaryCanonicalReq
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "epoch", "epoch_start_date_time", "slot_count", "canonical_block_count", "missed_slot_count", "votes_max", "votes_head", "votes_other", "participation_rate"}
+		validFields := []string{"updated_date_time", "epoch", "epoch_start_date_time", "slot_count", "canonical_block_count", "missed_slot_count", "votes_max", "votes_head", "votes_other", "participation_rate", "participation_bps"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -341,7 +371,7 @@ func BuildListFctEpochSummaryCanonicalQuery(req *ListFctEpochSummaryCanonicalReq
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "toUInt32(`slot_count`) AS `slot_count`", "toUInt32(`canonical_block_count`) AS `canonical_block_count`", "toUInt32(`missed_slot_count`) AS `missed_slot_count`", "votes_max", "votes_head", "votes_other", "participation_rate"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "toUInt32(`slot_count`) AS `slot_count`", "toUInt32(`canonical_block_count`) AS `canonical_block_count`", "toUInt32(`missed_slot_count`) AS `missed_slot_count`", "votes_max", "votes_head", "votes_other", "participation_rate", "toUInt32(`participation_bps`) AS `participation_bps`"}
 
 	return BuildParameterizedQuery("fct_epoch_summary_canonical", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -361,7 +391,7 @@ func BuildGetFctEpochSummaryCanonicalQuery(req *GetFctEpochSummaryCanonicalReque
 	orderByClause := " ORDER BY epoch_start_date_time"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "toUInt32(`slot_count`) AS `slot_count`", "toUInt32(`canonical_block_count`) AS `canonical_block_count`", "toUInt32(`missed_slot_count`) AS `missed_slot_count`", "votes_max", "votes_head", "votes_other", "participation_rate"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "toUInt32(`slot_count`) AS `slot_count`", "toUInt32(`canonical_block_count`) AS `canonical_block_count`", "toUInt32(`missed_slot_count`) AS `missed_slot_count`", "votes_max", "votes_head", "votes_other", "participation_rate", "toUInt32(`participation_bps`) AS `participation_bps`"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_epoch_summary_canonical", columns, qb, orderByClause, 1, 0, options...)

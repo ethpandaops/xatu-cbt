@@ -62,7 +62,8 @@ assertions:
         SELECT
           countIf(votes_max > 0) AS voted_epochs,
           countIf(votes_max > 0 AND (participation_rate IS NULL OR participation_rate < 0.5 OR participation_rate > 1
-            OR abs(participation_rate - (votes_head + votes_other) / votes_max) > 1e-9)) AS bad_rows
+            OR abs(participation_rate - (votes_head + votes_other) / votes_max) > 1e-9
+            OR participation_bps != intDiv((toUInt64(votes_head) + votes_other) * 10000, votes_max))) AS bad_rows
         FROM fct_epoch_summary_canonical FINAL
       assertions:
         - type: greater_than
