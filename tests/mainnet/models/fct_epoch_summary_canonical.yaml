@@ -14,12 +14,16 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_proposer_duty.parquet
         network_column: meta_network_name
 assertions:
-    - name: Has a complete epoch
+    - name: Has epochs, none with more than 32 slots
       sql: |
-        SELECT countIf(slot_count = 32) AS complete_epochs FROM fct_epoch_summary_canonical FINAL
+        SELECT count() AS epochs, countIf(slot_count = 0 OR slot_count > 32 OR missed_slot_count > slot_count) AS bad_rows
+        FROM fct_epoch_summary_canonical FINAL
       assertions:
         - type: greater_than
-          column: complete_epochs
+          column: epochs
+          value: 0
+        - type: equals
+          column: bad_rows
           value: 0
     - name: Slot and block counts match the per-slot proposer table
       sql: |
