@@ -49,6 +49,8 @@ dependencies:
 --     string-like representations such as '0x0'.
 --   - Uses the fixed RLP size of logsBloom (256-byte bloom => 259 bytes total).
 --   - Reads external ReplacingMergeTree sources with FINAL for deterministic rows.
+--   - Deduplicates logs by (block_number, transaction_hash, log_index), since FINAL
+--     misses copies of a log that carry a different internal_index.
 --
 -- =============================================================================
 -- DATA SOURCES
@@ -127,6 +129,7 @@ WITH
             SELECT
                 block_number,
                 transaction_hash,
+                log_index,
                 topic0, topic1, topic2, topic3, data,
                 (
                     if(topic0 != '' AND topic0 != '0x', 1, 0)
@@ -154,6 +157,10 @@ WITH
             FROM {{ index .dep "{{external}}" "canonical_execution_logs" "helpers" "from" }} FINAL
             WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
                 AND meta_network_name = '{{ .env.NETWORK }}'
+            -- FINAL cannot collapse duplicate copies of a log: the loader numbers
+            -- internal_index per insert batch, so copies differ in the sorting key.
+            -- log_index identifies a log within its block, so keep one row per log.
+            LIMIT 1 BY block_number, transaction_hash, log_index
         )
         GROUP BY block_number, transaction_hash
     ),
