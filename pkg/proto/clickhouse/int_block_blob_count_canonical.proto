@@ -6,7 +6,7 @@ import "common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
-// Blob count of every canonical block that carries blobs, from its execution payload blob gas (blob gas used over 131072), or from its blob sidecars when the beacon block has no execution payload (Gloas onwards)
+// Blob count of every canonical block that carries blobs, from its execution payload blob gas (blob gas used over 131072) before Gloas, from the blob KZG commitments in its execution payload bid from Gloas, and from its blob sidecars only when neither is available
 message IntBlockBlobCountCanonical {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -20,7 +20,7 @@ message IntBlockBlobCountCanonical {
   uint32 epoch_start_date_time = 15;
   // The beacon block root hash
   string block_root = 16;
-  // The number of blobs in the block, from its execution payload blob gas, or its blob sidecars from Gloas onwards
+  // The number of blobs in the block, from its execution payload blob gas before Gloas, its execution payload bid blob KZG commitments from Gloas, or its blob sidecars when neither is available
   uint32 blob_count = 17;
 }
 
@@ -40,7 +40,7 @@ message ListIntBlockBlobCountCanonicalRequest {
   UInt32Filter epoch = 5;
   // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
   UInt32Filter epoch_start_date_time = 6;
-  // Filter by blob_count - The number of blobs in the block, from its execution payload blob gas, or its blob sidecars from Gloas onwards (optional)
+  // Filter by blob_count - The number of blobs in the block, from its execution payload blob gas before Gloas, its execution payload bid blob KZG commitments from Gloas, or its blob sidecars when neither is available (optional)
   UInt32Filter blob_count = 7;
 
   // The maximum number of int_block_blob_count_canonical to return.
@@ -78,7 +78,7 @@ message GetIntBlockBlobCountCanonicalResponse {
 
 // Query int_block_blob_count_canonical data
 service IntBlockBlobCountCanonicalService {
-  // List records | Blob count of every canonical block that carries blobs, from its execution payload blob gas (blob gas used over 131072), or from its blob sidecars when the beacon block has no execution payload (Gloas onwards)
+  // List records | Blob count of every canonical block that carries blobs, from its execution payload blob gas (blob gas used over 131072) before Gloas, from the blob KZG commitments in its execution payload bid from Gloas, and from its blob sidecars only when neither is available
   rpc List(ListIntBlockBlobCountCanonicalRequest) returns (ListIntBlockBlobCountCanonicalResponse);
   // Get record | Retrieve a single record by primary key
   rpc Get(GetIntBlockBlobCountCanonicalRequest) returns (GetIntBlockBlobCountCanonicalResponse);
