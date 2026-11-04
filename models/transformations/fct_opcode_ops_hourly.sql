@@ -15,6 +15,7 @@ tags:
   - opcode
   - gas
 dependencies:
+  - "{{external}}.canonical_execution_block"
   - "{{transformation}}.int_block_opcode_gas"
   - "{{transformation}}.int_execution_block_by_date"
 ---
@@ -71,7 +72,35 @@ WITH
         WHERE block_number GLOBAL IN (SELECT block_number FROM blocks_in_hours)
         GROUP BY block_number
     ),
-    -- Join blocks with opcode counts and calculate per-block ops/sec
+    -- First and last block with opcode data in each hour
+    hour_coverage AS (
+        SELECT
+            toStartOfHour(b.block_date_time) AS hour,
+            min(b.block_number) AS first_block,
+            max(b.block_number) AS last_block
+        FROM blocks_in_hours b
+        GLOBAL INNER JOIN opcode_per_block o ON b.block_number = o.block_number
+        GROUP BY hour
+    ),
+    -- Empty blocks (gas_used = 0 means no transactions, so zero opcodes) between the
+    -- first and last block with opcode data in their hour
+    empty_blocks AS (
+        SELECT b.block_number
+        FROM blocks_in_hours b
+        GLOBAL INNER JOIN hour_coverage c ON toStartOfHour(b.block_date_time) = c.hour
+        WHERE b.block_number BETWEEN c.first_block AND c.last_block
+          AND b.block_number GLOBAL IN (
+                SELECT block_number
+                FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
+                WHERE block_number GLOBAL IN (SELECT block_number FROM blocks_in_hours)
+                  AND meta_network_name = '{{ .env.NETWORK }}'
+                  AND gas_used = 0
+          )
+    ),
+    -- Join blocks with opcode counts and calculate per-block ops/sec. A block missing
+    -- from int_block_opcode_gas is a source gap (e.g. before opcode indexing started),
+    -- not a zero, so it is skipped unless it is an empty block within its hour's
+    -- opcode data. Hours without opcode data produce no row.
     blocks_with_ops AS (
         SELECT
             b.block_number,
@@ -88,6 +117,8 @@ WITH
         GLOBAL LEFT JOIN opcode_per_block o ON b.block_number = o.block_number
         WHERE b.block_time_seconds IS NOT NULL  -- Skip first block (no previous to calculate gap)
           AND b.block_time_seconds > 0          -- Skip zero-time blocks
+          AND (o.opcode_count > 0
+               OR b.block_number GLOBAL IN (SELECT block_number FROM empty_blocks))
     ),
     -- Calculate 6-hour moving average for each block
     blocks_with_ma AS (
