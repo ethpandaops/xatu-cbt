@@ -13,13 +13,16 @@ tags:
   - blob
   - canonical
 dependencies:
-  - "{{external}}.canonical_beacon_blob_sidecar"
   - "{{external}}.canonical_beacon_block"
+  # Gloas blocks carry their blob count in the execution payload bid. Networks before Gloas have no bids and
+  # networks without blob sidecars (Gloas devnets) have no sidecars, so either one is enough.
+  - - "{{external}}.canonical_beacon_block_execution_payload_bid"
+    - "{{external}}.canonical_beacon_blob_sidecar"
 ---
--- One row per canonical block that carries blobs. The count comes from the block itself: its execution payload's
--- blob gas used divided by GAS_PER_BLOB (2^17), which is exact for every fork up to Gloas. Blob sidecars are only
--- a fallback for blocks without an execution payload in the beacon block (Gloas onwards), because cannon can miss
--- them and beacon nodes stop serving them after about 4096 epochs, so they can't be backfilled.
+-- One row per canonical block that carries blobs. The count comes from the block itself: before Gloas its execution
+-- payload blob gas used divided by GAS_PER_BLOB (2^17), from Gloas the blob KZG commitments in its execution payload
+-- bid. Blob sidecars are a last fallback only, because cannon can miss them and beacon nodes stop serving them after
+-- about 4096 epochs, so they can't be backfilled.
 -- block_root comes from canonical_beacon_block, not the sidecars: xatu cannon before v1.4.9 wrote the
 -- block body root into canonical_beacon_blob_sidecar.block_root, so on mainnet every slot from Deneb
 -- to 12662431 carries the body root there.
@@ -37,6 +40,16 @@ WITH blocks AS (
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
+),
+bids AS (
+    SELECT
+        slot_start_date_time,
+        toString(block_root) AS block_root,
+        max(blob_kzg_commitment_count) AS blob_count
+    FROM {{ index .dep "{{external}}" "canonical_beacon_block_execution_payload_bid" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    GROUP BY slot_start_date_time, block_root
 ),
 sidecars AS (
     SELECT
@@ -62,8 +75,9 @@ FROM (
         b.epoch AS epoch,
         b.epoch_start_date_time AS epoch_start_date_time,
         b.block_root AS block_root,
-        toUInt32(coalesce(nullIf(intDiv(b.blob_gas_used, 131072), 0), s.blob_count, 0)) AS blob_count
+        toUInt32(coalesce(nullIf(intDiv(b.blob_gas_used, 131072), 0), nullIf(bid.blob_count, 0), s.blob_count, 0)) AS blob_count
     FROM blocks AS b
+    GLOBAL LEFT JOIN bids AS bid ON b.slot_start_date_time = bid.slot_start_date_time AND toString(b.block_root) = bid.block_root
     GLOBAL LEFT JOIN sidecars AS s ON b.slot_start_date_time = s.slot_start_date_time
 )
 WHERE blob_count > 0
