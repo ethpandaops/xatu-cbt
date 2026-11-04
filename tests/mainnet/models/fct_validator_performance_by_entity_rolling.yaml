@@ -1,0 +1,91 @@
+model: fct_validator_performance_by_entity_rolling
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block_graffiti.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Every row belongs to a known period that ends after it starts
+      sql: |
+        SELECT
+          count() AS rows,
+          countIf(period NOT IN ('24h', '7d', '30d', '90d', '1y', 'all')) AS unknown_periods,
+          countIf(period_end_date_time <= period_start_date_time) AS empty_periods,
+          countIf(attested_count + missed_count != total_duties OR head_correct_count > attested_count OR mev_block_count > block_count) AS bad_rows
+        FROM fct_validator_performance_by_entity_rolling FINAL
+      assertions:
+        - type: greater_than
+          column: rows
+          value: 0
+        - type: equals
+          column: unknown_periods
+          value: 0
+        - type: equals
+          column: empty_periods
+          value: 0
+        - type: equals
+          column: bad_rows
+          value: 0
+    # The fixture covers ten minutes, so only the 24h period, which ends at the newest (partial) hour, holds the
+    # proposals before it; the per-slot table can still be filling, so its window holds at least as many.
+    - name: The 24h period counts the proposals in its hours
+      sql: |
+        SELECT
+          (SELECT sum(block_count + orphaned_block_count + missed_slot_count) FROM fct_validator_performance_by_entity_rolling FINAL WHERE period = '24h') AS rolling_proposals,
+          rolling_proposals <= (
+            SELECT count() FROM fct_block_proposer_by_entity FINAL
+            WHERE slot_start_date_time >= (SELECT any(period_start_date_time) FROM fct_validator_performance_by_entity_rolling FINAL WHERE period = '24h')
+              AND slot_start_date_time < (SELECT any(period_end_date_time) FROM fct_validator_performance_by_entity_rolling FINAL WHERE period = '24h')
+          ) AS within_slots
+      assertions:
+        - type: greater_than
+          column: rolling_proposals
+          value: 0
+        - type: equals
+          column: within_slots
+          value: 1

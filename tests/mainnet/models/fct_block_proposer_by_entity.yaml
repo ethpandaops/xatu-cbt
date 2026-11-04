@@ -1,0 +1,66 @@
+model: fct_block_proposer_by_entity
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block_graffiti.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Every slot of fct_block_proposer appears once with its status
+      sql: |
+        SELECT
+          (SELECT count() FROM fct_block_proposer FINAL) AS proposer_slots,
+          (SELECT count() FROM fct_block_proposer_by_entity FINAL) - proposer_slots AS slot_diff,
+          (SELECT count() FROM fct_block_proposer_by_entity FINAL AS e GLOBAL INNER JOIN (SELECT slot, `status` FROM fct_block_proposer FINAL) AS p ON e.slot = p.slot WHERE e.`status` != p.`status`) AS status_mismatch
+      assertions:
+        - type: greater_than
+          column: proposer_slots
+          value: 40
+        - type: equals
+          column: slot_diff
+          value: 0
+        - type: equals
+          column: status_mismatch
+          value: 0
+    - name: Proposers map to their dim_node entity
+      sql: |
+        SELECT
+          countIf(entity != 'unknown') AS named,
+          countIf(entity = '') AS empty_entity
+        FROM fct_block_proposer_by_entity FINAL
+      assertions:
+        - type: greater_than
+          column: named
+          value: 0
+        - type: equals
+          column: empty_entity
+          value: 0

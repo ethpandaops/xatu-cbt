@@ -1,0 +1,74 @@
+model: fct_attestation_vote_correctness_by_entity_hourly
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block_graffiti.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    # The harness asserts once the model has processed one interval, while the hourly table it reads can still be
+    # filling, so checks hold at any point in the fill rather than comparing exact totals.
+    - name: Duties never exceed the per-validator table and split into attested and missed
+      sql: |
+        SELECT
+          (SELECT sum(total_duties) FROM fct_attestation_vote_correctness_by_entity_hourly FINAL) AS entity_duties,
+          entity_duties <= (SELECT sum(total_duties) FROM fct_attestation_vote_correctness_by_validator_hourly FINAL) AS within_validators,
+          (SELECT countIf(attested_count + missed_count != total_duties OR head_correct_count > attested_count OR target_correct_count > attested_count) FROM fct_attestation_vote_correctness_by_entity_hourly FINAL) AS bad_rows
+      assertions:
+        - type: greater_than
+          column: entity_duties
+          value: 10000
+        - type: equals
+          column: within_validators
+          value: 1
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Validators map to their dim_node entity
+      sql: |
+        SELECT
+          sumIf(validator_count, entity != 'unknown') AS named_validators,
+          countIf(entity = '') AS empty_entity
+        FROM fct_attestation_vote_correctness_by_entity_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: named_validators
+          value: 1000
+        - type: equals
+          column: empty_entity
+          value: 0
