@@ -14,9 +14,11 @@ tags:
   - canonical
 dependencies:
   - "{{external}}.canonical_beacon_block"
-  # Gloas blocks carry their blob count in the execution payload bid. Networks before Gloas have no bids and
-  # networks without blob sidecars (Gloas devnets) have no sidecars, so either one is enough.
-  - - "{{external}}.canonical_beacon_block_execution_payload_bid"
+  # Gloas blocks carry their blob count in the execution payload bid, earlier blocks in their blob gas. The block is
+  # in the group too, so the range follows the blocks: a Gloas devnet's pre-Gloas blocks have neither bids nor
+  # sidecars, and networks before Gloas have no bids.
+  - - "{{external}}.canonical_beacon_block"
+    - "{{external}}.canonical_beacon_block_execution_payload_bid"
     - "{{external}}.canonical_beacon_blob_sidecar"
 ---
 -- One row per canonical block that carries blobs. The count comes from the block itself: before Gloas its execution

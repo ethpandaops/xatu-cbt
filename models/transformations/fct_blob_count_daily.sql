@@ -68,9 +68,9 @@ SELECT
     round(quantile(0.50)(blob_count), 4) AS p50_blob_count,
     round(quantile(0.95)(blob_count), 4) AS p95_blob_count,
     round(stddevPop(blob_count), 4) AS stddev_blob_count,
-    -- Bollinger bands (avg +/- 2 standard deviations)
+    -- Bollinger bands (avg +/- 2 standard deviations). The lower band is floored at 0 because a blob count can't be negative.
     round(avg(blob_count) + 2 * stddevPop(blob_count), 4) AS upper_band_blob_count,
-    round(avg(blob_count) - 2 * stddevPop(blob_count), 4) AS lower_band_blob_count,
+    greatest(round(avg(blob_count) - 2 * stddevPop(blob_count), 4), 0) AS lower_band_blob_count,
     -- 7-day moving average
     round(avg(ma_blob_count), 4) AS moving_avg_blob_count
 FROM slots_with_ma
