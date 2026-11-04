@@ -59,16 +59,30 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    # dim_node names 429 validators in this fixture (its ethseer_validator_entity table), 372 of which have committee
+    # duties in the fixture's hour. No hour and entity may count more validators than the per-validator table maps to it.
     - name: Validators map to their dim_node entity
       sql: |
         SELECT
-          sumIf(validator_count, entity != 'unknown') AS named_validators,
-          countIf(entity = '') AS empty_entity
-        FROM fct_attestation_vote_correctness_by_entity_hourly FINAL
+          (SELECT sumIf(validator_count, entity != 'unknown') FROM fct_attestation_vote_correctness_by_entity_hourly FINAL) AS named_validators,
+          (SELECT countIf(entity = '') FROM fct_attestation_vote_correctness_by_entity_hourly FINAL) AS empty_entity,
+          (
+            SELECT countIf(e.validator_count > s.validators)
+            FROM fct_attestation_vote_correctness_by_entity_hourly AS e FINAL
+            GLOBAL LEFT JOIN (
+              SELECT v.hour_start_date_time AS hour_start_date_time, if(dn.source = '', 'unknown', dn.source) AS entity, uniqExact(v.validator_index) AS validators
+              FROM fct_attestation_vote_correctness_by_validator_hourly AS v FINAL
+              GLOBAL LEFT JOIN dim_node AS dn FINAL ON v.validator_index = dn.validator_index
+              GROUP BY hour_start_date_time, entity
+            ) AS s ON e.hour_start_date_time = s.hour_start_date_time AND e.entity = s.entity
+          ) AS overcounted_rows
       assertions:
         - type: greater_than
           column: named_validators
-          value: 1000
+          value: 200
         - type: equals
           column: empty_entity
+          value: 0
+        - type: equals
+          column: overcounted_rows
           value: 0

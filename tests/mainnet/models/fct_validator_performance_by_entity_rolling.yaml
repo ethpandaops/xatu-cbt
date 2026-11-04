@@ -50,18 +50,22 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_libp2p_gossipsub_beacon_attestation.parquet
         network_column: meta_network_name
 assertions:
+    - name: Has run successfully
+      sql: |
+        SELECT count() AS runs FROM admin_cbt_scheduled FINAL
+        WHERE table = 'fct_validator_performance_by_entity_rolling'
+      assertions:
+        - type: greater_than
+          column: runs
+          value: 0
     - name: Every row belongs to a known period that ends after it starts
       sql: |
         SELECT
-          count() AS rows,
           countIf(period NOT IN ('24h', '7d', '30d', '90d', '1y', 'all')) AS unknown_periods,
           countIf(period_end_date_time <= period_start_date_time) AS empty_periods,
           countIf(attested_count + missed_count != total_duties OR head_correct_count > attested_count OR mev_block_count > block_count) AS bad_rows
         FROM fct_validator_performance_by_entity_rolling FINAL
       assertions:
-        - type: greater_than
-          column: rows
-          value: 0
         - type: equals
           column: unknown_periods
           value: 0
@@ -71,9 +75,26 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
-    # The fixture covers ten minutes, so only the 24h period, which ends at the newest (partial) hour, holds the
-    # proposals before it; the per-slot table can still be filling, so its window holds at least as many.
-    - name: The 24h period counts the proposals in its hours
+    # The fixture's attestations all fall in 12:00-12:09 of one day, the newest hour and day of the sources, which are
+    # still filling and left out of every period. So no period holds attestation duties or ends after that hour.
+    - name: Periods leave out the newest hour and day
+      sql: |
+        SELECT
+          least(
+            (SELECT max(hour_start_date_time) FROM fct_attestation_vote_correctness_by_entity_hourly FINAL),
+            (SELECT toStartOfHour(max(slot_start_date_time)) FROM fct_block_proposer_by_entity FINAL)
+          ) AS newest_hour,
+          (SELECT countIf(period_end_date_time > newest_hour) FROM fct_validator_performance_by_entity_rolling FINAL) AS rows_past_newest_hour,
+          (SELECT sum(total_duties) FROM fct_validator_performance_by_entity_rolling FINAL) AS rolling_duties
+      assertions:
+        - type: equals
+          column: rows_past_newest_hour
+          value: 0
+        - type: equals
+          column: rolling_duties
+          value: 0
+    # The per-slot table can still be filling, so the 24h window holds at least as many proposals as the period counts.
+    - name: The 24h period counts no more proposals than its hours hold
       sql: |
         SELECT
           (SELECT sum(block_count + orphaned_block_count + missed_slot_count) FROM fct_validator_performance_by_entity_rolling FINAL WHERE period = '24h') AS rolling_proposals,
@@ -83,9 +104,6 @@ assertions:
               AND slot_start_date_time < (SELECT any(period_end_date_time) FROM fct_validator_performance_by_entity_rolling FINAL WHERE period = '24h')
           ) AS within_slots
       assertions:
-        - type: greater_than
-          column: rolling_proposals
-          value: 0
         - type: equals
           column: within_slots
           value: 1

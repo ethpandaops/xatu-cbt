@@ -38,7 +38,8 @@ WITH
                 (SELECT min(day_start_date) FROM {{ index .dep "{{transformation}}" "fct_block_proposal_by_entity_daily" "helpers" "from" }})
             ) + 1 AS first_day
     ),
-    -- Every period with its bounds; day periods as (name, days), 0 days reaching back to the first day
+    -- Every period with its bounds. Day periods are (name, days), and 0 days reaches back to the first day.
+    -- CBT splits model SQL on semicolons, so comments must not contain one.
     periods AS (
         SELECT
             '24h' AS period,

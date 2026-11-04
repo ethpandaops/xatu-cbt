@@ -40,7 +40,7 @@ assertions:
         SELECT
           (SELECT count() FROM fct_block_proposer FINAL) AS proposer_slots,
           (SELECT count() FROM fct_block_proposer_by_entity FINAL) - proposer_slots AS slot_diff,
-          (SELECT count() FROM fct_block_proposer_by_entity FINAL AS e GLOBAL INNER JOIN (SELECT slot, `status` FROM fct_block_proposer FINAL) AS p ON e.slot = p.slot WHERE e.`status` != p.`status`) AS status_mismatch
+          (SELECT count() FROM fct_block_proposer_by_entity AS e FINAL GLOBAL INNER JOIN (SELECT slot, `status` FROM fct_block_proposer FINAL) AS p ON e.slot = p.slot WHERE e.`status` != p.`status`) AS status_mismatch
       assertions:
         - type: greater_than
           column: proposer_slots
