@@ -5,6 +5,7 @@ package cbt;
 import "common.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// CBT bookkeeping for incremental transformation models: one row per interval CBT has processed, with the model database and table, the interval starting position and its size. A model has processed the union of its rows. Positions are in the model interval units, such as Unix seconds or block numbers
 
 message AdminCbtIncremental {
   int64 updated_date_time = 11;
