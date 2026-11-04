@@ -21,6 +21,7 @@ dependencies:
 ---
 -- Hourly aggregation of receipt size statistics.
 -- Computes per-block distributions, Bollinger bands, and a 6-hour moving average.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 -- Per-transaction percentile fields are approximations derived from block-level
 -- percentile summaries (not recomputed from raw transactions here).
 --
@@ -42,7 +43,7 @@ WITH
             min(block_number) AS min_block,
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),
     -- Get all blocks within the expanded hour boundaries
@@ -52,7 +53,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),
     -- Join blocks with receipt stats from int_block_receipt_size
@@ -119,6 +120,7 @@ WITH
             toUInt64(sum(block_log_count)) AS total_log_count,
             round(if(sum(block_tx_count) > 0, sum(block_log_count) / sum(block_tx_count), 0), 4) AS avg_log_count_per_transaction
         FROM blocks_with_ma
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
         GROUP BY hour
     ),
     -- Get previous cumulative total

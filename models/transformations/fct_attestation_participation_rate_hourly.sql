@@ -16,6 +16,7 @@ dependencies:
 ---
 -- Hourly aggregation of attestation participation rate per slot.
 -- Computes percentiles, Bollinger bands, and 6-hour moving averages across all canonical slots in each hour.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 -- Participation rate = (votes_head + votes_other) / votes_max * 100.
 --
 -- This query expands the slot range to complete hour boundaries to handle partial
@@ -39,7 +40,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             (COALESCE(votes_head, 0) + COALESCE(votes_other, 0)) / votes_max * 100 AS participation_rate
         FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_canonical" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
           AND votes_max > 0
     ),
@@ -70,5 +71,6 @@ SELECT
     -- 6-hour moving average
     round(avg(ma_participation_rate), 4) AS moving_avg_participation_rate
 FROM slots_with_ma
+WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(slot_start_date_time)
 SETTINGS join_use_nulls = 1

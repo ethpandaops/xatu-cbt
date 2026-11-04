@@ -16,6 +16,7 @@ dependencies:
 ---
 -- Daily aggregation of attestation participation rate per slot.
 -- Computes percentiles, Bollinger bands, and 7-day moving averages across all canonical slots in each day.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 -- Participation rate = (votes_head + votes_other) / votes_max * 100.
 --
 -- This query expands the slot range to complete day boundaries to handle partial
@@ -39,7 +40,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             (COALESCE(votes_head, 0) + COALESCE(votes_other, 0)) / votes_max * 100 AS participation_rate
         FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_canonical" "helpers" "from" }} FINAL
-        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
           AND votes_max > 0
     ),
@@ -70,5 +71,6 @@ SELECT
     -- 7-day moving average
     round(avg(ma_participation_rate), 4) AS moving_avg_participation_rate
 FROM slots_with_ma
+WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
 GROUP BY toDate(slot_start_date_time)
 SETTINGS join_use_nulls = 1

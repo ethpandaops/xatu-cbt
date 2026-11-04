@@ -20,6 +20,7 @@ dependencies:
 ---
 -- Hourly aggregation of execution layer transaction counts with cumulative totals.
 -- Tracks per-period stats (avg/min/max/percentiles per block) and running total since genesis.
+-- The scan reaches back one window before the first hour so the 6-hour moving average covers the full 6 hours.
 --
 -- This query expands the block range to complete hour boundaries and EXCLUDES the partial
 -- current hour to ensure cumulative accuracy. The ReplacingMergeTree will merge duplicates
@@ -40,7 +41,7 @@ WITH
             min(block_number) AS min_block,
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND block_date_time < (SELECT max_hour FROM hour_bounds)
     ),
     -- Get all blocks within the expanded hour boundaries (excluding partial current hour)
@@ -50,7 +51,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND block_date_time < (SELECT max_hour FROM hour_bounds)
     ),
     -- Count transactions per block using block range for efficient filtering
@@ -103,6 +104,7 @@ WITH
             round(avg(txn_count) - 2 * stddevPop(txn_count), 4) AS lower_band_txn_per_block,
             round(avg(ma_txn), 4) AS moving_avg_txn_per_block
         FROM blocks_with_ma
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
         GROUP BY hour
     ),
     -- Get previous cumulative total

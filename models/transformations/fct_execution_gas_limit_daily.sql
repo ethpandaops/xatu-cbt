@@ -19,6 +19,7 @@ dependencies:
 ---
 -- Daily aggregation of execution layer gas limit.
 -- Computes percentiles, Bollinger bands, and 7-day moving averages across all blocks in each day.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 --
 -- This query expands the block range to complete day boundaries to handle partial
 -- day aggregations at the head of incremental processing. For example, if we process
@@ -41,7 +42,7 @@ WITH
             min(block_number) AS min_block,
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Get all blocks within the expanded day boundaries
@@ -51,7 +52,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Join with external table using computed block range for efficient filtering
@@ -98,4 +99,5 @@ SELECT
     -- 7-day moving average
     toUInt64(round(avg(ma_gas_limit))) AS moving_avg_gas_limit
 FROM blocks_with_ma
+WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
 GROUP BY toDate(block_date_time)

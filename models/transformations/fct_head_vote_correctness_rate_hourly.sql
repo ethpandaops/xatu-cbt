@@ -18,6 +18,7 @@ dependencies:
 -- Head vote correctness = votes_head / votes_max * 100 (percentage of validators
 -- that voted for the block that became canonical).
 -- Computes percentiles, Bollinger bands, and 6-hour moving averages.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     hour_bounds AS (
@@ -35,7 +36,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             COALESCE(votes_head, 0) / votes_max * 100 AS head_vote_rate
         FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_canonical" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
           AND votes_max > 0
     ),
@@ -62,5 +63,6 @@ SELECT
     round(avg(head_vote_rate) - 2 * stddevPop(head_vote_rate), 4) AS lower_band_head_vote_rate,
     round(avg(ma_head_vote_rate), 4) AS moving_avg_head_vote_rate
 FROM slots_with_ma
+WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(slot_start_date_time)
 SETTINGS join_use_nulls = 1

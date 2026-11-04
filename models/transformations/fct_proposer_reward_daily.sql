@@ -18,6 +18,7 @@ dependencies:
 -- Converts wei values to ETH and computes percentiles, Bollinger bands, and
 -- 7-day moving averages. Covers relay-delivered blocks and, from Gloas, blocks
 -- won by an external builder's bid. Locally built blocks are excluded.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
@@ -37,7 +38,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             toFloat64(value) / 1e18 AS reward_eth
         FROM {{ index .dep "{{transformation}}" "fct_block_mev" "helpers" "from" }} FINAL
-        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
           AND status = 'canonical'
           AND value IS NOT NULL
@@ -67,4 +68,5 @@ SELECT
     round(avg(reward_eth) - 2 * stddevPop(reward_eth), 6) AS lower_band_reward_eth,
     round(avg(ma_reward_eth), 6) AS moving_avg_reward_eth
 FROM slots_with_ma
+WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
 GROUP BY toDate(slot_start_date_time)
