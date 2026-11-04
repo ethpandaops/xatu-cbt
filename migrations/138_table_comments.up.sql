@@ -95,25 +95,25 @@ ALTER TABLE fct_missed_slot_rate_daily ON CLUSTER '{cluster}'
     MODIFY COMMENT 'Daily rate of slots without a canonical block. Missed slots and slots whose block was orphaned both count as missed';
 
 ALTER TABLE fct_execution_tps_hourly_local ON CLUSTER '{cluster}'
-    MODIFY COMMENT 'Hourly execution layer TPS statistics. Per-block TPS is the block''s transaction count divided by the seconds since the previous block; avg_tps, the percentiles and the bands are taken over blocks, and total_transactions / total_seconds is the TPS over the hour';
+    MODIFY COMMENT 'Hourly execution layer TPS statistics. Per-block TPS is the block''s transaction count divided by the seconds since the previous block. avg_tps, the percentiles and the bands are taken over blocks, and total_transactions / total_seconds is the TPS over the hour';
 
 ALTER TABLE fct_execution_tps_hourly_local ON CLUSTER '{cluster}'
-    COMMENT COLUMN `avg_tps` 'Unweighted mean of per-block TPS over the hour''s blocks. Short block gaps inflate it; total_transactions / total_seconds is the TPS over the hour';
+    COMMENT COLUMN `avg_tps` 'Unweighted mean of per-block TPS over the hour''s blocks. Short block gaps inflate it. total_transactions / total_seconds is the TPS over the hour';
 
 ALTER TABLE fct_execution_tps_hourly ON CLUSTER '{cluster}'
-    MODIFY COMMENT 'Hourly execution layer TPS statistics. Per-block TPS is the block''s transaction count divided by the seconds since the previous block; avg_tps, the percentiles and the bands are taken over blocks, and total_transactions / total_seconds is the TPS over the hour';
+    MODIFY COMMENT 'Hourly execution layer TPS statistics. Per-block TPS is the block''s transaction count divided by the seconds since the previous block. avg_tps, the percentiles and the bands are taken over blocks, and total_transactions / total_seconds is the TPS over the hour';
 
 ALTER TABLE fct_execution_tps_hourly ON CLUSTER '{cluster}'
-    COMMENT COLUMN `avg_tps` 'Unweighted mean of per-block TPS over the hour''s blocks. Short block gaps inflate it; total_transactions / total_seconds is the TPS over the hour';
+    COMMENT COLUMN `avg_tps` 'Unweighted mean of per-block TPS over the hour''s blocks. Short block gaps inflate it. total_transactions / total_seconds is the TPS over the hour';
 
 ALTER TABLE fct_execution_tps_daily_local ON CLUSTER '{cluster}'
-    MODIFY COMMENT 'Daily execution layer TPS statistics. Per-block TPS is the block''s transaction count divided by the seconds since the previous block; avg_tps, the percentiles and the bands are taken over blocks, and total_transactions / total_seconds is the TPS over the UTC day';
+    MODIFY COMMENT 'Daily execution layer TPS statistics. Per-block TPS is the block''s transaction count divided by the seconds since the previous block. avg_tps, the percentiles and the bands are taken over blocks, and total_transactions / total_seconds is the TPS over the UTC day';
 
 ALTER TABLE fct_execution_tps_daily_local ON CLUSTER '{cluster}'
-    COMMENT COLUMN `avg_tps` 'Unweighted mean of per-block TPS over the day''s blocks. Short block gaps inflate it; total_transactions / total_seconds is the TPS over the day';
+    COMMENT COLUMN `avg_tps` 'Unweighted mean of per-block TPS over the day''s blocks. Short block gaps inflate it. total_transactions / total_seconds is the TPS over the day';
 
 ALTER TABLE fct_execution_tps_daily ON CLUSTER '{cluster}'
-    MODIFY COMMENT 'Daily execution layer TPS statistics. Per-block TPS is the block''s transaction count divided by the seconds since the previous block; avg_tps, the percentiles and the bands are taken over blocks, and total_transactions / total_seconds is the TPS over the UTC day';
+    MODIFY COMMENT 'Daily execution layer TPS statistics. Per-block TPS is the block''s transaction count divided by the seconds since the previous block. avg_tps, the percentiles and the bands are taken over blocks, and total_transactions / total_seconds is the TPS over the UTC day';
 
 ALTER TABLE fct_execution_tps_daily ON CLUSTER '{cluster}'
-    COMMENT COLUMN `avg_tps` 'Unweighted mean of per-block TPS over the day''s blocks. Short block gaps inflate it; total_transactions / total_seconds is the TPS over the day';
+    COMMENT COLUMN `avg_tps` 'Unweighted mean of per-block TPS over the day''s blocks. Short block gaps inflate it. total_transactions / total_seconds is the TPS over the day';
