@@ -18,6 +18,7 @@ dependencies:
 -- First aggregates per-validator data to per-slot averages, then computes daily
 -- stats across slots. This prevents individual validator outliers from dominating.
 -- Computes percentiles, Bollinger bands, and 7-day moving averages.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
@@ -36,7 +37,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             avg(inclusion_distance) AS slot_avg_delay
         FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_canonical" "helpers" "from" }} FINAL
-        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
           AND status = 'canonical'
           AND inclusion_distance IS NOT NULL
@@ -65,5 +66,6 @@ SELECT
     round(avg(slot_avg_delay) - 2 * stddevPop(slot_avg_delay), 4) AS lower_band_inclusion_delay,
     round(avg(ma_inclusion_delay), 4) AS moving_avg_inclusion_delay
 FROM slots_with_ma
+WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
 GROUP BY toDate(slot_start_date_time)
 SETTINGS join_use_nulls = 1

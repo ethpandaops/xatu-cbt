@@ -16,6 +16,7 @@ dependencies:
 ---
 -- Daily aggregation of blob counts per slot.
 -- Computes percentiles, Bollinger bands, and 7-day moving averages across all canonical slots in each day.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 --
 -- This query expands the slot range to complete day boundaries to handle partial
 -- day aggregations at the head of incremental processing. For example, if we process
@@ -41,7 +42,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             blob_count
         FROM {{ index .dep "{{transformation}}" "fct_block_blob_count" "helpers" "from" }} FINAL
-        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
           AND status = 'canonical'
     ),
@@ -73,4 +74,5 @@ SELECT
     -- 7-day moving average
     round(avg(ma_blob_count), 4) AS moving_avg_blob_count
 FROM slots_with_ma
+WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
 GROUP BY toDate(slot_start_date_time)

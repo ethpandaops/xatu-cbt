@@ -21,6 +21,7 @@ dependencies:
 ---
 -- Daily aggregation of receipt size statistics.
 -- Computes per-block distributions, Bollinger bands, and a 7-day moving average.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 -- Per-transaction percentile fields are approximations derived from block-level
 -- percentile summaries (not recomputed from raw transactions here).
 --
@@ -43,7 +44,7 @@ WITH
             min(block_number) AS min_block,
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(block_date_time) < (SELECT max_day FROM day_bounds)
     ),
     -- Get all blocks within the expanded day boundaries (excluding partial current day)
@@ -53,7 +54,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(block_date_time) < (SELECT max_day FROM day_bounds)
     ),
     -- Join blocks with receipt stats from int_block_receipt_size
@@ -120,6 +121,7 @@ WITH
             toUInt64(sum(block_log_count)) AS total_log_count,
             round(if(sum(block_tx_count) > 0, sum(block_log_count) / sum(block_tx_count), 0), 4) AS avg_log_count_per_transaction
         FROM blocks_with_ma
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
         GROUP BY day
     ),
     -- Get previous cumulative total

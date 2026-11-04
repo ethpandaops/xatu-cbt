@@ -19,6 +19,7 @@ dependencies:
 ---
 -- Hourly aggregation of execution layer gas limit.
 -- Computes percentiles, Bollinger bands, and 6-hour moving averages across all blocks in each hour.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 --
 -- This query expands the block range to complete hour boundaries to handle partial
 -- hour aggregations at the head of incremental processing. For example, if we process
@@ -41,7 +42,7 @@ WITH
             min(block_number) AS min_block,
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),
     -- Get all blocks within the expanded hour boundaries
@@ -51,7 +52,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),
     -- Join with external table using computed block range for efficient filtering
@@ -98,4 +99,5 @@ SELECT
     -- 6-hour moving average
     toUInt64(round(avg(ma_gas_limit))) AS moving_avg_gas_limit
 FROM blocks_with_ma
+WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(block_date_time)

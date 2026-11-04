@@ -21,6 +21,7 @@ dependencies:
 -- Hourly aggregation of opcode execution rate (ops/sec).
 -- Uses actual block time gaps instead of assumed 12-second slots for accurate ops/sec calculation.
 -- Computes percentiles, Bollinger bands, and 6-hour moving averages across all blocks in each hour.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 --
 -- This query expands the block range to complete hour boundaries to handle partial
 -- hour aggregations at the head of incremental processing. For example, if we process
@@ -44,7 +45,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),
     -- Calculate time since previous block for each block
@@ -122,4 +123,5 @@ SELECT
     -- 6-hour moving average
     round(avg(ma_ops), 4) AS moving_avg_ops
 FROM blocks_with_ma
+WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(block_date_time)

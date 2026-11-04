@@ -19,6 +19,7 @@ dependencies:
 ---
 -- Daily aggregation of execution layer gas used.
 -- Computes percentiles, Bollinger bands, and 7-day moving averages across all blocks in each day.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 --
 -- This query expands the block range to complete day boundaries to handle partial
 -- day aggregations at the head of incremental processing. For example, if we process
@@ -41,7 +42,7 @@ WITH
             min(block_number) AS min_block,
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Get all blocks within the expanded day boundaries
@@ -51,7 +52,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Join with external table using computed block range for efficient filtering
@@ -96,6 +97,7 @@ WITH
             toInt64(round(avg(gas_used) - 2 * stddevPop(gas_used))) AS lower_band_gas_used,
             toUInt64(round(avg(ma_gas_used))) AS moving_avg_gas_used
         FROM blocks_with_ma
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
         GROUP BY day
     ),
     -- Get previous cumulative total

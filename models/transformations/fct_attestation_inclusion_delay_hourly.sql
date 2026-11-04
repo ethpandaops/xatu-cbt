@@ -18,6 +18,7 @@ dependencies:
 -- First aggregates per-validator data to per-slot averages, then computes hourly
 -- stats across slots. This prevents individual validator outliers from dominating.
 -- Computes percentiles, Bollinger bands, and 6-hour moving averages.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     hour_bounds AS (
@@ -37,7 +38,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             avg(inclusion_distance) AS slot_avg_delay
         FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_canonical" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
           AND status = 'canonical'
           AND inclusion_distance IS NOT NULL
@@ -66,5 +67,6 @@ SELECT
     round(avg(slot_avg_delay) - 2 * stddevPop(slot_avg_delay), 4) AS lower_band_inclusion_delay,
     round(avg(ma_inclusion_delay), 4) AS moving_avg_inclusion_delay
 FROM slots_with_ma
+WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(slot_start_date_time)
 SETTINGS join_use_nulls = 1
