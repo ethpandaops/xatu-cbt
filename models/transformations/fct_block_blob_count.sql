@@ -13,8 +13,11 @@ tags:
   - canonical
 dependencies:
   - "{{transformation}}.int_block_blob_count_canonical"
+  - "{{transformation}}.int_block_canonical"
   - "{{transformation}}.fct_block_blob_count_head"
 ---
+-- A block is orphaned when the canonical chain has a different block, or none, at its slot. That is decided from
+-- int_block_canonical, which holds every canonical block, not from whether its blobs were counted.
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH canonical_blocks AS (
@@ -29,6 +32,13 @@ WITH canonical_blocks AS (
     FROM {{ index .dep "{{transformation}}" "int_block_blob_count_canonical" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
+canonical_roots AS (
+    SELECT
+        slot_start_date_time,
+        toString(block_root) AS block_root
+    FROM {{ index .dep "{{transformation}}" "int_block_canonical" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+),
 orphaned_blocks AS (
     SELECT
         h.slot AS slot,
@@ -39,8 +49,8 @@ orphaned_blocks AS (
         h.blob_count AS blob_count,
         'orphaned' AS `status`
     FROM {{ index .dep "{{transformation}}" "fct_block_blob_count_head" "helpers" "from" }} AS h FINAL
-    GLOBAL LEFT ANTI JOIN canonical_blocks c 
-        ON h.slot_start_date_time = c.slot_start_date_time 
+    GLOBAL LEFT ANTI JOIN canonical_roots c
+        ON h.slot_start_date_time = c.slot_start_date_time
         AND h.block_root = c.block_root
     WHERE h.slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 )
