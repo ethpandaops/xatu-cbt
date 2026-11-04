@@ -96,8 +96,10 @@ WITH
             tx_count,
             tps,
             -- 6-hour (21600 seconds) moving average of TPS
-            avg(tps) OVER (ORDER BY block_timestamp RANGE BETWEEN 21600 PRECEDING AND CURRENT ROW) AS ma_tps
+            -- Transactions over seconds in the window, so short block gaps don't inflate it
+            sum(tx_count) OVER w / sum(block_time_seconds) OVER w AS ma_tps
         FROM blocks_with_tps
+        WINDOW w AS (ORDER BY block_timestamp RANGE BETWEEN 21600 PRECEDING AND CURRENT ROW)
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
