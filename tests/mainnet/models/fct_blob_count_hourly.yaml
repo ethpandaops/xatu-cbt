@@ -89,6 +89,14 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    - name: Lower Bollinger band should not be negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_hourly FINAL
+        WHERE lower_band_blob_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
     - name: Moving average blob count should not be negative
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_blob_count_hourly FINAL
