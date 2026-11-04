@@ -1,0 +1,37 @@
+model: fct_engine_get_blobs_duration_chunked_50ms_hourly
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_blob:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_get_blobs_duration_chunked_50ms_beacon_api_eth_v1_beacon_blob.parquet
+        network_column: meta_network_name
+    execution_engine_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_get_blobs_duration_chunked_50ms_execution_engine_get_blobs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Sums every per-slot chunk once
+      sql: |
+        SELECT
+          (SELECT sum(observation_count) FROM fct_engine_get_blobs_duration_chunked_50ms FINAL) AS slot_observations,
+          (SELECT sum(observation_count) FROM fct_engine_get_blobs_duration_chunked_50ms_hourly FINAL) - slot_observations AS observation_diff
+      assertions:
+        - type: greater_than
+          column: slot_observations
+          value: 0
+        - type: equals
+          column: observation_diff
+          value: 0
+    - name: Counts match the per-slot chunks per hour, node class and chunk
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT hour_start_date_time, node_class, chunk_duration_ms, observation_count, success_count, partial_count, empty_count, error_count FROM fct_engine_get_blobs_duration_chunked_50ms_hourly FINAL WHERE observation_count > 0
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, node_class, chunk_duration_ms, sum(observation_count) AS observation_count, sum(success_count) AS success_count, sum(partial_count) AS partial_count, sum(empty_count) AS empty_count, sum(error_count) AS error_count
+          FROM fct_engine_get_blobs_duration_chunked_50ms FINAL
+          GROUP BY hour_start_date_time, node_class, chunk_duration_ms
+        ) AS b USING (hour_start_date_time, node_class, chunk_duration_ms)
+        WHERE a.observation_count != b.observation_count OR a.success_count != b.success_count OR a.partial_count != b.partial_count OR a.empty_count != b.empty_count OR a.error_count != b.error_count
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0

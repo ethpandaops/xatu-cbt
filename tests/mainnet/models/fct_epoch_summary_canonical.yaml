@@ -1,0 +1,69 @@
+model: fct_epoch_summary_canonical
+network: mainnet
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Has a complete epoch
+      sql: |
+        SELECT countIf(slot_count = 32) AS complete_epochs FROM fct_epoch_summary_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: complete_epochs
+          value: 0
+    - name: Slot and block counts match the per-slot proposer table
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT epoch, slot_count, canonical_block_count, missed_slot_count FROM fct_epoch_summary_canonical FINAL
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT epoch, toUInt8(count()) AS slot_count, toUInt8(countIf(block_root IS NOT NULL)) AS canonical_block_count,
+                 toUInt8(countIf(block_root IS NULL)) AS missed_slot_count
+          FROM int_block_proposer_canonical FINAL
+          GROUP BY epoch
+        ) AS b USING (epoch)
+        WHERE a.slot_count != b.slot_count OR a.canonical_block_count != b.canonical_block_count OR a.missed_slot_count != b.missed_slot_count
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Votes match the per-slot correctness table
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT epoch, votes_max, votes_head, votes_other FROM fct_epoch_summary_canonical FINAL
+        ) AS a
+        INNER JOIN (
+          SELECT epoch, toUInt32(sum(votes_max)) AS votes_max, toUInt32(sum(ifNull(votes_head, 0))) AS votes_head,
+                 toUInt32(sum(ifNull(votes_other, 0))) AS votes_other
+          FROM fct_attestation_correctness_canonical FINAL
+          GROUP BY epoch
+        ) AS b USING (epoch)
+        WHERE a.votes_max != b.votes_max OR a.votes_head != b.votes_head OR a.votes_other != b.votes_other
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Participation is a share of scheduled votes
+      sql: |
+        SELECT
+          countIf(votes_max > 0) AS voted_epochs,
+          countIf(votes_max > 0 AND (participation_rate IS NULL OR participation_rate < 0.5 OR participation_rate > 1
+            OR abs(participation_rate - (votes_head + votes_other) / votes_max) > 1e-9)) AS bad_rows
+        FROM fct_epoch_summary_canonical FINAL
+      assertions:
+        - type: greater_than
+          column: voted_epochs
+          value: 0
+        - type: equals
+          column: bad_rows
+          value: 0
