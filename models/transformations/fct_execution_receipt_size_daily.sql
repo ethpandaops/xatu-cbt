@@ -16,6 +16,7 @@ tags:
   - receipt
   - size
 dependencies:
+  - "{{external}}.canonical_execution_block"
   - "{{transformation}}.int_block_receipt_size"
   - "{{transformation}}.int_execution_block_by_date"
 ---
@@ -57,7 +58,40 @@ WITH
         WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(block_date_time) < (SELECT max_day FROM day_bounds)
     ),
-    -- Join blocks with receipt stats from int_block_receipt_size
+    -- First and last block with receipt data in each day
+    day_coverage AS (
+        SELECT
+            toDate(b.block_date_time) AS day,
+            min(b.block_number) AS first_block,
+            max(b.block_number) AS last_block
+        FROM expanded_blocks b
+        GLOBAL INNER JOIN (
+            SELECT block_number
+            FROM {{ index .dep "{{transformation}}" "int_block_receipt_size" "helpers" "from" }} FINAL
+            WHERE block_number >= (SELECT min_block FROM block_range)
+              AND block_number <= (SELECT max_block FROM block_range)
+        ) r ON b.block_number = r.block_number
+        GROUP BY day
+    ),
+    -- Empty blocks (gas_used = 0 means no transactions, so no receipts) between the
+    -- first and last block with receipt data in their day
+    empty_blocks AS (
+        SELECT b.block_number
+        FROM expanded_blocks b
+        GLOBAL INNER JOIN day_coverage c ON toDate(b.block_date_time) = c.day
+        WHERE b.block_number BETWEEN c.first_block AND c.last_block
+          AND b.block_number GLOBAL IN (
+                SELECT block_number
+                FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
+                WHERE block_number >= (SELECT min_block FROM block_range)
+                  AND block_number <= (SELECT max_block FROM block_range)
+                  AND meta_network_name = '{{ .env.NETWORK }}'
+                  AND gas_used = 0
+          )
+    ),
+    -- Join blocks with receipt stats from int_block_receipt_size. A block missing
+    -- from it is a source gap, not a zero, so it is skipped unless it is an empty
+    -- block within its day's receipt data. Days without receipt data produce no row.
     blocks_in_days AS (
         SELECT
             b.block_number,
@@ -76,6 +110,8 @@ WITH
             WHERE block_number >= (SELECT min_block FROM block_range)
               AND block_number <= (SELECT max_block FROM block_range)
         ) r ON b.block_number = r.block_number
+        WHERE r.transaction_count > 0
+           OR b.block_number GLOBAL IN (SELECT block_number FROM empty_blocks)
     ),
     -- Calculate 7-day moving average for each block
     blocks_with_ma AS (
