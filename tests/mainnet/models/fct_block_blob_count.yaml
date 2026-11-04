@@ -140,7 +140,7 @@ assertions:
         SELECT COUNT(*) AS bad_rows
         FROM fct_block_blob_count AS f FINAL
         WHERE f.status = 'orphaned'
-          AND (f.slot_start_date_time, f.block_root) IN (
+          AND (f.slot_start_date_time, f.block_root) GLOBAL IN (
             SELECT slot_start_date_time, toString(block_root) FROM int_block_canonical FINAL
           )
       assertions:
