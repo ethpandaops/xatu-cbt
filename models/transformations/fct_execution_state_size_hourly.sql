@@ -40,6 +40,7 @@ WITH
             block_date_time
         FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
         WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+          AND block_number > 0
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
           AND meta_network_name = '{{ .env.NETWORK }}'
     )

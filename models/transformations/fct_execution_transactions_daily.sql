@@ -34,6 +34,8 @@ WITH
             toDate(max(block_date_time)) AS max_day
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+          -- Genesis is not a produced block, and on mainnet its timestamp is 0 (1970-01-01)
+          AND block_number > 0
     ),
     -- Get the actual block number range for the expanded day boundaries (excluding partial current day)
     block_range AS (
@@ -42,6 +44,7 @@ WITH
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
+          AND block_number > 0
           AND toDate(block_date_time) < (SELECT max_day FROM day_bounds)
     ),
     -- Get all blocks within the expanded day boundaries (excluding partial current day)
@@ -52,6 +55,7 @@ WITH
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
+          AND block_number > 0
           AND toDate(block_date_time) < (SELECT max_day FROM day_bounds)
     ),
     -- Count transactions per block using block range for efficient filtering

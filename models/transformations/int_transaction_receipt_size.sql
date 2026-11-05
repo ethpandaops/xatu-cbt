@@ -16,7 +16,12 @@ tags:
   - size
 dependencies:
   - "{{external}}.canonical_execution_transaction"
-  - "{{external}}.canonical_execution_logs"
+  # Logs and blocks are in a group with the transactions, so the range follows the transactions: blocks before the
+  # first log (mainnet 46147..52028) have transactions to size too. The guard below makes sure the logs and
+  # blocks are there for the range.
+  - - "{{external}}.canonical_execution_transaction"
+    - "{{external}}.canonical_execution_logs"
+    - "{{external}}.canonical_execution_block"
 ---
 -- Computes RLP-encoded receipt size per transaction from canonical tx + log data.
 --
@@ -61,6 +66,72 @@ dependencies:
 --   for cumulative gas computation and type prefix handling
 --
 -- =============================================================================
+
+-- =============================================================================
+-- RAW DATA COMPLETENESS
+-- =============================================================================
+--
+-- The external models only report their min and max block, and Cannon can still be writing blocks,
+-- transactions and logs in between, e.g. while it backfills history. CBT never goes back to a range it has
+-- processed, so a range read before its raw data lands would keep missing or short receipts for good. This
+-- first statement fails the task, and CBT retries it, while
+--   - the logs have not reached the end of the range yet,
+--   - a block in the range used gas but has no transactions,
+--   - a block has a hole in its transaction indexes, or
+--   - a block has a hole in the log indexes of its transactions (log_index counts from 0 across the block).
+--     Logs of transactions not in the block, left from a reorged block, are ignored, as the INSERT does.
+SELECT throwIf(
+    (
+        SELECT count() = 0
+        FROM (
+            SELECT 1
+            FROM {{ index .dep "{{external}}" "canonical_execution_logs" "helpers" "from" }}
+            WHERE block_number >= {{ .bounds.end }}
+                AND meta_network_name = '{{ .env.NETWORK }}'
+            LIMIT 1
+        )
+    ) OR (
+        SELECT count()
+        FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }}
+        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+            AND meta_network_name = '{{ .env.NETWORK }}'
+            AND gas_used > 0
+            AND block_number GLOBAL NOT IN (
+                SELECT block_number
+                FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }}
+                WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+                    AND meta_network_name = '{{ .env.NETWORK }}'
+            )
+    ) > 0 OR (
+        SELECT count()
+        FROM (
+            SELECT block_number
+            FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }}
+            WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+                AND meta_network_name = '{{ .env.NETWORK }}'
+            GROUP BY block_number
+            HAVING uniqExact(transaction_index) != max(transaction_index) + 1
+        )
+    ) > 0 OR (
+        SELECT count()
+        FROM (
+            SELECT block_number
+            FROM {{ index .dep "{{external}}" "canonical_execution_logs" "helpers" "from" }}
+            WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+                AND meta_network_name = '{{ .env.NETWORK }}'
+                AND (block_number, transaction_hash) GLOBAL IN (
+                    SELECT block_number, transaction_hash
+                    FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }}
+                    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+                        AND meta_network_name = '{{ .env.NETWORK }}'
+                )
+            GROUP BY block_number
+            HAVING uniqExact(log_index) != max(log_index) + 1
+        )
+    ) > 0,
+    'canonical_execution_block, _transaction or _logs is incomplete in this range, waiting for Cannon to write it'
+);
+
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     -- RLP encoding helper lambdas
