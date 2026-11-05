@@ -31,6 +31,7 @@ type IntTransactionCallFrameRow struct {
 	GasRefund *uint64 `ch:"gas_refund" json:"gas_refund"`
 	IntrinsicGas *uint64 `ch:"intrinsic_gas" json:"intrinsic_gas"`
 	ReceiptGasUsed *uint64 `ch:"receipt_gas_used" json:"receipt_gas_used"`
+	CalldataFloorGas *uint64 `ch:"calldata_floor_gas" json:"calldata_floor_gas"`
 }
 
 // TableName returns the ClickHouse table this row maps to.
@@ -72,6 +73,9 @@ func (r *IntTransactionCallFrameRow) ToProto() *IntTransactionCallFrame {
 	}
 	if r.ReceiptGasUsed != nil {
 		p.ReceiptGasUsed = wrapperspb.UInt64(*r.ReceiptGasUsed)
+	}
+	if r.CalldataFloorGas != nil {
+		p.CalldataFloorGas = wrapperspb.UInt64(*r.CalldataFloorGas)
 	}
 	return p
 }
