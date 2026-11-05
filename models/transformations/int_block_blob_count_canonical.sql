@@ -28,6 +28,25 @@ dependencies:
 -- block_root comes from canonical_beacon_block, not the sidecars: xatu cannon before v1.4.9 wrote the
 -- block body root into canonical_beacon_blob_sidecar.block_root, so on mainnet every slot from Deneb
 -- to 12662431 carries the body root there.
+--
+-- The block is in the dependency group, so the range can run ahead of the bid table, which a separate cannon deriver
+-- fills. A Gloas block counted before its bid lands would get no row, and nothing goes back for it. So this first
+-- statement fails the task (CBT retries it) while the range holds a Gloas or later block newer than the newest bid.
+SELECT throwIf(
+    (
+        SELECT max(slot_start_date_time)
+        FROM {{ index .dep "{{external}}" "canonical_beacon_block" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+            AND block_version NOT IN ('phase0', 'altair', 'bellatrix', 'capella', 'deneb', 'electra', 'fulu')
+    ) > (
+        SELECT max(slot_start_date_time)
+        FROM {{ index .dep "{{external}}" "canonical_beacon_block_execution_payload_bid" "helpers" "from" }}
+        WHERE meta_network_name = '{{ .env.NETWORK }}'
+    ),
+    'canonical_beacon_block_execution_payload_bid has not reached the last Gloas block in this range yet'
+);
+
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH blocks AS (
