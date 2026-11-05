@@ -45,6 +45,7 @@ WITH
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
+          AND block_number > 0
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Get all blocks within the expanded day boundaries
@@ -55,6 +56,7 @@ WITH
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
+          AND block_number > 0
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Join with external table using computed block range for efficient filtering

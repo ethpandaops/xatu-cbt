@@ -40,6 +40,7 @@ WITH
             block_date_time
         FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
         WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+          AND block_number > 0
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
           AND meta_network_name = '{{ .env.NETWORK }}'
     )
