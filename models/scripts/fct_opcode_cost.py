@@ -7,6 +7,8 @@ int_engine_new_payload_opcode_gram_hourly, and writes one row per opcode group:
 
 - OPCODE_COST_MODE=daily: one fit per day and client, into fct_opcode_cost_by_el_client_daily.
   Intervals come from resampling the day's hours.
+- OPCODE_COST_MODE=weekly: the same per week (Monday to Sunday, UTC) and client, into
+  fct_opcode_cost_by_el_client_weekly. Intervals come from resampling the week's hours.
 - OPCODE_COST_MODE=version: one fit per client version over every hour it ran, into
   fct_opcode_cost_by_el_client_version. Intervals come from resampling 6-hour blocks.
 
@@ -298,25 +300,33 @@ GRAM_COLUMNS = """
 """
 
 
-def run_daily(url, db, gram_table, start, end, task_start, out_table):
-    days = [r['day'] for r in query(url, f"""
-        SELECT DISTINCT toString(toDate(hour_start_date_time, 'UTC')) AS day
+# Period modes: the SQL that maps an hour to its period start and the output column it fills
+PERIODS = {
+    'daily': ("toDate(hour_start_date_time, 'UTC')", 'day_start_date'),
+    'weekly': ("toMonday(toDate(hour_start_date_time, 'UTC'))", 'week_start_date'),
+}
+
+
+def run_period(url, db, gram_table, start, end, task_start, out_table, mode):
+    period_sql, period_column = PERIODS[mode]
+    periods = [r['period'] for r in query(url, f"""
+        SELECT DISTINCT toString({period_sql}) AS period
         FROM `{db}`.`{gram_table}` FINAL
         WHERE max_block_number >= {start} AND min_block_number <= {end}
     """)]
-    if not days:
+    if not periods:
         print('No hourly sums in range')
         return 0
-    day_list = ','.join(f"'{d}'" for d in days)
+    period_list = ','.join(f"'{p}'" for p in periods)
     rows = query(url, f"""
-        SELECT {GRAM_COLUMNS}, toString(toDate(hour_start_date_time, 'UTC')) AS day
+        SELECT {GRAM_COLUMNS}, toString({period_sql}) AS period
         FROM `{db}`.`{gram_table}` FINAL
-        WHERE toDate(hour_start_date_time, 'UTC') IN ({day_list})
+        WHERE {period_sql} IN ({period_list})
     """)
 
     groups = {}
     for r in rows:
-        key = (r['day'], r['node_class'], r['meta_execution_implementation'])
+        key = (r['period'], r['node_class'], r['meta_execution_implementation'])
         entry = groups.setdefault(key, {'hours': {}, 'versions': {}, 'names': r['feature_names']})
         hour = entry['hours'].get(r['hour'])
         g = Gram.from_row(r)
@@ -327,25 +337,25 @@ def run_daily(url, db, gram_table, start, end, task_start, out_table):
         entry['versions'][r['meta_execution_version']] = entry['versions'].get(r['meta_execution_version'], 0) + r['block_count']
 
     out = []
-    for (day, node_class, impl), entry in sorted(groups.items()):
+    for (period, node_class, impl), entry in sorted(groups.items()):
         units = list(entry['hours'].values())
         if len(units) < MIN_HOURS:
             continue
-        fitted = estimate(units, entry['names'], seed=f'{day}|{node_class}|{impl}')
+        fitted = estimate(units, entry['names'], seed=f'{period}|{node_class}|{impl}')
         if not fitted:
             continue
         versions = [v for v, _ in sorted(entry['versions'].items(), key=lambda kv: -kv[1])]
         for row in fitted:
             row.update({
                 'updated_date_time': task_start,
-                'day_start_date': day,
+                period_column: period,
                 'node_class': node_class,
                 'meta_execution_implementation': impl,
                 'meta_execution_versions': versions,
                 'hour_count': len(units),
             })
             out.append(row)
-        print(f'  {day} {impl}: {fitted[0]["block_count"]} blocks over {len(units)} hours')
+        print(f'  {period} {impl}: {fitted[0]["block_count"]} blocks over {len(units)} hours')
 
     insert(url, db, out_table, out)
     return len(out)
@@ -414,8 +424,8 @@ def main():
             gram_db = value
 
     print(f'=== Opcode cost ({mode}) {db}.{table}, blocks {start}-{end} ===')
-    if mode == 'daily':
-        n = run_daily(url, gram_db, gram_table, start, end, task_start, table)
+    if mode in PERIODS:
+        n = run_period(url, gram_db, gram_table, start, end, task_start, table, mode)
     elif mode == 'version':
         n = run_version(url, gram_db, gram_table, start, end, task_start, table)
     else:
