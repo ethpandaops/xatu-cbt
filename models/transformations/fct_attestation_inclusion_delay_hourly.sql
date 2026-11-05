@@ -12,36 +12,49 @@ tags:
   - consensus
   - attestation
 dependencies:
-  - "{{transformation}}.fct_attestation_correctness_by_validator_canonical"
+  - "{{transformation}}.int_attestation_attested_canonical"
+  - "{{transformation}}.int_block_proposer_canonical"
 ---
 -- Hourly aggregation of attestation inclusion delay.
 -- First aggregates per-validator data to per-slot averages, then computes hourly
 -- stats across slots. This prevents individual validator outliers from dominating.
 -- Computes percentiles, Bollinger bands, and 6-hour moving averages.
 -- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
+--
+-- Reads the canonical attestations, which reach genesis. A vote counts when the block it is for is canonical and at
+-- most 64 slots older than the vote, the votes fct_attestation_correctness_by_validator_canonical marks canonical.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     hour_bounds AS (
         SELECT
             toStartOfHour(min(slot_start_date_time)) AS min_hour,
             toStartOfHour(max(slot_start_date_time)) AS max_hour
-        FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_canonical" "helpers" "from" }} FINAL
+        FROM {{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "helpers" "from" }}
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-          AND status = 'canonical'
-          AND inclusion_distance IS NOT NULL
+    ),
+    -- Canonical blocks from 64 slots before the scan below to its end
+    canonical_blocks AS (
+        SELECT
+            slot AS block_slot,
+            block_root
+        FROM {{ index .dep "{{transformation}}" "int_block_proposer_canonical" "helpers" "from" }} FINAL
+        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR - INTERVAL 768 SECOND
+          AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
+          AND block_root IS NOT NULL
     ),
     -- Aggregate per-validator data to per-slot averages first
     slot_averages AS (
         SELECT
-            slot,
-            slot_start_date_time,
-            toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
-            avg(inclusion_distance) AS slot_avg_delay
-        FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_canonical" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
-          AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
-          AND status = 'canonical'
-          AND inclusion_distance IS NOT NULL
+            a.slot AS slot,
+            a.slot_start_date_time AS slot_start_date_time,
+            toUnixTimestamp(a.slot_start_date_time) AS slot_timestamp,
+            avg(a.inclusion_distance) AS slot_avg_delay
+        FROM {{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "helpers" "from" }} AS a FINAL
+        GLOBAL INNER JOIN canonical_blocks AS b ON a.block_root = b.block_root
+        WHERE a.slot_start_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
+          AND a.slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
+          AND a.slot >= b.block_slot
+          AND a.slot - b.block_slot <= 64
         GROUP BY slot, slot_start_date_time
     ),
     slots_with_ma AS (
