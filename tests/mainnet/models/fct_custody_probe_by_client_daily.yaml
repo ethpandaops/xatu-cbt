@@ -69,3 +69,12 @@ assertions:
         - type: equals
           column: rewritten_keys
           value: 0
+    - name: "A re-probe of a slot is its own row"
+      sql: |
+        SELECT COUNT(*) AS reprobed_groups FROM (
+          SELECT slot, peer_id_unique_key, result, error FROM int_custody_probe FINAL GROUP BY slot, peer_id_unique_key, result, error HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: greater_than
+          column: reprobed_groups
+          value: 0

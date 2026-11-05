@@ -17,18 +17,22 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_execution_transaction.parquet
         network_column: meta_network_name
 assertions:
-    - name: "Every int_custody_probe group has a row"
+    - name: "Same rows as int_custody_probe"
       sql: |
         SELECT
           (SELECT COUNT(*) FROM int_custody_probe_order_by_slot FINAL) AS slot_rows,
-          (SELECT COUNT(*) FROM (SELECT DISTINCT slot, peer_id_unique_key, result, error FROM int_custody_probe FINAL)) AS probe_groups,
-          slot_rows - probe_groups AS row_diff
+          (SELECT COUNT(*) FROM int_custody_probe FINAL) AS probe_rows,
+          slot_rows - probe_rows AS row_diff,
+          (SELECT COUNT(*) FROM int_custody_probe FINAL WHERE (probe_date_time, slot, peer_id_unique_key, result, error) GLOBAL NOT IN (SELECT probe_date_time, slot, peer_id_unique_key, result, error FROM int_custody_probe_order_by_slot FINAL)) AS missing_rows
       assertions:
         - type: greater_than
           column: slot_rows
           value: 1000
         - type: equals
           column: row_diff
+          value: 0
+        - type: equals
+          column: missing_rows
           value: 0
     - name: "No int_custody_probe row is read by two runs"
       sql: |
