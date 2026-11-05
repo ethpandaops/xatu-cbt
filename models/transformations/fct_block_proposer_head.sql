@@ -127,6 +127,30 @@ gate AS (
         ) - toInt64((SELECT count() FROM duty_slots)) AS missing_slots
 ),
 
+-- A block root counts only if at least two beacon nodes accepted it. block_gossip fires after gossip
+-- validation and block after import. libp2p sentries record gossip before validating it, and some
+-- relays (gnode-beacon) re-encode blocks, which changes the root and breaks the proposer signature.
+-- One beacon node (a Prysm node, 2026-09-16 to 09-30) emitted block_gossip for those re-encoded
+-- roots too, so a single node's word is not enough.
+accepted_roots AS (
+    SELECT block_root
+    FROM (
+        SELECT toString(block) AS block_root, meta_client_name
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+
+        UNION ALL
+
+        SELECT toString(block) AS block_root, meta_client_name
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+    )
+    GROUP BY block_root
+    HAVING uniqExact(meta_client_name) >= 2
+),
+
 block_gossip AS (
     SELECT DISTINCT
         slot,
@@ -137,6 +161,7 @@ block_gossip AS (
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND toString(block) GLOBAL IN (SELECT block_root FROM accepted_roots)
 ),
 
 block_events AS (
@@ -149,6 +174,7 @@ block_events AS (
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND toString(block) GLOBAL IN (SELECT block_root FROM accepted_roots)
 ),
 
 gossipsub_blocks AS (
@@ -162,11 +188,8 @@ gossipsub_blocks AS (
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
-        -- libp2p sentries record gossip before validating it, and some relays (gnode-beacon) re-encode
-        -- blocks, which changes the root and breaks the proposer signature. Keep a root only if a beacon
-        -- node accepted it: block_gossip fires after gossip validation, block after import.
         AND if(startsWith(block, '0x'), toString(block), concat('0x', toStringCutToZero(block)))
-            GLOBAL IN (SELECT toString(block_root) FROM block_gossip UNION DISTINCT SELECT toString(block_root) FROM block_events)
+            GLOBAL IN (SELECT block_root FROM accepted_roots)
 ),
 
 all_blocks AS (
