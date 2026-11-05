@@ -21,7 +21,16 @@ dependencies:
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
-WITH combined_events AS (
+-- libp2p sentries record gossip before validating it, and some relays (gnode-beacon) re-encode
+-- sidecars, which changes the block root and breaks the header signature. A gossiped sidecar counts
+-- only if a beacon node accepted a sidecar for its root. Beacon nodes emit the event after validation.
+WITH validated_roots AS (
+    SELECT DISTINCT if(startsWith(toString(block_root), '0x'), toString(block_root), concat('0x', toStringCutToZero(block_root))) AS block_root
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_data_column_sidecar" "helpers" "from" }}
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+),
+combined_events AS (
     SELECT
         'beacon_api_eth_v1_events_data_column_sidecar' AS source,
         '' AS completed_via,
@@ -85,6 +94,8 @@ WITH combined_events AS (
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
         AND beacon_block_root != ''
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND if(startsWith(beacon_block_root, '0x'), toString(beacon_block_root), concat('0x', toStringCutToZero(beacon_block_root)))
+            GLOBAL IN (SELECT block_root FROM validated_roots)
 
     UNION ALL
 

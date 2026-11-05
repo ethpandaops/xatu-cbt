@@ -15,9 +15,19 @@ tags:
 dependencies:
   - "{{transformation}}.int_custody_probe_order_by_slot"
   - "{{external}}.libp2p_gossipsub_data_column_sidecar"
+  - "{{external}}.beacon_api_eth_v1_events_data_column_sidecar"
 ---
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
-WITH combined_sources AS (
+-- libp2p sentries record gossip before validating it, and some relays (gnode-beacon) re-encode
+-- sidecars, which changes the block root and breaks the header signature. A gossiped sidecar counts
+-- only if a beacon node accepted a sidecar for its root. Beacon nodes emit the event after validation.
+WITH validated_roots AS (
+    SELECT DISTINCT if(startsWith(toString(block_root), '0x'), toString(block_root), concat('0x', toStringCutToZero(block_root))) AS block_root
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_data_column_sidecar" "helpers" "from" }}
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+),
+combined_sources AS (
     -- Active custody probes (explicit results)
     -- These are direct RPC probes checking if peers have custody of specific columns
     -- Using int_custody_probe_order_by_slot which is ordered by slot_start_date_time for better query performance
@@ -73,6 +83,8 @@ WITH combined_sources AS (
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_data_column_sidecar" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
       AND meta_network_name = '{{ .env.NETWORK }}'
+      AND if(startsWith(beacon_block_root, '0x'), toString(beacon_block_root), concat('0x', toStringCutToZero(beacon_block_root)))
+          GLOBAL IN (SELECT block_root FROM validated_roots)
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
