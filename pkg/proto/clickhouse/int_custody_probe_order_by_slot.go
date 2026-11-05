@@ -1031,7 +1031,7 @@ func BuildListIntCustodyProbeOrderBySlotQuery(req *ListIntCustodyProbeOrderBySlo
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", slot" + ", peer_id_unique_key" + ", result" + ", error"
+		orderByClause = " ORDER BY slot_start_date_time" + ", slot" + ", peer_id_unique_key" + ", result" + ", error" + ", probe_date_time"
 	}
 
 	// Build column list
@@ -1052,7 +1052,7 @@ func BuildGetIntCustodyProbeOrderBySlotQuery(req *GetIntCustodyProbeOrderBySlotR
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, slot, peer_id_unique_key, result, error"
+	orderByClause := " ORDER BY slot_start_date_time, slot, peer_id_unique_key, result, error, probe_date_time"
 
 	// Build column list
 	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp(`probe_date_time`) AS `probe_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "peer_id_unique_key", "result", "error", "column_indices", "blob_submitters", "response_time_ms", "username", "node_id", "classification", "meta_client_version", "meta_client_implementation", "meta_client_os", "meta_client_geo_city", "meta_client_geo_country", "meta_client_geo_country_code", "meta_client_geo_continent_code", "meta_client_geo_longitude", "meta_client_geo_latitude", "meta_client_geo_autonomous_system_number", "meta_client_geo_autonomous_system_organization", "meta_peer_implementation", "meta_peer_version", "meta_peer_platform", "meta_peer_geo_city", "meta_peer_geo_country", "meta_peer_geo_country_code", "meta_peer_geo_continent_code", "meta_peer_geo_longitude", "meta_peer_geo_latitude", "meta_peer_geo_autonomous_system_number", "meta_peer_geo_autonomous_system_organization"}
