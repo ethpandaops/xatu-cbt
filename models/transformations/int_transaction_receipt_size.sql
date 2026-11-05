@@ -79,7 +79,9 @@ dependencies:
 --   - a block in the range used gas but has no transactions,
 --   - a block has a hole in its transaction indexes, or
 --   - a block has a hole in the log indexes of its transactions (log_index counts from 0 across the block).
---     Logs of transactions not in the block, left from a reorged block, are ignored, as the INSERT does.
+--     Logs left from a reorged block are ignored, as the INSERT does: a log counts only if its transaction hash
+--     and transaction index are both those of a transaction in the block, because a reorged sibling can hold
+--     the same transaction at another index.
 SELECT throwIf(
     (
         SELECT count() = 0
@@ -119,8 +121,8 @@ SELECT throwIf(
             FROM {{ index .dep "{{external}}" "canonical_execution_logs" "helpers" "from" }}
             WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
                 AND meta_network_name = '{{ .env.NETWORK }}'
-                AND (block_number, transaction_hash) GLOBAL IN (
-                    SELECT block_number, transaction_hash
+                AND (block_number, transaction_hash, transaction_index) GLOBAL IN (
+                    SELECT block_number, transaction_hash, transaction_index
                     FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }}
                     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
                         AND meta_network_name = '{{ .env.NETWORK }}'
@@ -187,6 +189,7 @@ WITH
         SELECT
             block_number,
             transaction_hash,
+            transaction_index,
             toUInt32(count()) AS log_count,
             sum(hex_bytes(ifNull(data, ''))) AS log_data_bytes,
             toUInt32(sum(
@@ -200,6 +203,7 @@ WITH
             SELECT
                 block_number,
                 transaction_hash,
+                transaction_index,
                 log_index,
                 topic0, topic1, topic2, topic3, data,
                 (
@@ -230,10 +234,12 @@ WITH
                 AND meta_network_name = '{{ .env.NETWORK }}'
             -- FINAL cannot collapse duplicate copies of a log: the loader numbers
             -- internal_index per insert batch, so copies differ in the sorting key.
-            -- log_index identifies a log within its block, so keep one row per log.
-            LIMIT 1 BY block_number, transaction_hash, log_index
+            -- log_index identifies a log within its block, so keep one row per log. A reorged sibling block
+            -- can leave logs of the same transaction at another transaction_index, so that is part of the key,
+            -- and the join below keeps only logs at the transaction's canonical index.
+            LIMIT 1 BY block_number, transaction_hash, transaction_index, log_index
         )
-        GROUP BY block_number, transaction_hash
+        GROUP BY block_number, transaction_hash, transaction_index
     ),
 
     -- Transaction data with cumulative gas (needed for receipt RLP size)
@@ -285,3 +291,4 @@ FROM tx
 GLOBAL LEFT JOIN logs_per_tx l
     ON l.block_number = tx.block_number
     AND l.transaction_hash = tx.transaction_hash
+    AND l.transaction_index = tx.transaction_index
