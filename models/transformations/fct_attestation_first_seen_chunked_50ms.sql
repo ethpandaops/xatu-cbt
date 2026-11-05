@@ -41,6 +41,8 @@ attestations_chunked AS (
         floor(seen_slot_start_diff / 50) * 50 AS chunk_slot_start_diff,
         COUNT(DISTINCT attesting_validator_index) as attestation_count
     FROM attestations
+    -- Chunks cover the slot itself, 0 to 12000 ms
+    WHERE seen_slot_start_diff < 12000
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root, chunk_slot_start_diff
 ),
 
