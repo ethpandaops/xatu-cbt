@@ -32,6 +32,8 @@ message FctAttestationVoteCorrectnessByValidatorWeekly {
   uint32 source_correct_count = 19;
   // Average inclusion distance for attested slots. NULL if no attestations
   google.protobuf.FloatValue avg_inclusion_distance = 20;
+  // Number of source votes that were incorrect, from attestations seen on gossip
+  uint32 source_incorrect_count = 21;
 }
 
 // Request for listing fct_attestation_vote_correctness_by_validator_weekly records
@@ -58,18 +60,20 @@ message ListFctAttestationVoteCorrectnessByValidatorWeeklyRequest {
   UInt32Filter source_correct_count = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by avg_inclusion_distance - Average inclusion distance for attested slots. NULL if no attestations (optional)
   google.protobuf.FloatValue avg_inclusion_distance = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by source_incorrect_count - Number of source votes that were incorrect, from attestations seen on gossip (optional)
+  UInt32Filter source_incorrect_count = 11 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_attestation_vote_correctness_by_validator_weekly to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 11 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 12 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctAttestationVoteCorrectnessByValidatorWeekly` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 12 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 13 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 13 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 14 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_attestation_vote_correctness_by_validator_weekly records

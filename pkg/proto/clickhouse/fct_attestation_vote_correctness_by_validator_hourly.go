@@ -311,6 +311,36 @@ func BuildListFctAttestationVoteCorrectnessByValidatorHourlyQuery(req *ListFctAt
 
 	// Add filter for column: avg_inclusion_distance
 
+	// Add filter for column: source_incorrect_count
+	if req.SourceIncorrectCount != nil {
+		switch filter := req.SourceIncorrectCount.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("source_incorrect_count", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("source_incorrect_count", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("source_incorrect_count", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("source_incorrect_count", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("source_incorrect_count", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("source_incorrect_count", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("source_incorrect_count", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("source_incorrect_count", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("source_incorrect_count", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -336,7 +366,7 @@ func BuildListFctAttestationVoteCorrectnessByValidatorHourlyQuery(req *ListFctAt
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "hour_start_date_time", "validator_index", "total_duties", "attested_count", "missed_count", "head_correct_count", "target_correct_count", "source_correct_count", "avg_inclusion_distance"}
+		validFields := []string{"updated_date_time", "hour_start_date_time", "validator_index", "total_duties", "attested_count", "missed_count", "head_correct_count", "target_correct_count", "source_correct_count", "avg_inclusion_distance", "source_incorrect_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -348,7 +378,7 @@ func BuildListFctAttestationVoteCorrectnessByValidatorHourlyQuery(req *ListFctAt
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp(`hour_start_date_time`) AS `hour_start_date_time`", "validator_index", "total_duties", "attested_count", "missed_count", "head_correct_count", "target_correct_count", "source_correct_count", "avg_inclusion_distance"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp(`hour_start_date_time`) AS `hour_start_date_time`", "validator_index", "total_duties", "attested_count", "missed_count", "head_correct_count", "target_correct_count", "source_correct_count", "avg_inclusion_distance", "source_incorrect_count"}
 
 	return BuildParameterizedQuery("fct_attestation_vote_correctness_by_validator_hourly", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -368,7 +398,7 @@ func BuildGetFctAttestationVoteCorrectnessByValidatorHourlyQuery(req *GetFctAtte
 	orderByClause := " ORDER BY validator_index, hour_start_date_time"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp(`hour_start_date_time`) AS `hour_start_date_time`", "validator_index", "total_duties", "attested_count", "missed_count", "head_correct_count", "target_correct_count", "source_correct_count", "avg_inclusion_distance"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toUnixTimestamp(`hour_start_date_time`) AS `hour_start_date_time`", "validator_index", "total_duties", "attested_count", "missed_count", "head_correct_count", "target_correct_count", "source_correct_count", "avg_inclusion_distance", "source_incorrect_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_attestation_vote_correctness_by_validator_hourly", columns, qb, orderByClause, 1, 0, options...)

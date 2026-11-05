@@ -45,6 +45,7 @@ WITH
             argMax(head_correct_count, updated_date_time) AS d_head_correct_count,
             argMax(target_correct_count, updated_date_time) AS d_target_correct_count,
             argMax(source_correct_count, updated_date_time) AS d_source_correct_count,
+            argMax(source_incorrect_count, updated_date_time) AS d_source_incorrect_count,
             argMax(avg_inclusion_distance, updated_date_time) AS d_avg_inclusion_distance
         FROM {{ index .dep "{{transformation}}" "fct_attestation_vote_correctness_by_validator_daily" "helpers" "from" }}
         WHERE day_start_date >= (SELECT min_week FROM week_bounds)
@@ -66,6 +67,8 @@ SELECT
     -- Weighted average: sum(avg * count) / sum(count)
     if(sum(d_attested_count) > 0,
        toFloat32(sum(d_avg_inclusion_distance * d_attested_count) / sum(d_attested_count)),
-       NULL) AS avg_inclusion_distance
+       NULL) AS avg_inclusion_distance,
+    -- Last, as the column was added at the end of the table
+    toUInt32(sum(d_source_incorrect_count)) AS source_incorrect_count
 FROM per_day
 GROUP BY week_start_date, validator_index
