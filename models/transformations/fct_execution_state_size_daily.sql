@@ -29,6 +29,8 @@ WITH
             toDate(max(block_date_time)) AS max_day
         FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+          -- Genesis is not a produced block, and on mainnet its timestamp is 0 (1970-01-01)
+          AND block_number > 0
           AND meta_network_name = '{{ .env.NETWORK }}'
     ),
     -- Find ALL blocks that fall within those day boundaries
