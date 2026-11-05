@@ -22,21 +22,28 @@ dependencies:
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
--- libp2p sentries record gossip before validating it, and some relays (gnode-beacon) re-encode
--- blocks, which changes the root and breaks the proposer signature. A libp2p block counts only if
--- a beacon node accepted its root: block_gossip fires after gossip validation, block after import.
+-- A block root counts only if at least two beacon nodes accepted it. block_gossip fires after gossip
+-- validation and block after import. libp2p sentries record gossip before validating it, and some
+-- relays (gnode-beacon) re-encode blocks, which changes the root and breaks the proposer signature.
+-- One beacon node (a Prysm node, 2026-09-16 to 09-30) emitted block_gossip for those re-encoded
+-- roots too, so a single node's word is not enough.
 WITH validated_roots AS (
-    SELECT DISTINCT toString(block) AS block_root
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }}
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
+    SELECT block_root
+    FROM (
+        SELECT toString(block) AS block_root, meta_client_name
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
 
-    UNION DISTINCT
+        UNION ALL
 
-    SELECT DISTINCT toString(block) AS block_root
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }}
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
+        SELECT toString(block) AS block_root, meta_client_name
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+    )
+    GROUP BY block_root
+    HAVING uniqExact(meta_client_name) >= 2
 ),
 combined_events AS (
     SELECT
