@@ -12,35 +12,48 @@ tags:
   - consensus
   - attestation
 dependencies:
-  - "{{transformation}}.fct_attestation_correctness_by_validator_canonical"
+  - "{{transformation}}.int_attestation_attested_canonical"
+  - "{{transformation}}.int_block_proposer_canonical"
 ---
 -- Daily aggregation of attestation inclusion delay.
 -- First aggregates per-validator data to per-slot averages, then computes daily
 -- stats across slots. This prevents individual validator outliers from dominating.
 -- Computes percentiles, Bollinger bands, and 7-day moving averages.
 -- The scan reaches back one window before the first day so the moving average covers the full 7 days.
+--
+-- Reads the canonical attestations, which reach genesis. A vote counts when the block it is for is canonical and at
+-- most 64 slots older than the vote, the votes fct_attestation_correctness_by_validator_canonical marks canonical.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
         SELECT
             toDate(min(slot_start_date_time)) AS min_day,
             toDate(max(slot_start_date_time)) AS max_day
-        FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_canonical" "helpers" "from" }} FINAL
+        FROM {{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "helpers" "from" }}
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-          AND status = 'canonical'
-          AND inclusion_distance IS NOT NULL
+    ),
+    -- Canonical blocks from 64 slots before the scan below to its end
+    canonical_blocks AS (
+        SELECT
+            slot AS block_slot,
+            block_root
+        FROM {{ index .dep "{{transformation}}" "int_block_proposer_canonical" "helpers" "from" }} FINAL
+        WHERE slot_start_date_time >= toDateTime((SELECT min_day FROM day_bounds) - INTERVAL 7 DAY) - INTERVAL 768 SECOND
+          AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
+          AND block_root IS NOT NULL
     ),
     slot_averages AS (
         SELECT
-            slot,
-            slot_start_date_time,
-            toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
-            avg(inclusion_distance) AS slot_avg_delay
-        FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_by_validator_canonical" "helpers" "from" }} FINAL
-        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
-          AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
-          AND status = 'canonical'
-          AND inclusion_distance IS NOT NULL
+            a.slot AS slot,
+            a.slot_start_date_time AS slot_start_date_time,
+            toUnixTimestamp(a.slot_start_date_time) AS slot_timestamp,
+            avg(a.inclusion_distance) AS slot_avg_delay
+        FROM {{ index .dep "{{transformation}}" "int_attestation_attested_canonical" "helpers" "from" }} AS a FINAL
+        GLOBAL INNER JOIN canonical_blocks AS b ON a.block_root = b.block_root
+        WHERE toDate(a.slot_start_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
+          AND toDate(a.slot_start_date_time) <= (SELECT max_day FROM day_bounds)
+          AND a.slot >= b.block_slot
+          AND a.slot - b.block_slot <= 64
         GROUP BY slot, slot_start_date_time
     ),
     slots_with_ma AS (
