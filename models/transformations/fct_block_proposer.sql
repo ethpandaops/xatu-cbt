@@ -14,8 +14,32 @@ tags:
   - canonical
 dependencies:
   - "{{transformation}}.int_block_proposer_canonical"
-  - "{{transformation}}.fct_block_proposer_head"
+  # fct_block_proposer_head needs live block gossip, so it starts when a network's sentries do (mainnet 2025-05-14),
+  # while int_block_proposer_canonical reaches genesis. The head is in a group with the canonical model, so the range
+  # follows the canonical model back to genesis. The guard below keeps the head gating the range where it exists.
+  - - "{{transformation}}.int_block_proposer_canonical"
+    - "{{transformation}}.fct_block_proposer_head"
 ---
+-- Only the head knows a block was orphaned. Before the head's first slot every row comes from the canonical model
+-- alone, so a slot is canonical or missed and an orphaned proposal shows as missed.
+--
+-- The group above no longer makes CBT wait for the head, and CBT never goes back to a range it has processed, so a
+-- range read before the head reaches it would lose its orphaned blocks for good. This first statement fails the task,
+-- and CBT retries it, until the head has a slot at or past the end of the range. Ranges before the head's first slot
+-- pass, as the head has later slots.
+SELECT throwIf(
+    (
+        SELECT count() = 0
+        FROM (
+            SELECT 1
+            FROM {{ index .dep "{{transformation}}" "fct_block_proposer_head" "helpers" "from" }}
+            WHERE slot_start_date_time >= fromUnixTimestamp({{ .bounds.end }})
+            LIMIT 1
+        )
+    ),
+    'fct_block_proposer_head has not reached the end of this range yet, waiting for it'
+);
+
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH canonical AS (
