@@ -32,7 +32,7 @@ type FctStorageSlotTop100ByBytes struct {
 	UpdatedDateTime uint32 `protobuf:"varint,11,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`
 	// Expiry policy identifier: NULL (raw), 1m, 6m, 12m, 18m, 24m
 	ExpiryPolicy *wrapperspb.StringValue `protobuf:"bytes,12,opt,name=expiry_policy,json=expiryPolicy,proto3" json:"expiry_policy,omitempty"`
-	// Rank by effective bytes (1=highest), based on raw state
+	// Rank by storage size, active_slots * 65 + effective_bytes (1=highest), based on raw state
 	Rank uint32 `protobuf:"varint,13,opt,name=rank,proto3" json:"rank,omitempty"`
 	// The contract address
 	ContractAddress string `protobuf:"bytes,14,opt,name=contract_address,json=contractAddress,proto3" json:"contract_address,omitempty"`
@@ -167,7 +167,7 @@ type ListFctStorageSlotTop100ByBytesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Filter by rank - Rank by effective bytes (1=highest), based on raw state (PRIMARY KEY - required)
+	// Filter by rank - Rank by storage size, active_slots * 65 + effective_bytes (1=highest), based on raw state (PRIMARY KEY - required)
 	Rank *UInt32Filter `protobuf:"bytes,1,opt,name=rank,proto3" json:"rank,omitempty"`
 	// Filter by updated_date_time - Timestamp when the record was last updated (optional)
 	UpdatedDateTime *UInt32Filter `protobuf:"bytes,2,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`
@@ -397,7 +397,7 @@ type GetFctStorageSlotTop100ByBytesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Rank by effective bytes (1=highest), based on raw state
+	// Rank by storage size, active_slots * 65 + effective_bytes (1=highest), based on raw state
 	Rank uint32 `protobuf:"varint,1,opt,name=rank,proto3" json:"rank,omitempty"` // Primary key (required)
 }
 
