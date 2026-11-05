@@ -32,7 +32,7 @@ message FctAttestationVoteCorrectnessByClientDaily {
   uint64 head_correct_count = 19;
   // Target votes that were correct
   uint64 target_correct_count = 20;
-  // Source votes that were correct
+  // Source votes that were correct, from attestations seen on gossip
   uint64 source_correct_count = 21;
   // Mean inclusion distance per included attestation, NULL when there were none
   google.protobuf.DoubleValue avg_inclusion_distance = 22;
@@ -63,7 +63,7 @@ message ListFctAttestationVoteCorrectnessByClientDailyRequest {
   UInt64Filter head_correct_count = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by target_correct_count - Target votes that were correct (optional)
   UInt64Filter target_correct_count = 10 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by source_correct_count - Source votes that were correct (optional)
+  // Filter by source_correct_count - Source votes that were correct, from attestations seen on gossip (optional)
   UInt64Filter source_correct_count = 11 [(google.api.field_behavior) = OPTIONAL];
   // Filter by avg_inclusion_distance - Mean inclusion distance per included attestation, NULL when there were none (optional)
   google.protobuf.DoubleValue avg_inclusion_distance = 12 [(google.api.field_behavior) = OPTIONAL];

@@ -44,7 +44,7 @@ type FctAttestationVoteCorrectnessByValidatorWeekly struct {
 	HeadCorrectCount uint32 `protobuf:"varint,17,opt,name=head_correct_count,json=headCorrectCount,proto3" json:"head_correct_count,omitempty"`
 	// Number of target votes that were correct
 	TargetCorrectCount uint32 `protobuf:"varint,18,opt,name=target_correct_count,json=targetCorrectCount,proto3" json:"target_correct_count,omitempty"`
-	// Number of source votes that were correct
+	// Number of source votes that were correct, from attestations seen on gossip
 	SourceCorrectCount uint32 `protobuf:"varint,19,opt,name=source_correct_count,json=sourceCorrectCount,proto3" json:"source_correct_count,omitempty"`
 	// Average inclusion distance for attested slots. NULL if no attestations
 	AvgInclusionDistance *wrapperspb.FloatValue `protobuf:"bytes,20,opt,name=avg_inclusion_distance,json=avgInclusionDistance,proto3" json:"avg_inclusion_distance,omitempty"`
@@ -183,7 +183,7 @@ type ListFctAttestationVoteCorrectnessByValidatorWeeklyRequest struct {
 	HeadCorrectCount *UInt32Filter `protobuf:"bytes,7,opt,name=head_correct_count,json=headCorrectCount,proto3" json:"head_correct_count,omitempty"`
 	// Filter by target_correct_count - Number of target votes that were correct (optional)
 	TargetCorrectCount *UInt32Filter `protobuf:"bytes,8,opt,name=target_correct_count,json=targetCorrectCount,proto3" json:"target_correct_count,omitempty"`
-	// Filter by source_correct_count - Number of source votes that were correct (optional)
+	// Filter by source_correct_count - Number of source votes that were correct, from attestations seen on gossip (optional)
 	SourceCorrectCount *UInt32Filter `protobuf:"bytes,9,opt,name=source_correct_count,json=sourceCorrectCount,proto3" json:"source_correct_count,omitempty"`
 	// Filter by avg_inclusion_distance - Average inclusion distance for attested slots. NULL if no attestations (optional)
 	AvgInclusionDistance *wrapperspb.FloatValue `protobuf:"bytes,10,opt,name=avg_inclusion_distance,json=avgInclusionDistance,proto3" json:"avg_inclusion_distance,omitempty"`

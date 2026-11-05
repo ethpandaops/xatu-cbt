@@ -28,7 +28,7 @@ message FctAttestationVoteCorrectnessByValidatorDaily {
   uint32 head_correct_count = 17;
   // Number of target votes that were correct
   uint32 target_correct_count = 18;
-  // Number of source votes that were correct
+  // Number of source votes that were correct, from attestations seen on gossip
   uint32 source_correct_count = 19;
   // Average inclusion distance for attested slots. NULL if no attestations
   google.protobuf.FloatValue avg_inclusion_distance = 20;
@@ -56,7 +56,7 @@ message ListFctAttestationVoteCorrectnessByValidatorDailyRequest {
   UInt32Filter head_correct_count = 7 [(google.api.field_behavior) = OPTIONAL];
   // Filter by target_correct_count - Number of target votes that were correct (optional)
   UInt32Filter target_correct_count = 8 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by source_correct_count - Number of source votes that were correct (optional)
+  // Filter by source_correct_count - Number of source votes that were correct, from attestations seen on gossip (optional)
   UInt32Filter source_correct_count = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by avg_inclusion_distance - Average inclusion distance for attested slots. NULL if no attestations (optional)
   google.protobuf.FloatValue avg_inclusion_distance = 10 [(google.api.field_behavior) = OPTIONAL];

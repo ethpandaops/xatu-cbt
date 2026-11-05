@@ -111,3 +111,65 @@ assertions:
         - type: equals
           column: over_per_slot
           value: 0
+    # fct_attestation_vote_correctness_by_validator reads gossip only for source_correct, and backfills before the
+    # gossip head exists. The fixture is all gossip era, so where the head has the vote source_correct must be the
+    # head's source root checked against the canonical checkpoint. The checkpoint of an epoch is the target root of
+    # its correct target votes, so only source epochs that are also target epochs here are compared.
+    - name: Where the head has the vote, source_correct is the gossip source checked against the checkpoint
+      sql: |
+        SELECT
+          countIf(h.source_root IS NULL AND v.source_correct IS NOT NULL) AS source_without_gossip,
+          countIf(h.source_root IS NOT NULL AND c.root IS NOT NULL AND v.source_correct IS NULL) AS gossip_without_source,
+          countIf(h.source_root IS NOT NULL AND c.root IS NOT NULL AND v.source_correct != (h.source_root = c.root)) AS source_mismatch,
+          countIf(h.source_root IS NOT NULL AND c.root IS NOT NULL) AS compared
+        FROM (SELECT slot, validator_index, source_correct FROM fct_attestation_vote_correctness_by_validator FINAL) AS v
+        GLOBAL LEFT JOIN (
+          SELECT slot, attesting_validator_index AS validator_index, source_epoch, source_root
+          FROM int_attestation_attested_head FINAL
+        ) AS h ON v.slot = h.slot AND v.validator_index = h.validator_index
+        GLOBAL LEFT JOIN (
+          SELECT a.target_epoch AS epoch, any(a.target_root) AS root
+          FROM int_attestation_attested_canonical AS a FINAL
+          GLOBAL INNER JOIN (
+            SELECT slot, validator_index FROM fct_attestation_vote_correctness_by_validator FINAL WHERE target_correct
+          ) AS t ON a.slot = t.slot AND a.attesting_validator_index = t.validator_index
+          GROUP BY epoch
+        ) AS c ON h.source_epoch = c.epoch
+        SETTINGS join_use_nulls = 1
+      assertions:
+        - type: equals
+          column: source_without_gossip
+          value: 0
+        - type: equals
+          column: gossip_without_source
+          value: 0
+        - type: equals
+          column: source_mismatch
+          value: 0
+        - type: greater_than
+          column: compared
+          value: 0
+    # The other columns come from canonical data alone, so they are computed the same way before gossip exists.
+    - name: attested, inclusion_distance, head_correct and target_correct follow int_attestation_attested_canonical
+      sql: |
+        SELECT
+          countIf(v.attested != (a.validator_index IS NOT NULL)) AS attested_mismatch,
+          countIf(ifNull(toString(v.inclusion_distance), 'null') != ifNull(toString(a.inclusion_distance), 'null')) AS inclusion_distance_mismatch,
+          countIf((v.head_correct IS NOT NULL OR v.target_correct IS NOT NULL) AND NOT v.attested) AS vote_without_attestation
+        FROM (SELECT slot, validator_index, attested, head_correct, target_correct, inclusion_distance FROM fct_attestation_vote_correctness_by_validator FINAL) AS v
+        GLOBAL LEFT JOIN (
+          SELECT slot, attesting_validator_index AS validator_index, any(inclusion_distance) AS inclusion_distance
+          FROM int_attestation_attested_canonical FINAL
+          GROUP BY slot, validator_index
+        ) AS a ON v.slot = a.slot AND v.validator_index = a.validator_index
+        SETTINGS join_use_nulls = 1
+      assertions:
+        - type: equals
+          column: attested_mismatch
+          value: 0
+        - type: equals
+          column: inclusion_distance_mismatch
+          value: 0
+        - type: equals
+          column: vote_without_attestation
+          value: 0
