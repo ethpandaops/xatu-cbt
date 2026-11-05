@@ -51,7 +51,10 @@ SELECT
     COALESCE(pd.epoch, b.epoch) as epoch,
     COALESCE(pd.epoch_start_date_time, b.epoch_start_date_time) as epoch_start_date_time,
     COALESCE(pd.proposer_validator_index, b.proposer_index) as proposer_validator_index,
-    pd.proposer_pubkey as proposer_pubkey,
+    ifNull(pd.proposer_pubkey, '') as proposer_pubkey,
     CASE WHEN b.block_root = '' THEN NULL ELSE b.block_root END as block_root
 FROM proposer_duties pd
-GLOBAL FULL OUTER JOIN blocks b ON pd.slot = b.slot;
+GLOBAL FULL OUTER JOIN blocks b ON pd.slot = b.slot
+-- Without join_use_nulls a block with no duty row gets pd.slot = 0 rather than NULL, so COALESCE kept 0
+-- and every such block collapsed into one slot-0 row (glamsterdam-devnet-8, where duties are missing).
+SETTINGS join_use_nulls = 1;
