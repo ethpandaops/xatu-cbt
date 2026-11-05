@@ -48,7 +48,7 @@ type FctAttestationVoteCorrectnessByClientDaily struct {
 	HeadCorrectCount uint64 `protobuf:"varint,19,opt,name=head_correct_count,json=headCorrectCount,proto3" json:"head_correct_count,omitempty"`
 	// Target votes that were correct
 	TargetCorrectCount uint64 `protobuf:"varint,20,opt,name=target_correct_count,json=targetCorrectCount,proto3" json:"target_correct_count,omitempty"`
-	// Source votes that were correct
+	// Source votes that were correct, from attestations seen on gossip
 	SourceCorrectCount uint64 `protobuf:"varint,21,opt,name=source_correct_count,json=sourceCorrectCount,proto3" json:"source_correct_count,omitempty"`
 	// Mean inclusion distance per included attestation, NULL when there were none
 	AvgInclusionDistance *wrapperspb.DoubleValue `protobuf:"bytes,22,opt,name=avg_inclusion_distance,json=avgInclusionDistance,proto3" json:"avg_inclusion_distance,omitempty"`
@@ -196,7 +196,7 @@ type ListFctAttestationVoteCorrectnessByClientDailyRequest struct {
 	HeadCorrectCount *UInt64Filter `protobuf:"bytes,9,opt,name=head_correct_count,json=headCorrectCount,proto3" json:"head_correct_count,omitempty"`
 	// Filter by target_correct_count - Target votes that were correct (optional)
 	TargetCorrectCount *UInt64Filter `protobuf:"bytes,10,opt,name=target_correct_count,json=targetCorrectCount,proto3" json:"target_correct_count,omitempty"`
-	// Filter by source_correct_count - Source votes that were correct (optional)
+	// Filter by source_correct_count - Source votes that were correct, from attestations seen on gossip (optional)
 	SourceCorrectCount *UInt64Filter `protobuf:"bytes,11,opt,name=source_correct_count,json=sourceCorrectCount,proto3" json:"source_correct_count,omitempty"`
 	// Filter by avg_inclusion_distance - Mean inclusion distance per included attestation, NULL when there were none (optional)
 	AvgInclusionDistance *wrapperspb.DoubleValue `protobuf:"bytes,12,opt,name=avg_inclusion_distance,json=avgInclusionDistance,proto3" json:"avg_inclusion_distance,omitempty"`
