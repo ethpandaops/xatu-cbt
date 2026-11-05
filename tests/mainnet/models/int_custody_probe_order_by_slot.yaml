@@ -1,0 +1,41 @@
+model: int_custody_probe_order_by_slot
+network: mainnet
+external_data:
+    libp2p_rpc_data_column_custody_probe:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    blob_submitter:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_blob_submitter.parquet
+        network_column: meta_network_name
+    execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: "Every int_custody_probe group has a row"
+      sql: |
+        SELECT
+          (SELECT COUNT(*) FROM int_custody_probe_order_by_slot FINAL) AS slot_rows,
+          (SELECT COUNT(*) FROM (SELECT DISTINCT slot, peer_id_unique_key, result, error FROM int_custody_probe FINAL)) AS probe_groups,
+          slot_rows - probe_groups AS row_diff
+      assertions:
+        - type: greater_than
+          column: slot_rows
+          value: 1000
+        - type: equals
+          column: row_diff
+          value: 0
+    - name: "No int_custody_probe row is read by two runs"
+      sql: |
+        SELECT COUNT(*) AS reread_rows FROM (
+          SELECT slot_start_date_time, slot, peer_id_unique_key, result, error, probe_date_time FROM int_custody_probe_order_by_slot GROUP BY slot_start_date_time, slot, peer_id_unique_key, result, error, probe_date_time HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: reread_rows
+          value: 0

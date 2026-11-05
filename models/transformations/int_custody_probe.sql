@@ -47,8 +47,10 @@ filtered_probes AS (
         meta_client_geo_autonomous_system_organization,
         meta_network_name
     FROM {{ index .dep "{{external}}" "libp2p_rpc_data_column_custody_probe" "helpers" "from" }} FINAL
+    -- Half-open: the next run starts at bounds.end, so a probe at exactly bounds.end belongs to it.
     WHERE
-        event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        event_date_time >= fromUnixTimestamp({{ .bounds.start }})
+        AND event_date_time < fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 

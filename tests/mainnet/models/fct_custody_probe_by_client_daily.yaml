@@ -60,3 +60,12 @@ assertions:
         - type: equals
           column: duplicate_keys
           value: 0
+    - name: "No int_custody_probe run rewrites a row another run wrote"
+      sql: |
+        SELECT COUNT(*) AS rewritten_keys FROM (
+          SELECT probe_date_time, slot, peer_id_unique_key, result, error FROM int_custody_probe GROUP BY probe_date_time, slot, peer_id_unique_key, result, error HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: rewritten_keys
+          value: 0
