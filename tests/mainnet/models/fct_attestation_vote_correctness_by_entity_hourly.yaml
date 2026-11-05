@@ -86,3 +86,28 @@ assertions:
         - type: equals
           column: overcounted_rows
           value: 0
+    # source_incorrect_count on the per-validator hourly table this model reads. It can still be filling when the
+    # harness asserts, so the count is checked as never above the per-slot table rather than equal to it.
+    - name: Incorrect source votes never exceed the per-slot table or the duties
+      sql: |
+        SELECT
+          (
+            SELECT countIf(source_correct_count + source_incorrect_count > total_duties)
+            FROM fct_attestation_vote_correctness_by_validator_hourly FINAL
+          ) AS over_duties,
+          (
+            SELECT countIf(h.source_incorrect_count > ifNull(s.incorrect, 0))
+            FROM fct_attestation_vote_correctness_by_validator_hourly AS h FINAL
+            GLOBAL LEFT JOIN (
+              SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, validator_index, countIf(source_correct = false) AS incorrect
+              FROM fct_attestation_vote_correctness_by_validator FINAL
+              GROUP BY hour_start_date_time, validator_index
+            ) AS s ON h.hour_start_date_time = s.hour_start_date_time AND h.validator_index = s.validator_index
+          ) AS over_per_slot
+      assertions:
+        - type: equals
+          column: over_duties
+          value: 0
+        - type: equals
+          column: over_per_slot
+          value: 0

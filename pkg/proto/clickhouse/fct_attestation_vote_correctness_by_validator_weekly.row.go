@@ -24,6 +24,7 @@ type FctAttestationVoteCorrectnessByValidatorWeeklyRow struct {
 	TargetCorrectCount uint32 `ch:"target_correct_count" json:"target_correct_count"`
 	SourceCorrectCount uint32 `ch:"source_correct_count" json:"source_correct_count"`
 	AvgInclusionDistance *float32 `ch:"avg_inclusion_distance" json:"avg_inclusion_distance"`
+	SourceIncorrectCount uint32 `ch:"source_incorrect_count" json:"source_incorrect_count"`
 }
 
 // TableName returns the ClickHouse table this row maps to.
@@ -47,5 +48,6 @@ func (r *FctAttestationVoteCorrectnessByValidatorWeeklyRow) ToProto() *FctAttest
 	if r.AvgInclusionDistance != nil {
 		p.AvgInclusionDistance = wrapperspb.Float(*r.AvgInclusionDistance)
 	}
+	p.SourceIncorrectCount = r.SourceIncorrectCount
 	return p
 }
