@@ -97,5 +97,5 @@ FROM combined_events
 GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root
 -- libp2p sentries record gossip before validating it, and some relays (gnode-beacon) re-encode
 -- sidecars, which changes the block root and breaks the header signature. Keep a root only if a
--- beacon node accepted a sidecar for it; beacon nodes emit the event after validation.
+-- beacon node accepted a sidecar for it. Beacon nodes emit the event after validation.
 HAVING max(from_beacon_api) = 1

@@ -20,7 +20,7 @@ dependencies:
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 -- libp2p sentries record gossip before validating it, and some relays (gnode-beacon) re-encode
 -- sidecars, which changes the block root and breaks the header signature. A gossiped sidecar counts
--- only if a beacon node accepted a sidecar for its root; beacon nodes emit the event after validation.
+-- only if a beacon node accepted a sidecar for its root. Beacon nodes emit the event after validation.
 WITH validated_roots AS (
     SELECT DISTINCT if(startsWith(toString(block_root), '0x'), toString(block_root), concat('0x', toStringCutToZero(block_root))) AS block_root
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_data_column_sidecar" "helpers" "from" }}
