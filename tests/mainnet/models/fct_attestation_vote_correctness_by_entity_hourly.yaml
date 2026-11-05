@@ -149,8 +149,9 @@ assertions:
         - type: greater_than
           column: compared
           value: 0
-    # The other columns come from canonical data alone, so they are computed the same way before gossip exists.
-    - name: attested, inclusion_distance, head_correct and target_correct follow int_attestation_attested_canonical
+    # attested and inclusion_distance come from canonical data alone, so they are computed the same way before gossip
+    # exists.
+    - name: attested and inclusion_distance follow int_attestation_attested_canonical, and head and target votes need an attestation
       sql: |
         SELECT
           countIf(v.attested != (a.validator_index IS NOT NULL)) AS attested_mismatch,
