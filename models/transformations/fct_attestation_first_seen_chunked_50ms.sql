@@ -44,47 +44,35 @@ attestations_chunked AS (
     GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, block_root, chunk_slot_start_diff
 ),
 
--- Get all unique slot/block combinations from attestations
-unique_slot_blocks AS (
+-- Chunks this table already holds for the interval. A re-run writes a zero row for any of them that no
+-- longer has attestations (a vote whose first sighting moved to an earlier chunk, or a block root that
+-- lost its votes), so the stale row is replaced rather than counted twice.
+existing_chunks AS (
     SELECT DISTINCT
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
-        block_root
-    FROM attestations
+        block_root,
+        chunk_slot_start_diff
+    FROM `{{ .self.database }}`.`{{ .self.table }}`
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
 ),
 
--- Generate all possible chunk combinations for each slot/block (0ms to 12000ms in 50ms chunks)
-slot_chunks AS (
-    SELECT
-        usb.slot,
-        usb.slot_start_date_time,
-        usb.epoch,
-        usb.epoch_start_date_time,
-        usb.block_root,
-        arrayJoin(range(0, 12000, 50)) AS chunk_slot_start_diff
-    FROM unique_slot_blocks usb
-),
-
--- Join with actual attestation data
 final_chunks AS (
     SELECT
-        sc.slot,
-        sc.slot_start_date_time,
-        sc.epoch,
-        sc.epoch_start_date_time,
-        sc.block_root,
-        sc.chunk_slot_start_diff,
+        COALESCE(ac.slot, ec.slot) AS slot,
+        COALESCE(ac.slot_start_date_time, ec.slot_start_date_time) AS slot_start_date_time,
+        COALESCE(ac.epoch, ec.epoch) AS epoch,
+        COALESCE(ac.epoch_start_date_time, ec.epoch_start_date_time) AS epoch_start_date_time,
+        COALESCE(ac.block_root, ec.block_root) AS block_root,
+        COALESCE(ac.chunk_slot_start_diff, ec.chunk_slot_start_diff) AS chunk_slot_start_diff,
         COALESCE(ac.attestation_count, 0) AS attestation_count
-    FROM slot_chunks sc
-    GLOBAL LEFT JOIN attestations_chunked ac
-        ON sc.slot = ac.slot
-        AND sc.slot_start_date_time = ac.slot_start_date_time
-        AND sc.epoch = ac.epoch
-        AND sc.epoch_start_date_time = ac.epoch_start_date_time
-        AND sc.block_root = ac.block_root
-        AND sc.chunk_slot_start_diff = ac.chunk_slot_start_diff
+    FROM attestations_chunked ac
+    GLOBAL FULL OUTER JOIN existing_chunks ec
+        ON ac.slot = ec.slot
+        AND ac.block_root = ec.block_root
+        AND ac.chunk_slot_start_diff = ec.chunk_slot_start_diff
 )
 
 SELECT
@@ -97,5 +85,4 @@ SELECT
     chunk_slot_start_diff,
     attestation_count
 FROM final_chunks
-WHERE attestation_count > 0 -- Only include chunks with actual attestations
 SETTINGS join_use_nulls = 1
