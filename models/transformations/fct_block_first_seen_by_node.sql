@@ -22,7 +22,23 @@ dependencies:
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
-WITH combined_events AS (
+-- libp2p sentries record gossip before validating it, and some relays (gnode-beacon) re-encode
+-- blocks, which changes the root and breaks the proposer signature. A libp2p block counts only if
+-- a beacon node accepted its root: block_gossip fires after gossip validation, block after import.
+WITH validated_roots AS (
+    SELECT DISTINCT toString(block) AS block_root
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }}
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+
+    UNION DISTINCT
+
+    SELECT DISTINCT toString(block) AS block_root
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }}
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+),
+combined_events AS (
     SELECT
         'beacon_api_eth_v1_events_block' AS source,
         slot,
@@ -133,6 +149,8 @@ WITH combined_events AS (
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND if(startsWith(block, '0x'), toString(block), concat('0x', toStringCutToZero(block)))
+            GLOBAL IN (SELECT block_root FROM validated_roots)
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,

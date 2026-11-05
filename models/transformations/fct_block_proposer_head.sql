@@ -162,6 +162,11 @@ gossipsub_blocks AS (
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        -- libp2p sentries record gossip before validating it, and some relays (gnode-beacon) re-encode
+        -- blocks, which changes the root and breaks the proposer signature. Keep a root only if a beacon
+        -- node accepted it: block_gossip fires after gossip validation, block after import.
+        AND if(startsWith(block, '0x'), toString(block), concat('0x', toStringCutToZero(block)))
+            GLOBAL IN (SELECT toString(block_root) FROM block_gossip UNION DISTINCT SELECT toString(block_root) FROM block_events)
 ),
 
 all_blocks AS (
