@@ -1,7 +1,12 @@
 ---
 table: fct_data_column_availability_hourly
-type: scheduled
-schedule: "@every 5m"
+type: incremental
+interval:
+  type: slot
+  max: 25200
+schedules:
+  forwardfill: "@every 5m"
+  backfill: "@every 30s"
 tags:
   - hourly
   - data_column
@@ -10,7 +15,14 @@ tags:
 dependencies:
   - "{{transformation}}.fct_data_column_availability_by_epoch"
 ---
+-- Rewrites every hour the bounds touch so partial hours are recounted in full.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
+WITH
+hour_bounds AS (
+    SELECT
+        toStartOfHour(fromUnixTimestamp({{ .bounds.start }})) AS min_hour,
+        toStartOfHour(fromUnixTimestamp({{ .bounds.end }})) + INTERVAL 1 HOUR AS max_hour
+)
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
     hour_start_date_time,
@@ -47,14 +59,11 @@ FROM (
         round(max(max_response_time_ms)) AS max_response_time_ms,
         max(max_blob_count) AS max_blob_count
     FROM {{ index .dep "{{transformation}}" "fct_data_column_availability_by_epoch" "helpers" "from" }} FINAL
-    WHERE toStartOfHour(epoch_start_date_time) >= now() - INTERVAL {{ default "19" .env.DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS }} DAY
+    WHERE epoch_start_date_time >= (SELECT min_hour FROM hour_bounds)
+        AND epoch_start_date_time < (SELECT max_hour FROM hour_bounds)
     GROUP BY
         toStartOfHour(epoch_start_date_time),
         column_index
-);
-
-DELETE FROM `{{ .self.database }}`.`{{ .self.table }}{{ if .clickhouse.cluster }}{{ .clickhouse.local_suffix }}{{ end }}`
-{{ if .clickhouse.cluster }}
-ON CLUSTER '{{ .clickhouse.cluster }}'
-{{ end }}
-WHERE updated_date_time != fromUnixTimestamp({{ .task.start }})
+)
+-- Merge across shards before inserting instead of each shard inserting its partial sums.
+SETTINGS parallel_distributed_insert_select = 0
