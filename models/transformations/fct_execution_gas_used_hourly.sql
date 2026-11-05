@@ -35,6 +35,8 @@ WITH
             toStartOfHour(max(block_date_time)) AS max_hour
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+          -- Genesis is not a produced block, and on mainnet its timestamp is 0 (1970-01-01)
+          AND block_number > 0
     ),
     -- Get the actual block number range for the expanded hour boundaries
     block_range AS (
@@ -68,6 +70,8 @@ WITH
             FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
             WHERE block_number >= (SELECT min_block FROM block_range)
               AND block_number <= (SELECT max_block FROM block_range)
+              -- The external table holds every network, so match this network's blocks only
+              AND meta_network_name = '{{ .env.NETWORK }}'
         ) eb ON b.block_number = eb.block_number
     ),
     -- Calculate 6-hour moving average for each block
