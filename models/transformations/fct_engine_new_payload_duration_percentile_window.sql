@@ -10,8 +10,9 @@ dependencies:
   - "{{transformation}}.int_engine_new_payload"
   - "{{transformation}}.fct_engine_new_payload_duration_histogram_by_version_daily"
 ---
--- engine_newPayload duration P50 and P95 per window, node class, execution client and status, for each version and for
--- all versions of the client together (meta_execution_version empty), recomputed every hour. Percentiles are read
+-- engine_newPayload duration P50 and P95 per window, node class, execution client and status, for each version, each
+-- build line and all versions of the client together, recomputed every hour. Besides each node class, every Xatu node
+-- together is written under node_class 'all', since percentiles can't be combined afterwards. Percentiles are read
 -- from the summed log-scaled bucket counts of fct_engine_new_payload_duration_histogram_*, interpolated inside the
 -- bucket, so they are true percentiles of the window to within one bucket (about 4%).
 --
@@ -70,14 +71,37 @@ WITH
             AND d.observation_count > 0
         GROUP BY window_grain, window_length, node_class, meta_execution_implementation, meta_execution_version, status, bucket_index
     ),
-    -- Each version on its own, and all versions of a client together under an empty version
-    buckets AS (
-        SELECT window_grain, window_length, node_class, meta_execution_implementation, meta_execution_version, status, bucket_index, sum(n) AS n
+    -- Each node class on its own, and every Xatu node together under node_class 'all'
+    classed AS (
+        SELECT window_grain, window_length, node_class, meta_execution_implementation, meta_execution_version, status, bucket_index, n
         FROM counts
-        GROUP BY window_grain, window_length, node_class, meta_execution_implementation, meta_execution_version, status, bucket_index
         UNION ALL
-        SELECT window_grain, window_length, node_class, meta_execution_implementation, '' AS meta_execution_version, status, bucket_index, sum(n) AS n
+        SELECT window_grain, window_length, 'all' AS node_class, meta_execution_implementation, meta_execution_version, status, bucket_index, n
         FROM counts
+    ),
+    -- Each version on its own, each build line (the version without its trailing commit, as Lab groups builds) under an
+    -- empty version, and all versions of a client together under an empty build line and version. Calls without a
+    -- version only count towards the client.
+    lined AS (
+        SELECT
+            *,
+            replaceRegexpOne(trimBoth(meta_execution_version), '(?i)[-+](0x)?[0-9a-f]{7,40}$', '') AS meta_execution_build_line,
+            meta_execution_version != '' AS has_version
+        FROM classed
+    ),
+    buckets AS (
+        SELECT window_grain, window_length, node_class, meta_execution_implementation, meta_execution_build_line, meta_execution_version, status, bucket_index, sum(n) AS n
+        FROM lined
+        WHERE has_version
+        GROUP BY window_grain, window_length, node_class, meta_execution_implementation, meta_execution_build_line, meta_execution_version, status, bucket_index
+        UNION ALL
+        SELECT window_grain, window_length, node_class, meta_execution_implementation, meta_execution_build_line, '' AS meta_execution_version, status, bucket_index, sum(n) AS n
+        FROM lined
+        WHERE has_version
+        GROUP BY window_grain, window_length, node_class, meta_execution_implementation, meta_execution_build_line, status, bucket_index
+        UNION ALL
+        SELECT window_grain, window_length, node_class, meta_execution_implementation, '' AS meta_execution_build_line, '' AS meta_execution_version, status, bucket_index, sum(n) AS n
+        FROM lined
         GROUP BY window_grain, window_length, node_class, meta_execution_implementation, status, bucket_index
     ),
     percentiles AS (
@@ -86,6 +110,7 @@ WITH
             window_length,
             node_class,
             meta_execution_implementation,
+            meta_execution_build_line,
             meta_execution_version,
             status,
             -- (lower ms, upper ms, count) per bucket, in duration order
@@ -103,7 +128,7 @@ WITH
             b[i95].1 + (b[i95].2 - b[i95].1) * (0.95 * total - (cum[i95] - b[i95].3)) / b[i95].3 AS p95
         FROM buckets
         WHERE n > 0
-        GROUP BY window_grain, window_length, node_class, meta_execution_implementation, meta_execution_version, status
+        GROUP BY window_grain, window_length, node_class, meta_execution_implementation, meta_execution_build_line, meta_execution_version, status
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -113,19 +138,20 @@ SELECT
     w.window_end AS window_end_date_time,
     k.node_class AS node_class,
     k.meta_execution_implementation AS meta_execution_implementation,
+    k.meta_execution_build_line AS meta_execution_build_line,
     k.meta_execution_version AS meta_execution_version,
     k.status AS status,
     toUInt64(max(k.observation_count)) AS observation_count,
     toFloat32(max(k.p50)) AS p50_duration_ms,
     toFloat32(max(k.p95)) AS p95_duration_ms
 FROM (
-    SELECT window_grain, window_length, node_class, meta_execution_implementation, meta_execution_version, status, observation_count, p50, p95
+    SELECT window_grain, window_length, node_class, meta_execution_implementation, meta_execution_build_line, meta_execution_version, status, observation_count, p50, p95
     FROM percentiles
     UNION ALL
-    SELECT window_grain, window_length, node_class, meta_execution_implementation, meta_execution_version, status, toUInt64(0), 0, 0
+    SELECT window_grain, window_length, node_class, meta_execution_implementation, meta_execution_build_line, meta_execution_version, status, toUInt64(0), 0, 0
     FROM `{{ .self.database }}`.`{{ .self.table }}` FINAL
     WHERE observation_count > 0
 ) AS k
 INNER JOIN windows AS w ON k.window_grain = w.grain AND k.window_length = w.length
-GROUP BY window_grain, window_length, window_start_date_time, window_end_date_time, node_class, meta_execution_implementation, meta_execution_version, status
+GROUP BY window_grain, window_length, window_start_date_time, window_end_date_time, node_class, meta_execution_implementation, meta_execution_build_line, meta_execution_version, status
 SETTINGS parallel_distributed_insert_select = 0

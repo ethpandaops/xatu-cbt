@@ -17,6 +17,7 @@ type FctEngineNewPayloadDurationPercentileWindowRow struct {
 	WindowEndDateTime uint32 `ch:"window_end_date_time" json:"window_end_date_time"`
 	NodeClass string `ch:"node_class" json:"node_class"`
 	MetaExecutionImplementation string `ch:"meta_execution_implementation" json:"meta_execution_implementation"`
+	MetaExecutionBuildLine string `ch:"meta_execution_build_line" json:"meta_execution_build_line"`
 	MetaExecutionVersion string `ch:"meta_execution_version" json:"meta_execution_version"`
 	Status string `ch:"status" json:"status"`
 	ObservationCount uint64 `ch:"observation_count" json:"observation_count"`
@@ -40,6 +41,7 @@ func (r *FctEngineNewPayloadDurationPercentileWindowRow) ToProto() *FctEngineNew
 	p.WindowEndDateTime = r.WindowEndDateTime
 	p.NodeClass = r.NodeClass
 	p.MetaExecutionImplementation = r.MetaExecutionImplementation
+	p.MetaExecutionBuildLine = r.MetaExecutionBuildLine
 	p.MetaExecutionVersion = r.MetaExecutionVersion
 	p.Status = r.Status
 	p.ObservationCount = r.ObservationCount
