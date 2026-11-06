@@ -12,7 +12,7 @@ CREATE TABLE fct_slot_summary_local ON CLUSTER '{cluster}' (
     `gas_used` Nullable(UInt64) COMMENT 'Execution gas used by the block, NULL for a missed slot' CODEC(ZSTD(1)),
     `gas_limit` Nullable(UInt64) COMMENT 'Execution gas limit of the block, NULL for a missed slot' CODEC(ZSTD(1)),
     `transaction_count` Nullable(UInt32) COMMENT 'Number of transactions in the block, NULL for a missed slot' CODEC(ZSTD(1)),
-    `blob_count` Nullable(UInt32) COMMENT 'Number of blobs in the block, NULL for a missed slot' CODEC(ZSTD(1)),
+    `blob_count` Nullable(UInt32) COMMENT 'Number of blobs in the block, NULL for a missed or orphaned slot' CODEC(ZSTD(1)),
     `consensus_client` Nullable(String) COMMENT 'Consensus client of the proposer, parsed from the block graffiti (unknown when the graffiti does not say), NULL for a missed or orphaned slot' CODEC(ZSTD(1)),
     `execution_client` Nullable(String) COMMENT 'Execution client of the proposer, parsed from the block graffiti (unknown when the graffiti does not say), NULL for a missed or orphaned slot' CODEC(ZSTD(1)),
     INDEX idx_status status TYPE set(8) GRANULARITY 1,

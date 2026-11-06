@@ -55,7 +55,7 @@ type FctSlotSummary struct {
 	GasLimit *wrapperspb.UInt64Value `protobuf:"bytes,22,opt,name=gas_limit,json=gasLimit,proto3" json:"gas_limit,omitempty"`
 	// Number of transactions in the block, NULL for a missed slot
 	TransactionCount *wrapperspb.UInt32Value `protobuf:"bytes,23,opt,name=transaction_count,json=transactionCount,proto3" json:"transaction_count,omitempty"`
-	// Number of blobs in the block, NULL for a missed slot
+	// Number of blobs in the block, NULL for a missed or orphaned slot
 	BlobCount *wrapperspb.UInt32Value `protobuf:"bytes,24,opt,name=blob_count,json=blobCount,proto3" json:"blob_count,omitempty"`
 	// Consensus client of the proposer, parsed from the block graffiti (unknown when the graffiti does not say), NULL for a missed or orphaned slot
 	ConsensusClient *wrapperspb.StringValue `protobuf:"bytes,25,opt,name=consensus_client,json=consensusClient,proto3" json:"consensus_client,omitempty"`
@@ -239,7 +239,7 @@ type ListFctSlotSummaryRequest struct {
 	GasLimit *NullableUInt64Filter `protobuf:"bytes,12,opt,name=gas_limit,json=gasLimit,proto3" json:"gas_limit,omitempty"`
 	// Filter by transaction_count - Number of transactions in the block, NULL for a missed slot (optional)
 	TransactionCount *NullableUInt32Filter `protobuf:"bytes,13,opt,name=transaction_count,json=transactionCount,proto3" json:"transaction_count,omitempty"`
-	// Filter by blob_count - Number of blobs in the block, NULL for a missed slot (optional)
+	// Filter by blob_count - Number of blobs in the block, NULL for a missed or orphaned slot (optional)
 	BlobCount *NullableUInt32Filter `protobuf:"bytes,14,opt,name=blob_count,json=blobCount,proto3" json:"blob_count,omitempty"`
 	// Filter by consensus_client - Consensus client of the proposer, parsed from the block graffiti (unknown when the graffiti does not say), NULL for a missed or orphaned slot (optional)
 	ConsensusClient *NullableStringFilter `protobuf:"bytes,15,opt,name=consensus_client,json=consensusClient,proto3" json:"consensus_client,omitempty"`

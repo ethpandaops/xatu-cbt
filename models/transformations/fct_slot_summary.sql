@@ -14,7 +14,7 @@ tags:
 dependencies:
   - "{{transformation}}.fct_block_proposer"
   - "{{transformation}}.fct_block"
-  - "{{transformation}}.fct_block_blob_count"
+  - "{{transformation}}.int_block_blob_count_canonical"
   - "{{transformation}}.fct_block_graffiti"
   - "{{transformation}}.dim_node"
 ---
@@ -41,8 +41,8 @@ WITH
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     ),
     blobs AS (
-        SELECT slot_start_date_time, block_root, blob_count
-        FROM {{ index .dep "{{transformation}}" "fct_block_blob_count" "helpers" "from" }} FINAL
+        SELECT slot_start_date_time, toString(block_root) AS block_root, blob_count
+        FROM {{ index .dep "{{transformation}}" "int_block_blob_count_canonical" "helpers" "from" }} FINAL
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     ),
     graffiti AS (
@@ -70,8 +70,8 @@ SELECT
     if(p.block_root IS NULL, NULL, b.execution_payload_gas_used) AS gas_used,
     if(p.block_root IS NULL, NULL, b.execution_payload_gas_limit) AS gas_limit,
     if(p.block_root IS NULL, NULL, b.execution_payload_transactions_count) AS transaction_count,
-    -- A block without a blob count row carries no blobs
-    if(p.block_root IS NULL, NULL, toUInt32(ifNull(bl.blob_count, 0))) AS blob_count,
+    -- Blob counts are known for canonical blocks only. A canonical block without a blob count row carries no blobs.
+    if(p.status = 'canonical', toUInt32(ifNull(bl.blob_count, 0)), NULL) AS blob_count,
     if(p.block_root IS NULL, NULL, g.consensus_client) AS consensus_client,
     if(p.block_root IS NULL, NULL, g.execution_client) AS execution_client
 FROM proposers AS p

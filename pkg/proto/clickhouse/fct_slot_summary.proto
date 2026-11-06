@@ -38,7 +38,7 @@ message FctSlotSummary {
   google.protobuf.UInt64Value gas_limit = 22;
   // Number of transactions in the block, NULL for a missed slot
   google.protobuf.UInt32Value transaction_count = 23;
-  // Number of blobs in the block, NULL for a missed slot
+  // Number of blobs in the block, NULL for a missed or orphaned slot
   google.protobuf.UInt32Value blob_count = 24;
   // Consensus client of the proposer, parsed from the block graffiti (unknown when the graffiti does not say), NULL for a missed or orphaned slot
   google.protobuf.StringValue consensus_client = 25;
@@ -75,7 +75,7 @@ message ListFctSlotSummaryRequest {
   NullableUInt64Filter gas_limit = 12 [(google.api.field_behavior) = OPTIONAL];
   // Filter by transaction_count - Number of transactions in the block, NULL for a missed slot (optional)
   NullableUInt32Filter transaction_count = 13 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by blob_count - Number of blobs in the block, NULL for a missed slot (optional)
+  // Filter by blob_count - Number of blobs in the block, NULL for a missed or orphaned slot (optional)
   NullableUInt32Filter blob_count = 14 [(google.api.field_behavior) = OPTIONAL];
   // Filter by consensus_client - Consensus client of the proposer, parsed from the block graffiti (unknown when the graffiti does not say), NULL for a missed or orphaned slot (optional)
   NullableStringFilter consensus_client = 15 [(google.api.field_behavior) = OPTIONAL];
