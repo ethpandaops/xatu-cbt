@@ -50,8 +50,8 @@ assertions:
         SELECT
             (SELECT count() FROM fct_attestation_vote_by_block_root_head FINAL) AS mine_rows,
             (SELECT sum(vote_count) FROM fct_attestation_vote_by_block_root_head FINAL) AS mine_votes,
-            (SELECT count() FROM int_attestation_attested_head FINAL WHERE slot IN (SELECT slot FROM fct_attestation_vote_by_block_root_head FINAL)) AS int_votes,
-            (SELECT count() FROM int_attestation_attested_head WHERE slot IN (SELECT slot FROM fct_attestation_vote_by_block_root_head FINAL)) AS int_votes_nofinal,
+            (SELECT count() FROM int_attestation_attested_head FINAL WHERE slot GLOBAL IN (SELECT slot FROM fct_attestation_vote_by_block_root_head FINAL)) AS int_votes,
+            (SELECT count() FROM int_attestation_attested_head WHERE slot GLOBAL IN (SELECT slot FROM fct_attestation_vote_by_block_root_head FINAL)) AS int_votes_nofinal,
             (SELECT uniqExact(slot) FROM fct_attestation_vote_by_block_root_head FINAL) AS mine_slots,
             (SELECT uniqExact(slot) FROM int_attestation_attested_head FINAL) AS int_slots,
             (SELECT count() FROM (SELECT slot, block_root, count() c FROM fct_attestation_vote_by_block_root_head GROUP BY slot, block_root HAVING c > 1)) AS mine_dups
