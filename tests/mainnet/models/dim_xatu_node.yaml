@@ -30,7 +30,7 @@ assertions:
       sql: |
         SELECT
           countIf(position(meta_client_name, '/hashed-') = 0 AND stable_node_id != meta_client_name) AS named_moved,
-          countIf(stable_node_id NOT IN (SELECT meta_client_name FROM dim_xatu_node FINAL WHERE stable_node_id = meta_client_name)) AS headless
+          countIf(stable_node_id GLOBAL NOT IN (SELECT meta_client_name FROM dim_xatu_node FINAL WHERE stable_node_id = meta_client_name)) AS headless
         FROM dim_xatu_node FINAL
       assertions:
         - type: equals
@@ -45,7 +45,7 @@ assertions:
           countIf(a.username != b.username OR a.meta_consensus_implementation != b.meta_consensus_implementation) AS mixed,
           countIf(a.first_seen_date_time < b.last_seen_date_time AND b.first_seen_date_time < a.last_seen_date_time) AS overlapping
         FROM dim_xatu_node AS a FINAL
-        INNER JOIN dim_xatu_node AS b FINAL ON a.stable_node_id = b.stable_node_id
+        GLOBAL INNER JOIN dim_xatu_node AS b FINAL ON a.stable_node_id = b.stable_node_id
         WHERE a.meta_client_name < b.meta_client_name
       assertions:
         - type: equals
