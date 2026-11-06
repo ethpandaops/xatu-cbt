@@ -1,0 +1,56 @@
+model: dim_xatu_node
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Every Xatu node name that reported a block has exactly one row
+      sql: |
+        SELECT
+          (SELECT uniqExact(meta_client_name) FROM fct_block_first_seen_by_node_hourly FINAL) AS names,
+          (SELECT count() FROM dim_xatu_node FINAL) - names AS row_diff
+      assertions:
+        - type: greater_than
+          column: names
+          value: 1
+        - type: equals
+          column: row_diff
+          value: 0
+    - name: Named nodes map to themselves and every chain head maps to itself
+      sql: |
+        SELECT
+          countIf(position(meta_client_name, '/hashed-') = 0 AND stable_node_id != meta_client_name) AS named_moved,
+          countIf(stable_node_id NOT IN (SELECT meta_client_name FROM dim_xatu_node FINAL WHERE stable_node_id = meta_client_name)) AS headless
+        FROM dim_xatu_node FINAL
+      assertions:
+        - type: equals
+          column: named_moved
+          value: 0
+        - type: equals
+          column: headless
+          value: 0
+    - name: Names in one node share contributor and client and never overlap in time
+      sql: |
+        SELECT
+          countIf(a.username != b.username OR a.meta_consensus_implementation != b.meta_consensus_implementation) AS mixed,
+          countIf(a.first_seen_date_time < b.last_seen_date_time AND b.first_seen_date_time < a.last_seen_date_time) AS overlapping
+        FROM dim_xatu_node AS a FINAL
+        INNER JOIN dim_xatu_node AS b FINAL ON a.stable_node_id = b.stable_node_id
+        WHERE a.meta_client_name < b.meta_client_name
+      assertions:
+        - type: equals
+          column: mixed
+          value: 0
+        - type: equals
+          column: overlapping
+          value: 0
