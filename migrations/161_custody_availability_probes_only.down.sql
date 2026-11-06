@@ -134,3 +134,7 @@ ALTER TABLE fct_data_column_availability_by_slot ON CLUSTER '{cluster}'
 
 DROP TABLE IF EXISTS int_data_column_gossip_by_slot ON CLUSTER '{cluster}' SYNC;
 DROP TABLE IF EXISTS int_data_column_gossip_by_slot_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_custody_probe_by_slot_age_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_custody_probe_by_slot_age_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_custody_probe_by_slot_age_hourly ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_custody_probe_by_slot_age_hourly_local ON CLUSTER '{cluster}' SYNC;
