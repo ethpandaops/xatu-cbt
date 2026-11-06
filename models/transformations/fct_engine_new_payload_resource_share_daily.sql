@@ -5,9 +5,10 @@ interval:
   type: slot
   max: 86400
 fill:
-  # int_block_resource_gas trails the chain head by a few blocks. Without a buffer the range at the head is always
-  # newer than it, the guard below fails every run, and the model never starts.
-  buffer: 1800
+  # int_block_resource_gas trails the chain head (about 95 minutes on mainnet, 2026-11-06). Without a buffer the range
+  # at the head is always newer than it, the guard below fails every run, and the model never starts. If the lag
+  # grows past the buffer the guard holds the range until it catches up.
+  buffer: 14400
 schedules:
   forwardfill: "@every 1h"
   backfill: "@every 30s"
