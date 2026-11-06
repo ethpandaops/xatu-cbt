@@ -44,15 +44,16 @@ assertions:
           value: 0
     - name: Votes per slot and block root match the validators in int_attestation_attested, for the slots the model has processed
       sql: |
-        SELECT COUNT(*) AS bad_rows
-        FROM (SELECT slot, block_root, vote_count FROM fct_attestation_vote_by_block_root FINAL) AS v
-        FULL OUTER JOIN (
-            SELECT slot, block_root, count() AS c FROM int_attestation_attested FINAL
-            WHERE slot IN (SELECT slot FROM fct_attestation_vote_by_block_root FINAL)
-            GROUP BY slot, block_root
-        ) AS a ON v.slot = a.slot AND v.block_root = a.block_root
-        WHERE v.vote_count != a.c
-        SETTINGS join_use_nulls = 0
+        SELECT if(
+            (SELECT arraySort(groupArray(tuple(slot, block_root, toUInt64(vote_count)))) FROM fct_attestation_vote_by_block_root FINAL)
+            = (
+                SELECT arraySort(groupArray(tuple(slot, block_root, c)))
+                FROM (
+                    SELECT slot, block_root, toUInt64(count()) AS c FROM int_attestation_attested FINAL
+                    WHERE slot GLOBAL IN (SELECT slot FROM fct_attestation_vote_by_block_root FINAL)
+                    GROUP BY slot, block_root
+                )
+            ), 0, 1) AS bad_rows
       assertions:
         - type: equals
           column: bad_rows
