@@ -15,6 +15,8 @@ dependencies:
 -- the same chunks, every 6 hours.
 {{- $days := atoi (default "19" .env.DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS) }}
 {{- $chunk := atoi (default "1" .env.DATA_COLUMN_AVAILABILITY_CHUNK_DAYS) }}
+{{- /* Windows over 400 days (tests run with 3650) default to 10 statements instead of one per day */ -}}
+{{- if and (not .env.DATA_COLUMN_AVAILABILITY_CHUNK_DAYS) (gt $days 400) }}{{ $chunk = div $days 10 }}{{ end }}
 {{- $chunks := int (div (add $days $chunk) $chunk) }}
 {{- range $i := until $chunks }}
 INSERT INTO `{{ $.self.database }}`.`{{ $.self.table }}`
