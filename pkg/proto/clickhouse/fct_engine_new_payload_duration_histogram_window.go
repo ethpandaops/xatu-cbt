@@ -11,36 +11,36 @@ import (
 func BuildListFctEngineNewPayloadDurationHistogramWindowQuery(req *ListFctEngineNewPayloadDurationHistogramWindowRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate that at least one primary key is provided
 	// Primary keys can come from base table or projections
-	if req.WindowName == nil {
-		return SQLQuery{}, fmt.Errorf("primary key field window_name is required")
+	if req.WindowGrain == nil {
+		return SQLQuery{}, fmt.Errorf("primary key field window_grain is required")
 	}
 
 	// Build query using QueryBuilder
 	qb := NewQueryBuilder()
 
 	// Add primary key filter
-	switch filter := req.WindowName.Filter.(type) {
+	switch filter := req.WindowGrain.Filter.(type) {
 	case *StringFilter_Eq:
-		qb.AddCondition("window_name", "=", filter.Eq)
+		qb.AddCondition("window_grain", "=", filter.Eq)
 	case *StringFilter_Ne:
-		qb.AddCondition("window_name", "!=", filter.Ne)
+		qb.AddCondition("window_grain", "!=", filter.Ne)
 	case *StringFilter_Contains:
-		qb.AddLikeCondition("window_name", "%" + filter.Contains + "%")
+		qb.AddLikeCondition("window_grain", "%" + filter.Contains + "%")
 	case *StringFilter_StartsWith:
-		qb.AddLikeCondition("window_name", filter.StartsWith + "%")
+		qb.AddLikeCondition("window_grain", filter.StartsWith + "%")
 	case *StringFilter_EndsWith:
-		qb.AddLikeCondition("window_name", "%" + filter.EndsWith)
+		qb.AddLikeCondition("window_grain", "%" + filter.EndsWith)
 	case *StringFilter_Like:
-		qb.AddLikeCondition("window_name", filter.Like)
+		qb.AddLikeCondition("window_grain", filter.Like)
 	case *StringFilter_NotLike:
-		qb.AddNotLikeCondition("window_name", filter.NotLike)
+		qb.AddNotLikeCondition("window_grain", filter.NotLike)
 	case *StringFilter_In:
 		if len(filter.In.Values) > 0 {
-			qb.AddInCondition("window_name", StringSliceToInterface(filter.In.Values))
+			qb.AddInCondition("window_grain", StringSliceToInterface(filter.In.Values))
 		}
 	case *StringFilter_NotIn:
 		if len(filter.NotIn.Values) > 0 {
-			qb.AddNotInCondition("window_name", StringSliceToInterface(filter.NotIn.Values))
+			qb.AddNotInCondition("window_grain", StringSliceToInterface(filter.NotIn.Values))
 		}
 	default:
 		// Unsupported filter type
@@ -78,6 +78,36 @@ func BuildListFctEngineNewPayloadDurationHistogramWindowQuery(req *ListFctEngine
 					converted[i] = DateTimeValue{v}
 				}
 				qb.AddNotInCondition("updated_date_time", converted)
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
+	// Add filter for column: window_length
+	if req.WindowLength != nil {
+		switch filter := req.WindowLength.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("window_length", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("window_length", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("window_length", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("window_length", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("window_length", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("window_length", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("window_length", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("window_length", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("window_length", UInt32SliceToInterface(filter.NotIn.Values))
 			}
 		default:
 			// Unsupported filter type
@@ -425,7 +455,7 @@ func BuildListFctEngineNewPayloadDurationHistogramWindowQuery(req *ListFctEngine
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "window_name", "window_start_date_time", "window_end_date_time", "node_class", "meta_execution_implementation", "meta_execution_version", "status", "bucket_index", "bucket_lower_ms", "bucket_upper_ms", "observation_count"}
+		validFields := []string{"updated_date_time", "window_grain", "window_length", "window_start_date_time", "window_end_date_time", "node_class", "meta_execution_implementation", "meta_execution_version", "status", "bucket_index", "bucket_lower_ms", "bucket_upper_ms", "observation_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -433,11 +463,11 @@ func BuildListFctEngineNewPayloadDurationHistogramWindowQuery(req *ListFctEngine
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY window_name" + ", node_class" + ", meta_execution_implementation" + ", meta_execution_version" + ", status" + ", bucket_index"
+		orderByClause = " ORDER BY window_grain" + ", window_length" + ", node_class" + ", meta_execution_implementation" + ", meta_execution_version" + ", status" + ", bucket_index"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "window_name", "toUnixTimestamp(`window_start_date_time`) AS `window_start_date_time`", "toUnixTimestamp(`window_end_date_time`) AS `window_end_date_time`", "node_class", "meta_execution_implementation", "meta_execution_version", "status", "toUInt32(`bucket_index`) AS `bucket_index`", "bucket_lower_ms", "bucket_upper_ms", "observation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "window_grain", "toUInt32(`window_length`) AS `window_length`", "toUnixTimestamp(`window_start_date_time`) AS `window_start_date_time`", "toUnixTimestamp(`window_end_date_time`) AS `window_end_date_time`", "node_class", "meta_execution_implementation", "meta_execution_version", "status", "toUInt32(`bucket_index`) AS `bucket_index`", "bucket_lower_ms", "bucket_upper_ms", "observation_count"}
 
 	return BuildParameterizedQuery("fct_engine_new_payload_duration_histogram_window", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -445,19 +475,19 @@ func BuildListFctEngineNewPayloadDurationHistogramWindowQuery(req *ListFctEngine
 // BuildGetFctEngineNewPayloadDurationHistogramWindowQuery constructs a parameterized SQL query from a GetFctEngineNewPayloadDurationHistogramWindowRequest
 func BuildGetFctEngineNewPayloadDurationHistogramWindowQuery(req *GetFctEngineNewPayloadDurationHistogramWindowRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate primary key is provided
-	if req.WindowName == "" {
-		return SQLQuery{}, fmt.Errorf("primary key field window_name is required")
+	if req.WindowGrain == "" {
+		return SQLQuery{}, fmt.Errorf("primary key field window_grain is required")
 	}
 
 	// Build query with primary key condition
 	qb := NewQueryBuilder()
-	qb.AddCondition("window_name", "=", req.WindowName)
+	qb.AddCondition("window_grain", "=", req.WindowGrain)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY window_name, node_class, meta_execution_implementation, meta_execution_version, status, bucket_index"
+	orderByClause := " ORDER BY window_grain, window_length, node_class, meta_execution_implementation, meta_execution_version, status, bucket_index"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "window_name", "toUnixTimestamp(`window_start_date_time`) AS `window_start_date_time`", "toUnixTimestamp(`window_end_date_time`) AS `window_end_date_time`", "node_class", "meta_execution_implementation", "meta_execution_version", "status", "toUInt32(`bucket_index`) AS `bucket_index`", "bucket_lower_ms", "bucket_upper_ms", "observation_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "window_grain", "toUInt32(`window_length`) AS `window_length`", "toUnixTimestamp(`window_start_date_time`) AS `window_start_date_time`", "toUnixTimestamp(`window_end_date_time`) AS `window_end_date_time`", "node_class", "meta_execution_implementation", "meta_execution_version", "status", "toUInt32(`bucket_index`) AS `bucket_index`", "bucket_lower_ms", "bucket_upper_ms", "observation_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_engine_new_payload_duration_histogram_window", columns, qb, orderByClause, 1, 0, options...)

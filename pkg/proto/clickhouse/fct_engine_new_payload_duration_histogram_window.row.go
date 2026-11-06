@@ -11,7 +11,8 @@ package clickhouse
 // nullable. Scan rows with clickhouse-go's ScanStruct.
 type FctEngineNewPayloadDurationHistogramWindowRow struct {
 	UpdatedDateTime uint32 `ch:"updated_date_time" json:"updated_date_time"`
-	WindowName string `ch:"window_name" json:"window_name"`
+	WindowGrain string `ch:"window_grain" json:"window_grain"`
+	WindowLength uint32 `ch:"window_length" json:"window_length"`
 	WindowStartDateTime uint32 `ch:"window_start_date_time" json:"window_start_date_time"`
 	WindowEndDateTime uint32 `ch:"window_end_date_time" json:"window_end_date_time"`
 	NodeClass string `ch:"node_class" json:"node_class"`
@@ -34,7 +35,8 @@ func (r *FctEngineNewPayloadDurationHistogramWindowRow) ToProto() *FctEngineNewP
 	p := &FctEngineNewPayloadDurationHistogramWindow{}
 
 	p.UpdatedDateTime = r.UpdatedDateTime
-	p.WindowName = r.WindowName
+	p.WindowGrain = r.WindowGrain
+	p.WindowLength = r.WindowLength
 	p.WindowStartDateTime = r.WindowStartDateTime
 	p.WindowEndDateTime = r.WindowEndDateTime
 	p.NodeClass = r.NodeClass

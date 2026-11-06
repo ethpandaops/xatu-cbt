@@ -1,6 +1,7 @@
 CREATE TABLE fct_engine_new_payload_duration_histogram_window_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
-    `window_name` LowCardinality(String) COMMENT 'The window: 1h, 6h, 24h, 7d or 31d ending at the last complete hour, or 90d, 180d, 1y or all ending at the end of yesterday (UTC)',
+    `window_grain` LowCardinality(String) COMMENT 'hour for windows ending at the last complete hour, day for windows of complete UTC days ending yesterday',
+    `window_length` UInt16 COMMENT 'Window length in hours (1, 6, 24, 168 or 744) or days (7, 14, 30, 60, 90, 180 or 365), 0 for all history' CODEC(ZSTD(1)),
     `window_start_date_time` DateTime COMMENT 'Start of the window, inclusive' CODEC(DoubleDelta, ZSTD(1)),
     `window_end_date_time` DateTime COMMENT 'End of the window, exclusive' CODEC(DoubleDelta, ZSTD(1)),
     `node_class` LowCardinality(String) COMMENT 'Node classification (eip7870-block-builder for reference nodes, empty for other Xatu nodes)',
@@ -16,12 +17,12 @@ CREATE TABLE fct_engine_new_payload_duration_histogram_window_local ON CLUSTER '
     '{replica}',
     `updated_date_time`
 )
-ORDER BY (`window_name`, `node_class`, `meta_execution_implementation`, `meta_execution_version`, `status`, `bucket_index`)
-COMMENT 'engine_newPayload duration histograms per window (1h to all, aligned like Lab ranges), node class, execution client, version and status, recomputed hourly, for true range percentiles per client and version';
+ORDER BY (`window_grain`, `window_length`, `node_class`, `meta_execution_implementation`, `meta_execution_version`, `status`, `bucket_index`)
+COMMENT 'engine_newPayload duration histograms per window (1 hour to all history, aligned like Lab ranges), node class, execution client, version and status, recomputed hourly, for true range percentiles per client and version';
 
 CREATE TABLE fct_engine_new_payload_duration_histogram_window ON CLUSTER '{cluster}' AS fct_engine_new_payload_duration_histogram_window_local ENGINE = Distributed(
     '{cluster}',
     currentDatabase(),
     fct_engine_new_payload_duration_histogram_window_local,
-    cityHash64(`window_name`, `meta_execution_implementation`)
+    cityHash64(`window_grain`, `window_length`, `meta_execution_implementation`)
 );
