@@ -1,0 +1,27 @@
+model: fct_engine_new_payload_throughput_histogram_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_by_el_client_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    execution_engine_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_by_el_client_execution_engine_new_payload.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_engine_new_payload_throughput_histogram_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Bucket bounds hold increasing ranges
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_new_payload_throughput_histogram_daily FINAL WHERE bucket_lower_mgas_per_second >= bucket_upper_mgas_per_second
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
