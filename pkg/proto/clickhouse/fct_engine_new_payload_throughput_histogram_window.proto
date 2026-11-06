@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// engine_newPayload per-block throughput histogram buckets summed over the last 24, 168 and 744 hours and all history, recomputed hourly from fct_engine_new_payload_throughput_histogram_hourly and _daily
+message FctEngineNewPayloadThroughputHistogramWindow {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // hour for windows of hours, day for all history in complete UTC days ending yesterday
+  string window_grain = 12;
+  // Window length in hours (24, 168 or 744), 0 for all history
+  uint32 window_length = 13;
+  // Start of the window, inclusive
+  uint32 window_start_date_time = 14;
+  // End of the window, exclusive. Hour windows end at the last complete hour, or for resource share at the last hour its hourly table has counted
+  uint32 window_end_date_time = 15;
+  // Which Xatu nodes the timings come from: reference for reference nodes (node_class eip7870-block-builder), all for every Xatu node
+  string node_scope = 16;
+  // Execution client, lowercased, with go-ethereum as geth
+  string client = 17;
+  // Throughput bucket k, covering 1.04^k to 1.04^(k+1) Mgas/s
+  int32 bucket_index = 18;
+  // Lower bound of the bucket in Mgas/s, inclusive
+  float bucket_lower_mgas_per_second = 19;
+  // Upper bound of the bucket in Mgas/s, exclusive
+  float bucket_upper_mgas_per_second = 20;
+  // Number of blocks of at least 5 Mgas whose throughput falls in the bucket
+  uint32 block_count = 21;
+}
+
+// Request for listing fct_engine_new_payload_throughput_histogram_window records
+message ListFctEngineNewPayloadThroughputHistogramWindowRequest {
+  // Filter by window_grain - hour for windows of hours, day for all history in complete UTC days ending yesterday (PRIMARY KEY - required)
+  StringFilter window_grain = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by window_length - Window length in hours (24, 168 or 744), 0 for all history (ORDER BY column 2 - optional)
+  UInt32Filter window_length = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by node_scope - Which Xatu nodes the timings come from: reference for reference nodes (node_class eip7870-block-builder), all for every Xatu node (ORDER BY column 3 - optional)
+  StringFilter node_scope = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by client - Execution client, lowercased, with go-ethereum as geth (ORDER BY column 4 - optional)
+  StringFilter client = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by bucket_index - Throughput bucket k, covering 1.04^k to 1.04^(k+1) Mgas/s (ORDER BY column 5 - optional)
+  Int32Filter bucket_index = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by window_start_date_time - Start of the window, inclusive (optional)
+  UInt32Filter window_start_date_time = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by window_end_date_time - End of the window, exclusive. Hour windows end at the last complete hour, or for resource share at the last hour its hourly table has counted (optional)
+  UInt32Filter window_end_date_time = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by bucket_lower_mgas_per_second - Lower bound of the bucket in Mgas/s, inclusive (optional)
+  google.protobuf.FloatValue bucket_lower_mgas_per_second = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by bucket_upper_mgas_per_second - Upper bound of the bucket in Mgas/s, exclusive (optional)
+  google.protobuf.FloatValue bucket_upper_mgas_per_second = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Number of blocks of at least 5 Mgas whose throughput falls in the bucket (optional)
+  UInt32Filter block_count = 11 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_engine_new_payload_throughput_histogram_window to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 12 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctEngineNewPayloadThroughputHistogramWindow` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 13 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 14 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_engine_new_payload_throughput_histogram_window records
+message ListFctEngineNewPayloadThroughputHistogramWindowResponse {
+  // The list of fct_engine_new_payload_throughput_histogram_window.
+  repeated FctEngineNewPayloadThroughputHistogramWindow fct_engine_new_payload_throughput_histogram_window = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_engine_new_payload_throughput_histogram_window record by primary key
+message GetFctEngineNewPayloadThroughputHistogramWindowRequest {
+  // hour for windows of hours, day for all history in complete UTC days ending yesterday
+  string window_grain = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_engine_new_payload_throughput_histogram_window record
+message GetFctEngineNewPayloadThroughputHistogramWindowResponse {
+  FctEngineNewPayloadThroughputHistogramWindow item = 1;
+}
+
+// Query fct_engine_new_payload_throughput_histogram_window data
+service FctEngineNewPayloadThroughputHistogramWindowService {
+  // List records | engine_newPayload per-block throughput histogram buckets summed over the last 24, 168 and 744 hours and all history, recomputed hourly from fct_engine_new_payload_throughput_histogram_hourly and _daily
+  rpc List(ListFctEngineNewPayloadThroughputHistogramWindowRequest) returns (ListFctEngineNewPayloadThroughputHistogramWindowResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_engine_new_payload_throughput_histogram_window"
+    };
+  }
+  // Get record | Retrieve a single record by window_grain
+  rpc Get(GetFctEngineNewPayloadThroughputHistogramWindowRequest) returns (GetFctEngineNewPayloadThroughputHistogramWindowResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_engine_new_payload_throughput_histogram_window/{window_grain}"
+    };
+  }
+}
