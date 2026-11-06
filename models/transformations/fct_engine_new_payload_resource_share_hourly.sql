@@ -27,9 +27,11 @@ dependencies:
 --
 -- int_block_resource_gas has block intervals, so it can't be a declared dependency of this slot-interval model. It is
 -- read directly, and this first statement fails the task (CBT retries it) until that table has reached the last
--- block in the range.
+-- block in the range. Networks without execution traces (sepolia, Gloas devnets) never fill it, so the guard passes
+-- when it is empty and the inner join below writes no rows.
 SELECT throwIf(
-    (SELECT max(block_number) FROM `{{ .self.database }}`.`int_block_resource_gas`) < (
+    (SELECT count() FROM `{{ .self.database }}`.`int_block_resource_gas` LIMIT 1) > 0
+    AND (SELECT max(block_number) FROM `{{ .self.database }}`.`int_block_resource_gas`) < (
         SELECT max(block_number)
         FROM {{ index .dep "{{transformation}}" "fct_engine_new_payload_by_slot" "helpers" "from" }} FINAL
         WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
