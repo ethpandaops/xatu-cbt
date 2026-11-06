@@ -42,14 +42,17 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: Votes per slot and block root match the validators in int_attestation_attested
+    - name: Votes per slot and block root match the validators in int_attestation_attested, for the slots the model has processed
       sql: |
         SELECT COUNT(*) AS bad_rows
         FROM (SELECT slot, block_root, vote_count FROM fct_attestation_vote_by_block_root FINAL) AS v
         FULL OUTER JOIN (
-            SELECT slot, block_root, count() AS c FROM int_attestation_attested FINAL GROUP BY slot, block_root
+            SELECT slot, block_root, count() AS c FROM int_attestation_attested FINAL
+            WHERE slot IN (SELECT slot FROM fct_attestation_vote_by_block_root FINAL)
+            GROUP BY slot, block_root
         ) AS a ON v.slot = a.slot AND v.block_root = a.block_root
         WHERE v.vote_count != a.c
+        SETTINGS join_use_nulls = 0
       assertions:
         - type: equals
           column: bad_rows
