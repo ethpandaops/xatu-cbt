@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Internal calls per call type in a block, every call frame except the transaction root frames
+message IntBlockCallTypeGas {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The block number
+  uint64 block_number = 12;
+  // The call opcode (CALL, DELEGATECALL, STATICCALL, CALLCODE, CREATE, CREATE2)
+  string call_type = 13;
+  // Number of internal call frames of this type in the block
+  uint32 call_count = 14;
+  // Gas used by those frames themselves, excluding their child frames
+  uint64 gas = 15;
+}
+
+// Request for listing int_block_call_type_gas records
+message ListIntBlockCallTypeGasRequest {
+  // Filter by block_number - The block number (PRIMARY KEY - required)
+  UInt64Filter block_number = 1;
+
+  // Filter by call_type - The call opcode (CALL, DELEGATECALL, STATICCALL, CALLCODE, CREATE, CREATE2) (ORDER BY column 2 - optional)
+  StringFilter call_type = 2;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3;
+  // Filter by call_count - Number of internal call frames of this type in the block (optional)
+  UInt32Filter call_count = 4;
+  // Filter by gas - Gas used by those frames themselves, excluding their child frames (optional)
+  UInt64Filter gas = 5;
+
+  // The maximum number of int_block_call_type_gas to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 6;
+  // A page token, received from a previous `ListIntBlockCallTypeGas` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 7;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 8;
+}
+
+// Response for listing int_block_call_type_gas records
+message ListIntBlockCallTypeGasResponse {
+  // The list of int_block_call_type_gas.
+  repeated IntBlockCallTypeGas int_block_call_type_gas = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_block_call_type_gas record by primary key
+message GetIntBlockCallTypeGasRequest {
+  // The block number
+  uint64 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single int_block_call_type_gas record
+message GetIntBlockCallTypeGasResponse {
+  IntBlockCallTypeGas item = 1;
+}
+
+// Query int_block_call_type_gas data
+service IntBlockCallTypeGasService {
+  // List records | Internal calls per call type in a block, every call frame except the transaction root frames
+  rpc List(ListIntBlockCallTypeGasRequest) returns (ListIntBlockCallTypeGasResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntBlockCallTypeGasRequest) returns (GetIntBlockCallTypeGasResponse);
+}
