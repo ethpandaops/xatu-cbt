@@ -45,6 +45,38 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    - name: DEBUG diff details
+      sql: |
+        SELECT
+            (SELECT count() FROM fct_attestation_vote_by_block_root_head FINAL) AS mine_rows,
+            (SELECT sum(vote_count) FROM fct_attestation_vote_by_block_root_head FINAL) AS mine_votes,
+            (SELECT count() FROM int_attestation_attested_head FINAL WHERE slot IN (SELECT slot FROM fct_attestation_vote_by_block_root_head FINAL)) AS int_votes,
+            (SELECT count() FROM int_attestation_attested_head WHERE slot IN (SELECT slot FROM fct_attestation_vote_by_block_root_head FINAL)) AS int_votes_nofinal,
+            (SELECT uniqExact(slot) FROM fct_attestation_vote_by_block_root_head FINAL) AS mine_slots,
+            (SELECT uniqExact(slot) FROM int_attestation_attested_head FINAL) AS int_slots,
+            (SELECT count() FROM (SELECT slot, block_root, count() c FROM fct_attestation_vote_by_block_root_head GROUP BY slot, block_root HAVING c > 1)) AS mine_dups
+      assertions:
+        - type: equals
+          column: mine_rows
+          value: -1
+        - type: equals
+          column: mine_votes
+          value: -1
+        - type: equals
+          column: int_votes
+          value: -1
+        - type: equals
+          column: int_votes_nofinal
+          value: -1
+        - type: equals
+          column: mine_slots
+          value: -1
+        - type: equals
+          column: int_slots
+          value: -1
+        - type: equals
+          column: mine_dups
+          value: -1
     - name: Each slot and block root has one row
       sql: |
         SELECT COUNT(*) AS bad_rows FROM (
