@@ -1,12 +1,7 @@
 ---
 table: fct_data_column_availability_by_slot
-type: incremental
-interval:
-  type: slot
-  max: 50000
-schedules:
-  forwardfill: "@every 5s"
-  backfill: "@every 30s"
+type: scheduled
+schedule: "@every 1h"
 tags:
   - slot
   - data_column
@@ -14,121 +9,84 @@ tags:
   - custody
 dependencies:
   - "{{transformation}}.int_custody_probe_order_by_slot"
-  - "{{external}}.libp2p_gossipsub_data_column_sidecar"
-  - "{{external}}.beacon_api_eth_v1_events_data_column_sidecar"
+  - "{{transformation}}.int_data_column_gossip_by_slot"
 ---
-INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
--- libp2p sentries record gossip before validating it, and some relays (gnode-beacon) re-encode
--- sidecars, which changes the block root and breaks the header signature. A gossiped sidecar counts
--- only if a beacon node accepted a sidecar for its root. Beacon nodes emit the event after validation.
-WITH validated_roots AS (
-    SELECT DISTINCT if(startsWith(toString(block_root), '0x'), toString(block_root), concat('0x', toStringCutToZero(block_root))) AS block_root
-    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_data_column_sidecar" "helpers" "from" }}
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND meta_network_name = '{{ .env.NETWORK }}'
-),
-combined_sources AS (
-    -- Active custody probes (explicit results)
-    -- These are direct RPC probes checking if peers have custody of specific columns
-    -- Using int_custody_probe_order_by_slot which is ordered by slot_start_date_time for better query performance
+-- Custody probe results per slot and column. Probes test slots up to about 18 days old, so every run recounts the
+-- slots of the last DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS days (default 19) and today. Rows older than that keep
+-- their last count, which no longer changes. Each statement covers DATA_COLUMN_AVAILABILITY_CHUNK_DAYS days
+-- (default 1) to bound memory.
+--
+-- Only custody probes count towards success, failure, missing and availability. Gossipsub sightings are kept
+-- alongside in gossipsub_count, with the block root they carried: a peer gossiping a column says nothing about
+-- whether it custodies the column when asked.
+{{- $days := atoi (default "19" .env.DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS) }}
+{{- $chunk := atoi (default "1" .env.DATA_COLUMN_AVAILABILITY_CHUNK_DAYS) }}
+{{- $chunks := int (div (add $days $chunk) $chunk) }}
+{{- range $i := until $chunks }}
+INSERT INTO `{{ $.self.database }}`.`{{ $.self.table }}`
+WITH
+    toStartOfDay(fromUnixTimestamp({{ $.task.start }})) + INTERVAL 1 DAY - INTERVAL {{ mul (add $i 1) $chunk }} DAY AS chunk_start,
+    toStartOfDay(fromUnixTimestamp({{ $.task.start }})) + INTERVAL 1 DAY - INTERVAL {{ mul $i $chunk }} DAY AS chunk_end,
+probes AS (
     SELECT
-        'custody_probe' AS source,
         slot,
         slot_start_date_time,
-        -- Calculate epoch from slot (32 slots per epoch)
         toUInt32(slot DIV 32) AS epoch,
         toDateTime(toUnixTimestamp(slot_start_date_time) - ((slot % 32) * 12)) AS epoch_start_date_time,
-        -- Use slot values for wallclock (probe is at slot time)
-        slot AS wallclock_request_slot,
-        slot_start_date_time AS wallclock_request_slot_start_date_time,
-        toUInt32(slot DIV 32) AS wallclock_request_epoch,
-        toDateTime(toUnixTimestamp(slot_start_date_time) - ((slot % 32) * 12)) AS wallclock_request_epoch_start_date_time,
-        -- Expand column_indices array to individual rows
-        arrayJoin(column_indices) AS column_index,
-        -- Use blob_submitters array length as blob count
-        toUInt16(length(blob_submitters)) AS blob_count_raw,
-        -- beacon_block_root not available in int_custody_probe_order_by_slot
-        -- Using empty string - beacon_block_root tracking comes from gossipsub source
-        '' AS beacon_block_root,
-        result,
-        response_time_ms,
-        peer_id_unique_key,
-        username AS meta_client_name,
-        meta_client_implementation
-    FROM {{ index .dep "{{transformation}}" "int_custody_probe_order_by_slot" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-
-    UNION ALL
-
-    -- Passive gossipsub observations (implicit success)
-    -- When a peer propagates a column on gossipsub, it implies they have custody of it
-    SELECT
-        'gossipsub' AS source,
-        slot,
-        slot_start_date_time,
-        epoch,
-        epoch_start_date_time,
-        wallclock_slot AS wallclock_request_slot,
-        wallclock_slot_start_date_time AS wallclock_request_slot_start_date_time,
-        wallclock_epoch AS wallclock_request_epoch,
-        wallclock_epoch_start_date_time AS wallclock_request_epoch_start_date_time,
         column_index,
-        kzg_commitments_count AS blob_count_raw,
-        beacon_block_root,
-        'success' AS result,  -- Gossipsub propagation implies successful custody
-        propagation_slot_start_diff AS response_time_ms,  -- Use propagation delay as proxy
-        peer_id_unique_key,
-        meta_client_name,
-        meta_client_implementation
-    FROM {{ index .dep "{{external}}" "libp2p_gossipsub_data_column_sidecar" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-      AND meta_network_name = '{{ .env.NETWORK }}'
-      AND if(startsWith(beacon_block_root, '0x'), toString(beacon_block_root), concat('0x', toStringCutToZero(beacon_block_root)))
-          GLOBAL IN (SELECT block_root FROM validated_roots)
+        max(toUInt16(length(blob_submitters))) AS blob_count,
+        toUInt32(sumIf(1, result = 'success')) AS success_count,
+        toUInt32(sumIf(1, result = 'failure')) AS failure_count,
+        toUInt32(sumIf(1, result = 'missing')) AS missing_count,
+        toUInt32(count()) AS probe_count,
+        if(isFinite(minIf(response_time_ms, result = 'success')), toUInt32(round(minIf(response_time_ms, result = 'success'))), 0) AS min_response_time_ms,
+        quantilesIf(0.50, 0.95, 0.99)(response_time_ms, result = 'success') AS response_quantiles,
+        if(isFinite(maxIf(response_time_ms, result = 'success')), toUInt32(round(maxIf(response_time_ms, result = 'success'))), 0) AS max_response_time_ms,
+        toUInt32(uniqExact(peer_id_unique_key)) AS unique_peer_count,
+        toUInt32(uniqExact(username)) AS unique_client_count,
+        toUInt32(uniqExact(meta_client_implementation)) AS unique_implementation_count
+    FROM {{ index $.dep "{{transformation}}" "int_custody_probe_order_by_slot" "helpers" "from" }} FINAL
+    ARRAY JOIN column_indices AS column_index
+    WHERE slot_start_date_time >= chunk_start AND slot_start_date_time < chunk_end
+    GROUP BY slot, slot_start_date_time, column_index
+),
+gossip AS (
+    SELECT slot_start_date_time, column_index, beacon_block_root, beacon_block_root_variants, blob_count, gossipsub_count
+    FROM {{ index $.dep "{{transformation}}" "int_data_column_gossip_by_slot" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time >= chunk_start AND slot_start_date_time < chunk_end
 )
 SELECT
-    fromUnixTimestamp({{ .task.start }}) as updated_date_time,
-    slot,
-    slot_start_date_time,
-    epoch,
-    epoch_start_date_time,
-    -- Use argMin to pick wallclock values from earliest observation (by actual timestamp)
-    -- This allows custody probe and gossipsub to combine properly
-    -- All references are qualified with combined_sources. to avoid alias shadowing
-    argMin(wallclock_request_slot, combined_sources.wallclock_request_slot_start_date_time) AS wallclock_request_slot,
-    min(combined_sources.wallclock_request_slot_start_date_time) AS wallclock_request_slot_start_date_time,
-    argMin(wallclock_request_epoch, combined_sources.wallclock_request_slot_start_date_time) AS wallclock_request_epoch,
-    argMin(wallclock_request_epoch_start_date_time, combined_sources.wallclock_request_slot_start_date_time) AS wallclock_request_epoch_start_date_time,
-    column_index,
-    -- Pick beacon_block_root from earliest observation (handles reorgs/forks)
-    -- Use argMinIf to exclude empty roots from custody_probe source
-    argMinIf(beacon_block_root, combined_sources.wallclock_request_slot_start_date_time, beacon_block_root != '') AS beacon_block_root,
-    -- Track number of unique block roots (>1 indicates reorg/fork)
-    -- Exclude empty strings from variant count (custody_probe doesn't have beacon_block_root)
-    uniqExactIf(combined_sources.beacon_block_root, combined_sources.beacon_block_root != '') AS beacon_block_root_variants,
-    max(blob_count_raw) AS blob_count,
-    countIf(result = 'success') AS success_count,
-    countIf(result = 'failure') AS failure_count,
-    countIf(result = 'missing') AS missing_count,
-    count(*) AS probe_count,
-    round((success_count * 100.0 / probe_count), 2) AS availability_pct,
-    -- Response time metrics only from custody probes (RPC latency, not gossipsub propagation)
-    -- Use if(isFinite(...), ..., 0) to safely handle NaN/Inf when no custody probes exist in group
-    if(isFinite(round(minIf(response_time_ms, result = 'success' AND source = 'custody_probe'))), toUInt32(round(minIf(response_time_ms, result = 'success' AND source = 'custody_probe'))), 0) AS min_response_time_ms,
-    if(isFinite(round(quantileIf(0.50)(response_time_ms, result = 'success' AND source = 'custody_probe'))), toUInt32(round(quantileIf(0.50)(response_time_ms, result = 'success' AND source = 'custody_probe'))), 0) AS p50_response_time_ms,
-    if(isFinite(round(quantileIf(0.95)(response_time_ms, result = 'success' AND source = 'custody_probe'))), toUInt32(round(quantileIf(0.95)(response_time_ms, result = 'success' AND source = 'custody_probe'))), 0) AS p95_response_time_ms,
-    if(isFinite(round(quantileIf(0.99)(response_time_ms, result = 'success' AND source = 'custody_probe'))), toUInt32(round(quantileIf(0.99)(response_time_ms, result = 'success' AND source = 'custody_probe'))), 0) AS p99_response_time_ms,
-    if(isFinite(round(maxIf(response_time_ms, result = 'success' AND source = 'custody_probe'))), toUInt32(round(maxIf(response_time_ms, result = 'success' AND source = 'custody_probe'))), 0) AS max_response_time_ms,
-    countDistinct(peer_id_unique_key) AS unique_peer_count,
-    countDistinct(meta_client_name) AS unique_client_count,
-    countDistinct(meta_client_implementation) AS unique_implementation_count,
-    -- Source attribution for observability and debugging
-    countIf(source = 'custody_probe') AS custody_probe_count,
-    countIf(source = 'gossipsub') AS gossipsub_count
-FROM combined_sources
-GROUP BY
-    slot,
-    slot_start_date_time,
-    epoch,
-    epoch_start_date_time,
-    column_index
+    fromUnixTimestamp({{ $.task.start }}) AS updated_date_time,
+    p.slot AS slot,
+    p.slot_start_date_time AS slot_start_date_time,
+    p.epoch AS epoch,
+    p.epoch_start_date_time AS epoch_start_date_time,
+    -- Probes are counted against the slot they tested
+    p.slot AS wallclock_request_slot,
+    p.slot_start_date_time AS wallclock_request_slot_start_date_time,
+    p.epoch AS wallclock_request_epoch,
+    p.epoch_start_date_time AS wallclock_request_epoch_start_date_time,
+    p.column_index AS column_index,
+    nullIf(g.beacon_block_root, '') AS beacon_block_root,
+    g.beacon_block_root_variants AS beacon_block_root_variants,
+    greatest(p.blob_count, g.blob_count) AS blob_count,
+    p.success_count AS success_count,
+    p.failure_count AS failure_count,
+    p.missing_count AS missing_count,
+    p.probe_count AS probe_count,
+    round(p.success_count * 100.0 / p.probe_count, 2) AS availability_pct,
+    p.min_response_time_ms AS min_response_time_ms,
+    if(isFinite(p.response_quantiles[1]), toUInt32(round(p.response_quantiles[1])), 0) AS p50_response_time_ms,
+    if(isFinite(p.response_quantiles[2]), toUInt32(round(p.response_quantiles[2])), 0) AS p95_response_time_ms,
+    if(isFinite(p.response_quantiles[3]), toUInt32(round(p.response_quantiles[3])), 0) AS p99_response_time_ms,
+    p.max_response_time_ms AS max_response_time_ms,
+    p.unique_peer_count AS unique_peer_count,
+    p.unique_client_count AS unique_client_count,
+    p.unique_implementation_count AS unique_implementation_count,
+    p.probe_count AS custody_probe_count,
+    g.gossipsub_count AS gossipsub_count
+FROM probes AS p
+LEFT JOIN gossip AS g ON p.slot_start_date_time = g.slot_start_date_time AND p.column_index = g.column_index
+-- Merge counts across shards before inserting instead of each shard inserting its partial counts.
+SETTINGS parallel_distributed_insert_select = 0;
+{{- end }}

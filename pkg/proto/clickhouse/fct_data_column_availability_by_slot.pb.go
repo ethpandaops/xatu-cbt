@@ -23,6 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Custody probe results by slot and column index. Only custody probes count towards success, failure, missing and availability. Gossipsub sightings are counted separately in gossipsub_count. Probes keep arriving for about 18 days after a slot, so the last 19 days are recounted every hour
 type FctDataColumnAvailabilityBySlot struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -38,31 +39,31 @@ type FctDataColumnAvailabilityBySlot struct {
 	Epoch uint32 `protobuf:"varint,14,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// The wall clock time when the epoch started
 	EpochStartDateTime uint32 `protobuf:"varint,15,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
-	// The wallclock slot when the request was sent
+	// The slot the probes tested, the same as slot
 	WallclockRequestSlot uint32 `protobuf:"varint,16,opt,name=wallclock_request_slot,json=wallclockRequestSlot,proto3" json:"wallclock_request_slot,omitempty"`
-	// The start time for the slot when the request was sent
+	// The start time of the slot the probes tested, the same as slot_start_date_time
 	WallclockRequestSlotStartDateTime uint32 `protobuf:"varint,17,opt,name=wallclock_request_slot_start_date_time,json=wallclockRequestSlotStartDateTime,proto3" json:"wallclock_request_slot_start_date_time,omitempty"`
-	// The wallclock epoch when the request was sent
+	// The epoch of the slot the probes tested, the same as epoch
 	WallclockRequestEpoch uint32 `protobuf:"varint,18,opt,name=wallclock_request_epoch,json=wallclockRequestEpoch,proto3" json:"wallclock_request_epoch,omitempty"`
-	// The start time for the wallclock epoch when the request was sent
+	// The start time of the epoch the probes tested, the same as epoch_start_date_time
 	WallclockRequestEpochStartDateTime uint32 `protobuf:"varint,19,opt,name=wallclock_request_epoch_start_date_time,json=wallclockRequestEpochStartDateTime,proto3" json:"wallclock_request_epoch_start_date_time,omitempty"`
 	// Column index being probed (0-127)
 	ColumnIndex uint64 `protobuf:"varint,20,opt,name=column_index,json=columnIndex,proto3" json:"column_index,omitempty"`
-	// Beacon block root for this slot (from earliest observation, handles reorgs, NULL if unavailable)
+	// Beacon block root from the earliest gossipsub sighting of the column, NULL when it was not gossiped
 	BeaconBlockRoot *wrapperspb.StringValue `protobuf:"bytes,21,opt,name=beacon_block_root,json=beaconBlockRoot,proto3" json:"beacon_block_root,omitempty"`
-	// Number of unique block roots observed (>1 indicates reorg/fork)
+	// Number of block roots in the gossipsub sightings (more than 1 means a fork), 0 when not gossiped
 	BeaconBlockRootVariants uint32 `protobuf:"varint,22,opt,name=beacon_block_root_variants,json=beaconBlockRootVariants,proto3" json:"beacon_block_root_variants,omitempty"`
-	// Number of blobs in the slot (max column_rows_count)
+	// Number of blobs in the slot, from the probes and the gossipsub sightings
 	BlobCount uint32 `protobuf:"varint,23,opt,name=blob_count,json=blobCount,proto3" json:"blob_count,omitempty"`
-	// Count of successful probes
+	// Number of custody probes that returned the column
 	SuccessCount uint32 `protobuf:"varint,24,opt,name=success_count,json=successCount,proto3" json:"success_count,omitempty"`
-	// Count of failed probes (result = failure)
+	// Number of custody probes that failed (result = failure)
 	FailureCount uint32 `protobuf:"varint,25,opt,name=failure_count,json=failureCount,proto3" json:"failure_count,omitempty"`
-	// Count of missing probes (result = missing)
+	// Number of custody probes the peer answered without the column (result = missing)
 	MissingCount uint32 `protobuf:"varint,26,opt,name=missing_count,json=missingCount,proto3" json:"missing_count,omitempty"`
-	// Total count of probes
+	// Number of custody probes of the column for this slot
 	ProbeCount uint32 `protobuf:"varint,27,opt,name=probe_count,json=probeCount,proto3" json:"probe_count,omitempty"`
-	// Availability percentage (success / total * 100) rounded to 2 decimal places
+	// Share of custody probes that returned the column (success / probe_count * 100), rounded to 2 decimal places
 	AvailabilityPct float64 `protobuf:"fixed64,28,opt,name=availability_pct,json=availabilityPct,proto3" json:"availability_pct,omitempty"`
 	// Minimum response time in milliseconds for successful probes only
 	MinResponseTimeMs uint32 `protobuf:"varint,29,opt,name=min_response_time_ms,json=minResponseTimeMs,proto3" json:"min_response_time_ms,omitempty"`
@@ -74,15 +75,15 @@ type FctDataColumnAvailabilityBySlot struct {
 	P99ResponseTimeMs uint32 `protobuf:"varint,32,opt,name=p99_response_time_ms,json=p99ResponseTimeMs,proto3" json:"p99_response_time_ms,omitempty"`
 	// Maximum response time in milliseconds for successful probes only
 	MaxResponseTimeMs uint32 `protobuf:"varint,33,opt,name=max_response_time_ms,json=maxResponseTimeMs,proto3" json:"max_response_time_ms,omitempty"`
-	// Count of unique peers probed
+	// Number of distinct P2P peers probed
 	UniquePeerCount uint32 `protobuf:"varint,34,opt,name=unique_peer_count,json=uniquePeerCount,proto3" json:"unique_peer_count,omitempty"`
-	// Count of unique client names
+	// Number of distinct Xatu nodes that sent the probes
 	UniqueClientCount uint32 `protobuf:"varint,35,opt,name=unique_client_count,json=uniqueClientCount,proto3" json:"unique_client_count,omitempty"`
-	// Count of unique client implementations
+	// Number of distinct client implementations that sent the probes
 	UniqueImplementationCount uint32 `protobuf:"varint,36,opt,name=unique_implementation_count,json=uniqueImplementationCount,proto3" json:"unique_implementation_count,omitempty"`
-	// Count of observations from active RPC custody probes
+	// Number of custody probes, the same as probe_count
 	CustodyProbeCount uint32 `protobuf:"varint,37,opt,name=custody_probe_count,json=custodyProbeCount,proto3" json:"custody_probe_count,omitempty"`
-	// Count of observations from passive gossipsub propagation
+	// Number of gossipsub sightings of the column, which do not count towards availability
 	GossipsubCount uint32 `protobuf:"varint,38,opt,name=gossipsub_count,json=gossipsubCount,proto3" json:"gossipsub_count,omitempty"`
 }
 
@@ -332,29 +333,29 @@ type ListFctDataColumnAvailabilityBySlotRequest struct {
 	Epoch *UInt32Filter `protobuf:"bytes,5,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
 	EpochStartDateTime *UInt32Filter `protobuf:"bytes,6,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
-	// Filter by wallclock_request_slot - The wallclock slot when the request was sent (optional)
+	// Filter by wallclock_request_slot - The slot the probes tested, the same as slot (optional)
 	WallclockRequestSlot *UInt32Filter `protobuf:"bytes,7,opt,name=wallclock_request_slot,json=wallclockRequestSlot,proto3" json:"wallclock_request_slot,omitempty"`
-	// Filter by wallclock_request_slot_start_date_time - The start time for the slot when the request was sent (optional)
+	// Filter by wallclock_request_slot_start_date_time - The start time of the slot the probes tested, the same as slot_start_date_time (optional)
 	WallclockRequestSlotStartDateTime *UInt32Filter `protobuf:"bytes,8,opt,name=wallclock_request_slot_start_date_time,json=wallclockRequestSlotStartDateTime,proto3" json:"wallclock_request_slot_start_date_time,omitempty"`
-	// Filter by wallclock_request_epoch - The wallclock epoch when the request was sent (optional)
+	// Filter by wallclock_request_epoch - The epoch of the slot the probes tested, the same as epoch (optional)
 	WallclockRequestEpoch *UInt32Filter `protobuf:"bytes,9,opt,name=wallclock_request_epoch,json=wallclockRequestEpoch,proto3" json:"wallclock_request_epoch,omitempty"`
-	// Filter by wallclock_request_epoch_start_date_time - The start time for the wallclock epoch when the request was sent (optional)
+	// Filter by wallclock_request_epoch_start_date_time - The start time of the epoch the probes tested, the same as epoch_start_date_time (optional)
 	WallclockRequestEpochStartDateTime *UInt32Filter `protobuf:"bytes,10,opt,name=wallclock_request_epoch_start_date_time,json=wallclockRequestEpochStartDateTime,proto3" json:"wallclock_request_epoch_start_date_time,omitempty"`
-	// Filter by beacon_block_root - Beacon block root for this slot (from earliest observation, handles reorgs, NULL if unavailable) (optional)
+	// Filter by beacon_block_root - Beacon block root from the earliest gossipsub sighting of the column, NULL when it was not gossiped (optional)
 	BeaconBlockRoot *NullableStringFilter `protobuf:"bytes,11,opt,name=beacon_block_root,json=beaconBlockRoot,proto3" json:"beacon_block_root,omitempty"`
-	// Filter by beacon_block_root_variants - Number of unique block roots observed (>1 indicates reorg/fork) (optional)
+	// Filter by beacon_block_root_variants - Number of block roots in the gossipsub sightings (more than 1 means a fork), 0 when not gossiped (optional)
 	BeaconBlockRootVariants *UInt32Filter `protobuf:"bytes,12,opt,name=beacon_block_root_variants,json=beaconBlockRootVariants,proto3" json:"beacon_block_root_variants,omitempty"`
-	// Filter by blob_count - Number of blobs in the slot (max column_rows_count) (optional)
+	// Filter by blob_count - Number of blobs in the slot, from the probes and the gossipsub sightings (optional)
 	BlobCount *UInt32Filter `protobuf:"bytes,13,opt,name=blob_count,json=blobCount,proto3" json:"blob_count,omitempty"`
-	// Filter by success_count - Count of successful probes (optional)
+	// Filter by success_count - Number of custody probes that returned the column (optional)
 	SuccessCount *UInt32Filter `protobuf:"bytes,14,opt,name=success_count,json=successCount,proto3" json:"success_count,omitempty"`
-	// Filter by failure_count - Count of failed probes (result = failure) (optional)
+	// Filter by failure_count - Number of custody probes that failed (result = failure) (optional)
 	FailureCount *UInt32Filter `protobuf:"bytes,15,opt,name=failure_count,json=failureCount,proto3" json:"failure_count,omitempty"`
-	// Filter by missing_count - Count of missing probes (result = missing) (optional)
+	// Filter by missing_count - Number of custody probes the peer answered without the column (result = missing) (optional)
 	MissingCount *UInt32Filter `protobuf:"bytes,16,opt,name=missing_count,json=missingCount,proto3" json:"missing_count,omitempty"`
-	// Filter by probe_count - Total count of probes (optional)
+	// Filter by probe_count - Number of custody probes of the column for this slot (optional)
 	ProbeCount *UInt32Filter `protobuf:"bytes,17,opt,name=probe_count,json=probeCount,proto3" json:"probe_count,omitempty"`
-	// Filter by availability_pct - Availability percentage (success / total * 100) rounded to 2 decimal places (optional)
+	// Filter by availability_pct - Share of custody probes that returned the column (success / probe_count * 100), rounded to 2 decimal places (optional)
 	AvailabilityPct *wrapperspb.DoubleValue `protobuf:"bytes,18,opt,name=availability_pct,json=availabilityPct,proto3" json:"availability_pct,omitempty"`
 	// Filter by min_response_time_ms - Minimum response time in milliseconds for successful probes only (optional)
 	MinResponseTimeMs *UInt32Filter `protobuf:"bytes,19,opt,name=min_response_time_ms,json=minResponseTimeMs,proto3" json:"min_response_time_ms,omitempty"`
@@ -366,15 +367,15 @@ type ListFctDataColumnAvailabilityBySlotRequest struct {
 	P99ResponseTimeMs *UInt32Filter `protobuf:"bytes,22,opt,name=p99_response_time_ms,json=p99ResponseTimeMs,proto3" json:"p99_response_time_ms,omitempty"`
 	// Filter by max_response_time_ms - Maximum response time in milliseconds for successful probes only (optional)
 	MaxResponseTimeMs *UInt32Filter `protobuf:"bytes,23,opt,name=max_response_time_ms,json=maxResponseTimeMs,proto3" json:"max_response_time_ms,omitempty"`
-	// Filter by unique_peer_count - Count of unique peers probed (optional)
+	// Filter by unique_peer_count - Number of distinct P2P peers probed (optional)
 	UniquePeerCount *UInt32Filter `protobuf:"bytes,24,opt,name=unique_peer_count,json=uniquePeerCount,proto3" json:"unique_peer_count,omitempty"`
-	// Filter by unique_client_count - Count of unique client names (optional)
+	// Filter by unique_client_count - Number of distinct Xatu nodes that sent the probes (optional)
 	UniqueClientCount *UInt32Filter `protobuf:"bytes,25,opt,name=unique_client_count,json=uniqueClientCount,proto3" json:"unique_client_count,omitempty"`
-	// Filter by unique_implementation_count - Count of unique client implementations (optional)
+	// Filter by unique_implementation_count - Number of distinct client implementations that sent the probes (optional)
 	UniqueImplementationCount *UInt32Filter `protobuf:"bytes,26,opt,name=unique_implementation_count,json=uniqueImplementationCount,proto3" json:"unique_implementation_count,omitempty"`
-	// Filter by custody_probe_count - Count of observations from active RPC custody probes (optional)
+	// Filter by custody_probe_count - Number of custody probes, the same as probe_count (optional)
 	CustodyProbeCount *UInt32Filter `protobuf:"bytes,27,opt,name=custody_probe_count,json=custodyProbeCount,proto3" json:"custody_probe_count,omitempty"`
-	// Filter by gossipsub_count - Count of observations from passive gossipsub propagation (optional)
+	// Filter by gossipsub_count - Number of gossipsub sightings of the column, which do not count towards availability (optional)
 	GossipsubCount *UInt32Filter `protobuf:"bytes,28,opt,name=gossipsub_count,json=gossipsubCount,proto3" json:"gossipsub_count,omitempty"`
 	// The maximum number of fct_data_column_availability_by_slot to return.
 	// If unspecified, at most 100 items will be returned.

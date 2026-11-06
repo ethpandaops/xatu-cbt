@@ -1,12 +1,7 @@
 ---
 table: fct_data_column_availability_hourly
-type: incremental
-interval:
-  type: slot
-  max: 25200
-schedules:
-  forwardfill: "@every 5m"
-  backfill: "@every 30s"
+type: scheduled
+schedule: "@every 1h"
 tags:
   - hourly
   - data_column
@@ -15,14 +10,10 @@ tags:
 dependencies:
   - "{{transformation}}.fct_data_column_availability_by_epoch"
 ---
--- Rewrites every hour the bounds touch so partial hours are recounted in full.
+-- Custody probes keep arriving for about 18 days after a slot, so every run recounts the last
+-- DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS days (default 19) and today from the source. Older rows keep their last
+-- count, which no longer changes.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
-WITH
-hour_bounds AS (
-    SELECT
-        toStartOfHour(fromUnixTimestamp({{ .bounds.start }})) AS min_hour,
-        toStartOfHour(fromUnixTimestamp({{ .bounds.end }})) + INTERVAL 1 HOUR AS max_hour
-)
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
     hour_start_date_time,
@@ -59,8 +50,7 @@ FROM (
         round(max(max_response_time_ms)) AS max_response_time_ms,
         max(max_blob_count) AS max_blob_count
     FROM {{ index .dep "{{transformation}}" "fct_data_column_availability_by_epoch" "helpers" "from" }} FINAL
-    WHERE epoch_start_date_time >= (SELECT min_hour FROM hour_bounds)
-        AND epoch_start_date_time < (SELECT max_hour FROM hour_bounds)
+    WHERE epoch_start_date_time >= toStartOfDay(fromUnixTimestamp({{ .task.start }})) - INTERVAL {{ default "19" .env.DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS }} DAY
     GROUP BY
         toStartOfHour(epoch_start_date_time),
         column_index

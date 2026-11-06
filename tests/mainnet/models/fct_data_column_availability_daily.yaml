@@ -1,0 +1,47 @@
+model: fct_data_column_availability_daily
+network: mainnet
+external_data:
+    libp2p_rpc_data_column_custody_probe:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    blob_submitter:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_blob_submitter.parquet
+        network_column: meta_network_name
+    execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_execution_transaction.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_data_column_availability_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Daily totals match the slots
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (SELECT date, column_index, total_probe_count, total_success_count FROM fct_data_column_availability_daily FINAL) AS d
+        FULL OUTER JOIN (
+            SELECT toDate(epoch_start_date_time) AS date, column_index, sum(probe_count) AS n, sum(success_count) AS s
+            FROM fct_data_column_availability_by_slot FINAL GROUP BY date, column_index
+        ) AS b USING (date, column_index)
+        WHERE d.total_probe_count != b.n OR d.total_success_count != b.s
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
