@@ -49,12 +49,3 @@ models:
         schedules:
           forwardfill: "@every 90s"
           backfill: "@every 90s"
-    # These count Xatu nodes through dim_xatu_node, so they wait for its first run.
-    fct_node_count_by_cl_client_version_daily:
-      config:
-        schedules:
-          forwardfill: "@every 90s"
-          backfill: "@every 90s"
-    fct_node_count_by_cl_client_version_window:
-      config:
-        schedule: "@every 90s"
