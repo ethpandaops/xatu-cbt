@@ -1,0 +1,78 @@
+model: fct_slot_summary
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_proposer_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_beacon_api_eth_v1_events_blob_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    canonical_beacon_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_canonical_beacon_blob_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    libp2p_gossipsub_blob_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_libp2p_gossipsub_blob_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_blob_count_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v3.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_slot_summary FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: One row per slot, matching fct_block_proposer for the slots written
+      sql: |
+        SELECT if(
+            (SELECT arraySort(groupArray(tuple(slot, status, ifNull(block_root, '')))) FROM fct_slot_summary FINAL)
+            = (SELECT arraySort(groupArray(tuple(slot, status, ifNull(block_root, '')))) FROM fct_block_proposer FINAL
+               WHERE slot GLOBAL IN (SELECT slot FROM fct_slot_summary FINAL)),
+            0, 1) AS bad_rows
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Missed slots carry no block facts, proposed ones a gas figure
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_slot_summary FINAL
+        WHERE (status = 'missed' AND (block_number IS NOT NULL OR gas_used IS NOT NULL OR blob_count IS NOT NULL))
+           OR (status = 'canonical' AND gas_used IS NULL AND slot_start_date_time >= '2022-09-15 06:42:59')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
