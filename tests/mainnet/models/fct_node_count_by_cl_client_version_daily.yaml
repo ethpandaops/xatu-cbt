@@ -4,6 +4,15 @@ external_data:
     beacon_api_eth_v1_events_head:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_head_first_seen_by_node_beacon_api_eth_v1_events_head.parquet
         network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
       sql: |
@@ -17,9 +26,10 @@ assertions:
         SELECT COUNT(*) AS bad_rows
         FROM (SELECT day_start_date, meta_consensus_implementation, meta_consensus_version, node_count FROM fct_node_count_by_cl_client_version_daily FINAL) AS c
         FULL OUTER JOIN (
-            SELECT day_start_date, meta_consensus_implementation, meta_consensus_version, uniqExact(node_id) AS n
-            FROM fct_head_first_seen_by_node_daily FINAL
-            WHERE meta_consensus_implementation != ''
+            SELECT day_start_date, meta_consensus_implementation, meta_consensus_version, uniqExact(coalesce(nullIf(n.stable_node_id, ''), t.meta_client_name)) AS n
+            FROM fct_head_first_seen_by_node_daily AS t FINAL
+            GLOBAL LEFT JOIN (SELECT meta_client_name, stable_node_id FROM dim_xatu_node FINAL) AS n ON t.meta_client_name = n.meta_client_name
+            WHERE t.meta_consensus_implementation != ''
             GROUP BY day_start_date, meta_consensus_implementation, meta_consensus_version
         ) AS s USING (day_start_date, meta_consensus_implementation, meta_consensus_version)
         WHERE c.node_count != s.n

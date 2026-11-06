@@ -8,8 +8,9 @@ tags:
   - client
 dependencies:
   - "{{transformation}}.fct_head_first_seen_by_node_daily"
+  - "{{transformation}}.dim_xatu_node"
 ---
--- Distinct Xatu nodes per consensus client and version over the last 30, 90 and 365 complete UTC days and all
+-- Distinct Xatu nodes (as dim_xatu_node chains their names) per consensus client and version over the last 30, 90 and 365 complete UTC days and all
 -- history. A node counts once per version however many days it ran it, which daily counts can't give when summed.
 -- Every version ever seen gets a row in every window, 0 when no node ran it there, so a version that leaves a
 -- window is overwritten rather than left at its old count.
@@ -17,11 +18,22 @@ INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     today() AS end_day,
+    -- dim_xatu_node chains the rotating hashed names of one machine into one Xatu node. Names newer than its last
+    -- hourly run count as themselves.
+    nodes AS (
+        SELECT meta_client_name, stable_node_id
+        FROM {{ index .dep "{{transformation}}" "dim_xatu_node" "helpers" "from" }} FINAL
+    ),
     days AS (
-        SELECT day_start_date, node_id, meta_consensus_implementation, meta_consensus_version
-        FROM {{ index .dep "{{transformation}}" "fct_head_first_seen_by_node_daily" "helpers" "from" }} FINAL
-        WHERE day_start_date < end_day
-            AND meta_consensus_implementation != ''
+        SELECT
+            t.day_start_date AS day_start_date,
+            coalesce(nullIf(n.stable_node_id, ''), t.meta_client_name) AS node_id,
+            t.meta_consensus_implementation AS meta_consensus_implementation,
+            t.meta_consensus_version AS meta_consensus_version
+        FROM {{ index .dep "{{transformation}}" "fct_head_first_seen_by_node_daily" "helpers" "from" }} AS t FINAL
+        GLOBAL LEFT JOIN nodes AS n ON t.meta_client_name = n.meta_client_name
+        WHERE t.day_start_date < end_day
+            AND t.meta_consensus_implementation != ''
     ),
     windows AS (
         SELECT * FROM VALUES(
