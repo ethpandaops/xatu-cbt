@@ -250,6 +250,36 @@ func BuildListFctEngineNewPayloadDurationPercentileWindowQuery(req *ListFctEngin
 		}
 	}
 
+	// Add filter for column: meta_execution_build_line
+	if req.MetaExecutionBuildLine != nil {
+		switch filter := req.MetaExecutionBuildLine.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("meta_execution_build_line", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("meta_execution_build_line", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("meta_execution_build_line", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("meta_execution_build_line", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("meta_execution_build_line", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("meta_execution_build_line", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("meta_execution_build_line", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("meta_execution_build_line", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("meta_execution_build_line", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: meta_execution_version
 	if req.MetaExecutionVersion != nil {
 		switch filter := req.MetaExecutionVersion.Filter.(type) {
@@ -369,7 +399,7 @@ func BuildListFctEngineNewPayloadDurationPercentileWindowQuery(req *ListFctEngin
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "window_grain", "window_length", "window_start_date_time", "window_end_date_time", "node_class", "meta_execution_implementation", "meta_execution_version", "status", "observation_count", "p50_duration_ms", "p95_duration_ms"}
+		validFields := []string{"updated_date_time", "window_grain", "window_length", "window_start_date_time", "window_end_date_time", "node_class", "meta_execution_implementation", "meta_execution_build_line", "meta_execution_version", "status", "observation_count", "p50_duration_ms", "p95_duration_ms"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -377,11 +407,11 @@ func BuildListFctEngineNewPayloadDurationPercentileWindowQuery(req *ListFctEngin
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY window_grain" + ", window_length" + ", node_class" + ", meta_execution_implementation" + ", meta_execution_version" + ", status"
+		orderByClause = " ORDER BY window_grain" + ", window_length" + ", node_class" + ", meta_execution_implementation" + ", meta_execution_build_line" + ", meta_execution_version" + ", status"
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "window_grain", "toUInt32(`window_length`) AS `window_length`", "toUnixTimestamp(`window_start_date_time`) AS `window_start_date_time`", "toUnixTimestamp(`window_end_date_time`) AS `window_end_date_time`", "node_class", "meta_execution_implementation", "meta_execution_version", "status", "observation_count", "p50_duration_ms", "p95_duration_ms"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "window_grain", "toUInt32(`window_length`) AS `window_length`", "toUnixTimestamp(`window_start_date_time`) AS `window_start_date_time`", "toUnixTimestamp(`window_end_date_time`) AS `window_end_date_time`", "node_class", "meta_execution_implementation", "meta_execution_build_line", "meta_execution_version", "status", "observation_count", "p50_duration_ms", "p95_duration_ms"}
 
 	return BuildParameterizedQuery("fct_engine_new_payload_duration_percentile_window", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -398,10 +428,10 @@ func BuildGetFctEngineNewPayloadDurationPercentileWindowQuery(req *GetFctEngineN
 	qb.AddCondition("window_grain", "=", req.WindowGrain)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY window_grain, window_length, node_class, meta_execution_implementation, meta_execution_version, status"
+	orderByClause := " ORDER BY window_grain, window_length, node_class, meta_execution_implementation, meta_execution_build_line, meta_execution_version, status"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "window_grain", "toUInt32(`window_length`) AS `window_length`", "toUnixTimestamp(`window_start_date_time`) AS `window_start_date_time`", "toUnixTimestamp(`window_end_date_time`) AS `window_end_date_time`", "node_class", "meta_execution_implementation", "meta_execution_version", "status", "observation_count", "p50_duration_ms", "p95_duration_ms"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "window_grain", "toUInt32(`window_length`) AS `window_length`", "toUnixTimestamp(`window_start_date_time`) AS `window_start_date_time`", "toUnixTimestamp(`window_end_date_time`) AS `window_end_date_time`", "node_class", "meta_execution_implementation", "meta_execution_build_line", "meta_execution_version", "status", "observation_count", "p50_duration_ms", "p95_duration_ms"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_engine_new_payload_duration_percentile_window", columns, qb, orderByClause, 1, 0, options...)
