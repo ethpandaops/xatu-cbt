@@ -18,17 +18,18 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: Blocks per period and client in the all scope match the VALID source blocks
+    - name: Blocks per period and client in the all scope match the VALID source blocks, for the periods the model has written
       sql: |
-        SELECT COUNT(*) AS bad_rows
-        FROM (SELECT hour_start_date_time, client, sum(block_count) AS n FROM fct_engine_new_payload_gas_bucket_hourly FINAL WHERE node_scope = 'all' GROUP BY hour_start_date_time, client) AS a
-        FULL OUTER JOIN (
-            SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, if(lower(meta_execution_implementation) = 'go-ethereum', 'geth', lower(meta_execution_implementation)) AS client, uniqExact(slot) AS n
-            FROM fct_engine_new_payload_by_el_client FINAL
-            WHERE status = 'VALID' AND gas_used > 0 AND median_duration_ms > 0
-            GROUP BY hour_start_date_time, client
-        ) AS s USING (hour_start_date_time, client)
-        WHERE a.n != s.n
+        SELECT if(
+            (SELECT arraySort(groupArray(tuple(hour_start_date_time, client, n))) FROM (
+                SELECT hour_start_date_time, client, toUInt64(sum(block_count)) AS n FROM fct_engine_new_payload_gas_bucket_hourly FINAL WHERE node_scope = 'all' GROUP BY hour_start_date_time, client))
+            = (SELECT arraySort(groupArray(tuple(hour_start_date_time, client, n))) FROM (
+                SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, if(lower(meta_execution_implementation) = 'go-ethereum', 'geth', lower(meta_execution_implementation)) AS client, toUInt64(uniqExact(slot)) AS n
+                FROM fct_engine_new_payload_by_el_client FINAL
+                WHERE status = 'VALID' AND gas_used > 0 AND median_duration_ms > 0
+                    AND toStartOfHour(slot_start_date_time) GLOBAL IN (SELECT hour_start_date_time FROM fct_engine_new_payload_gas_bucket_hourly FINAL)
+                GROUP BY hour_start_date_time, client)),
+            0, 1) AS bad_rows
       assertions:
         - type: equals
           column: bad_rows

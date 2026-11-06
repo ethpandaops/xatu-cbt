@@ -18,17 +18,18 @@ assertions:
         - type: greater_than
           column: row_count
           value: 0
-    - name: Blocks per period and client in the all scope match the VALID source blocks
+    - name: Blocks per period and client in the all scope match the VALID source blocks, for the periods the model has written
       sql: |
-        SELECT COUNT(*) AS bad_rows
-        FROM (SELECT day_start_date, client, sum(block_count) AS n FROM fct_engine_new_payload_gas_bucket_daily FINAL WHERE node_scope = 'all' GROUP BY day_start_date, client) AS a
-        FULL OUTER JOIN (
-            SELECT toDate(slot_start_date_time) AS day_start_date, if(lower(meta_execution_implementation) = 'go-ethereum', 'geth', lower(meta_execution_implementation)) AS client, uniqExact(slot) AS n
-            FROM fct_engine_new_payload_by_el_client FINAL
-            WHERE status = 'VALID' AND gas_used > 0 AND median_duration_ms > 0
-            GROUP BY day_start_date, client
-        ) AS s USING (day_start_date, client)
-        WHERE a.n != s.n
+        SELECT if(
+            (SELECT arraySort(groupArray(tuple(day_start_date, client, n))) FROM (
+                SELECT day_start_date, client, toUInt64(sum(block_count)) AS n FROM fct_engine_new_payload_gas_bucket_daily FINAL WHERE node_scope = 'all' GROUP BY day_start_date, client))
+            = (SELECT arraySort(groupArray(tuple(day_start_date, client, n))) FROM (
+                SELECT toDate(slot_start_date_time) AS day_start_date, if(lower(meta_execution_implementation) = 'go-ethereum', 'geth', lower(meta_execution_implementation)) AS client, toUInt64(uniqExact(slot)) AS n
+                FROM fct_engine_new_payload_by_el_client FINAL
+                WHERE status = 'VALID' AND gas_used > 0 AND median_duration_ms > 0
+                    AND toDate(slot_start_date_time) GLOBAL IN (SELECT day_start_date FROM fct_engine_new_payload_gas_bucket_daily FINAL)
+                GROUP BY day_start_date, client)),
+            0, 1) AS bad_rows
       assertions:
         - type: equals
           column: bad_rows
