@@ -1,0 +1,56 @@
+model: fct_data_column_availability_by_slot
+network: mainnet
+external_data:
+    libp2p_rpc_data_column_custody_probe:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    blob_submitter:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_blob_submitter.parquet
+        network_column: meta_network_name
+    execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_execution_transaction.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_libp2p_gossipsub_data_column_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+    beacon_api_eth_v1_events_data_column_sidecar:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_daily_beacon_api_eth_v1_events_data_column_sidecar.parquet
+        network_column: meta_network_name
+        optional: true
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_data_column_availability_by_slot FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Only custody probes are counted
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_data_column_availability_by_slot FINAL
+        WHERE probe_count != custody_probe_count OR success_count + failure_count + missing_count != probe_count OR probe_count = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Counts match the probes per slot and column
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (SELECT slot, column_index, probe_count, success_count FROM fct_data_column_availability_by_slot FINAL) AS f
+        FULL OUTER JOIN (
+            SELECT slot, column_index, count() AS n, countIf(result = 'success') AS s
+            FROM int_custody_probe_order_by_slot FINAL ARRAY JOIN column_indices AS column_index
+            GROUP BY slot, column_index
+        ) AS p USING (slot, column_index)
+        WHERE f.probe_count != p.n OR f.success_count != p.s
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

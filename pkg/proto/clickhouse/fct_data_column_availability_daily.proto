@@ -10,7 +10,7 @@ import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
-// Data column availability by UTC day and column index, rolled up from fct_data_column_availability_by_epoch through its hours like fct_data_column_availability_hourly: almost all observations are gossipsub sightings, which always count as a success
+// Custody probe results by UTC day and column index, rolled up from fct_data_column_availability_hourly. Only custody probes count. The last 19 days are recounted every hour
 message FctDataColumnAvailabilityDaily {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -122,7 +122,7 @@ message GetFctDataColumnAvailabilityDailyResponse {
 
 // Query fct_data_column_availability_daily data
 service FctDataColumnAvailabilityDailyService {
-  // List records | Data column availability by UTC day and column index, rolled up from fct_data_column_availability_by_epoch through its hours like fct_data_column_availability_hourly: almost all observations are gossipsub sightings, which always count as a success
+  // List records | Custody probe results by UTC day and column index, rolled up from fct_data_column_availability_hourly. Only custody probes count. The last 19 days are recounted every hour
   rpc List(ListFctDataColumnAvailabilityDailyRequest) returns (ListFctDataColumnAvailabilityDailyResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_data_column_availability_daily"

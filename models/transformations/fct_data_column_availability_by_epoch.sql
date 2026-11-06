@@ -1,12 +1,7 @@
 ---
 table: fct_data_column_availability_by_epoch
-type: incremental
-interval:
-  type: slot
-  max: 50000
-schedules:
-  forwardfill: "@every 5s"
-  backfill: "@every 30s"
+type: scheduled
+schedule: "@every 1h"
 tags:
   - epoch
   - data_column
@@ -15,6 +10,9 @@ tags:
 dependencies:
   - "{{transformation}}.fct_data_column_availability_by_slot"
 ---
+-- Custody probes keep arriving for about 18 days after a slot, so every run recounts the last
+-- DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS days (default 19) and today from the source. Older rows keep their last
+-- count, which no longer changes.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
@@ -40,7 +38,6 @@ FROM (
     SELECT
         epoch,
         epoch_start_date_time,
-        -- Carry forward slot_start_date_time for CBT position tracking
         -- This is min(slot_start_date_time) across all slots in the epoch
         -- Using different alias to avoid ClickHouse ILLEGAL_AGGREGATION error
         min(slot_start_date_time) AS min_slot_start_date_time,
@@ -60,7 +57,7 @@ FROM (
         round(max(max_response_time_ms)) AS max_response_time_ms,
         max(blob_count) AS max_blob_count
     FROM {{ index .dep "{{transformation}}" "fct_data_column_availability_by_slot" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE epoch_start_date_time >= toStartOfDay(fromUnixTimestamp({{ .task.start }})) - INTERVAL {{ default "19" .env.DATA_COLUMN_AVAILABILITY_LOOKBACK_DAYS }} DAY
     GROUP BY
         epoch,
         epoch_start_date_time,
