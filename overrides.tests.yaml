@@ -49,3 +49,17 @@ models:
         schedules:
           forwardfill: "@every 90s"
           backfill: "@every 90s"
+    # The custody availability rollups are scheduled and recount from the table below them, so each starts after the
+    # one below it has filled.
+    fct_data_column_availability_by_epoch:
+      config:
+        schedule: "@every 60s"
+    fct_data_column_availability_by_slot_blob:
+      config:
+        schedule: "@every 60s"
+    fct_data_column_availability_hourly:
+      config:
+        schedule: "@every 90s"
+    fct_data_column_availability_daily:
+      config:
+        schedule: "@every 90s"
