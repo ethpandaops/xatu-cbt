@@ -23,7 +23,7 @@ type FctBlockPayloadFirstSeenByNodeRow struct {
 	SeenSlotStartDiff uint32 `ch:"seen_slot_start_diff" json:"seen_slot_start_diff"`
 	BlockRoot string `ch:"block_root" json:"block_root"`
 	BlockHash *string `ch:"block_hash" json:"block_hash"`
-	BuilderIndex uint64 `ch:"builder_index" json:"builder_index"`
+	BuilderIndex *uint64 `ch:"builder_index" json:"builder_index"`
 	Username string `ch:"username" json:"username"`
 	NodeId string `ch:"node_id" json:"node_id"`
 	Classification string `ch:"classification" json:"classification"`
@@ -62,7 +62,9 @@ func (r *FctBlockPayloadFirstSeenByNodeRow) ToProto() *FctBlockPayloadFirstSeenB
 	if r.BlockHash != nil {
 		p.BlockHash = *r.BlockHash
 	}
-	p.BuilderIndex = r.BuilderIndex
+	if r.BuilderIndex != nil {
+		p.BuilderIndex = wrapperspb.UInt64(*r.BuilderIndex)
+	}
 	p.Username = r.Username
 	p.NodeId = r.NodeId
 	p.Classification = r.Classification

@@ -18,12 +18,19 @@ dependencies:
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
--- Gloas (ePBS): per-block execution payload facts. The beacon block no longer
--- carries the payload, so the pre-gloas fct_block execution columns are empty
--- in this era. The winning bid provides the committed hash, gas limit and
--- blob count, and the envelope-derived transaction table provides what the
--- payload actually contained. Bid amounts are Gwei on the wire and stored as
--- wei to match the mev_relay bid tables.
+-- Gloas (ePBS): per-block execution payload facts. The winning bid provides
+-- the committed hash, gas limit and blob count, and the envelope-derived
+-- transaction table provides what the revealed payload contained. Bid amounts
+-- are Gwei on the wire and stored as wei to match the mev_relay bid tables.
+--
+-- A canonical beacon block does not make its payload canonical. Following the
+-- fork-choice get_parent_payload_status, the payload is 'full' when the next
+-- canonical block's bid builds on it (parent_block_hash = this block_hash),
+-- so its transactions executed on the canonical EL chain, and 'empty' when
+-- that bid builds on the payload's own parent instead: the payload was
+-- withheld, late or otherwise not built upon, and any transactions listed
+-- here never executed. 'unknown' means no canonical child was found yet.
+-- Filter on payload_status = 'full' to count executed transactions.
 WITH bids AS (
     SELECT
         slot,
@@ -40,6 +47,19 @@ WITH bids AS (
         blob_kzg_commitment_count
     FROM {{ index .dep "{{external}}" "canonical_beacon_block_execution_payload_bid" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+),
+-- The canonical child of each block, found through its bid's parent root.
+-- Missed slots put it further out, so scan well past the interval end. The
+-- canonical bid external lags its source by 1920s, so everything up to that
+-- far past the processable range has already landed.
+child_bids AS (
+    SELECT
+        parent_block_root,
+        parent_block_hash
+    FROM {{ index .dep "{{external}}" "canonical_beacon_block_execution_payload_bid" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time > fromUnixTimestamp({{ .bounds.start }})
+        AND slot_start_date_time <= fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 1920 SECOND
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 transaction_totals AS (
@@ -71,7 +91,13 @@ SELECT
     COALESCE(t.transactions_count, 0) AS transactions_count,
     COALESCE(t.transactions_total_bytes, 0) AS transactions_total_bytes,
     COALESCE(t.transactions_total_gas_limit, 0) AS transactions_total_gas_limit,
-    COALESCE(t.blob_transactions_count, 0) AS blob_transactions_count
+    COALESCE(t.blob_transactions_count, 0) AS blob_transactions_count,
+    multiIf(
+        c.parent_block_root IS NULL, 'unknown',
+        c.parent_block_hash = b.block_hash, 'full',
+        'empty'
+    ) AS payload_status
 FROM bids b
 GLOBAL LEFT JOIN transaction_totals t ON b.block_root = t.block_root
+GLOBAL LEFT JOIN child_bids c ON b.block_root = c.parent_block_root
 SETTINGS join_use_nulls = 1

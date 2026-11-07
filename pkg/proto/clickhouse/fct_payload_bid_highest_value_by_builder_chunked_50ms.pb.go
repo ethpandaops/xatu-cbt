@@ -43,7 +43,7 @@ type FctPayloadBidHighestValueByBuilderChunked50Ms struct {
 	EarliestBidDateTime int64 `protobuf:"varint,17,opt,name=earliest_bid_date_time,json=earliestBidDateTime,proto3" json:"earliest_bid_date_time,omitempty"`
 	// The execution block hash committed to in the bid
 	BlockHash string `protobuf:"bytes,18,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	// Validator index of the builder that produced the bid
+	// Index of the builder in the builder registry that produced the bid. Self-build bids are never gossiped, so this is always a registry builder
 	BuilderIndex uint64 `protobuf:"varint,19,opt,name=builder_index,json=builderIndex,proto3" json:"builder_index,omitempty"`
 	// The bid value in wei
 	Value string `protobuf:"bytes,20,opt,name=value,proto3" json:"value,omitempty"`
@@ -179,7 +179,7 @@ type ListFctPayloadBidHighestValueByBuilderChunked50MsRequest struct {
 	SlotStartDateTime *UInt32Filter `protobuf:"bytes,1,opt,name=slot_start_date_time,json=slotStartDateTime,proto3" json:"slot_start_date_time,omitempty"`
 	// Filter by chunk_slot_start_diff - The difference between the chunk start time and slot_start_date_time. "1500" would mean the earliest observation of this bid was between 1500ms and 1550ms into the slot. Negative values indicate bids received before slot start (ORDER BY column 2 - optional)
 	ChunkSlotStartDiff *Int32Filter `protobuf:"bytes,2,opt,name=chunk_slot_start_diff,json=chunkSlotStartDiff,proto3" json:"chunk_slot_start_diff,omitempty"`
-	// Filter by builder_index - Validator index of the builder that produced the bid (ORDER BY column 3 - optional)
+	// Filter by builder_index - Index of the builder in the builder registry that produced the bid. Self-build bids are never gossiped, so this is always a registry builder (ORDER BY column 3 - optional)
 	BuilderIndex *UInt64Filter `protobuf:"bytes,3,opt,name=builder_index,json=builderIndex,proto3" json:"builder_index,omitempty"`
 	// Filter by updated_date_time - Timestamp when the record was last updated (optional)
 	UpdatedDateTime *UInt32Filter `protobuf:"bytes,4,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`

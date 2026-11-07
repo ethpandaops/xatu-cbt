@@ -31,7 +31,7 @@ type FctBlockPayloadStatusHourly struct {
 	UpdatedDateTime uint32 `protobuf:"varint,11,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`
 	// The wall clock time at the start of the hour
 	HourStartDateTime uint32 `protobuf:"varint,12,opt,name=hour_start_date_time,json=hourStartDateTime,proto3" json:"hour_start_date_time,omitempty"`
-	// PTC verdict bucket: delivered or absent
+	// PTC verdict bucket for canonical blocks: delivered (more than 256 of 512 PTC members voted the payload present), absent, or no_votes (the PTC votes were never included on chain)
 	Status string `protobuf:"bytes,13,opt,name=status,proto3" json:"status,omitempty"`
 	// Number of blocks with this payload outcome in the hour
 	SlotCount uint32 `protobuf:"varint,14,opt,name=slot_count,json=slotCount,proto3" json:"slot_count,omitempty"`
@@ -105,7 +105,7 @@ type ListFctBlockPayloadStatusHourlyRequest struct {
 
 	// Filter by hour_start_date_time - The wall clock time at the start of the hour (PRIMARY KEY - required)
 	HourStartDateTime *UInt32Filter `protobuf:"bytes,1,opt,name=hour_start_date_time,json=hourStartDateTime,proto3" json:"hour_start_date_time,omitempty"`
-	// Filter by status - PTC verdict bucket: delivered or absent (ORDER BY column 2 - optional)
+	// Filter by status - PTC verdict bucket for canonical blocks: delivered (more than 256 of 512 PTC members voted the payload present), absent, or no_votes (the PTC votes were never included on chain) (ORDER BY column 2 - optional)
 	Status *StringFilter `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	// Filter by updated_date_time - Timestamp when the record was last updated (optional)
 	UpdatedDateTime *UInt32Filter `protobuf:"bytes,3,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`

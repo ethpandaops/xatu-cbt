@@ -37,6 +37,10 @@ WITH bids AS (
   FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_execution_payload_bid" "helpers" "from" }} FINAL
   WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
     AND meta_network_name = '{{ .env.NETWORK }}'
+    -- Self-build bids (BUILDER_INDEX_SELF_BUILD, stored as NULL) are rejected
+    -- on gossip, so this never drops a real bid. Guard anyway: builder_index
+    -- is non-Nullable here and a NULL would silently land as builder 0.
+    AND builder_index IS NOT NULL
     AND propagation_slot_start_diff >= -12000
     AND propagation_slot_start_diff < 12000
 ),

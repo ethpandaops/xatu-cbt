@@ -260,28 +260,32 @@ func BuildListFctBlockPayloadQuery(req *ListFctBlockPayloadRequest, options ...Q
 	// Add filter for column: builder_index
 	if req.BuilderIndex != nil {
 		switch filter := req.BuilderIndex.Filter.(type) {
-		case *UInt64Filter_Eq:
+		case *NullableUInt64Filter_Eq:
 			qb.AddCondition("builder_index", "=", filter.Eq)
-		case *UInt64Filter_Ne:
+		case *NullableUInt64Filter_Ne:
 			qb.AddCondition("builder_index", "!=", filter.Ne)
-		case *UInt64Filter_Lt:
+		case *NullableUInt64Filter_Lt:
 			qb.AddCondition("builder_index", "<", filter.Lt)
-		case *UInt64Filter_Lte:
+		case *NullableUInt64Filter_Lte:
 			qb.AddCondition("builder_index", "<=", filter.Lte)
-		case *UInt64Filter_Gt:
+		case *NullableUInt64Filter_Gt:
 			qb.AddCondition("builder_index", ">", filter.Gt)
-		case *UInt64Filter_Gte:
+		case *NullableUInt64Filter_Gte:
 			qb.AddCondition("builder_index", ">=", filter.Gte)
-		case *UInt64Filter_Between:
+		case *NullableUInt64Filter_Between:
 			qb.AddBetweenCondition("builder_index", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt64Filter_In:
+		case *NullableUInt64Filter_In:
 			if len(filter.In.Values) > 0 {
 				qb.AddInCondition("builder_index", UInt64SliceToInterface(filter.In.Values))
 			}
-		case *UInt64Filter_NotIn:
+		case *NullableUInt64Filter_NotIn:
 			if len(filter.NotIn.Values) > 0 {
 				qb.AddNotInCondition("builder_index", UInt64SliceToInterface(filter.NotIn.Values))
 			}
+		case *NullableUInt64Filter_IsNull:
+			qb.AddIsNullCondition("builder_index")
+		case *NullableUInt64Filter_IsNotNull:
+			qb.AddIsNotNullCondition("builder_index")
 		default:
 			// Unsupported filter type
 		}
@@ -557,6 +561,36 @@ func BuildListFctBlockPayloadQuery(req *ListFctBlockPayloadRequest, options ...Q
 		}
 	}
 
+	// Add filter for column: payload_status
+	if req.PayloadStatus != nil {
+		switch filter := req.PayloadStatus.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("payload_status", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("payload_status", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("payload_status", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("payload_status", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("payload_status", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("payload_status", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("payload_status", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("payload_status", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("payload_status", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -582,7 +616,7 @@ func BuildListFctBlockPayloadQuery(req *ListFctBlockPayloadRequest, options ...Q
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "block_version", "builder_index", "block_hash", "parent_block_hash", "value", "gas_limit", "blob_kzg_commitment_count", "transactions_count", "transactions_total_bytes", "transactions_total_gas_limit", "blob_transactions_count"}
+		validFields := []string{"updated_date_time", "slot", "slot_start_date_time", "epoch", "epoch_start_date_time", "block_root", "block_version", "builder_index", "block_hash", "parent_block_hash", "value", "gas_limit", "blob_kzg_commitment_count", "transactions_count", "transactions_total_bytes", "transactions_total_gas_limit", "blob_transactions_count", "payload_status"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -594,7 +628,7 @@ func BuildListFctBlockPayloadQuery(req *ListFctBlockPayloadRequest, options ...Q
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "block_version", "builder_index", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "NULLIF(`parent_block_hash`, repeat('\x00', 66)) AS `parent_block_hash`", "toString(`value`) AS `value`", "gas_limit", "blob_kzg_commitment_count", "transactions_count", "transactions_total_bytes", "transactions_total_gas_limit", "blob_transactions_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "block_version", "builder_index", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "NULLIF(`parent_block_hash`, repeat('\x00', 66)) AS `parent_block_hash`", "toString(`value`) AS `value`", "gas_limit", "blob_kzg_commitment_count", "transactions_count", "transactions_total_bytes", "transactions_total_gas_limit", "blob_transactions_count", "payload_status"}
 
 	return BuildParameterizedQuery("fct_block_payload", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -614,7 +648,7 @@ func BuildGetFctBlockPayloadQuery(req *GetFctBlockPayloadRequest, options ...Que
 	orderByClause := " ORDER BY slot_start_date_time, block_root"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "block_version", "builder_index", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "NULLIF(`parent_block_hash`, repeat('\x00', 66)) AS `parent_block_hash`", "toString(`value`) AS `value`", "gas_limit", "blob_kzg_commitment_count", "transactions_count", "transactions_total_bytes", "transactions_total_gas_limit", "blob_transactions_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "block_root", "block_version", "builder_index", "NULLIF(`block_hash`, repeat('\x00', 66)) AS `block_hash`", "NULLIF(`parent_block_hash`, repeat('\x00', 66)) AS `parent_block_hash`", "toString(`value`) AS `value`", "gas_limit", "blob_kzg_commitment_count", "transactions_count", "transactions_total_bytes", "transactions_total_gas_limit", "blob_transactions_count", "payload_status"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_block_payload", columns, qb, orderByClause, 1, 0, options...)

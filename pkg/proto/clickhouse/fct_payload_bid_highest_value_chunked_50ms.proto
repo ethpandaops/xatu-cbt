@@ -27,7 +27,7 @@ message FctPayloadBidHighestValueChunked50ms {
   int64 earliest_bid_date_time = 17;
   // The execution block hash committed to in the leading bid
   string block_hash = 18;
-  // Validator index of the builder leading this chunk
+  // Index of the builder in the builder registry leading this chunk. Self-build bids are never gossiped, so this is always a registry builder
   uint64 builder_index = 19;
   // The best bid value across all builders in this chunk, in wei
   string value = 20;
@@ -53,7 +53,7 @@ message ListFctPayloadBidHighestValueChunked50msRequest {
   Int64Filter earliest_bid_date_time = 7 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_hash - The execution block hash committed to in the leading bid (optional)
   StringFilter block_hash = 8 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by builder_index - Validator index of the builder leading this chunk (optional)
+  // Filter by builder_index - Index of the builder in the builder registry leading this chunk. Self-build bids are never gossiped, so this is always a registry builder (optional)
   UInt64Filter builder_index = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by value - The best bid value across all builders in this chunk, in wei (optional)
   StringFilter value = 10 [(google.api.field_behavior) = OPTIONAL];

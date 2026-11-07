@@ -30,8 +30,8 @@ message FctBlockPayloadFirstSeenByNode {
   string block_root = 18;
   // The execution block hash of the payload
   string block_hash = 19;
-  // Index of the builder that produced the payload
-  uint64 builder_index = 20;
+  // Index of the builder in the builder registry that produced the payload, NULL for proposer self-builds (BUILDER_INDEX_SELF_BUILD)
+  google.protobuf.UInt64Value builder_index = 20;
   // Username of the node
   string username = 21;
   // ID of the node
@@ -91,8 +91,8 @@ message ListFctBlockPayloadFirstSeenByNodeRequest {
   UInt32Filter seen_slot_start_diff = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by block_hash - The execution block hash of the payload (optional)
   StringFilter block_hash = 10 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by builder_index - Index of the builder that produced the payload (optional)
-  UInt64Filter builder_index = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by builder_index - Index of the builder in the builder registry that produced the payload, NULL for proposer self-builds (BUILDER_INDEX_SELF_BUILD) (optional)
+  NullableUInt64Filter builder_index = 11 [(google.api.field_behavior) = OPTIONAL];
   // Filter by username - Username of the node (optional)
   StringFilter username = 12 [(google.api.field_behavior) = OPTIONAL];
   // Filter by node_id - ID of the node (optional)
