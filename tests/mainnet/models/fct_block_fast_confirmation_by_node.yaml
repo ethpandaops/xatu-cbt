@@ -1,0 +1,105 @@
+model: fct_block_fast_confirmation_by_node
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_fast_confirmation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_fast_confirmation_by_node_beacon_api_eth_v1_events_fast_confirmation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_finalized_checkpoint:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_fast_confirmation_by_node_beacon_api_eth_v1_events_finalized_checkpoint.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_fast_confirmation_by_node_canonical_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_fast_confirmation_by_node FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Status and confirmation_type only contain known values
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_node FINAL
+        WHERE status NOT IN ('canonical', 'orphaned')
+          OR confirmation_type NOT IN ('direct', 'descendant', 'unconfirmed')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Identifier columns are never empty
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_node FINAL
+        WHERE meta_client_name = ''
+          OR block_root = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Epoch matches slot divided by 32
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_node FINAL
+        WHERE epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Orphaned rows are always direct confirmations with no finality data
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_node FINAL
+        WHERE status = 'orphaned'
+          AND (confirmation_type != 'direct'
+            OR finalized_epoch IS NOT NULL
+            OR finalized_slot_start_diff IS NOT NULL)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Confirmation columns are null exactly when the block is unconfirmed
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_node FINAL
+        WHERE (confirmation_type = 'unconfirmed'
+            AND (fast_confirmation_slot IS NOT NULL OR fast_confirmed_slot_start_diff IS NOT NULL))
+          OR (confirmation_type IN ('direct', 'descendant')
+            AND (fast_confirmation_slot IS NULL OR fast_confirmed_slot_start_diff IS NULL))
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Direct confirmations point at their own slot
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_node FINAL
+        WHERE confirmation_type = 'direct'
+          AND fast_confirmation_slot != slot
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Descendant confirmations come from a later slot within 150 slots
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_node FINAL
+        WHERE confirmation_type = 'descendant'
+          AND (fast_confirmation_slot <= slot OR fast_confirmation_slot > slot + 150)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Finalized epoch covers the block and both finality columns are null together
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_node FINAL
+        WHERE (finalized_epoch IS NOT NULL AND finalized_epoch < intDiv(slot + 31, 32))
+          OR (finalized_epoch IS NULL) != (finalized_slot_start_diff IS NULL)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Slot start diffs have no UInt32 underflow from negative timings
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_fast_confirmation_by_node FINAL
+        WHERE (fast_confirmed_slot_start_diff IS NOT NULL AND fast_confirmed_slot_start_diff >= 86400000)
+          OR (finalized_slot_start_diff IS NOT NULL
+            AND (finalized_slot_start_diff = 0 OR finalized_slot_start_diff >= 604800000))
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
