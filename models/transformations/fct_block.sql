@@ -83,6 +83,9 @@ orphaned_blocks AS (
         ON h.slot_start_date_time = c.slot_start_date_time 
         AND h.block_root = c.block_root
     WHERE h.slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        -- Head rows without a block root (mainnet 2023-03-01 to 2023-05-04) can't be matched to a canonical block, so
+        -- the anti join would call each of them orphaned. Most are copies of the canonical block in the same slot.
+        AND h.block_root != ''
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
