@@ -30,6 +30,7 @@ type IntPeerDailyRow struct {
 	AutonomousSystemNumber uint32 `ch:"autonomous_system_number" json:"autonomous_system_number"`
 	AutonomousSystemOrganization string `ch:"autonomous_system_organization" json:"autonomous_system_organization"`
 	NetworkType string `ch:"network_type" json:"network_type"`
+	Provider string `ch:"provider" json:"provider"`
 	Ipv6 bool `ch:"ipv6" json:"ipv6"`
 	Dialled bool `ch:"dialled" json:"dialled"`
 	Inbound bool `ch:"inbound" json:"inbound"`
@@ -71,6 +72,7 @@ func (r *IntPeerDailyRow) ToProto() *IntPeerDaily {
 	p.AutonomousSystemNumber = r.AutonomousSystemNumber
 	p.AutonomousSystemOrganization = r.AutonomousSystemOrganization
 	p.NetworkType = r.NetworkType
+	p.Provider = r.Provider
 	p.Ipv6 = r.Ipv6
 	p.Dialled = r.Dialled
 	p.Inbound = r.Inbound

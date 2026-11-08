@@ -35,6 +35,7 @@ SELECT
     autonomous_system_number,
     autonomous_system_organization,
     network_type,
+    provider,
     ipv6,
     dialled,
     inbound,

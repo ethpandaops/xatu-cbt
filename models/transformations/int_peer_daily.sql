@@ -248,6 +248,7 @@ SELECT
     argMax(autonomous_system_number, seen) AS autonomous_system_number,
     argMax(autonomous_system_organization, seen) AS autonomous_system_organization,
     argMax(network_type, seen) AS network_type,
+    argMax(provider, seen) AS provider,
     max(ipv6) AS ipv6,
     max(dialled) AS dialled,
     max(inbound) AS inbound,
@@ -286,6 +287,27 @@ FROM (
             match(ifNull(p.asn_organization, ''), '(?i)(hosting|cloud|server|data ?cent(er|re)|datacamp|colo(cation|crossing)|vps|dedicated|amazon|google llc|microsoft|digitalocean|hetzner|ovh|contabo|linode|akamai|vultr|leaseweb|scaleway|equinix|oracle|alibaba|tencent|hostinger|ionos|latitude|teraswitch|allnodes|netcup|limestone|hivelocity)'), 'hosting',
             'other'
         ) AS network_type,
+        -- Providers that span several networks or organisation names get one name, the rest drop legal suffixes.
+        multiIf(
+            ifNull(p.asn_organization, '') = '', '',
+            match(p.asn_organization, '(?i)^amazon'), 'Amazon',
+            match(p.asn_organization, '(?i)^google (llc|cloud)'), 'Google',
+            match(p.asn_organization, '(?i)^microsoft'), 'Microsoft',
+            match(p.asn_organization, '(?i)alibaba'), 'Alibaba',
+            match(p.asn_organization, '(?i)^oracle'), 'Oracle',
+            match(p.asn_organization, '(?i)^ovh'), 'OVHcloud',
+            match(p.asn_organization, '(?i)^hetzner'), 'Hetzner',
+            match(p.asn_organization, '(?i)^contabo'), 'Contabo',
+            match(p.asn_organization, '(?i)^(akamai|linode)'), 'Akamai',
+            match(p.asn_organization, '(?i)^tencent'), 'Tencent',
+            trimRight(
+                replaceRegexpOne(
+                    replaceRegexpOne(p.asn_organization, '(?i)[,.]?\\s+(inc|llc|l\\.l\\.c|ltd|ltda|limited|private limited|pte|pty|gmbh|corp|corporation|co|company|sas|sa|s\\.a|s\\.a\\.u|bv|b\\.v|a\\.s|aps|ag|plc|oy|ab|srl|ltee|sp\\. z o\\.o)\\.?$', ''),
+                    '(?i)[,.]?\\s+(inc|llc|ltd|limited|private|pte|pty|gmbh|corp|corporation|co|company|sas|sa|s\\.a|bv|b\\.v|ag|plc)\\.?$', ''
+                ),
+                ' ,.'
+            )
+        ) AS provider,
         ifNull(NOT (p.ip BETWEEN toIPv6('::ffff:0.0.0.0') AND toIPv6('::ffff:255.255.255.255')), false) AS ipv6,
         p.dialled AS dialled,
         p.inbound AS inbound,
@@ -328,6 +350,7 @@ FROM (
         0 AS autonomous_system_number,
         '' AS autonomous_system_organization,
         '' AS network_type,
+        '' AS provider,
         false AS ipv6,
         false AS dialled,
         false AS inbound,

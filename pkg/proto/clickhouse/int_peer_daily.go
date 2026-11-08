@@ -468,6 +468,36 @@ func BuildListIntPeerDailyQuery(req *ListIntPeerDailyRequest, options ...QueryOp
 		}
 	}
 
+	// Add filter for column: provider
+	if req.Provider != nil {
+		switch filter := req.Provider.Filter.(type) {
+		case *StringFilter_Eq:
+			qb.AddCondition("provider", "=", filter.Eq)
+		case *StringFilter_Ne:
+			qb.AddCondition("provider", "!=", filter.Ne)
+		case *StringFilter_Contains:
+			qb.AddLikeCondition("provider", "%" + filter.Contains + "%")
+		case *StringFilter_StartsWith:
+			qb.AddLikeCondition("provider", filter.StartsWith + "%")
+		case *StringFilter_EndsWith:
+			qb.AddLikeCondition("provider", "%" + filter.EndsWith)
+		case *StringFilter_Like:
+			qb.AddLikeCondition("provider", filter.Like)
+		case *StringFilter_NotLike:
+			qb.AddNotLikeCondition("provider", filter.NotLike)
+		case *StringFilter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("provider", StringSliceToInterface(filter.In.Values))
+			}
+		case *StringFilter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("provider", StringSliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: ipv6
 	if req.Ipv6 != nil {
 		switch filter := req.Ipv6.Filter.(type) {
@@ -833,7 +863,7 @@ func BuildListIntPeerDailyQuery(req *ListIntPeerDailyRequest, options ...QueryOp
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "day_start_date", "peer_id_unique_key", "peer_id", "seen_by_sentry", "seen_by_enr", "client", "version", "agent_version", "continent_code", "country_code", "country", "city", "autonomous_system_number", "autonomous_system_organization", "network_type", "ipv6", "dialled", "inbound", "quic_connected", "quic_listen", "enr_ip_mismatch", "custody_group_count", "latency_ms", "status_count", "fork_digest", "head_lag_slots", "finalized_lag_epochs", "earliest_available_slot", "served_history_slots"}
+		validFields := []string{"updated_date_time", "day_start_date", "peer_id_unique_key", "peer_id", "seen_by_sentry", "seen_by_enr", "client", "version", "agent_version", "continent_code", "country_code", "country", "city", "autonomous_system_number", "autonomous_system_organization", "network_type", "provider", "ipv6", "dialled", "inbound", "quic_connected", "quic_listen", "enr_ip_mismatch", "custody_group_count", "latency_ms", "status_count", "fork_digest", "head_lag_slots", "finalized_lag_epochs", "earliest_available_slot", "served_history_slots"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -845,7 +875,7 @@ func BuildListIntPeerDailyQuery(req *ListIntPeerDailyRequest, options ...QueryOp
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "peer_id_unique_key", "peer_id", "seen_by_sentry", "seen_by_enr", "client", "version", "agent_version", "continent_code", "country_code", "country", "city", "autonomous_system_number", "autonomous_system_organization", "network_type", "ipv6", "dialled", "inbound", "quic_connected", "quic_listen", "enr_ip_mismatch", "toUInt32(`custody_group_count`) AS `custody_group_count`", "latency_ms", "status_count", "fork_digest", "head_lag_slots", "finalized_lag_epochs", "earliest_available_slot", "served_history_slots"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "peer_id_unique_key", "peer_id", "seen_by_sentry", "seen_by_enr", "client", "version", "agent_version", "continent_code", "country_code", "country", "city", "autonomous_system_number", "autonomous_system_organization", "network_type", "provider", "ipv6", "dialled", "inbound", "quic_connected", "quic_listen", "enr_ip_mismatch", "toUInt32(`custody_group_count`) AS `custody_group_count`", "latency_ms", "status_count", "fork_digest", "head_lag_slots", "finalized_lag_epochs", "earliest_available_slot", "served_history_slots"}
 
 	return BuildParameterizedQuery("int_peer_daily", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -865,7 +895,7 @@ func BuildGetIntPeerDailyQuery(req *GetIntPeerDailyRequest, options ...QueryOpti
 	orderByClause := " ORDER BY day_start_date, peer_id_unique_key"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "peer_id_unique_key", "peer_id", "seen_by_sentry", "seen_by_enr", "client", "version", "agent_version", "continent_code", "country_code", "country", "city", "autonomous_system_number", "autonomous_system_organization", "network_type", "ipv6", "dialled", "inbound", "quic_connected", "quic_listen", "enr_ip_mismatch", "toUInt32(`custody_group_count`) AS `custody_group_count`", "latency_ms", "status_count", "fork_digest", "head_lag_slots", "finalized_lag_epochs", "earliest_available_slot", "served_history_slots"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "peer_id_unique_key", "peer_id", "seen_by_sentry", "seen_by_enr", "client", "version", "agent_version", "continent_code", "country_code", "country", "city", "autonomous_system_number", "autonomous_system_organization", "network_type", "provider", "ipv6", "dialled", "inbound", "quic_connected", "quic_listen", "enr_ip_mismatch", "toUInt32(`custody_group_count`) AS `custody_group_count`", "latency_ms", "status_count", "fork_digest", "head_lag_slots", "finalized_lag_epochs", "earliest_available_slot", "served_history_slots"}
 
 	// Return single record
 	return BuildParameterizedQuery("int_peer_daily", columns, qb, orderByClause, 1, 0, options...)

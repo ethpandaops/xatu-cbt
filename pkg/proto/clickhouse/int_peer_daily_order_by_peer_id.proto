@@ -41,34 +41,36 @@ message IntPeerDailyOrderByPeerId {
   string autonomous_system_organization = 25;
   // hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
   string network_type = 26;
+  // Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix, empty when unknown
+  string provider = 27;
   // The address is IPv6
-  bool ipv6 = 27;
+  bool ipv6 = 28;
   // Our sentries dialled the peer (an outbound connection), so it is publicly reachable
-  bool dialled = 28;
+  bool dialled = 29;
   // The peer connected to our sentries (an inbound connection)
-  bool inbound = 29;
+  bool inbound = 30;
   // Connected to over QUIC
-  bool quic_connected = 30;
+  bool quic_connected = 31;
   // Advertises a QUIC listen address in identify
-  bool quic_listen = 31;
+  bool quic_listen = 32;
   // The address in the peer ENR differs from the one our sentries connected to, NULL unless both are known
-  google.protobuf.BoolValue enr_ip_mismatch = 32;
+  google.protobuf.BoolValue enr_ip_mismatch = 33;
   // Custody group count from the peer metadata responses, else from its ENR, NULL when unknown
-  google.protobuf.UInt32Value custody_group_count = 33;
+  google.protobuf.UInt32Value custody_group_count = 34;
   // Median heartbeat latency to our sentries in ms, NULL without heartbeat latencies
-  google.protobuf.UInt32Value latency_ms = 34;
+  google.protobuf.UInt32Value latency_ms = 35;
   // Status exchanges with our sentries in the day
-  uint32 status_count = 35;
+  uint32 status_count = 36;
   // Fork digest of the peer latest status, else of its ENR, empty when neither is known
-  string fork_digest = 36;
+  string fork_digest = 37;
   // Median of the slots the peer head trailed the head of the sentry it exchanged status with, NULL without status exchanges
-  google.protobuf.Int32Value head_lag_slots = 37;
+  google.protobuf.Int32Value head_lag_slots = 38;
   // Median of the epochs the peer finalized checkpoint trailed that of the sentry it exchanged status with, NULL without status exchanges
-  google.protobuf.Int32Value finalized_lag_epochs = 38;
+  google.protobuf.Int32Value finalized_lag_epochs = 39;
   // Earliest slot the peer serves blocks from in its latest status (0 for full history), NULL when it sent none (status v1)
-  google.protobuf.UInt32Value earliest_available_slot = 39;
+  google.protobuf.UInt32Value earliest_available_slot = 40;
   // Slots of block history the peer serves at its latest status: the head of the sentry it exchanged status with minus earliest_available_slot. The spec minimum is 1056768 slots (33024 epochs)
-  google.protobuf.UInt32Value served_history_slots = 40;
+  google.protobuf.UInt32Value served_history_slots = 41;
 }
 
 // Request for listing int_peer_daily_order_by_peer_id records
@@ -108,46 +110,48 @@ message ListIntPeerDailyOrderByPeerIdRequest {
   StringFilter autonomous_system_organization = 15;
   // Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (optional)
   StringFilter network_type = 16;
+  // Filter by provider - Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix, empty when unknown (optional)
+  StringFilter provider = 17;
   // Filter by ipv6 - The address is IPv6 (optional)
-  BoolFilter ipv6 = 17;
+  BoolFilter ipv6 = 18;
   // Filter by dialled - Our sentries dialled the peer (an outbound connection), so it is publicly reachable (optional)
-  BoolFilter dialled = 18;
+  BoolFilter dialled = 19;
   // Filter by inbound - The peer connected to our sentries (an inbound connection) (optional)
-  BoolFilter inbound = 19;
+  BoolFilter inbound = 20;
   // Filter by quic_connected - Connected to over QUIC (optional)
-  BoolFilter quic_connected = 20;
+  BoolFilter quic_connected = 21;
   // Filter by quic_listen - Advertises a QUIC listen address in identify (optional)
-  BoolFilter quic_listen = 21;
+  BoolFilter quic_listen = 22;
   // Filter by enr_ip_mismatch - The address in the peer ENR differs from the one our sentries connected to, NULL unless both are known (optional)
-  NullableBoolFilter enr_ip_mismatch = 22;
+  NullableBoolFilter enr_ip_mismatch = 23;
   // Filter by custody_group_count - Custody group count from the peer metadata responses, else from its ENR, NULL when unknown (optional)
-  NullableUInt32Filter custody_group_count = 23;
+  NullableUInt32Filter custody_group_count = 24;
   // Filter by latency_ms - Median heartbeat latency to our sentries in ms, NULL without heartbeat latencies (optional)
-  NullableUInt32Filter latency_ms = 24;
+  NullableUInt32Filter latency_ms = 25;
   // Filter by status_count - Status exchanges with our sentries in the day (optional)
-  UInt32Filter status_count = 25;
+  UInt32Filter status_count = 26;
   // Filter by fork_digest - Fork digest of the peer latest status, else of its ENR, empty when neither is known (optional)
-  StringFilter fork_digest = 26;
+  StringFilter fork_digest = 27;
   // Filter by head_lag_slots - Median of the slots the peer head trailed the head of the sentry it exchanged status with, NULL without status exchanges (optional)
-  NullableInt32Filter head_lag_slots = 27;
+  NullableInt32Filter head_lag_slots = 28;
   // Filter by finalized_lag_epochs - Median of the epochs the peer finalized checkpoint trailed that of the sentry it exchanged status with, NULL without status exchanges (optional)
-  NullableInt32Filter finalized_lag_epochs = 28;
+  NullableInt32Filter finalized_lag_epochs = 29;
   // Filter by earliest_available_slot - Earliest slot the peer serves blocks from in its latest status (0 for full history), NULL when it sent none (status v1) (optional)
-  NullableUInt32Filter earliest_available_slot = 29;
+  NullableUInt32Filter earliest_available_slot = 30;
   // Filter by served_history_slots - Slots of block history the peer serves at its latest status: the head of the sentry it exchanged status with minus earliest_available_slot. The spec minimum is 1056768 slots (33024 epochs) (optional)
-  NullableUInt32Filter served_history_slots = 30;
+  NullableUInt32Filter served_history_slots = 31;
 
   // The maximum number of int_peer_daily_order_by_peer_id to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 31;
+  int32 page_size = 32;
   // A page token, received from a previous `ListIntPeerDailyOrderByPeerId` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 32;
+  string page_token = 33;
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 33;
+  string order_by = 34;
 }
 
 // Response for listing int_peer_daily_order_by_peer_id records
