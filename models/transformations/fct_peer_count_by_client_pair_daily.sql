@@ -177,6 +177,28 @@ WITH
         WHERE (day_start_date, genesis) GLOBAL IN (SELECT day_start_date, genesis FROM network_genesis)
         GROUP BY day_start_date, node_id
     ),
+    -- Nodes on the network genesis can still be on another chain (PulseChain, ETC) or a stale fork. A node counts when
+    -- its fork ID hash is held by at least 10% of the day's nodes on the genesis and that hash's usual next fork has
+    -- not passed (around a fork, the hashes before and after it). A node whose own next fork (a timestamp) passed
+    -- before the day is behind it and does not count.
+    network_fork AS (
+        SELECT day_start_date, fork_id_hash
+        FROM (
+            SELECT
+                day_start_date,
+                record.3 AS fork_id_hash,
+                topK(1)(record.4)[1] AS hash_fork_id_next,
+                count() AS hash_nodes,
+                sum(hash_nodes) OVER (PARTITION BY day_start_date) AS day_nodes
+            FROM el_node_days
+            GROUP BY day_start_date, fork_id_hash
+        )
+        WHERE hash_nodes * 10 >= day_nodes
+          AND NOT (
+              toUInt64OrZero(hash_fork_id_next) BETWEEN 1000000000 AND 4294967295
+              AND toDate(toDateTime(toUInt32(toUInt64OrZero(hash_fork_id_next)))) < day_start_date
+          )
+    ),
     el_peers AS (
         SELECT
             day_start_date,
@@ -201,6 +223,11 @@ WITH
             record.10 AS asn_organization
         FROM el_node_days
         WHERE record.1 != '' AND NOT match(lower(record.2), 'probe|scout|sniff|leech|observer|listener|crawler|xatu')
+          AND (day_start_date, record.3) GLOBAL IN (SELECT day_start_date, fork_id_hash FROM network_fork)
+          AND NOT (
+              toUInt64OrZero(record.4) BETWEEN 1000000000 AND 4294967295
+              AND toDate(toDateTime(toUInt32(toUInt64OrZero(record.4)))) < day_start_date
+          )
     ),
     ip_layers AS (
         SELECT day_start_date, location.1 AS ip, 'consensus' AS layer, client
