@@ -58,6 +58,7 @@ WITH
             lower(direction) = 'inbound' AS inbound,
             position(remote_maddrs, '/quic') > 0 AS quic_connected,
             false AS quic_listen,
+            false AS ipv6_listen,
             latency_ms
         FROM {{ index .dep "{{external}}" "libp2p_synthetic_heartbeat" "helpers" "from" }}
         WHERE event_date_time >= (SELECT min_day FROM day_bounds)
@@ -84,6 +85,8 @@ WITH
             lower(direction) = 'inbound' AS inbound,
             transport = 'quic-v1' AS quic_connected,
             arrayExists(a -> position(a, '/quic') > 0, listen_addrs) AS quic_listen,
+            -- Global unicast IPv6 (2000::/3), leaving out loopback, link-local and private listen addresses.
+            arrayExists(a -> match(a, '^/ip6/[23][0-9a-fA-F]{0,3}:'), listen_addrs) AS ipv6_listen,
             NULL AS latency_ms
         FROM {{ index .dep "{{external}}" "libp2p_identify" "helpers" "from" }}
         WHERE event_date_time >= (SELECT min_day FROM day_bounds)
@@ -103,6 +106,7 @@ WITH
             max(inbound) AS inbound,
             max(quic_connected) AS quic_connected,
             max(quic_listen) AS quic_listen,
+            max(ipv6_listen) AS ipv6_listen,
             quantileExactIf(0.5)(latency_ms, latency_ms IS NOT NULL AND latency_ms > 0) AS median_latency_ms,
             countIf(latency_ms IS NOT NULL AND latency_ms > 0) AS latency_count
         FROM sentry_rows
@@ -115,7 +119,8 @@ WITH
             argMax(
                 (lower(implementation), version, ip, geo_city, geo_country_code, geo_country, geo_continent_code, geo_autonomous_system_number, geo_autonomous_system_organization, fork_digest, cgc),
                 (event_date_time, name, ifNull(ip, toIPv6('::')))
-            ) AS record
+            ) AS record,
+            max(has_ipv6) AS has_ipv6
         FROM {{ index .dep "{{external}}" "node_record_consensus" "helpers" "from" }}
         WHERE event_date_time >= (SELECT min_day FROM day_bounds)
           AND event_date_time < (SELECT max_day FROM day_bounds) + INTERVAL 1 DAY
@@ -214,6 +219,9 @@ WITH
             ifNull(s.inbound, false) AS inbound,
             ifNull(s.quic_connected, false) AS quic_connected,
             ifNull(s.quic_listen, false) AS quic_listen,
+            -- Our sentries connect over IPv4, so IPv6 support is an advertised address: an identify listen address or
+            -- the ENR record.
+            ifNull(s.ipv6_listen, false) OR ifNull(e.has_ipv6, false) AS ipv6_advertised,
             if(ifNull(s.latency_count, 0) > 0, s.median_latency_ms, NULL) AS latency_ms,
             -- ENR custody group counts are big-endian hex, 0x when unset.
             if(
@@ -313,7 +321,7 @@ FROM (
                 ' ,.'
             )
         ) AS provider,
-        ifNull(NOT (p.ip BETWEEN toIPv6('::ffff:0.0.0.0') AND toIPv6('::ffff:255.255.255.255')), false) AS ipv6,
+        p.ipv6_advertised OR ifNull(NOT (p.ip BETWEEN toIPv6('::ffff:0.0.0.0') AND toIPv6('::ffff:255.255.255.255')), false) AS ipv6,
         p.dialled AS dialled,
         p.inbound AS inbound,
         p.quic_connected AS quic_connected,
