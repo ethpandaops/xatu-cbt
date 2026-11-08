@@ -30,7 +30,8 @@ dependencies:
 -- recount no longer produces keep their key with seen_by_sentry and seen_by_enr false and every other value cleared.
 -- One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges)
 -- and the discovery crawler (ENRs). Sentry values win over ENR values. Crawlers, probes, light clients and our own
--- sentries are left out. Addresses are only compared inside the model and are never stored.
+-- sentries are left out. Addresses are only compared inside the model and are never stored. Residential peers keep
+-- only their country and continent; hosting peers also keep city and autonomous system.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
@@ -279,9 +280,11 @@ FROM (
         p.continent_code AS continent_code,
         p.country_code AS country_code,
         p.country AS country,
-        p.city AS city,
-        ifNull(p.asn, 0) AS autonomous_system_number,
-        ifNull(p.asn_organization, '') AS autonomous_system_organization,
+        -- Residential peers (network_type other or unknown) are stored to country level only: no city, autonomous
+        -- system or provider. City and network counts that include them come from the location rollups.
+        if(network_type = 'hosting', p.city, '') AS city,
+        if(network_type = 'hosting', ifNull(p.asn, 0), 0) AS autonomous_system_number,
+        if(network_type = 'hosting', ifNull(p.asn_organization, ''), '') AS autonomous_system_organization,
         -- The same hosting rules as fct_peer_count_by_cl_client_asn_daily.
         multiIf(
             p.asn IS NULL, 'unknown',
@@ -291,7 +294,7 @@ FROM (
         ) AS network_type,
         -- Providers that span several networks or organisation names get one name, the rest drop legal suffixes.
         multiIf(
-            ifNull(p.asn_organization, '') = '', '',
+            network_type != 'hosting' OR ifNull(p.asn_organization, '') = '', '',
             match(p.asn_organization, '(?i)^amazon'), 'Amazon',
             match(p.asn_organization, '(?i)^google (llc|cloud)'), 'Google',
             match(p.asn_organization, '(?i)^microsoft'), 'Microsoft',

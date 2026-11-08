@@ -11,11 +11,11 @@ CREATE TABLE int_peer_daily_local ON CLUSTER '{cluster}' (
     `continent_code` LowCardinality(String) COMMENT 'Continent code of the address, empty when not geolocated' CODEC(ZSTD(1)),
     `country_code` LowCardinality(String) COMMENT 'Country code of the address, empty when not geolocated' CODEC(ZSTD(1)),
     `country` LowCardinality(String) COMMENT 'Country name of the address, empty when not geolocated' CODEC(ZSTD(1)),
-    `city` LowCardinality(String) COMMENT 'City of the address, empty when not geolocated to a city' CODEC(ZSTD(1)),
-    `autonomous_system_number` UInt32 COMMENT 'Autonomous system number of the address, 0 when unknown' CODEC(ZSTD(1)),
-    `autonomous_system_organization` LowCardinality(String) COMMENT 'Autonomous system organisation of the address, empty when unknown' CODEC(ZSTD(1)),
+    `city` LowCardinality(String) COMMENT 'City of the address for hosting peers, empty for residential peers (network_type other or unknown) and when not geolocated to a city' CODEC(ZSTD(1)),
+    `autonomous_system_number` UInt32 COMMENT 'Autonomous system number of the address for hosting peers, 0 for residential peers and when unknown' CODEC(ZSTD(1)),
+    `autonomous_system_organization` LowCardinality(String) COMMENT 'Autonomous system organisation of the address for hosting peers, empty for residential peers and when unknown' CODEC(ZSTD(1)),
     `network_type` LowCardinality(String) COMMENT 'hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated' CODEC(ZSTD(1)),
-    `provider` LowCardinality(String) COMMENT 'Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix, empty when unknown' CODEC(ZSTD(1)),
+    `provider` LowCardinality(String) COMMENT 'Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown' CODEC(ZSTD(1)),
     `ipv6` Bool COMMENT 'The address is IPv6' CODEC(ZSTD(1)),
     `dialled` Bool COMMENT 'Our sentries dialled the peer (an outbound connection), so it is publicly reachable' CODEC(ZSTD(1)),
     `inbound` Bool COMMENT 'The peer connected to our sentries (an inbound connection)' CODEC(ZSTD(1)),
@@ -40,7 +40,7 @@ ORDER BY
     (`day_start_date`, `peer_id_unique_key`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Sentry values win over ENR values. Crawlers, probes, light clients and our own sentries are excluded. Holds no addresses.';
+COMMENT 'One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Sentry values win over ENR values. Crawlers, probes, light clients and our own sentries are excluded. Holds no addresses. Residential peers are country-only: city and autonomous system are kept for hosting peers only.';
 
 CREATE TABLE int_peer_daily ON CLUSTER '{cluster}' AS int_peer_daily_local ENGINE = Distributed(
     '{cluster}',
@@ -125,11 +125,11 @@ CREATE TABLE int_peer_daily_order_by_peer_id_local ON CLUSTER '{cluster}' (
     `continent_code` LowCardinality(String) COMMENT 'Continent code of the address, empty when not geolocated' CODEC(ZSTD(1)),
     `country_code` LowCardinality(String) COMMENT 'Country code of the address, empty when not geolocated' CODEC(ZSTD(1)),
     `country` LowCardinality(String) COMMENT 'Country name of the address, empty when not geolocated' CODEC(ZSTD(1)),
-    `city` LowCardinality(String) COMMENT 'City of the address, empty when not geolocated to a city' CODEC(ZSTD(1)),
-    `autonomous_system_number` UInt32 COMMENT 'Autonomous system number of the address, 0 when unknown' CODEC(ZSTD(1)),
-    `autonomous_system_organization` LowCardinality(String) COMMENT 'Autonomous system organisation of the address, empty when unknown' CODEC(ZSTD(1)),
+    `city` LowCardinality(String) COMMENT 'City of the address for hosting peers, empty for residential peers (network_type other or unknown) and when not geolocated to a city' CODEC(ZSTD(1)),
+    `autonomous_system_number` UInt32 COMMENT 'Autonomous system number of the address for hosting peers, 0 for residential peers and when unknown' CODEC(ZSTD(1)),
+    `autonomous_system_organization` LowCardinality(String) COMMENT 'Autonomous system organisation of the address for hosting peers, empty for residential peers and when unknown' CODEC(ZSTD(1)),
     `network_type` LowCardinality(String) COMMENT 'hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated' CODEC(ZSTD(1)),
-    `provider` LowCardinality(String) COMMENT 'Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix, empty when unknown' CODEC(ZSTD(1)),
+    `provider` LowCardinality(String) COMMENT 'Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown' CODEC(ZSTD(1)),
     `ipv6` Bool COMMENT 'The address is IPv6' CODEC(ZSTD(1)),
     `dialled` Bool COMMENT 'Our sentries dialled the peer (an outbound connection), so it is publicly reachable' CODEC(ZSTD(1)),
     `inbound` Bool COMMENT 'The peer connected to our sentries (an inbound connection)' CODEC(ZSTD(1)),
@@ -154,7 +154,7 @@ ORDER BY
     (`peer_id`, `day_start_date`, `peer_id_unique_key`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'int_peer_daily ordered by peer ID, for reading one peer across days. One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Holds no addresses.';
+COMMENT 'int_peer_daily ordered by peer ID, for reading one peer across days. One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Holds no addresses. Residential peers are country-only: city and autonomous system are kept for hosting peers only.';
 
 CREATE TABLE int_peer_daily_order_by_peer_id ON CLUSTER '{cluster}' AS int_peer_daily_order_by_peer_id_local ENGINE = Distributed(
     '{cluster}',
