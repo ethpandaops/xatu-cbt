@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// int_peer_daily ordered by peer ID, for reading one peer across days. One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Holds no addresses.
+// int_peer_daily ordered by peer ID, for reading one peer across days. One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Holds no addresses. Residential peers are country-only: city and autonomous system are kept for hosting peers only.
 type IntPeerDailyOrderByPeerId struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -51,15 +51,15 @@ type IntPeerDailyOrderByPeerId struct {
 	CountryCode string `protobuf:"bytes,21,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
 	// Country name of the address, empty when not geolocated
 	Country string `protobuf:"bytes,22,opt,name=country,proto3" json:"country,omitempty"`
-	// City of the address, empty when not geolocated to a city
+	// City of the address for hosting peers, empty for residential peers (network_type other or unknown) and when not geolocated to a city
 	City string `protobuf:"bytes,23,opt,name=city,proto3" json:"city,omitempty"`
-	// Autonomous system number of the address, 0 when unknown
+	// Autonomous system number of the address for hosting peers, 0 for residential peers and when unknown
 	AutonomousSystemNumber uint32 `protobuf:"varint,24,opt,name=autonomous_system_number,json=autonomousSystemNumber,proto3" json:"autonomous_system_number,omitempty"`
-	// Autonomous system organisation of the address, empty when unknown
+	// Autonomous system organisation of the address for hosting peers, empty for residential peers and when unknown
 	AutonomousSystemOrganization string `protobuf:"bytes,25,opt,name=autonomous_system_organization,json=autonomousSystemOrganization,proto3" json:"autonomous_system_organization,omitempty"`
 	// hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
 	NetworkType string `protobuf:"bytes,26,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
-	// Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix, empty when unknown
+	// Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown
 	Provider string `protobuf:"bytes,27,opt,name=provider,proto3" json:"provider,omitempty"`
 	// The address is IPv6
 	Ipv6 bool `protobuf:"varint,28,opt,name=ipv6,proto3" json:"ipv6,omitempty"`
@@ -370,15 +370,15 @@ type ListIntPeerDailyOrderByPeerIdRequest struct {
 	CountryCode *StringFilter `protobuf:"bytes,11,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
 	// Filter by country - Country name of the address, empty when not geolocated (optional)
 	Country *StringFilter `protobuf:"bytes,12,opt,name=country,proto3" json:"country,omitempty"`
-	// Filter by city - City of the address, empty when not geolocated to a city (optional)
+	// Filter by city - City of the address for hosting peers, empty for residential peers (network_type other or unknown) and when not geolocated to a city (optional)
 	City *StringFilter `protobuf:"bytes,13,opt,name=city,proto3" json:"city,omitempty"`
-	// Filter by autonomous_system_number - Autonomous system number of the address, 0 when unknown (optional)
+	// Filter by autonomous_system_number - Autonomous system number of the address for hosting peers, 0 for residential peers and when unknown (optional)
 	AutonomousSystemNumber *UInt32Filter `protobuf:"bytes,14,opt,name=autonomous_system_number,json=autonomousSystemNumber,proto3" json:"autonomous_system_number,omitempty"`
-	// Filter by autonomous_system_organization - Autonomous system organisation of the address, empty when unknown (optional)
+	// Filter by autonomous_system_organization - Autonomous system organisation of the address for hosting peers, empty for residential peers and when unknown (optional)
 	AutonomousSystemOrganization *StringFilter `protobuf:"bytes,15,opt,name=autonomous_system_organization,json=autonomousSystemOrganization,proto3" json:"autonomous_system_organization,omitempty"`
 	// Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (optional)
 	NetworkType *StringFilter `protobuf:"bytes,16,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
-	// Filter by provider - Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix, empty when unknown (optional)
+	// Filter by provider - Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown (optional)
 	Provider *StringFilter `protobuf:"bytes,17,opt,name=provider,proto3" json:"provider,omitempty"`
 	// Filter by ipv6 - The address is IPv6 (optional)
 	Ipv6 *BoolFilter `protobuf:"bytes,18,opt,name=ipv6,proto3" json:"ipv6,omitempty"`

@@ -7,7 +7,7 @@ import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
-// int_peer_daily ordered by peer ID, for reading one peer across days. One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Holds no addresses.
+// int_peer_daily ordered by peer ID, for reading one peer across days. One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Holds no addresses. Residential peers are country-only: city and autonomous system are kept for hosting peers only.
 message IntPeerDailyOrderByPeerId {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -33,15 +33,15 @@ message IntPeerDailyOrderByPeerId {
   string country_code = 21;
   // Country name of the address, empty when not geolocated
   string country = 22;
-  // City of the address, empty when not geolocated to a city
+  // City of the address for hosting peers, empty for residential peers (network_type other or unknown) and when not geolocated to a city
   string city = 23;
-  // Autonomous system number of the address, 0 when unknown
+  // Autonomous system number of the address for hosting peers, 0 for residential peers and when unknown
   uint32 autonomous_system_number = 24;
-  // Autonomous system organisation of the address, empty when unknown
+  // Autonomous system organisation of the address for hosting peers, empty for residential peers and when unknown
   string autonomous_system_organization = 25;
   // hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
   string network_type = 26;
-  // Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix, empty when unknown
+  // Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown
   string provider = 27;
   // The address is IPv6
   bool ipv6 = 28;
@@ -102,15 +102,15 @@ message ListIntPeerDailyOrderByPeerIdRequest {
   StringFilter country_code = 11;
   // Filter by country - Country name of the address, empty when not geolocated (optional)
   StringFilter country = 12;
-  // Filter by city - City of the address, empty when not geolocated to a city (optional)
+  // Filter by city - City of the address for hosting peers, empty for residential peers (network_type other or unknown) and when not geolocated to a city (optional)
   StringFilter city = 13;
-  // Filter by autonomous_system_number - Autonomous system number of the address, 0 when unknown (optional)
+  // Filter by autonomous_system_number - Autonomous system number of the address for hosting peers, 0 for residential peers and when unknown (optional)
   UInt32Filter autonomous_system_number = 14;
-  // Filter by autonomous_system_organization - Autonomous system organisation of the address, empty when unknown (optional)
+  // Filter by autonomous_system_organization - Autonomous system organisation of the address for hosting peers, empty for residential peers and when unknown (optional)
   StringFilter autonomous_system_organization = 15;
   // Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (optional)
   StringFilter network_type = 16;
-  // Filter by provider - Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix, empty when unknown (optional)
+  // Filter by provider - Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown (optional)
   StringFilter provider = 17;
   // Filter by ipv6 - The address is IPv6 (optional)
   BoolFilter ipv6 = 18;
@@ -176,7 +176,7 @@ message GetIntPeerDailyOrderByPeerIdResponse {
 
 // Query int_peer_daily_order_by_peer_id data
 service IntPeerDailyOrderByPeerIdService {
-  // List records | int_peer_daily ordered by peer ID, for reading one peer across days. One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Holds no addresses.
+  // List records | int_peer_daily ordered by peer ID, for reading one peer across days. One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges) and the discovery crawler (ENRs). Holds no addresses. Residential peers are country-only: city and autonomous system are kept for hosting peers only.
   rpc List(ListIntPeerDailyOrderByPeerIdRequest) returns (ListIntPeerDailyOrderByPeerIdResponse);
   // Get record | Retrieve a single record by primary key
   rpc Get(GetIntPeerDailyOrderByPeerIdRequest) returns (GetIntPeerDailyOrderByPeerIdResponse);
