@@ -1,23 +1,14 @@
 ---
 table: libp2p_peer
 cache:
-  incremental_scan_interval: 1m
-  full_scan_interval: 24h
+  incremental_scan_interval: 24h
+  full_scan_interval: 48h
 interval:
   type: slot
-lag: 12
 ---
--- Maps peer_id_unique_key (a hash of the peer ID and network) back to the peer ID. One row per peer, refreshed
--- whenever the peer is seen again, so the bounds are the update times. The key range covers every key; it keeps the
--- scan on the primary key, which raw readers require (force_primary_key).
+-- Maps peer_id_unique_key (a hash of the peer ID and network) back to the peer ID, one row per peer. It is a lookup,
+-- not a time series: models read only the keys they need, so the bounds are left empty and the table is never
+-- scanned for them. Every model pairs it with heartbeats in an OR group, which skips members with empty bounds.
 SELECT
-    {{ if .cache.is_incremental_scan }}
-      '{{ .cache.previous_min }}' as min,
-    {{ else }}
-      toUnixTimestamp(min(updated_date_time)) as min,
-    {{ end }}
-    toUnixTimestamp(max(updated_date_time)) as max
-FROM {{ .self.helpers.from }}
-WHERE
-    meta_network_name = '{{ .env.NETWORK }}'
-    AND unique_key >= -9223372036854775808
+    0 as min,
+    0 as max
