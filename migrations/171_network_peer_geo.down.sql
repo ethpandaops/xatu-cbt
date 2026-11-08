@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS fct_peer_concentration_cl_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_peer_concentration_cl_daily_local ON CLUSTER '{cluster}' SYNC;
 DROP TABLE IF EXISTS dim_asn ON CLUSTER '{cluster}' SYNC;
 DROP TABLE IF EXISTS dim_asn_local ON CLUSTER '{cluster}' SYNC;
 DROP TABLE IF EXISTS fct_custody_probe_by_asn_daily ON CLUSTER '{cluster}' SYNC;

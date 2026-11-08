@@ -9,15 +9,15 @@ import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
-// Daily consensus peers by autonomous system, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Summed over countries from fct_peer_count_by_asn_country_daily, so residential autonomous systems with under 3 peers in a country count under autonomous system 0 (other) there. Crawlers, probes, light clients and our own sentries are excluded.
+// Daily consensus peers by autonomous system, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Residential autonomous systems under 3 peers in the day roll into autonomous system 0 (other), which keeps how many systems it holds. Crawlers, probes, light clients and our own sentries are excluded.
 message FctPeerCountByAsnDaily {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Start of the day period
   string day_start_date = 12;
-  // Autonomous system number of the address, 0 for unknown and for residential autonomous systems with under 3 peers in the country
+  // Autonomous system number of the address, 0 for unknown and for residential autonomous systems with under 3 peers in the day
   uint32 autonomous_system_number = 13;
-  // Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 peers in the country
+  // Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 peers in the day
   string autonomous_system_organization = 14;
   // hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
   string network_type = 15;
@@ -43,6 +43,8 @@ message FctPeerCountByAsnDaily {
   uint32 custody_9_127_peer_count = 25;
   // Peers custodying all 128 groups (supernodes)
   uint32 custody_128_peer_count = 26;
+  // Autonomous systems in the row: 1, the number of residential systems folded into autonomous system 0 (other), each with 1 or 2 peers, or 0 for unknown
+  uint32 autonomous_system_count = 27;
 }
 
 // Request for listing fct_peer_count_by_asn_daily records
@@ -50,10 +52,10 @@ message ListFctPeerCountByAsnDailyRequest {
   // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
   StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
-  // Filter by autonomous_system_number - Autonomous system number of the address, 0 for unknown and for residential autonomous systems with under 3 peers in the country (ORDER BY column 2 - optional)
+  // Filter by autonomous_system_number - Autonomous system number of the address, 0 for unknown and for residential autonomous systems with under 3 peers in the day (ORDER BY column 2 - optional)
   UInt32Filter autonomous_system_number = 2 [(google.api.field_behavior) = OPTIONAL];
 
-  // Filter by autonomous_system_organization - Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 peers in the country (ORDER BY column 3 - optional)
+  // Filter by autonomous_system_organization - Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 peers in the day (ORDER BY column 3 - optional)
   StringFilter autonomous_system_organization = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (ORDER BY column 4 - optional)
@@ -83,18 +85,20 @@ message ListFctPeerCountByAsnDailyRequest {
   UInt32Filter custody_9_127_peer_count = 15 [(google.api.field_behavior) = OPTIONAL];
   // Filter by custody_128_peer_count - Peers custodying all 128 groups (supernodes) (optional)
   UInt32Filter custody_128_peer_count = 16 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by autonomous_system_count - Autonomous systems in the row: 1, the number of residential systems folded into autonomous system 0 (other), each with 1 or 2 peers, or 0 for unknown (optional)
+  UInt32Filter autonomous_system_count = 17 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_peer_count_by_asn_daily to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 17 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 18 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctPeerCountByAsnDaily` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 18 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 19 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 19 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 20 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_peer_count_by_asn_daily records
@@ -119,7 +123,7 @@ message GetFctPeerCountByAsnDailyResponse {
 
 // Query fct_peer_count_by_asn_daily data
 service FctPeerCountByAsnDailyService {
-  // List records | Daily consensus peers by autonomous system, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Summed over countries from fct_peer_count_by_asn_country_daily, so residential autonomous systems with under 3 peers in a country count under autonomous system 0 (other) there. Crawlers, probes, light clients and our own sentries are excluded.
+  // List records | Daily consensus peers by autonomous system, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Residential autonomous systems under 3 peers in the day roll into autonomous system 0 (other), which keeps how many systems it holds. Crawlers, probes, light clients and our own sentries are excluded.
   rpc List(ListFctPeerCountByAsnDailyRequest) returns (ListFctPeerCountByAsnDailyResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_peer_count_by_asn_daily"

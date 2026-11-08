@@ -504,6 +504,36 @@ func BuildListFctPeerCountByAsnDailyQuery(req *ListFctPeerCountByAsnDailyRequest
 		}
 	}
 
+	// Add filter for column: autonomous_system_count
+	if req.AutonomousSystemCount != nil {
+		switch filter := req.AutonomousSystemCount.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("autonomous_system_count", "=", filter.Eq)
+		case *UInt32Filter_Ne:
+			qb.AddCondition("autonomous_system_count", "!=", filter.Ne)
+		case *UInt32Filter_Lt:
+			qb.AddCondition("autonomous_system_count", "<", filter.Lt)
+		case *UInt32Filter_Lte:
+			qb.AddCondition("autonomous_system_count", "<=", filter.Lte)
+		case *UInt32Filter_Gt:
+			qb.AddCondition("autonomous_system_count", ">", filter.Gt)
+		case *UInt32Filter_Gte:
+			qb.AddCondition("autonomous_system_count", ">=", filter.Gte)
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("autonomous_system_count", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("autonomous_system_count", UInt32SliceToInterface(filter.In.Values))
+			}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("autonomous_system_count", UInt32SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Handle pagination per AIP-132
 	// Validate page size
 	if req.PageSize < 0 {
@@ -529,7 +559,7 @@ func BuildListFctPeerCountByAsnDailyQuery(req *ListFctPeerCountByAsnDailyRequest
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "day_start_date", "autonomous_system_number", "autonomous_system_organization", "network_type", "peer_count", "sentry_peer_count", "enr_peer_count", "dialled_peer_count", "inbound_only_peer_count", "quic_peer_count", "custody_known_peer_count", "custody_4_peer_count", "custody_5_8_peer_count", "custody_9_127_peer_count", "custody_128_peer_count"}
+		validFields := []string{"updated_date_time", "day_start_date", "autonomous_system_number", "autonomous_system_organization", "network_type", "peer_count", "sentry_peer_count", "enr_peer_count", "dialled_peer_count", "inbound_only_peer_count", "quic_peer_count", "custody_known_peer_count", "custody_4_peer_count", "custody_5_8_peer_count", "custody_9_127_peer_count", "custody_128_peer_count", "autonomous_system_count"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -541,7 +571,7 @@ func BuildListFctPeerCountByAsnDailyQuery(req *ListFctPeerCountByAsnDailyRequest
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "autonomous_system_number", "autonomous_system_organization", "network_type", "peer_count", "sentry_peer_count", "enr_peer_count", "dialled_peer_count", "inbound_only_peer_count", "quic_peer_count", "custody_known_peer_count", "custody_4_peer_count", "custody_5_8_peer_count", "custody_9_127_peer_count", "custody_128_peer_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "autonomous_system_number", "autonomous_system_organization", "network_type", "peer_count", "sentry_peer_count", "enr_peer_count", "dialled_peer_count", "inbound_only_peer_count", "quic_peer_count", "custody_known_peer_count", "custody_4_peer_count", "custody_5_8_peer_count", "custody_9_127_peer_count", "custody_128_peer_count", "autonomous_system_count"}
 
 	return BuildParameterizedQuery("fct_peer_count_by_asn_daily", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -561,7 +591,7 @@ func BuildGetFctPeerCountByAsnDailyQuery(req *GetFctPeerCountByAsnDailyRequest, 
 	orderByClause := " ORDER BY day_start_date, autonomous_system_number, autonomous_system_organization, network_type"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "autonomous_system_number", "autonomous_system_organization", "network_type", "peer_count", "sentry_peer_count", "enr_peer_count", "dialled_peer_count", "inbound_only_peer_count", "quic_peer_count", "custody_known_peer_count", "custody_4_peer_count", "custody_5_8_peer_count", "custody_9_127_peer_count", "custody_128_peer_count"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "toString(`day_start_date`) AS `day_start_date`", "autonomous_system_number", "autonomous_system_organization", "network_type", "peer_count", "sentry_peer_count", "enr_peer_count", "dialled_peer_count", "inbound_only_peer_count", "quic_peer_count", "custody_known_peer_count", "custody_4_peer_count", "custody_5_8_peer_count", "custody_9_127_peer_count", "custody_128_peer_count", "autonomous_system_count"}
 
 	// Return single record
 	return BuildParameterizedQuery("fct_peer_count_by_asn_daily", columns, qb, orderByClause, 1, 0, options...)

@@ -26,6 +26,7 @@ type FctPeerCountByAsnDailyRow struct {
 	Custody_5_8PeerCount uint32 `ch:"custody_5_8_peer_count" json:"custody_5_8_peer_count"`
 	Custody_9_127PeerCount uint32 `ch:"custody_9_127_peer_count" json:"custody_9_127_peer_count"`
 	Custody_128PeerCount uint32 `ch:"custody_128_peer_count" json:"custody_128_peer_count"`
+	AutonomousSystemCount uint32 `ch:"autonomous_system_count" json:"autonomous_system_count"`
 }
 
 // TableName returns the ClickHouse table this row maps to.
@@ -53,5 +54,6 @@ func (r *FctPeerCountByAsnDailyRow) ToProto() *FctPeerCountByAsnDaily {
 	p.Custody_5_8PeerCount = r.Custody_5_8PeerCount
 	p.Custody_9_127PeerCount = r.Custody_9_127PeerCount
 	p.Custody_128PeerCount = r.Custody_128PeerCount
+	p.AutonomousSystemCount = r.AutonomousSystemCount
 	return p
 }
