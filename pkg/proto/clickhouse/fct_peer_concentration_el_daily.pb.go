@@ -46,7 +46,7 @@ type FctPeerConcentrationElDaily struct {
 	ThirdCountryCount uint32 `protobuf:"varint,18,opt,name=third_country_count,json=thirdCountryCount,proto3" json:"third_country_count,omitempty"`
 	// Fewest countries that hold half of the peers with a known country
 	HalfCountryCount uint32 `protobuf:"varint,19,opt,name=half_country_count,json=halfCountryCount,proto3" json:"half_country_count,omitempty"`
-	// Autonomous systems in the row: 1, the number of residential systems folded into autonomous system 0 (other), each with 1 or 2 peers, or 0 for unknown
+	// Autonomous systems with nodes, counting each residential system folded into autonomous system 0 (other) on its own
 	AutonomousSystemCount uint32 `protobuf:"varint,20,opt,name=autonomous_system_count,json=autonomousSystemCount,proto3" json:"autonomous_system_count,omitempty"`
 	// Peers in the largest autonomous system
 	Top_1AsnPeerCount uint32 `protobuf:"varint,21,opt,name=top_1_asn_peer_count,json=top1AsnPeerCount,proto3" json:"top_1_asn_peer_count,omitempty"`
@@ -293,7 +293,7 @@ type ListFctPeerConcentrationElDailyRequest struct {
 	ThirdCountryCount *UInt32Filter `protobuf:"bytes,8,opt,name=third_country_count,json=thirdCountryCount,proto3" json:"third_country_count,omitempty"`
 	// Filter by half_country_count - Fewest countries that hold half of the peers with a known country (optional)
 	HalfCountryCount *UInt32Filter `protobuf:"bytes,9,opt,name=half_country_count,json=halfCountryCount,proto3" json:"half_country_count,omitempty"`
-	// Filter by autonomous_system_count - Autonomous systems in the row: 1, the number of residential systems folded into autonomous system 0 (other), each with 1 or 2 peers, or 0 for unknown (optional)
+	// Filter by autonomous_system_count - Autonomous systems with nodes, counting each residential system folded into autonomous system 0 (other) on its own (optional)
 	AutonomousSystemCount *UInt32Filter `protobuf:"bytes,10,opt,name=autonomous_system_count,json=autonomousSystemCount,proto3" json:"autonomous_system_count,omitempty"`
 	// Filter by top_1_asn_peer_count - Peers in the largest autonomous system (optional)
 	Top_1AsnPeerCount *UInt32Filter `protobuf:"bytes,11,opt,name=top_1_asn_peer_count,json=top1AsnPeerCount,proto3" json:"top_1_asn_peer_count,omitempty"`

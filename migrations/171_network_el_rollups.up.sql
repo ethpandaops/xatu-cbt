@@ -86,7 +86,7 @@ CREATE TABLE fct_peer_concentration_el_daily_local ON CLUSTER '{cluster}' (
     `country_count` UInt32 COMMENT 'Countries with peers' CODEC(ZSTD(1)),
     `third_country_count` UInt32 COMMENT 'Fewest countries that hold a third of the peers with a known country' CODEC(ZSTD(1)),
     `half_country_count` UInt32 COMMENT 'Fewest countries that hold half of the peers with a known country' CODEC(ZSTD(1)),
-    `autonomous_system_count` UInt32 COMMENT 'Autonomous systems in the row: 1, the number of residential systems folded into autonomous system 0 (other), each with 1 or 2 peers, or 0 for unknown' CODEC(ZSTD(1)),
+    `autonomous_system_count` UInt32 COMMENT 'Autonomous systems with nodes, counting each residential system folded into autonomous system 0 (other) on its own' CODEC(ZSTD(1)),
     `top_1_asn_peer_count` UInt32 COMMENT 'Peers in the largest autonomous system' CODEC(ZSTD(1)),
     `top_5_asn_peer_count` UInt32 COMMENT 'Peers in the 5 largest autonomous systems' CODEC(ZSTD(1)),
     `top_10_asn_peer_count` UInt32 COMMENT 'Peers in the 10 largest autonomous systems' CODEC(ZSTD(1)),

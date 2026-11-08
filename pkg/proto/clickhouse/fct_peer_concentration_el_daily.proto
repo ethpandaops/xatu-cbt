@@ -29,7 +29,7 @@ message FctPeerConcentrationElDaily {
   uint32 third_country_count = 18;
   // Fewest countries that hold half of the peers with a known country
   uint32 half_country_count = 19;
-  // Autonomous systems in the row: 1, the number of residential systems folded into autonomous system 0 (other), each with 1 or 2 peers, or 0 for unknown
+  // Autonomous systems with nodes, counting each residential system folded into autonomous system 0 (other) on its own
   uint32 autonomous_system_count = 20;
   // Peers in the largest autonomous system
   uint32 top_1_asn_peer_count = 21;
@@ -80,7 +80,7 @@ message ListFctPeerConcentrationElDailyRequest {
   UInt32Filter third_country_count = 8 [(google.api.field_behavior) = OPTIONAL];
   // Filter by half_country_count - Fewest countries that hold half of the peers with a known country (optional)
   UInt32Filter half_country_count = 9 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by autonomous_system_count - Autonomous systems in the row: 1, the number of residential systems folded into autonomous system 0 (other), each with 1 or 2 peers, or 0 for unknown (optional)
+  // Filter by autonomous_system_count - Autonomous systems with nodes, counting each residential system folded into autonomous system 0 (other) on its own (optional)
   UInt32Filter autonomous_system_count = 10 [(google.api.field_behavior) = OPTIONAL];
   // Filter by top_1_asn_peer_count - Peers in the largest autonomous system (optional)
   UInt32Filter top_1_asn_peer_count = 11 [(google.api.field_behavior) = OPTIONAL];
