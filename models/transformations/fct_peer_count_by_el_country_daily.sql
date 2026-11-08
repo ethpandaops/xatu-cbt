@@ -126,7 +126,7 @@ WITH
                 match(ifNull(asn_organization, ''), '(?i)(hosting|cloud|server|data ?cent(er|re)|datacamp|colo(cation|crossing)|vps|dedicated|amazon|google llc|microsoft|digitalocean|hetzner|ovh|contabo|linode|akamai|vultr|leaseweb|scaleway|equinix|oracle|alibaba|tencent|hostinger|ionos|latitude|teraswitch|allnodes|netcup|limestone|hivelocity)'), 'hosting',
                 'other'
             ) AS network_type,
-            -- Discovery records the IPv4 address it dialled; IPv6 support is the record advertising an IPv6 address.
+            -- Discovery records the IPv4 address it dialled. IPv6 support is the record advertising an IPv6 address.
             has_ipv6 AS ipv6
         FROM el_peers
     ),
