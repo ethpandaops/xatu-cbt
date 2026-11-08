@@ -230,8 +230,9 @@ WITH
         SELECT unique_key, argMax(peer_id, updated_date_time) AS peer_id
         FROM {{ index .dep "{{external}}" "libp2p_peer" "helpers" "from" }}
         WHERE meta_network_name = '{{ .env.NETWORK }}'
-          -- Filtering on the key keeps the read on the primary key (raw readers run with force_primary_key).
-          AND unique_key GLOBAL IN (SELECT peer_id_unique_key FROM peers)
+          -- The full key range keeps the read on the primary key (raw readers run with force_primary_key) without
+          -- evaluating peers a second time. The table holds one small row per peer.
+          AND unique_key >= -9223372036854775808
         GROUP BY unique_key
     )
 SELECT
