@@ -21,7 +21,8 @@ dependencies:
 -- Rewrites every day the bounds touch so partial days are recounted in full. Keys stored for those days that
 -- the recount no longer produces are rewritten with zero counts.
 -- Consensus peers our libp2p sentries or our discovery crawler saw in the day by autonomous system and country,
--- with reachability and custody counts. Cities are not crossed with autonomous systems.
+-- with reachability and custody counts. Cities are not crossed with autonomous systems. Residential autonomous
+-- system and country cells under 3 peers roll into autonomous system 0 (other) within the country.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
@@ -123,27 +124,51 @@ SELECT
     toUInt32(sum(custody_9_127_peer_count_n)) AS custody_9_127_peer_count,
     toUInt32(sum(custody_128_peer_count_n)) AS custody_128_peer_count
 FROM (
+    -- Residential cells (network_type other or unknown) under 3 peers roll into an other bucket, so no count can be
+    -- tied back to one peer of int_peer_daily, which serves country, client and network type per peer.
     SELECT
         day_start_date,
-        ifNull(raw_asn, 0) AS autonomous_system_number,
-        if(raw_asn IS NULL, 'unknown', ifNull(raw_asn_organization, '')) AS autonomous_system_organization,
-        network_type AS network_type,
-        if(continent_code = '', 'unknown', continent_code) AS continent_code,
-        if(country_code = '', 'unknown', country_code) AS country_code,
-        if(country = '', 'Unknown', country) AS country,
-        count() AS peer_count_n,
-        countIf(seen_by_sentry) AS sentry_peer_count_n,
-        countIf(seen_by_enr) AS enr_peer_count_n,
-        countIf(dialled) AS dialled_peer_count_n,
-        countIf(inbound AND NOT dialled) AS inbound_only_peer_count_n,
-        countIf(quic_connected OR quic_listen) AS quic_peer_count_n,
-        countIf(custody_group_count IS NOT NULL) AS custody_known_peer_count_n,
-        countIf(custody_group_count <= 4) AS custody_4_peer_count_n,
-        countIf(custody_group_count BETWEEN 5 AND 8) AS custody_5_8_peer_count_n,
-        countIf(custody_group_count BETWEEN 9 AND 127) AS custody_9_127_peer_count_n,
-        countIf(custody_group_count >= 128) AS custody_128_peer_count_n
-    FROM located_peers
-    GROUP BY day_start_date, autonomous_system_number, autonomous_system_organization, network_type, continent_code, country_code, country
+        if(fold_cell, 0, autonomous_system_number) AS autonomous_system_number,
+        if(fold_cell, 'other', autonomous_system_organization) AS autonomous_system_organization,
+        network_type,
+        continent_code,
+        country_code,
+        country,
+        peer_count_n,
+        sentry_peer_count_n,
+        enr_peer_count_n,
+        dialled_peer_count_n,
+        inbound_only_peer_count_n,
+        quic_peer_count_n,
+        custody_known_peer_count_n,
+        custody_4_peer_count_n,
+        custody_5_8_peer_count_n,
+        custody_9_127_peer_count_n,
+        custody_128_peer_count_n
+    FROM (
+        SELECT
+            day_start_date,
+            ifNull(raw_asn, 0) AS autonomous_system_number,
+            if(raw_asn IS NULL, 'unknown', ifNull(raw_asn_organization, '')) AS autonomous_system_organization,
+            network_type AS network_type,
+            if(continent_code = '', 'unknown', continent_code) AS continent_code,
+            if(country_code = '', 'unknown', country_code) AS country_code,
+            if(country = '', 'Unknown', country) AS country,
+            count() AS peer_count_n,
+            network_type != 'hosting' AND autonomous_system_number != 0 AND peer_count_n < 3 AS fold_cell,
+            countIf(seen_by_sentry) AS sentry_peer_count_n,
+            countIf(seen_by_enr) AS enr_peer_count_n,
+            countIf(dialled) AS dialled_peer_count_n,
+            countIf(inbound AND NOT dialled) AS inbound_only_peer_count_n,
+            countIf(quic_connected OR quic_listen) AS quic_peer_count_n,
+            countIf(custody_group_count IS NOT NULL) AS custody_known_peer_count_n,
+            countIf(custody_group_count <= 4) AS custody_4_peer_count_n,
+            countIf(custody_group_count BETWEEN 5 AND 8) AS custody_5_8_peer_count_n,
+            countIf(custody_group_count BETWEEN 9 AND 127) AS custody_9_127_peer_count_n,
+            countIf(custody_group_count >= 128) AS custody_128_peer_count_n
+        FROM located_peers
+        GROUP BY day_start_date, autonomous_system_number, autonomous_system_organization, network_type, continent_code, country_code, country
+    )
 
     UNION ALL
 

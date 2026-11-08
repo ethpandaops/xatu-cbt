@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Daily consensus peers by autonomous system, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Summed over countries from fct_peer_count_by_asn_country_daily. Crawlers, probes, light clients and our own sentries are excluded.
+// Daily consensus peers by autonomous system, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Summed over countries from fct_peer_count_by_asn_country_daily, so residential autonomous systems with under 3 peers in a country count under autonomous system 0 (other) there. Crawlers, probes, light clients and our own sentries are excluded.
 type FctPeerCountByAsnDaily struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -32,9 +32,9 @@ type FctPeerCountByAsnDaily struct {
 	UpdatedDateTime uint32 `protobuf:"varint,11,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`
 	// Start of the day period
 	DayStartDate string `protobuf:"bytes,12,opt,name=day_start_date,json=dayStartDate,proto3" json:"day_start_date,omitempty"`
-	// Autonomous system number of the address, 0 when unknown
+	// Autonomous system number of the address, 0 for unknown and for residential autonomous systems with under 3 peers in the country
 	AutonomousSystemNumber uint32 `protobuf:"varint,13,opt,name=autonomous_system_number,json=autonomousSystemNumber,proto3" json:"autonomous_system_number,omitempty"`
-	// Autonomous system organisation, unknown when not geolocated
+	// Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 peers in the country
 	AutonomousSystemOrganization string `protobuf:"bytes,14,opt,name=autonomous_system_organization,json=autonomousSystemOrganization,proto3" json:"autonomous_system_organization,omitempty"`
 	// hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
 	NetworkType string `protobuf:"bytes,15,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
@@ -214,9 +214,9 @@ type ListFctPeerCountByAsnDailyRequest struct {
 
 	// Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
 	DayStartDate *StringFilter `protobuf:"bytes,1,opt,name=day_start_date,json=dayStartDate,proto3" json:"day_start_date,omitempty"`
-	// Filter by autonomous_system_number - Autonomous system number of the address, 0 when unknown (ORDER BY column 2 - optional)
+	// Filter by autonomous_system_number - Autonomous system number of the address, 0 for unknown and for residential autonomous systems with under 3 peers in the country (ORDER BY column 2 - optional)
 	AutonomousSystemNumber *UInt32Filter `protobuf:"bytes,2,opt,name=autonomous_system_number,json=autonomousSystemNumber,proto3" json:"autonomous_system_number,omitempty"`
-	// Filter by autonomous_system_organization - Autonomous system organisation, unknown when not geolocated (ORDER BY column 3 - optional)
+	// Filter by autonomous_system_organization - Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 peers in the country (ORDER BY column 3 - optional)
 	AutonomousSystemOrganization *StringFilter `protobuf:"bytes,3,opt,name=autonomous_system_organization,json=autonomousSystemOrganization,proto3" json:"autonomous_system_organization,omitempty"`
 	// Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (ORDER BY column 4 - optional)
 	NetworkType *StringFilter `protobuf:"bytes,4,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`

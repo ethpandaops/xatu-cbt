@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Crawlers, probes, light clients and our own sentries are excluded.
+// Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Residential (network type other or unknown) city and client cells under 3 peers roll into city other within the country. Crawlers, probes, light clients and our own sentries are excluded.
 type FctPeerCountByClClientCityDaily struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -34,7 +34,7 @@ type FctPeerCountByClClientCityDaily struct {
 	DayStartDate string `protobuf:"bytes,12,opt,name=day_start_date,json=dayStartDate,proto3" json:"day_start_date,omitempty"`
 	// Country code of the address, unknown when not geolocated
 	CountryCode string `protobuf:"bytes,13,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
-	// City of the address, unknown when not geolocated to a city
+	// City of the address, unknown when not geolocated to a city, other for residential city and client cells with under 3 peers
 	City string `protobuf:"bytes,14,opt,name=city,proto3" json:"city,omitempty"`
 	// hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
 	NetworkType string `protobuf:"bytes,15,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
@@ -135,7 +135,7 @@ type ListFctPeerCountByClClientCityDailyRequest struct {
 	DayStartDate *StringFilter `protobuf:"bytes,1,opt,name=day_start_date,json=dayStartDate,proto3" json:"day_start_date,omitempty"`
 	// Filter by country_code - Country code of the address, unknown when not geolocated (ORDER BY column 2 - optional)
 	CountryCode *StringFilter `protobuf:"bytes,2,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
-	// Filter by city - City of the address, unknown when not geolocated to a city (ORDER BY column 3 - optional)
+	// Filter by city - City of the address, unknown when not geolocated to a city, other for residential city and client cells with under 3 peers (ORDER BY column 3 - optional)
 	City *StringFilter `protobuf:"bytes,3,opt,name=city,proto3" json:"city,omitempty"`
 	// Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (ORDER BY column 4 - optional)
 	NetworkType *StringFilter `protobuf:"bytes,4,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`

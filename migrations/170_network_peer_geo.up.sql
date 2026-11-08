@@ -37,8 +37,8 @@ CREATE TABLE fct_peer_count_by_country_daily ON CLUSTER '{cluster}' AS fct_peer_
 CREATE TABLE fct_peer_count_by_asn_country_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
-    `autonomous_system_number` UInt32 COMMENT 'Autonomous system number of the address, 0 when unknown' CODEC(ZSTD(1)),
-    `autonomous_system_organization` LowCardinality(String) COMMENT 'Autonomous system organisation, unknown when not geolocated' CODEC(ZSTD(1)),
+    `autonomous_system_number` UInt32 COMMENT 'Autonomous system number of the address, 0 for unknown and for residential autonomous systems with under 3 peers in the country' CODEC(ZSTD(1)),
+    `autonomous_system_organization` LowCardinality(String) COMMENT 'Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 peers in the country' CODEC(ZSTD(1)),
     `network_type` LowCardinality(String) COMMENT 'hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated' CODEC(ZSTD(1)),
     `continent_code` LowCardinality(String) COMMENT 'Continent code of the address, unknown when not geolocated' CODEC(ZSTD(1)),
     `country_code` LowCardinality(String) COMMENT 'Country code of the address, unknown when not geolocated' CODEC(ZSTD(1)),
@@ -63,7 +63,7 @@ ORDER BY
     (`day_start_date`, `autonomous_system_number`, `autonomous_system_organization`, `network_type`, `continent_code`, `country_code`, `country`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Daily consensus peers by autonomous system and country, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Not crossed with city or client. Crawlers, probes, light clients and our own sentries are excluded.';
+COMMENT 'Daily consensus peers by autonomous system and country, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Not crossed with city or client. Residential (network type other or unknown) autonomous system and country cells under 3 peers roll into autonomous system 0 (other) within the country. Crawlers, probes, light clients and our own sentries are excluded.';
 
 CREATE TABLE fct_peer_count_by_asn_country_daily ON CLUSTER '{cluster}' AS fct_peer_count_by_asn_country_daily_local ENGINE = Distributed(
     '{cluster}',
@@ -75,8 +75,8 @@ CREATE TABLE fct_peer_count_by_asn_country_daily ON CLUSTER '{cluster}' AS fct_p
 CREATE TABLE fct_peer_count_by_asn_daily_local ON CLUSTER '{cluster}' (
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
-    `autonomous_system_number` UInt32 COMMENT 'Autonomous system number of the address, 0 when unknown' CODEC(ZSTD(1)),
-    `autonomous_system_organization` LowCardinality(String) COMMENT 'Autonomous system organisation, unknown when not geolocated' CODEC(ZSTD(1)),
+    `autonomous_system_number` UInt32 COMMENT 'Autonomous system number of the address, 0 for unknown and for residential autonomous systems with under 3 peers in the country' CODEC(ZSTD(1)),
+    `autonomous_system_organization` LowCardinality(String) COMMENT 'Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 peers in the country' CODEC(ZSTD(1)),
     `network_type` LowCardinality(String) COMMENT 'hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated' CODEC(ZSTD(1)),
     `peer_count` UInt32 COMMENT 'Consensus peers our libp2p sentries or our discovery crawler saw in the day' CODEC(ZSTD(1)),
     `sentry_peer_count` UInt32 COMMENT 'Peers our libp2p sentries were connected to' CODEC(ZSTD(1)),
@@ -98,7 +98,7 @@ ORDER BY
     (`day_start_date`, `autonomous_system_number`, `autonomous_system_organization`, `network_type`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Daily consensus peers by autonomous system, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Summed over countries from fct_peer_count_by_asn_country_daily. Crawlers, probes, light clients and our own sentries are excluded.';
+COMMENT 'Daily consensus peers by autonomous system, residential and hosting, from our libp2p sentries and our discovery crawler, with reachability and custody counts. Summed over countries from fct_peer_count_by_asn_country_daily, so residential autonomous systems with under 3 peers in a country count under autonomous system 0 (other) there. Crawlers, probes, light clients and our own sentries are excluded.';
 
 CREATE TABLE fct_peer_count_by_asn_daily ON CLUSTER '{cluster}' AS fct_peer_count_by_asn_daily_local ENGINE = Distributed(
     '{cluster}',
@@ -111,7 +111,7 @@ CREATE TABLE fct_peer_count_by_cl_client_city_daily_local ON CLUSTER '{cluster}'
     `updated_date_time` DateTime COMMENT 'Timestamp when the record was last updated' CODEC(DoubleDelta, ZSTD(1)),
     `day_start_date` Date COMMENT 'Start of the day period' CODEC(DoubleDelta, ZSTD(1)),
     `country_code` LowCardinality(String) COMMENT 'Country code of the address, unknown when not geolocated' CODEC(ZSTD(1)),
-    `city` LowCardinality(String) COMMENT 'City of the address, unknown when not geolocated to a city' CODEC(ZSTD(1)),
+    `city` LowCardinality(String) COMMENT 'City of the address, unknown when not geolocated to a city, other for residential city and client cells with under 3 peers' CODEC(ZSTD(1)),
     `network_type` LowCardinality(String) COMMENT 'hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated' CODEC(ZSTD(1)),
     `client` LowCardinality(String) COMMENT 'Consensus client from the peer agent: lighthouse, lodestar, nimbus, prysm, teku, grandine, caplin (erigon), silver or ethlambda, unknown when the agent was never seen, other for every other agent' CODEC(ZSTD(1)),
     `peer_count` UInt32 COMMENT 'Consensus peers our libp2p sentries or our discovery crawler saw in the day' CODEC(ZSTD(1))
@@ -124,7 +124,7 @@ ORDER BY
     (`day_start_date`, `country_code`, `city`, `network_type`, `client`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Crawlers, probes, light clients and our own sentries are excluded.';
+COMMENT 'Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Residential (network type other or unknown) city and client cells under 3 peers roll into city other within the country. Crawlers, probes, light clients and our own sentries are excluded.';
 
 CREATE TABLE fct_peer_count_by_cl_client_city_daily ON CLUSTER '{cluster}' AS fct_peer_count_by_cl_client_city_daily_local ENGINE = Distributed(
     '{cluster}',

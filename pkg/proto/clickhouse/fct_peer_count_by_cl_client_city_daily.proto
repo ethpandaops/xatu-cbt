@@ -9,7 +9,7 @@ import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
-// Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Crawlers, probes, light clients and our own sentries are excluded.
+// Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Residential (network type other or unknown) city and client cells under 3 peers roll into city other within the country. Crawlers, probes, light clients and our own sentries are excluded.
 message FctPeerCountByClClientCityDaily {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -17,7 +17,7 @@ message FctPeerCountByClClientCityDaily {
   string day_start_date = 12;
   // Country code of the address, unknown when not geolocated
   string country_code = 13;
-  // City of the address, unknown when not geolocated to a city
+  // City of the address, unknown when not geolocated to a city, other for residential city and client cells with under 3 peers
   string city = 14;
   // hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
   string network_type = 15;
@@ -35,7 +35,7 @@ message ListFctPeerCountByClClientCityDailyRequest {
   // Filter by country_code - Country code of the address, unknown when not geolocated (ORDER BY column 2 - optional)
   StringFilter country_code = 2 [(google.api.field_behavior) = OPTIONAL];
 
-  // Filter by city - City of the address, unknown when not geolocated to a city (ORDER BY column 3 - optional)
+  // Filter by city - City of the address, unknown when not geolocated to a city, other for residential city and client cells with under 3 peers (ORDER BY column 3 - optional)
   StringFilter city = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (ORDER BY column 4 - optional)
@@ -84,7 +84,7 @@ message GetFctPeerCountByClClientCityDailyResponse {
 
 // Query fct_peer_count_by_cl_client_city_daily data
 service FctPeerCountByClClientCityDailyService {
-  // List records | Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Crawlers, probes, light clients and our own sentries are excluded.
+  // List records | Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Residential (network type other or unknown) city and client cells under 3 peers roll into city other within the country. Crawlers, probes, light clients and our own sentries are excluded.
   rpc List(ListFctPeerCountByClClientCityDailyRequest) returns (ListFctPeerCountByClClientCityDailyResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_peer_count_by_cl_client_city_daily"

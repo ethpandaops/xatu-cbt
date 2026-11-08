@@ -23,7 +23,7 @@ dependencies:
 -- the recount no longer produces are rewritten with zero counts.
 -- Consensus peers our libp2p sentries or our discovery crawler saw in the day by country, city, network type and
 -- client. Named consensus clients keep their name, other agents are other. Cities are not crossed with autonomous
--- systems or versions.
+-- systems or versions. Residential city and client cells under 3 peers roll into city other within the country.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
@@ -113,15 +113,27 @@ SELECT
     client,
     toUInt32(sum(peer_count_n)) AS peer_count
 FROM (
+    -- Residential cells (network_type other or unknown) under 3 peers roll into an other bucket, so no count can be
+    -- tied back to one peer of int_peer_daily, which serves country, client and network type per peer.
     SELECT
         day_start_date,
-        if(country_code = '', 'unknown', country_code) AS country_code,
-        if(raw_city = '', 'unknown', raw_city) AS city,
-        network_type AS network_type,
-        if(client IN ('lighthouse', 'lodestar', 'nimbus', 'prysm', 'teku', 'grandine', 'caplin', 'silver', 'ethlambda', 'unknown'), client, 'other') AS client,
-        count() AS peer_count_n
-    FROM located_peers
-    GROUP BY day_start_date, country_code, city, network_type, client
+        country_code,
+        if(fold_cell, 'other', city) AS city,
+        network_type,
+        client,
+        peer_count_n
+    FROM (
+        SELECT
+            day_start_date,
+            if(country_code = '', 'unknown', country_code) AS country_code,
+            if(raw_city = '', 'unknown', raw_city) AS city,
+            network_type AS network_type,
+            if(client IN ('lighthouse', 'lodestar', 'nimbus', 'prysm', 'teku', 'grandine', 'caplin', 'silver', 'ethlambda', 'unknown'), client, 'other') AS client,
+            count() AS peer_count_n,
+            network_type != 'hosting' AND city != 'unknown' AND peer_count_n < 3 AS fold_cell
+        FROM located_peers
+        GROUP BY day_start_date, country_code, city, network_type, client
+    )
 
     UNION ALL
 
