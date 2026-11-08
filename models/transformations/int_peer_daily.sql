@@ -31,7 +31,7 @@ dependencies:
 -- One row per consensus peer per day, from our libp2p sentries (heartbeats, identify, metadata and status exchanges)
 -- and the discovery crawler (ENRs). Sentry values win over ENR values. Crawlers, probes, light clients and our own
 -- sentries are left out. Addresses are only compared inside the model and are never stored. Residential peers keep
--- only their country and continent; hosting peers also keep city and autonomous system.
+-- only their country and continent. Hosting peers also keep city and autonomous system.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
