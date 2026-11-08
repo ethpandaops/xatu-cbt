@@ -229,7 +229,7 @@ CREATE TABLE fct_peer_concentration_cl_daily_local ON CLUSTER '{cluster}' (
     `peer_count` UInt32 COMMENT 'Consensus peers our libp2p sentries or our discovery crawler saw in the day' CODEC(ZSTD(1)),
     `located_peer_count` UInt32 COMMENT 'Peers with a known autonomous system, the population of hosting_peer_count' CODEC(ZSTD(1)),
     `hosting_peer_count` UInt32 COMMENT 'Peers on a cloud or hosting provider network' CODEC(ZSTD(1)),
-    `ipv6_peer_count` UInt32 COMMENT 'Peers on an IPv6 address' CODEC(ZSTD(1)),
+    `ipv6_peer_count` UInt32 COMMENT 'Peers that advertise a global IPv6 address, in an identify listen address or their ENR record' CODEC(ZSTD(1)),
     `country_count` UInt32 COMMENT 'Countries with peers' CODEC(ZSTD(1)),
     `third_country_count` UInt32 COMMENT 'Fewest countries that hold a third of the peers with a known country' CODEC(ZSTD(1)),
     `half_country_count` UInt32 COMMENT 'Fewest countries that hold half of the peers with a known country' CODEC(ZSTD(1)),

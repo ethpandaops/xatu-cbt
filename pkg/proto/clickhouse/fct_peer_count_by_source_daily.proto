@@ -29,7 +29,7 @@ message FctPeerCountBySourceDaily {
   uint32 inbound_only_peer_count = 18;
   // Peers connected to over QUIC or advertising a QUIC listen address
   uint32 quic_peer_count = 19;
-  // Peers on an IPv6 address
+  // Peers that advertise a global IPv6 address, in an identify listen address or their ENR record
   uint32 ipv6_peer_count = 20;
   // Peers on a cloud or hosting provider network
   uint32 hosting_peer_count = 21;
@@ -68,7 +68,7 @@ message ListFctPeerCountBySourceDailyRequest {
   UInt32Filter inbound_only_peer_count = 8 [(google.api.field_behavior) = OPTIONAL];
   // Filter by quic_peer_count - Peers connected to over QUIC or advertising a QUIC listen address (optional)
   UInt32Filter quic_peer_count = 9 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by ipv6_peer_count - Peers on an IPv6 address (optional)
+  // Filter by ipv6_peer_count - Peers that advertise a global IPv6 address, in an identify listen address or their ENR record (optional)
   UInt32Filter ipv6_peer_count = 10 [(google.api.field_behavior) = OPTIONAL];
   // Filter by hosting_peer_count - Peers on a cloud or hosting provider network (optional)
   UInt32Filter hosting_peer_count = 11 [(google.api.field_behavior) = OPTIONAL];

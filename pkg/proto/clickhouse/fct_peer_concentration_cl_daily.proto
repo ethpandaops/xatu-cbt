@@ -21,7 +21,7 @@ message FctPeerConcentrationClDaily {
   uint32 located_peer_count = 14;
   // Peers on a cloud or hosting provider network
   uint32 hosting_peer_count = 15;
-  // Peers on an IPv6 address
+  // Peers that advertise a global IPv6 address, in an identify listen address or their ENR record
   uint32 ipv6_peer_count = 16;
   // Countries with peers
   uint32 country_count = 17;
@@ -72,7 +72,7 @@ message ListFctPeerConcentrationClDailyRequest {
   UInt32Filter located_peer_count = 4 [(google.api.field_behavior) = OPTIONAL];
   // Filter by hosting_peer_count - Peers on a cloud or hosting provider network (optional)
   UInt32Filter hosting_peer_count = 5 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by ipv6_peer_count - Peers on an IPv6 address (optional)
+  // Filter by ipv6_peer_count - Peers that advertise a global IPv6 address, in an identify listen address or their ENR record (optional)
   UInt32Filter ipv6_peer_count = 6 [(google.api.field_behavior) = OPTIONAL];
   // Filter by country_count - Countries with peers (optional)
   UInt32Filter country_count = 7 [(google.api.field_behavior) = OPTIONAL];

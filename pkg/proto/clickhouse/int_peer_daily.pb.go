@@ -61,7 +61,7 @@ type IntPeerDaily struct {
 	NetworkType string `protobuf:"bytes,26,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
 	// Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown
 	Provider string `protobuf:"bytes,27,opt,name=provider,proto3" json:"provider,omitempty"`
-	// The address is IPv6
+	// The peer advertises a global IPv6 address, in an identify listen address or its ENR record, or we connected to it over IPv6
 	Ipv6 bool `protobuf:"varint,28,opt,name=ipv6,proto3" json:"ipv6,omitempty"`
 	// Our sentries dialled the peer (an outbound connection), so it is publicly reachable
 	Dialled bool `protobuf:"varint,29,opt,name=dialled,proto3" json:"dialled,omitempty"`
@@ -380,7 +380,7 @@ type ListIntPeerDailyRequest struct {
 	NetworkType *StringFilter `protobuf:"bytes,16,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
 	// Filter by provider - Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown (optional)
 	Provider *StringFilter `protobuf:"bytes,17,opt,name=provider,proto3" json:"provider,omitempty"`
-	// Filter by ipv6 - The address is IPv6 (optional)
+	// Filter by ipv6 - The peer advertises a global IPv6 address, in an identify listen address or its ENR record, or we connected to it over IPv6 (optional)
 	Ipv6 *BoolFilter `protobuf:"bytes,18,opt,name=ipv6,proto3" json:"ipv6,omitempty"`
 	// Filter by dialled - Our sentries dialled the peer (an outbound connection), so it is publicly reachable (optional)
 	Dialled *BoolFilter `protobuf:"bytes,19,opt,name=dialled,proto3" json:"dialled,omitempty"`

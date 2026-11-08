@@ -43,7 +43,7 @@ message IntPeerDailyOrderByPeerId {
   string network_type = 26;
   // Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown
   string provider = 27;
-  // The address is IPv6
+  // The peer advertises a global IPv6 address, in an identify listen address or its ENR record, or we connected to it over IPv6
   bool ipv6 = 28;
   // Our sentries dialled the peer (an outbound connection), so it is publicly reachable
   bool dialled = 29;
@@ -112,7 +112,7 @@ message ListIntPeerDailyOrderByPeerIdRequest {
   StringFilter network_type = 16;
   // Filter by provider - Network operator: one name for providers that span several autonomous systems or organisation names (Amazon, Google, Microsoft, Alibaba, Oracle, OVHcloud, Hetzner, Contabo, Akamai, Tencent), else the organisation without its legal suffix. Empty for residential peers and when unknown (optional)
   StringFilter provider = 17;
-  // Filter by ipv6 - The address is IPv6 (optional)
+  // Filter by ipv6 - The peer advertises a global IPv6 address, in an identify listen address or its ENR record, or we connected to it over IPv6 (optional)
   BoolFilter ipv6 = 18;
   // Filter by dialled - Our sentries dialled the peer (an outbound connection), so it is publicly reachable (optional)
   BoolFilter dialled = 19;

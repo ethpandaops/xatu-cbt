@@ -38,7 +38,7 @@ type FctPeerConcentrationClDaily struct {
 	LocatedPeerCount uint32 `protobuf:"varint,14,opt,name=located_peer_count,json=locatedPeerCount,proto3" json:"located_peer_count,omitempty"`
 	// Peers on a cloud or hosting provider network
 	HostingPeerCount uint32 `protobuf:"varint,15,opt,name=hosting_peer_count,json=hostingPeerCount,proto3" json:"hosting_peer_count,omitempty"`
-	// Peers on an IPv6 address
+	// Peers that advertise a global IPv6 address, in an identify listen address or their ENR record
 	Ipv6PeerCount uint32 `protobuf:"varint,16,opt,name=ipv6_peer_count,json=ipv6PeerCount,proto3" json:"ipv6_peer_count,omitempty"`
 	// Countries with peers
 	CountryCount uint32 `protobuf:"varint,17,opt,name=country_count,json=countryCount,proto3" json:"country_count,omitempty"`
@@ -285,7 +285,7 @@ type ListFctPeerConcentrationClDailyRequest struct {
 	LocatedPeerCount *UInt32Filter `protobuf:"bytes,4,opt,name=located_peer_count,json=locatedPeerCount,proto3" json:"located_peer_count,omitempty"`
 	// Filter by hosting_peer_count - Peers on a cloud or hosting provider network (optional)
 	HostingPeerCount *UInt32Filter `protobuf:"bytes,5,opt,name=hosting_peer_count,json=hostingPeerCount,proto3" json:"hosting_peer_count,omitempty"`
-	// Filter by ipv6_peer_count - Peers on an IPv6 address (optional)
+	// Filter by ipv6_peer_count - Peers that advertise a global IPv6 address, in an identify listen address or their ENR record (optional)
 	Ipv6PeerCount *UInt32Filter `protobuf:"bytes,6,opt,name=ipv6_peer_count,json=ipv6PeerCount,proto3" json:"ipv6_peer_count,omitempty"`
 	// Filter by country_count - Countries with peers (optional)
 	CountryCount *UInt32Filter `protobuf:"bytes,7,opt,name=country_count,json=countryCount,proto3" json:"country_count,omitempty"`
