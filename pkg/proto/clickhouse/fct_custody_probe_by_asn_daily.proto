@@ -10,15 +10,15 @@ import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
 
-// Daily data column custody probes by the probed peer autonomous system (its latest location in the day), residential and hosting. Crawlers and probes are excluded.
+// Daily data column custody probes by the probed peer autonomous system (its latest location in the day), residential and hosting. Residential autonomous systems with under 3 probed peers in the day roll into autonomous system 0 (other). Crawlers and probes are excluded.
 message FctCustodyProbeByAsnDaily {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Start of the day period
   string day_start_date = 12;
-  // Autonomous system number of the address, 0 when unknown
+  // Autonomous system number of the address, 0 when unknown and for residential autonomous systems with under 3 probed peers in the day (other)
   uint32 autonomous_system_number = 13;
-  // Autonomous system organisation, unknown when not geolocated
+  // Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 probed peers in the day
   string autonomous_system_organization = 14;
   // hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
   string network_type = 15;
@@ -45,10 +45,10 @@ message ListFctCustodyProbeByAsnDailyRequest {
   // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
   StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
-  // Filter by autonomous_system_number - Autonomous system number of the address, 0 when unknown (ORDER BY column 2 - optional)
+  // Filter by autonomous_system_number - Autonomous system number of the address, 0 when unknown and for residential autonomous systems with under 3 probed peers in the day (other) (ORDER BY column 2 - optional)
   UInt32Filter autonomous_system_number = 2 [(google.api.field_behavior) = OPTIONAL];
 
-  // Filter by autonomous_system_organization - Autonomous system organisation, unknown when not geolocated (ORDER BY column 3 - optional)
+  // Filter by autonomous_system_organization - Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 probed peers in the day (ORDER BY column 3 - optional)
   StringFilter autonomous_system_organization = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (ORDER BY column 4 - optional)
@@ -108,7 +108,7 @@ message GetFctCustodyProbeByAsnDailyResponse {
 
 // Query fct_custody_probe_by_asn_daily data
 service FctCustodyProbeByAsnDailyService {
-  // List records | Daily data column custody probes by the probed peer autonomous system (its latest location in the day), residential and hosting. Crawlers and probes are excluded.
+  // List records | Daily data column custody probes by the probed peer autonomous system (its latest location in the day), residential and hosting. Residential autonomous systems with under 3 probed peers in the day roll into autonomous system 0 (other). Crawlers and probes are excluded.
   rpc List(ListFctCustodyProbeByAsnDailyRequest) returns (ListFctCustodyProbeByAsnDailyResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_custody_probe_by_asn_daily"

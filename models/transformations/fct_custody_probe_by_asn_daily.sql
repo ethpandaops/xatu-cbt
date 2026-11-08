@@ -19,6 +19,7 @@ dependencies:
 -- Rewrites every day the bounds touch so partial days are recounted in full. Keys stored for those days that
 -- the recount no longer produces are rewritten with zero counts and NULL percentiles.
 -- Data column custody probes of the day by the probed peer's autonomous system (its latest location in the day).
+-- Residential autonomous systems with under 3 probed peers in the day roll into autonomous system 0 (other).
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
@@ -74,6 +75,15 @@ WITH
             'other'
             ) AS network_type
         FROM probed_peers
+    ),
+    -- Residential systems (network type other) under 3 probed peers roll into an other bucket, so no row can be tied
+    -- back to one peer of int_peer_daily, which serves country, client and network type per peer.
+    folded AS (
+        SELECT
+            *,
+            network_type != 'hosting' AND asn IS NOT NULL
+                AND count() OVER (PARTITION BY day_start_date, asn, network_type) < 3 AS fold
+        FROM located
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -92,8 +102,8 @@ SELECT
 FROM (
     SELECT
         p.day_start_date AS day_start_date,
-        ifNull(l.asn, 0) AS autonomous_system_number,
-        if(l.asn IS NULL, 'unknown', ifNull(l.asn_organization, '')) AS autonomous_system_organization,
+        if(l.fold, 0, ifNull(l.asn, 0)) AS autonomous_system_number,
+        multiIf(l.asn IS NULL, 'unknown', l.fold, 'other', ifNull(l.asn_organization, '')) AS autonomous_system_organization,
         l.network_type AS network_type,
         uniqExact(p.peer_id_unique_key) AS peer_n,
         count() AS probe_n,
@@ -104,7 +114,7 @@ FROM (
         if(isNaN(quantileIf(0.5)(p.response_time_ms, p.result = 'success')), NULL, quantileIf(0.5)(p.response_time_ms, p.result = 'success')) AS response_time_p50,
         if(isNaN(quantileIf(0.9)(p.response_time_ms, p.result = 'success')), NULL, quantileIf(0.9)(p.response_time_ms, p.result = 'success')) AS response_time_p90
     FROM probes AS p
-    GLOBAL INNER JOIN located AS l ON p.day_start_date = l.day_start_date AND p.peer_id_unique_key = l.peer_id_unique_key
+    GLOBAL INNER JOIN folded AS l ON p.day_start_date = l.day_start_date AND p.peer_id_unique_key = l.peer_id_unique_key
     GROUP BY day_start_date, autonomous_system_number, autonomous_system_organization, network_type
 
     UNION ALL

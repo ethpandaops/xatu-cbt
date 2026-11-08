@@ -23,7 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Daily data column custody probes by the probed peer autonomous system (its latest location in the day), residential and hosting. Crawlers and probes are excluded.
+// Daily data column custody probes by the probed peer autonomous system (its latest location in the day), residential and hosting. Residential autonomous systems with under 3 probed peers in the day roll into autonomous system 0 (other). Crawlers and probes are excluded.
 type FctCustodyProbeByAsnDaily struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -33,9 +33,9 @@ type FctCustodyProbeByAsnDaily struct {
 	UpdatedDateTime uint32 `protobuf:"varint,11,opt,name=updated_date_time,json=updatedDateTime,proto3" json:"updated_date_time,omitempty"`
 	// Start of the day period
 	DayStartDate string `protobuf:"bytes,12,opt,name=day_start_date,json=dayStartDate,proto3" json:"day_start_date,omitempty"`
-	// Autonomous system number of the address, 0 when unknown
+	// Autonomous system number of the address, 0 when unknown and for residential autonomous systems with under 3 probed peers in the day (other)
 	AutonomousSystemNumber uint32 `protobuf:"varint,13,opt,name=autonomous_system_number,json=autonomousSystemNumber,proto3" json:"autonomous_system_number,omitempty"`
-	// Autonomous system organisation, unknown when not geolocated
+	// Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 probed peers in the day
 	AutonomousSystemOrganization string `protobuf:"bytes,14,opt,name=autonomous_system_organization,json=autonomousSystemOrganization,proto3" json:"autonomous_system_organization,omitempty"`
 	// hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
 	NetworkType string `protobuf:"bytes,15,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
@@ -188,9 +188,9 @@ type ListFctCustodyProbeByAsnDailyRequest struct {
 
 	// Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
 	DayStartDate *StringFilter `protobuf:"bytes,1,opt,name=day_start_date,json=dayStartDate,proto3" json:"day_start_date,omitempty"`
-	// Filter by autonomous_system_number - Autonomous system number of the address, 0 when unknown (ORDER BY column 2 - optional)
+	// Filter by autonomous_system_number - Autonomous system number of the address, 0 when unknown and for residential autonomous systems with under 3 probed peers in the day (other) (ORDER BY column 2 - optional)
 	AutonomousSystemNumber *UInt32Filter `protobuf:"bytes,2,opt,name=autonomous_system_number,json=autonomousSystemNumber,proto3" json:"autonomous_system_number,omitempty"`
-	// Filter by autonomous_system_organization - Autonomous system organisation, unknown when not geolocated (ORDER BY column 3 - optional)
+	// Filter by autonomous_system_organization - Autonomous system organisation, unknown when not geolocated, other for residential autonomous systems with under 3 probed peers in the day (ORDER BY column 3 - optional)
 	AutonomousSystemOrganization *StringFilter `protobuf:"bytes,3,opt,name=autonomous_system_organization,json=autonomousSystemOrganization,proto3" json:"autonomous_system_organization,omitempty"`
 	// Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (ORDER BY column 4 - optional)
 	NetworkType *StringFilter `protobuf:"bytes,4,opt,name=network_type,json=networkType,proto3" json:"network_type,omitempty"`
