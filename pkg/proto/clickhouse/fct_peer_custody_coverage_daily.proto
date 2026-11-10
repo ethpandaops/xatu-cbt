@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Daily spread of consensus peers over the 128 data columns they custody, one row a day: the thinnest, median and thickest column, and the thinnest once supernodes or its largest hosting autonomous system are taken away. Peers as in fct_peer_custody_by_column_daily.
+message FctPeerCustodyCoverageDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Peers counted: those with a known custody group count and node ID
+  uint32 custody_peer_count = 13;
+  // Of those, peers custodying all 128 groups (supernodes)
+  uint32 supernode_peer_count = 14;
+  // Custodians of the thinnest column
+  uint32 min_column_custodian_peer_count = 15;
+  // The thinnest column, the lowest index on a tie
+  uint32 min_column_index = 16;
+  // Median custodians per column (the lower of the middle two)
+  uint32 median_column_custodian_peer_count = 17;
+  // Custodians of the thickest column
+  uint32 max_column_custodian_peer_count = 18;
+  // Custodians of the thinnest column without supernodes
+  uint32 min_column_non_supernode_peer_count = 19;
+  // Fewest custodians any column keeps once its largest hosting autonomous system is taken away
+  uint32 min_column_without_largest_autonomous_system_peer_count = 20;
+  // Fewest countries any column is custodied in
+  uint32 min_column_country_count = 21;
+}
+
+// Request for listing fct_peer_custody_coverage_daily records
+message ListFctPeerCustodyCoverageDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by custody_peer_count - Peers counted: those with a known custody group count and node ID (optional)
+  UInt32Filter custody_peer_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by supernode_peer_count - Of those, peers custodying all 128 groups (supernodes) (optional)
+  UInt32Filter supernode_peer_count = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_column_custodian_peer_count - Custodians of the thinnest column (optional)
+  UInt32Filter min_column_custodian_peer_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_column_index - The thinnest column, the lowest index on a tie (optional)
+  UInt32Filter min_column_index = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by median_column_custodian_peer_count - Median custodians per column (the lower of the middle two) (optional)
+  UInt32Filter median_column_custodian_peer_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_column_custodian_peer_count - Custodians of the thickest column (optional)
+  UInt32Filter max_column_custodian_peer_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_column_non_supernode_peer_count - Custodians of the thinnest column without supernodes (optional)
+  UInt32Filter min_column_non_supernode_peer_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_column_without_largest_autonomous_system_peer_count - Fewest custodians any column keeps once its largest hosting autonomous system is taken away (optional)
+  UInt32Filter min_column_without_largest_autonomous_system_peer_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_column_country_count - Fewest countries any column is custodied in (optional)
+  UInt32Filter min_column_country_count = 11 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_peer_custody_coverage_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 12 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPeerCustodyCoverageDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 13 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 14 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_peer_custody_coverage_daily records
+message ListFctPeerCustodyCoverageDailyResponse {
+  // The list of fct_peer_custody_coverage_daily.
+  repeated FctPeerCustodyCoverageDaily fct_peer_custody_coverage_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_peer_custody_coverage_daily record by primary key
+message GetFctPeerCustodyCoverageDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_peer_custody_coverage_daily record
+message GetFctPeerCustodyCoverageDailyResponse {
+  FctPeerCustodyCoverageDaily item = 1;
+}
+
+// Query fct_peer_custody_coverage_daily data
+service FctPeerCustodyCoverageDailyService {
+  // List records | Daily spread of consensus peers over the 128 data columns they custody, one row a day: the thinnest, median and thickest column, and the thinnest once supernodes or its largest hosting autonomous system are taken away. Peers as in fct_peer_custody_by_column_daily.
+  rpc List(ListFctPeerCustodyCoverageDailyRequest) returns (ListFctPeerCustodyCoverageDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_custody_coverage_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctPeerCustodyCoverageDailyRequest) returns (GetFctPeerCustodyCoverageDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_custody_coverage_daily/{day_start_date}"
+    };
+  }
+}
