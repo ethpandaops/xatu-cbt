@@ -54,7 +54,8 @@ FROM (
     WHERE event_date_time >= (SELECT min_day FROM day_bounds)
       AND event_date_time < (SELECT max_day FROM day_bounds) + 1
       AND meta_network_name = '{{ .env.NETWORK }}'
-      AND toDate(event_date_time) IN (SELECT day_start_date FROM complete_days)
+      -- GLOBAL: the raw shards run this subquery otherwise, and they cannot expand the {raw} cluster macro.
+      AND toDate(event_date_time) GLOBAL IN (SELECT day_start_date FROM complete_days)
     GROUP BY day_start_date, code
 
     UNION ALL
