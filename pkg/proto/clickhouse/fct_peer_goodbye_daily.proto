@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Daily libp2p Goodbye messages our sentries received from remote peers, by the reason code the peer gave for disconnecting. Rows are written once the day is complete. The first day of data and a day after a whole day without goodbyes are left out, as they are partial.
+message FctPeerGoodbyeDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Goodbye reason code the remote peer sent: 1 client shutdown, 2 irrelevant network, 3 fault/error, 128 unable to verify network, 129 too many peers, 250 peer score too low, 251 banned. Other codes are client specific
+  uint64 code = 13;
+  // Reason text our sentries give the code, such as client has too many peers. Codes they do not know read as unknown goodbye value of N received
+  string reason = 14;
+  // Goodbye messages with the code our sentries received in the day. A peer that says goodbye to several sentries counts once for each
+  uint32 goodbye_count = 15;
+  // Unique remote peers that sent the code in the day. A peer that sent several codes counts under each
+  uint32 peer_count = 16;
+}
+
+// Request for listing fct_peer_goodbye_daily records
+message ListFctPeerGoodbyeDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by code - Goodbye reason code the remote peer sent: 1 client shutdown, 2 irrelevant network, 3 fault/error, 128 unable to verify network, 129 too many peers, 250 peer score too low, 251 banned. Other codes are client specific (ORDER BY column 2 - optional)
+  UInt64Filter code = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by reason - Reason text our sentries give the code, such as client has too many peers. Codes they do not know read as unknown goodbye value of N received (optional)
+  StringFilter reason = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by goodbye_count - Goodbye messages with the code our sentries received in the day. A peer that says goodbye to several sentries counts once for each (optional)
+  UInt32Filter goodbye_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by peer_count - Unique remote peers that sent the code in the day. A peer that sent several codes counts under each (optional)
+  UInt32Filter peer_count = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_peer_goodbye_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 7 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPeerGoodbyeDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 8 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 9 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_peer_goodbye_daily records
+message ListFctPeerGoodbyeDailyResponse {
+  // The list of fct_peer_goodbye_daily.
+  repeated FctPeerGoodbyeDaily fct_peer_goodbye_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_peer_goodbye_daily record by primary key
+message GetFctPeerGoodbyeDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_peer_goodbye_daily record
+message GetFctPeerGoodbyeDailyResponse {
+  FctPeerGoodbyeDaily item = 1;
+}
+
+// Query fct_peer_goodbye_daily data
+service FctPeerGoodbyeDailyService {
+  // List records | Daily libp2p Goodbye messages our sentries received from remote peers, by the reason code the peer gave for disconnecting. Rows are written once the day is complete. The first day of data and a day after a whole day without goodbyes are left out, as they are partial.
+  rpc List(ListFctPeerGoodbyeDailyRequest) returns (ListFctPeerGoodbyeDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_goodbye_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctPeerGoodbyeDailyRequest) returns (GetFctPeerGoodbyeDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_goodbye_daily/{day_start_date}"
+    };
+  }
+}
