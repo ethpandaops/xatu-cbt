@@ -1,0 +1,13 @@
+model: int_transaction_mempool_observation_hourly
+network: mainnet
+external_data:
+    mempool_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/int_transaction_mempool_observation_hourly_mempool_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: SELECT COUNT(*) AS count FROM int_transaction_mempool_observation_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: count
+          value: 0

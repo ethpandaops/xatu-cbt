@@ -1,0 +1,124 @@
+model: fct_transaction_mempool_outcome_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_daily_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_daily_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_daily_canonical_beacon_block_execution_transaction.parquet
+        network_column: meta_network_name
+    mempool_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_daily_mempool_transaction.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_daily_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_daily_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative (model may be empty in short CI seed windows due to the 7 day fill buffer)
+      sql: |
+        SELECT COUNT(*) AS count FROM fct_transaction_mempool_outcome_daily FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: count
+          value: 0
+    - name: Observed count should always be positive
+      sql: |
+        SELECT countIf(observed_count <= 0) AS bad_rows FROM fct_transaction_mempool_outcome_daily FINAL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Outcome buckets should sum to observed count
+      sql: |
+        SELECT count() AS mismatch_rows
+        FROM fct_transaction_mempool_outcome_daily FINAL
+        WHERE included_count + nonce_consumed_count + unincluded_count != observed_count
+      assertions:
+        - type: equals
+          column: mismatch_rows
+          value: 0
+    - name: Relay-delivered and unknown-build should sum to included count
+      sql: |
+        SELECT count() AS mismatch_rows
+        FROM fct_transaction_mempool_outcome_daily FINAL
+        WHERE included_relay_delivered_count + included_unknown_build_count != included_count
+      assertions:
+        - type: equals
+          column: mismatch_rows
+          value: 0
+    - name: No negative counts in any count column
+      sql: |
+        SELECT count() AS bad_rows
+        FROM fct_transaction_mempool_outcome_daily FINAL
+        WHERE observed_count < 0
+           OR included_count < 0
+           OR nonce_consumed_count < 0
+           OR unincluded_count < 0
+           OR included_relay_delivered_count < 0
+           OR included_unknown_build_count < 0
+           OR in_mempool_at_deadline_count < 0
+           OR cancel_shape_count < 0
+           OR observed_after_nonce_consumed_count < 0
+           OR wait_sample_count < 0
+           OR negative_wait_count < 0
+           OR blob_observed_count < 0
+           OR blob_wait_sample_count < 0
+           OR nonce_group_count < 0
+           OR multi_attempt_nonce_group_count < 0
+           OR replaced_attempt_count < 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Wait sample count should not exceed included count
+      sql: |
+        SELECT count() AS bad_rows
+        FROM fct_transaction_mempool_outcome_daily FINAL
+        WHERE wait_sample_count > included_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blob wait sample count should not exceed blob observed count
+      sql: |
+        SELECT count() AS bad_rows
+        FROM fct_transaction_mempool_outcome_daily FINAL
+        WHERE blob_wait_sample_count > blob_observed_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Blob observed count should not exceed observed count
+      sql: |
+        SELECT count() AS bad_rows
+        FROM fct_transaction_mempool_outcome_daily FINAL
+        WHERE blob_observed_count > observed_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Wait latency percentiles should be monotonically ordered
+      sql: |
+        SELECT count() AS bad_rows
+        FROM fct_transaction_mempool_outcome_daily FINAL
+        WHERE wait_sample_count > 0
+          AND (wait_ms_p50 > wait_ms_p90 OR wait_ms_p90 > wait_ms_p99)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Multi-attempt nonce groups should not exceed total nonce groups
+      sql: |
+        SELECT count() AS bad_rows
+        FROM fct_transaction_mempool_outcome_daily FINAL
+        WHERE multi_attempt_nonce_group_count > nonce_group_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

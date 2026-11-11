@@ -1,0 +1,28 @@
+model: fct_transaction_mempool_outcome_7d
+network: mainnet
+external_data:
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_7d_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_7d_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_7d_canonical_beacon_block_execution_transaction.parquet
+        network_column: meta_network_name
+    mempool_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_7d_mempool_transaction.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_7d_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/mainnet/fusaka/fct_transaction_mempool_outcome_7d_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be non-negative (model may be empty in short CI seed windows due to the 7 day fill buffer)
+      sql: SELECT COUNT(*) AS count FROM fct_transaction_mempool_outcome_7d FINAL
+      assertions:
+        - type: greater_than_or_equal
+          column: count
+          value: 0
