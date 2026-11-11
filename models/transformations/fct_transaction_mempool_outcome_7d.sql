@@ -18,6 +18,8 @@ dependencies:
   - "{{transformation}}.int_transaction_mempool_observation_hourly"
   - "{{transformation}}.fct_transaction_inclusion"
   - "{{transformation}}.fct_block_mev"
+  - "{{external}}.mempool_transaction"
+  - "{{external}}.canonical_beacon_block_execution_transaction"
 ---
 -- One immutable row per transaction hash observed in the public mempool, stating its
 -- fixed-horizon outcome within 7 days of first sighting. The fill buffer keeps this
@@ -26,6 +28,44 @@ dependencies:
 -- An observation episode starts when a hash is sighted with no sightings in the
 -- preceding 7 days. The outcome statement is fixed to the horizon and remains true
 -- even if the transaction is included later.
+-- The episode check reads observations from the 7 days before this range, and the nonce
+-- group lookup reads inclusions from the 14 days before it. CBT only guarantees its
+-- dependencies cover the range itself, and rows written here are never revisited, so
+-- while those tables backfill this first statement fails the task (CBT retries it)
+-- until each one reaches back far enough, or the source has no rows in between.
+SELECT throwIf(
+    (
+        (SELECT min(hour_start_date_time) FROM {{ index .dep "{{transformation}}" "int_transaction_mempool_observation_hourly" "helpers" "from" }})
+            > toStartOfHour(fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 7 DAY)
+        AND (
+            SELECT count() FROM (
+                SELECT 1
+                FROM {{ index .dep "{{external}}" "mempool_transaction" "helpers" "from" }}
+                WHERE meta_network_name = '{{ .env.NETWORK }}'
+                    AND (meta_client_implementation = 'spageth' OR meta_client_name LIKE '%mimicry%')
+                    AND event_date_time >= toStartOfHour(fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 7 DAY)
+                    AND event_date_time < (SELECT min(hour_start_date_time) FROM {{ index .dep "{{transformation}}" "int_transaction_mempool_observation_hourly" "helpers" "from" }})
+                LIMIT 1
+            )
+        ) > 0
+    )
+    OR (
+        (SELECT min(slot_start_date_time) FROM {{ index .dep "{{transformation}}" "fct_transaction_inclusion" "helpers" "from" }})
+            > fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 14 DAY
+        AND (
+            SELECT count() FROM (
+                SELECT 1
+                FROM {{ index .dep "{{external}}" "canonical_beacon_block_execution_transaction" "helpers" "from" }}
+                WHERE meta_network_name = '{{ .env.NETWORK }}'
+                    AND slot_start_date_time >= fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 14 DAY
+                    AND slot_start_date_time < (SELECT min(slot_start_date_time) FROM {{ index .dep "{{transformation}}" "fct_transaction_inclusion" "helpers" "from" }})
+                LIMIT 1
+            )
+        ) > 0
+    ),
+    'observations or inclusions do not reach far enough before this range yet'
+);
+
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH obs AS (
     SELECT
