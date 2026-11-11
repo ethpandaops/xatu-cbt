@@ -1,0 +1,155 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// One row per transaction hash, removal reason and hour in which Xatu sentries saw it leave their txpool without being included. Repeat detections by one sentry collapse into one row. A dropped row means the hash left at least one sentry pool, which is usually churn rather than eviction
+message IntTransactionMempoolRemovalHourly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The start of the hour bucket the removal detections fall in
+  uint32 hour_start_date_time = 12;
+  // The transaction hash
+  string hash = 13;
+  // Why the transaction left the pool: replaced (a same-nonce transaction took its place), nonce_consumed (the sender nonce moved past it) or dropped (it left at least one sentry pool for any other reason, usually churn while it still circulates elsewhere)
+  string reason = 14;
+  // Earliest removal detection this hour across sentries
+  int64 first_detected_date_time = 15;
+  // Latest removal detection this hour across sentries
+  int64 last_detected_date_time = 16;
+  // Earliest txpool_content snapshot that held the transaction, across the detecting sentries
+  int64 first_seen_date_time = 17;
+  // Latest txpool_content snapshot that held the transaction, across the detecting sentries
+  int64 last_seen_date_time = 18;
+  // Number of removal detections this hour, including repeat detections by the same sentry
+  uint32 detection_count = 19;
+  // Distinct sentries that detected the removal this hour
+  uint32 sentry_count = 20;
+  // Distinct sentries that detected the removal from their pending pool
+  uint32 pending_sentry_count = 21;
+  // Distinct sentries that detected the removal from their queued pool
+  uint32 queued_sentry_count = 22;
+  // The address of the account that sent the transaction
+  string from = 23;
+  // The address of the transaction recipient, null for contract creation
+  google.protobuf.StringValue to = 24;
+  // The nonce of the transaction
+  uint64 nonce = 25;
+  // The type of the transaction
+  uint32 type = 26;
+  // The maximum gas provided for the transaction execution
+  uint64 gas = 27;
+  // The priority fee (tip) cap of the transaction in wei
+  string gas_tip_cap = 28;
+  // The max fee cap of the transaction in wei
+  string gas_fee_cap = 29;
+  // The max blob fee cap of the transaction in wei, null for non-blob transactions
+  google.protobuf.StringValue blob_gas_fee_cap = 30;
+  // The hash of the transaction that replaced it, from the earliest replaced detection this hour
+  google.protobuf.StringValue replacement_hash = 31;
+  // The tip cap of the replacing transaction in wei
+  google.protobuf.StringValue replacement_gas_tip_cap = 32;
+  // The max fee cap of the replacing transaction in wei
+  google.protobuf.StringValue replacement_gas_fee_cap = 33;
+  // Highest sender nonce at the latest block reported by a detecting sentry, null when only replaced detections exist
+  google.protobuf.UInt64Value max_account_nonce = 34;
+}
+
+// Request for listing int_transaction_mempool_removal_hourly records
+message ListIntTransactionMempoolRemovalHourlyRequest {
+  // Filter by hour_start_date_time - The start of the hour bucket the removal detections fall in (PRIMARY KEY - required unless using alternatives: hash)
+  UInt32Filter hour_start_date_time = 1;
+
+  // Filter by hash - The transaction hash (ORDER BY column 2 - optional)
+  StringFilter hash = 2;
+
+  // Filter by reason - Why the transaction left the pool: replaced (a same-nonce transaction took its place), nonce_consumed (the sender nonce moved past it) or dropped (it left at least one sentry pool for any other reason, usually churn while it still circulates elsewhere) (ORDER BY column 3 - optional)
+  StringFilter reason = 3;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4;
+  // Filter by first_detected_date_time - Earliest removal detection this hour across sentries (optional)
+  Int64Filter first_detected_date_time = 5;
+  // Filter by last_detected_date_time - Latest removal detection this hour across sentries (optional)
+  Int64Filter last_detected_date_time = 6;
+  // Filter by first_seen_date_time - Earliest txpool_content snapshot that held the transaction, across the detecting sentries (optional)
+  Int64Filter first_seen_date_time = 7;
+  // Filter by last_seen_date_time - Latest txpool_content snapshot that held the transaction, across the detecting sentries (optional)
+  Int64Filter last_seen_date_time = 8;
+  // Filter by detection_count - Number of removal detections this hour, including repeat detections by the same sentry (optional)
+  UInt32Filter detection_count = 9;
+  // Filter by sentry_count - Distinct sentries that detected the removal this hour (optional)
+  UInt32Filter sentry_count = 10;
+  // Filter by pending_sentry_count - Distinct sentries that detected the removal from their pending pool (optional)
+  UInt32Filter pending_sentry_count = 11;
+  // Filter by queued_sentry_count - Distinct sentries that detected the removal from their queued pool (optional)
+  UInt32Filter queued_sentry_count = 12;
+  // Filter by from - The address of the account that sent the transaction (optional)
+  StringFilter from = 13;
+  // Filter by to - The address of the transaction recipient, null for contract creation (optional)
+  NullableStringFilter to = 14;
+  // Filter by nonce - The nonce of the transaction (optional)
+  UInt64Filter nonce = 15;
+  // Filter by type - The type of the transaction (optional)
+  UInt32Filter type = 16;
+  // Filter by gas - The maximum gas provided for the transaction execution (optional)
+  UInt64Filter gas = 17;
+  // Filter by gas_tip_cap - The priority fee (tip) cap of the transaction in wei (optional)
+  StringFilter gas_tip_cap = 18;
+  // Filter by gas_fee_cap - The max fee cap of the transaction in wei (optional)
+  StringFilter gas_fee_cap = 19;
+  // Filter by blob_gas_fee_cap - The max blob fee cap of the transaction in wei, null for non-blob transactions (optional)
+  NullableStringFilter blob_gas_fee_cap = 20;
+  // Filter by replacement_hash - The hash of the transaction that replaced it, from the earliest replaced detection this hour (optional)
+  NullableStringFilter replacement_hash = 21;
+  // Filter by replacement_gas_tip_cap - The tip cap of the replacing transaction in wei (optional)
+  NullableStringFilter replacement_gas_tip_cap = 22;
+  // Filter by replacement_gas_fee_cap - The max fee cap of the replacing transaction in wei (optional)
+  NullableStringFilter replacement_gas_fee_cap = 23;
+  // Filter by max_account_nonce - Highest sender nonce at the latest block reported by a detecting sentry, null when only replaced detections exist (optional)
+  NullableUInt64Filter max_account_nonce = 24;
+
+  // The maximum number of int_transaction_mempool_removal_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 25;
+  // A page token, received from a previous `ListIntTransactionMempoolRemovalHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 26;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 27;
+}
+
+// Response for listing int_transaction_mempool_removal_hourly records
+message ListIntTransactionMempoolRemovalHourlyResponse {
+  // The list of int_transaction_mempool_removal_hourly.
+  repeated IntTransactionMempoolRemovalHourly int_transaction_mempool_removal_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_transaction_mempool_removal_hourly record by primary key
+message GetIntTransactionMempoolRemovalHourlyRequest {
+  // The start of the hour bucket the removal detections fall in
+  uint32 hour_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single int_transaction_mempool_removal_hourly record
+message GetIntTransactionMempoolRemovalHourlyResponse {
+  IntTransactionMempoolRemovalHourly item = 1;
+}
+
+// Query int_transaction_mempool_removal_hourly data
+service IntTransactionMempoolRemovalHourlyService {
+  // List records | One row per transaction hash, removal reason and hour in which Xatu sentries saw it leave their txpool without being included. Repeat detections by one sentry collapse into one row. A dropped row means the hash left at least one sentry pool, which is usually churn rather than eviction
+  rpc List(ListIntTransactionMempoolRemovalHourlyRequest) returns (ListIntTransactionMempoolRemovalHourlyResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntTransactionMempoolRemovalHourlyRequest) returns (GetIntTransactionMempoolRemovalHourlyResponse);
+}
