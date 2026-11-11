@@ -42,7 +42,7 @@ type FctAttestationVoteCorrectnessByValidator struct {
 	HeadCorrect *wrapperspb.BoolValue `protobuf:"bytes,16,opt,name=head_correct,json=headCorrect,proto3" json:"head_correct,omitempty"`
 	// Whether the target vote was correct. NULL if not attested
 	TargetCorrect *wrapperspb.BoolValue `protobuf:"bytes,17,opt,name=target_correct,json=targetCorrect,proto3" json:"target_correct,omitempty"`
-	// Whether the source vote was correct. NULL if not attested
+	// Whether the source vote was correct, from the attestation seen on gossip. NULL if gossip did not see it, which is every slot before gossip collection began
 	SourceCorrect *wrapperspb.BoolValue `protobuf:"bytes,18,opt,name=source_correct,json=sourceCorrect,proto3" json:"source_correct,omitempty"`
 	// Inclusion distance for the attestation. NULL if not attested
 	InclusionDistance *wrapperspb.UInt32Value `protobuf:"bytes,19,opt,name=inclusion_distance,json=inclusionDistance,proto3" json:"inclusion_distance,omitempty"`
@@ -163,7 +163,7 @@ type ListFctAttestationVoteCorrectnessByValidatorRequest struct {
 	HeadCorrect *NullableBoolFilter `protobuf:"bytes,6,opt,name=head_correct,json=headCorrect,proto3" json:"head_correct,omitempty"`
 	// Filter by target_correct - Whether the target vote was correct. NULL if not attested (optional)
 	TargetCorrect *NullableBoolFilter `protobuf:"bytes,7,opt,name=target_correct,json=targetCorrect,proto3" json:"target_correct,omitempty"`
-	// Filter by source_correct - Whether the source vote was correct. NULL if not attested (optional)
+	// Filter by source_correct - Whether the source vote was correct, from the attestation seen on gossip. NULL if gossip did not see it, which is every slot before gossip collection began (optional)
 	SourceCorrect *NullableBoolFilter `protobuf:"bytes,8,opt,name=source_correct,json=sourceCorrect,proto3" json:"source_correct,omitempty"`
 	// Filter by inclusion_distance - Inclusion distance for the attestation. NULL if not attested (optional)
 	InclusionDistance *NullableUInt32Filter `protobuf:"bytes,9,opt,name=inclusion_distance,json=inclusionDistance,proto3" json:"inclusion_distance,omitempty"`

@@ -96,3 +96,38 @@ assertions:
         - type: equals
           column: inconsistent_slot_time
           value: 0
+    # fct_attestation_inclusion_delay_hourly and _daily read the canonical models instead of this table. Their per-slot
+    # mean of the inclusion distance of canonical votes has to be the one this table gives.
+    - name: Canonical-vote inclusion distance per slot matches the canonical models
+      sql: |
+        SELECT
+          (SELECT COUNT(*) FROM fct_attestation_correctness_by_validator_canonical FINAL WHERE status = 'canonical' AND inclusion_distance IS NOT NULL) AS canonical_votes,
+          (
+            SELECT COUNT(*)
+            FROM (
+              SELECT slot, avg(inclusion_distance) AS slot_avg_delay
+              FROM fct_attestation_correctness_by_validator_canonical FINAL
+              WHERE status = 'canonical' AND inclusion_distance IS NOT NULL
+              GROUP BY slot
+            ) AS o
+            GLOBAL FULL OUTER JOIN (
+              SELECT a.slot AS slot, avg(a.inclusion_distance) AS slot_avg_delay
+              FROM int_attestation_attested_canonical AS a FINAL
+              GLOBAL INNER JOIN (
+                SELECT slot AS block_slot, block_root FROM int_block_proposer_canonical FINAL WHERE block_root IS NOT NULL
+              ) AS b ON a.block_root = b.block_root
+              WHERE a.slot >= b.block_slot
+                AND a.slot - b.block_slot <= 64
+                AND a.slot GLOBAL IN (SELECT slot FROM fct_attestation_correctness_by_validator_canonical FINAL)
+              GROUP BY slot
+            ) AS n ON o.slot = n.slot
+            WHERE o.slot_avg_delay IS NULL OR n.slot_avg_delay IS NULL OR abs(o.slot_avg_delay - n.slot_avg_delay) > 1e-9
+            SETTINGS join_use_nulls = 1
+          ) AS mismatched_slots
+      assertions:
+        - type: greater_than
+          column: canonical_votes
+          value: 0
+        - type: equals
+          column: mismatched_slots
+          value: 0

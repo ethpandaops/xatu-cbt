@@ -64,6 +64,8 @@ message FctBlockDataColumnSidecarFirstSeenByNode {
   string meta_consensus_version = 35;
   // Ethereum consensus client implementation
   string meta_consensus_implementation = 36;
+  // How the node completed the data column: FULL_GOSSIP for a full gossip message, PARTIAL_GOSSIP, EL, RECONSTRUCTION or UNKNOWN from a column completion event, empty for beacon API events
+  string completed_via = 37;
 }
 
 // Request for listing fct_block_data_column_sidecar_first_seen_by_node records
@@ -124,18 +126,20 @@ message ListFctBlockDataColumnSidecarFirstSeenByNodeRequest {
   StringFilter meta_consensus_version = 25 [(google.api.field_behavior) = OPTIONAL];
   // Filter by meta_consensus_implementation - Ethereum consensus client implementation (optional)
   StringFilter meta_consensus_implementation = 26 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by completed_via - How the node completed the data column: FULL_GOSSIP for a full gossip message, PARTIAL_GOSSIP, EL, RECONSTRUCTION or UNKNOWN from a column completion event, empty for beacon API events (optional)
+  StringFilter completed_via = 27 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_block_data_column_sidecar_first_seen_by_node to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 27 [(google.api.field_behavior) = OPTIONAL];
+  int32 page_size = 28 [(google.api.field_behavior) = OPTIONAL];
   // A page token, received from a previous `ListFctBlockDataColumnSidecarFirstSeenByNode` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 28 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 29 [(google.api.field_behavior) = OPTIONAL];
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 29 [(google.api.field_behavior) = OPTIONAL];
+  string order_by = 30 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response for listing fct_block_data_column_sidecar_first_seen_by_node records

@@ -9,14 +9,14 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Top 100 contracts by effective storage bytes with expiry policies applied
+// Top 100 contracts by storage size (active_slots * 65 + effective_bytes) with expiry policies applied
 
 message FctStorageSlotTop100ByBytes {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
   // Expiry policy identifier: NULL (raw), 1m, 6m, 12m, 18m, 24m
   google.protobuf.StringValue expiry_policy = 12;
-  // Rank by effective bytes (1=highest), based on raw state
+  // Rank by storage size, active_slots * 65 + effective_bytes (1=highest), based on raw state
   uint32 rank = 13;
   // The contract address
   string contract_address = 14;
@@ -38,7 +38,7 @@ message FctStorageSlotTop100ByBytes {
 
 // Request for listing fct_storage_slot_top_100_by_bytes records
 message ListFctStorageSlotTop100ByBytesRequest {
-  // Filter by rank - Rank by effective bytes (1=highest), based on raw state (PRIMARY KEY - required)
+  // Filter by rank - Rank by storage size, active_slots * 65 + effective_bytes (1=highest), based on raw state (PRIMARY KEY - required)
   UInt32Filter rank = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
 
   // Filter by updated_date_time - Timestamp when the record was last updated (optional)
@@ -86,7 +86,7 @@ message ListFctStorageSlotTop100ByBytesResponse {
 
 // Request for getting a single fct_storage_slot_top_100_by_bytes record by primary key
 message GetFctStorageSlotTop100ByBytesRequest {
-  // Rank by effective bytes (1=highest), based on raw state
+  // Rank by storage size, active_slots * 65 + effective_bytes (1=highest), based on raw state
   uint32 rank = 1; // Primary key (required)
 }
 

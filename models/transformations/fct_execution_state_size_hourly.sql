@@ -29,6 +29,8 @@ WITH
             toStartOfHour(max(block_date_time)) AS max_hour
         FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+          -- Genesis is not a produced block, and on mainnet its timestamp is 0 (1970-01-01)
+          AND block_number > 0
           AND meta_network_name = '{{ .env.NETWORK }}'
     ),
     -- Find ALL blocks that fall within those hour boundaries
@@ -38,6 +40,7 @@ WITH
             block_date_time
         FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
         WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+          AND block_number > 0
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
           AND meta_network_name = '{{ .env.NETWORK }}'
     )

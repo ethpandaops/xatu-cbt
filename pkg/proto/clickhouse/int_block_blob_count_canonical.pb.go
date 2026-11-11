@@ -20,6 +20,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Blob count of every canonical block that carries blobs, from its execution payload blob gas (blob gas used over 131072) before Gloas, from the blob KZG commitments in its execution payload bid from Gloas, and from its blob sidecars only when neither is available
 type IntBlockBlobCountCanonical struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -37,7 +38,7 @@ type IntBlockBlobCountCanonical struct {
 	EpochStartDateTime uint32 `protobuf:"varint,15,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
 	// The beacon block root hash
 	BlockRoot string `protobuf:"bytes,16,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
-	// The number of blobs in the block
+	// The number of blobs in the block, from its execution payload blob gas before Gloas, its execution payload bid blob KZG commitments from Gloas, or its blob sidecars when neither is available
 	BlobCount uint32 `protobuf:"varint,17,opt,name=blob_count,json=blobCount,proto3" json:"blob_count,omitempty"`
 }
 
@@ -140,7 +141,7 @@ type ListIntBlockBlobCountCanonicalRequest struct {
 	Epoch *UInt32Filter `protobuf:"bytes,5,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
 	EpochStartDateTime *UInt32Filter `protobuf:"bytes,6,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
-	// Filter by blob_count - The number of blobs in the block (optional)
+	// Filter by blob_count - The number of blobs in the block, from its execution payload blob gas before Gloas, its execution payload bid blob KZG commitments from Gloas, or its blob sidecars when neither is available (optional)
 	BlobCount *UInt32Filter `protobuf:"bytes,7,opt,name=blob_count,json=blobCount,proto3" json:"blob_count,omitempty"`
 	// The maximum number of int_block_blob_count_canonical to return.
 	// If unspecified, at most 100 items will be returned.

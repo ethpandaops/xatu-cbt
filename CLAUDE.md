@@ -50,6 +50,7 @@ xatu-cbt test models fct_block,fct_attestation --network mainnet
 - While we create views for each `default.table` to `$network.table` in the [migrations](./migrations), for performance reasons we do not use that for the external model definitions.
 - External models should be filtered by the primary partition column for incremental scanning.
 - For DateTime columns, we should use the `toUnixTimestamp` function to convert to a Unix timestamp integer as CBT expects integers for min/max bounds.
+- CBT (v0.1.8+) renders incremental scans as full scans (`is_full_scan`) while the cached max or `previous_max` is zero, so `is_incremental_scan` templates can rely on `previous_max` being set and tables that start empty pick up their first rows on the next incremental interval.
 
 #### Example
 

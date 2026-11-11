@@ -1,0 +1,49 @@
+model: fct_custody_probe_by_slot_age_daily
+network: mainnet
+external_data:
+    libp2p_rpc_data_column_custody_probe:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_rpc_data_column_custody_probe.parquet
+        network_column: meta_network_name
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    blob_submitter:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_blob_submitter.parquet
+        network_column: meta_network_name
+    execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_execution_transaction.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_custody_probe_by_slot_age_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Column probes per bucket add up to the probes of int_custody_probe, crawlers excluded
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (SELECT day_start_date, sum(probe_count) AS n, sum(success_count) AS s FROM fct_custody_probe_by_slot_age_daily FINAL GROUP BY day_start_date) AS a
+        FULL OUTER JOIN (
+            SELECT toDate(probe_date_time) AS day_start_date, sum(length(column_indices)) AS n, sumIf(length(column_indices), result = 'success') AS s
+            FROM int_custody_probe FINAL
+            WHERE NOT (lower(meta_peer_implementation) IN ('tysm', 'hermes', 'nebula', 'eth2-crawler', 'enrscout', 'oft-probe', 'migalabs-kumo', 'xrpc-basel1lc', 'geth-blsync', 'nimbus-verified-proxy')
+                OR match(lower(meta_peer_implementation), 'crawler|probe|scout|armiarma'))
+            GROUP BY day_start_date
+        ) AS p USING (day_start_date)
+        WHERE a.n != p.n OR a.s != p.s
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Outcomes add up to the probe count
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_custody_probe_by_slot_age_daily FINAL WHERE success_count + missing_count + failure_count != probe_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

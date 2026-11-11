@@ -1,0 +1,54 @@
+model: fct_peer_count_by_client_pair_daily
+network: mainnet
+external_data:
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    libp2p_identify:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_identify.parquet
+        network_column: meta_network_name
+    node_record_consensus:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_node_record_consensus.parquet
+        network_column: meta_network_name
+    node_record_execution:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_node_record_execution.parquet
+        network_column: meta_network_name
+assertions:
+    - name: "Pairs add up to the paired addresses"
+      sql: |
+        SELECT
+          sum(ip_count) AS pair_ips, any(paired_ip_count) AS paired, any(matched_ip_count) AS matched,
+          any(cl_ip_count) AS cl_ips, any(el_ip_count) AS el_ips, pair_ips - paired AS pair_diff,
+          uniqExact(paired_ip_count, matched_ip_count, cl_ip_count, el_ip_count) AS total_variants,
+          paired <= matched AND matched <= least(cl_ips, el_ips) AS ordered
+        FROM fct_peer_count_by_client_pair_daily FINAL
+      assertions:
+        - type: equals
+          column: pair_diff
+          value: 0
+        - type: greater_than
+          column: paired
+          value: 1000
+        - type: equals
+          column: ordered
+          value: 1
+        - type: equals
+          column: total_variants
+          value: 1
+    - name: "Lighthouse with geth is the most common pair"
+      sql: |
+        SELECT argMax((consensus_client, execution_client), ip_count) AS top_pair,
+          top_pair.1 = 'lighthouse' AND top_pair.2 = 'geth' AS is_lighthouse_geth FROM fct_peer_count_by_client_pair_daily FINAL
+      assertions:
+        - type: equals
+          column: is_lighthouse_geth
+          value: 1
+    - name: "One row per key"
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT day_start_date, consensus_client, execution_client FROM fct_peer_count_by_client_pair_daily FINAL GROUP BY day_start_date, consensus_client, execution_client HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

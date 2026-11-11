@@ -18,6 +18,7 @@ dependencies:
 -- Head vote correctness = votes_head / votes_max * 100 (percentage of validators
 -- that voted for the block that became canonical).
 -- Computes percentiles, Bollinger bands, and 7-day moving averages.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     day_bounds AS (
@@ -35,7 +36,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             COALESCE(votes_head, 0) / votes_max * 100 AS head_vote_rate
         FROM {{ index .dep "{{transformation}}" "fct_attestation_correctness_canonical" "helpers" "from" }} FINAL
-        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(slot_start_date_time) <= (SELECT max_day FROM day_bounds)
           AND votes_max > 0
     ),
@@ -62,5 +63,6 @@ SELECT
     round(avg(head_vote_rate) - 2 * stddevPop(head_vote_rate), 4) AS lower_band_head_vote_rate,
     round(avg(ma_head_vote_rate), 4) AS moving_avg_head_vote_rate
 FROM slots_with_ma
+WHERE toDate(slot_start_date_time) >= (SELECT min_day FROM day_bounds)
 GROUP BY toDate(slot_start_date_time)
 SETTINGS join_use_nulls = 1

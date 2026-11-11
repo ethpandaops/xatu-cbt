@@ -12,13 +12,40 @@ tags:
   - block
 dependencies:
   - "{{external}}.beacon_api_eth_v1_events_block_gossip"
-  - "{{external}}.beacon_api_eth_v1_events_block"
   - "{{external}}.beacon_api_eth_v1_events_head"
-  - "{{external}}.libp2p_gossipsub_beacon_block"
+  # The libp2p pipeline is deployed independently of the beacon API sentries
+  # and can stop publishing (e.g. a sidecar that predates a fork's gossip
+  # changes). OR-grouping it with the block event keeps a dead gossip feed
+  # from stalling forwardfill; whichever source is fresher gates the interval.
+  - - "{{external}}.beacon_api_eth_v1_events_block"
+    - "{{external}}.libp2p_gossipsub_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
-WITH combined_events AS (
+-- A block root counts only if at least two beacon nodes accepted it. block_gossip fires after gossip
+-- validation and block after import. libp2p sentries record gossip before validating it, and some
+-- relays (gnode-beacon) re-encode blocks, which changes the root and breaks the proposer signature.
+-- One beacon node (a Prysm node, 2026-09-16 to 09-30) emitted block_gossip for those re-encoded
+-- roots too, so a single node's word is not enough.
+WITH validated_roots AS (
+    SELECT block_root
+    FROM (
+        SELECT toString(block) AS block_root, meta_client_name
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+
+        UNION ALL
+
+        SELECT toString(block) AS block_root, meta_client_name
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+    )
+    GROUP BY block_root
+    HAVING uniqExact(meta_client_name) >= 2
+),
+combined_events AS (
     SELECT
         'beacon_api_eth_v1_events_block' AS source,
         slot,
@@ -41,7 +68,7 @@ WITH combined_events AS (
         meta_consensus_version,
         meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
@@ -68,7 +95,7 @@ WITH combined_events AS (
         meta_consensus_version,
         meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
@@ -95,7 +122,7 @@ WITH combined_events AS (
         meta_consensus_version,
         meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_head" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
     
     UNION ALL
@@ -120,19 +147,17 @@ WITH combined_events AS (
         meta_client_geo_autonomous_system_number,
         meta_client_geo_autonomous_system_organization,
         '' AS meta_consensus_version,
-        CASE
-            WHEN hasSubsequence(meta_client_implementation, 'tysm') THEN
-                'prysm'
-            WHEN hasSubsequence(meta_client_implementation, 'dimhouse') THEN
-                'lighthouse'
-            WHEN hasSubsequence(meta_client_implementation, 'temu') THEN
-                'teku'
-            ELSE
-                ''
-        END AS meta_consensus_implementation
+        multiIf(
+            position(meta_client_implementation, 'tysm') > 0, 'prysm',
+            position(meta_client_implementation, 'temu') > 0, 'teku',
+            position(meta_client_implementation, 'dimhouse') > 0, 'lighthouse',
+            lower(extract(meta_client_implementation, '\\(([A-Za-z]+)\\)'))
+        ) AS meta_consensus_implementation
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND if(startsWith(block, '0x'), toString(block), concat('0x', toStringCutToZero(block)))
+            GLOBAL IN (SELECT block_root FROM validated_roots)
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,
@@ -183,4 +208,8 @@ SELECT
     argMin(meta_consensus_version, propagation_slot_start_diff) AS meta_consensus_version,
     argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation
 FROM combined_events
+-- Ignore observations more than 300 seconds after slot start, the same cutoff as the
+-- engine models. Later ones come from nodes replaying history or with broken clocks
+-- (up to days late). A clock running ahead wraps the UInt32 diff to ~4.29e9 ms.
+WHERE propagation_slot_start_diff <= 300000
 GROUP BY slot_start_date_time, meta_client_name

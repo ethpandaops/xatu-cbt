@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Current identity and state of every validator, refreshed from the latest epoch
+
+message DimValidator {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Epoch of the state this row was taken from
+  uint32 epoch = 12;
+  // Wall clock time when the epoch started
+  uint32 epoch_start_date_time = 13;
+  // The index of the validator
+  uint32 validator_index = 14;
+  // The public key of the validator
+  string pubkey = 15;
+  // Current withdrawal credentials
+  string withdrawal_credentials = 16;
+  // Withdrawal credential prefix: 0x00 (BLS), 0x01 (execution address) or 0x02 (compounding)
+  string credential_type = 17;
+  // Execution address from 0x01 or 0x02 credentials. NULL for 0x00
+  google.protobuf.StringValue withdrawal_address = 18;
+  // Beacon chain validator status (e.g. pending_queued, active_ongoing, withdrawal_done)
+  string status = 19;
+  // Balance in Gwei
+  google.protobuf.UInt64Value balance = 20;
+  // Effective balance in Gwei
+  google.protobuf.UInt64Value effective_balance = 21;
+  // Whether the validator has been slashed
+  bool slashed = 22;
+  // Epoch the validator became eligible for activation. NULL if not yet set
+  google.protobuf.UInt64Value activation_eligibility_epoch = 23;
+  // Epoch the validator activates or activated. NULL if not yet set
+  google.protobuf.UInt64Value activation_epoch = 24;
+  // Epoch the validator exits or exited. NULL if no exit has been initiated
+  google.protobuf.UInt64Value exit_epoch = 25;
+  // Epoch the validator becomes or became withdrawable. NULL if no exit has been initiated
+  google.protobuf.UInt64Value withdrawable_epoch = 26;
+}
+
+// Request for listing dim_validator records
+message ListDimValidatorRequest {
+  // Filter by validator_index - The index of the validator (PRIMARY KEY - required)
+  UInt32Filter validator_index = 1;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2;
+  // Filter by epoch - Epoch of the state this row was taken from (optional)
+  UInt32Filter epoch = 3;
+  // Filter by epoch_start_date_time - Wall clock time when the epoch started (optional)
+  UInt32Filter epoch_start_date_time = 4;
+  // Filter by pubkey - The public key of the validator (optional)
+  StringFilter pubkey = 5;
+  // Filter by withdrawal_credentials - Current withdrawal credentials (optional)
+  StringFilter withdrawal_credentials = 6;
+  // Filter by credential_type - Withdrawal credential prefix: 0x00 (BLS), 0x01 (execution address) or 0x02 (compounding) (optional)
+  StringFilter credential_type = 7;
+  // Filter by withdrawal_address - Execution address from 0x01 or 0x02 credentials. NULL for 0x00 (optional)
+  NullableStringFilter withdrawal_address = 8;
+  // Filter by status - Beacon chain validator status (e.g. pending_queued, active_ongoing, withdrawal_done) (optional)
+  StringFilter status = 9;
+  // Filter by balance - Balance in Gwei (optional)
+  NullableUInt64Filter balance = 10;
+  // Filter by effective_balance - Effective balance in Gwei (optional)
+  NullableUInt64Filter effective_balance = 11;
+  // Filter by slashed - Whether the validator has been slashed (optional)
+  BoolFilter slashed = 12;
+  // Filter by activation_eligibility_epoch - Epoch the validator became eligible for activation. NULL if not yet set (optional)
+  NullableUInt64Filter activation_eligibility_epoch = 13;
+  // Filter by activation_epoch - Epoch the validator activates or activated. NULL if not yet set (optional)
+  NullableUInt64Filter activation_epoch = 14;
+  // Filter by exit_epoch - Epoch the validator exits or exited. NULL if no exit has been initiated (optional)
+  NullableUInt64Filter exit_epoch = 15;
+  // Filter by withdrawable_epoch - Epoch the validator becomes or became withdrawable. NULL if no exit has been initiated (optional)
+  NullableUInt64Filter withdrawable_epoch = 16;
+
+  // The maximum number of dim_validator to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 17;
+  // A page token, received from a previous `ListDimValidator` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 18;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 19;
+}
+
+// Response for listing dim_validator records
+message ListDimValidatorResponse {
+  // The list of dim_validator.
+  repeated DimValidator dim_validator = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single dim_validator record by primary key
+message GetDimValidatorRequest {
+  // The index of the validator
+  uint32 validator_index = 1; // Primary key (required)
+}
+
+// Response for getting a single dim_validator record
+message GetDimValidatorResponse {
+  DimValidator item = 1;
+}
+
+// Query dim_validator data
+service DimValidatorService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListDimValidatorRequest) returns (ListDimValidatorResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetDimValidatorRequest) returns (GetDimValidatorResponse);
+}

@@ -14,9 +14,11 @@ tags:
 dependencies:
   - "{{transformation}}.fct_block_mev"
 ---
--- Hourly aggregation of proposer reward (MEV relay block value).
+-- Hourly aggregation of proposer reward (builder block value).
 -- Converts wei values to ETH and computes percentiles, Bollinger bands, and
--- 6-hour moving averages. Only covers MEV relay blocks, not locally built blocks.
+-- 6-hour moving averages. Covers relay-delivered blocks and, from Gloas, blocks
+-- won by an external builder's bid. Locally built blocks are excluded.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 WITH
     hour_bounds AS (
@@ -36,7 +38,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             toFloat64(value) / 1e18 AS reward_eth
         FROM {{ index .dep "{{transformation}}" "fct_block_mev" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
           AND status = 'canonical'
           AND value IS NOT NULL
@@ -66,4 +68,5 @@ SELECT
     round(avg(reward_eth) - 2 * stddevPop(reward_eth), 6) AS lower_band_reward_eth,
     round(avg(ma_reward_eth), 6) AS moving_avg_reward_eth
 FROM slots_with_ma
+WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(slot_start_date_time)

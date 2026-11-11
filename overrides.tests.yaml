@@ -17,3 +17,35 @@ models:
         schedules:
           forwardfill: "@every 10s"
           backfill: "@every 10s"
+    # Wait for the first dim_client_release and dim_client_commit runs (they fetch every client's tags and commits from GitHub).
+    int_block_graffiti_release:
+      config:
+        schedules:
+          forwardfill: "@every 90s"
+          backfill: "@every 90s"
+    # These resolve versions through dim_client_release and dim_client_commit, so they wait for their first runs.
+    fct_peer_count_by_cl_client_daily:
+      config:
+        schedules:
+          forwardfill: "@every 90s"
+          backfill: "@every 90s"
+    fct_peer_count_by_el_client_daily:
+      config:
+        schedules:
+          forwardfill: "@every 90s"
+          backfill: "@every 90s"
+    fct_peer_fork_readiness_by_cl_client_daily:
+      config:
+        schedules:
+          forwardfill: "@every 90s"
+          backfill: "@every 90s"
+    fct_peer_fork_readiness_by_el_client_daily:
+      config:
+        schedules:
+          forwardfill: "@every 90s"
+          backfill: "@every 90s"
+    fct_custody_probe_by_client_daily:
+      config:
+        schedules:
+          forwardfill: "@every 90s"
+          backfill: "@every 90s"

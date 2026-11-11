@@ -1,0 +1,15 @@
+table: dim_peer_node
+type: incremental
+interval:
+  type: slot
+  max: 86400
+schedules:
+  forwardfill: "@every 1h"
+  backfill: "@every 1m"
+tags:
+  - peer
+  - peerdas
+  - custody
+dependencies:
+  - "{{transformation}}.int_peer_daily"
+exec: "python3 ${MODELS_SCRIPTS_PATH:-/models/scripts}/dim_peer_node.py"

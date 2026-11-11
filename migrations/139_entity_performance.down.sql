@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS fct_validator_performance_by_entity_rolling ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_validator_performance_by_entity_rolling_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_attestation_vote_correctness_by_entity_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_attestation_vote_correctness_by_entity_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_attestation_vote_correctness_by_entity_hourly ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_attestation_vote_correctness_by_entity_hourly_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_proposal_by_entity_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_proposal_by_entity_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_proposer_by_entity ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_proposer_by_entity_local ON CLUSTER '{cluster}' SYNC;

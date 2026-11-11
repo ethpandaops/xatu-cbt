@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS fct_data_column_completion_by_path_hourly ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_data_column_completion_by_path_hourly_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_data_column_completion_by_path_daily ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_data_column_completion_by_path_daily_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_data_column_partial_message_hourly ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_data_column_partial_message_hourly_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_data_column_partial_message_daily ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_data_column_partial_message_daily_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_peer_partial_message_support_by_client_daily ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_peer_partial_message_support_by_client_daily_local ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_block_data_column_completion ON CLUSTER '{cluster}';
+DROP TABLE IF EXISTS fct_block_data_column_completion_local ON CLUSTER '{cluster}';

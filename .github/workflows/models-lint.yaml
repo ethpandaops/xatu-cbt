@@ -1,0 +1,27 @@
+name: Models Lint
+
+on:
+  pull_request:
+    paths:
+      - 'models/transformations/**'
+      - 'scripts/lint-model-statements.py'
+      - '.github/workflows/models-lint.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # CBT splits transformation SQL on every ';', so one inside a comment or string breaks the model at run time.
+  statements:
+    name: model statement split
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Check transformations split into whole statements
+        run: python3 scripts/lint-model-statements.py models/transformations

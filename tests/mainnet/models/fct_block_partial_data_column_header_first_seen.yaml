@@ -1,0 +1,52 @@
+model: fct_block_partial_data_column_header_first_seen
+network: mainnet
+external_data:
+    libp2p_gossipsub_partial_data_column:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_partial_data_column_header_first_seen_libp2p_gossipsub_partial_data_column.parquet
+        network_column: meta_network_name
+assertions:
+    - name: One row per block
+      sql: |
+        SELECT COUNT(*) AS row_count, uniqExact(slot_start_date_time, block_root) AS block_count
+        FROM fct_block_partial_data_column_header_first_seen FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 10
+    - name: No duplicate blocks
+      sql: |
+        SELECT COUNT(*) - uniqExact(slot_start_date_time, block_root) AS duplicate_rows
+        FROM fct_block_partial_data_column_header_first_seen FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: Header times are ordered from first to latest node
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_partial_data_column_header_first_seen FINAL
+        WHERE NOT (seen_slot_start_diff <= p50_node_seen_slot_start_diff
+          AND p50_node_seen_slot_start_diff <= p90_node_seen_slot_start_diff
+          AND p90_node_seen_slot_start_diff <= max_node_seen_slot_start_diff)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Headers identify the block and the first node
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_partial_data_column_header_first_seen FINAL
+        WHERE node_count = 0
+           OR proposer_index = 0
+           OR blob_count = 0
+           OR first_seen_meta_client_name = ''
+           OR epoch != intDiv(slot, 32)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Headers reach several nodes
+      sql: |
+        SELECT max(node_count) AS max_nodes FROM fct_block_partial_data_column_header_first_seen FINAL
+      assertions:
+        - type: greater_than
+          column: max_nodes
+          value: 5

@@ -29,4 +29,11 @@ WHERE
     AND wallclock_slot_start_date_time >= fromUnixTimestamp({{ $ts }})
     {{- if .cache.is_incremental_scan }}
       AND wallclock_slot_start_date_time <= fromUnixTimestamp({{ $ts }}) + {{ default "100000" .env.EXTERNAL_MODEL_SCAN_SIZE_TIMESTAMP }}
+      {{- if .cache.previous_max }}
+      -- Also bound window_start (leads the sort/partition key) so the scan is pruned; it trails
+      -- wallclock_slot_start_date_time by < 40s. Guarded on previous_max because subtracting
+      -- from fromUnixTimestamp(0) wraps DateTime.
+      AND window_start BETWEEN fromUnixTimestamp({{ $ts }}) - INTERVAL 1 MINUTE
+        AND fromUnixTimestamp({{ $ts }}) + {{ default "100000" .env.EXTERNAL_MODEL_SCAN_SIZE_TIMESTAMP }} + INTERVAL 5 MINUTE
+      {{- end }}
     {{- end }}

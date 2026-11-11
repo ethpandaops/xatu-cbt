@@ -1,0 +1,75 @@
+model: fct_data_column_partial_message_hourly
+network: mainnet
+external_data:
+    libp2p_gossipsub_partial_data_column:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_data_column_completion_by_slot_libp2p_gossipsub_partial_data_column.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_partial_data_column_outcome:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_data_column_completion_by_slot_libp2p_gossipsub_partial_data_column_outcome.parquet
+        network_column: meta_network_name
+assertions:
+    - name: One row per bucket and sentry client
+      sql: |
+        SELECT COUNT(*) AS row_count, uniqExact(hour_start_date_time, meta_consensus_implementation) AS key_count
+        FROM fct_data_column_partial_message_hourly FINAL
+      assertions:
+        - type: equals
+          column: row_count
+          value: 2
+        - type: equals
+          column: key_count
+          value: 2
+    - name: Every partial part and verdict is counted
+      sql: |
+        SELECT
+          SUM(received_metadata_count + received_message_count + sent_metadata_count + sent_message_count) AS parts,
+          SUM(cells_accept_count + cells_ignore_count + cells_reject_count + header_accept_count + header_ignore_count + header_reject_count) AS verdicts
+        FROM fct_data_column_partial_message_hourly FINAL
+      assertions:
+        - type: equals
+          column: parts
+          value: 77712
+        - type: equals
+          column: verdicts
+          value: 9426
+    - name: Lighthouse sentries receive cells and accept new ones
+      sql: |
+        SELECT
+          sumIf(received_cells, meta_consensus_implementation = 'lighthouse') AS received_cells,
+          sumIf(new_cells, meta_consensus_implementation = 'lighthouse') AS new_cells,
+          sumIf(cell_sender_peer_count, meta_consensus_implementation = 'lighthouse') AS senders,
+          sumIf(header_ignore_count, meta_consensus_implementation = 'prysm') AS prysm_header_ignores
+        FROM fct_data_column_partial_message_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: received_cells
+          value: 0
+        - type: greater_than
+          column: new_cells
+          value: 0
+        - type: greater_than
+          column: senders
+          value: 0
+        - type: greater_than
+          column: prysm_header_ignores
+          value: 0
+    - name: Subsets never exceed their totals
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_data_column_partial_message_hourly FINAL
+        WHERE received_cell_message_count > received_message_count
+           OR sent_cell_message_count > sent_message_count
+           OR received_header_count > received_message_count
+           OR new_cells > verdict_cells
+           OR p50_header_seen_slot_start_diff > p90_header_seen_slot_start_diff
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Both sentry clients see Fulu headers
+      sql: |
+        SELECT COUNT(*) AS rows_with_headers FROM fct_data_column_partial_message_hourly FINAL
+        WHERE header_node_block_count > 0 AND p50_header_seen_slot_start_diff > 0
+      assertions:
+        - type: equals
+          column: rows_with_headers
+          value: 2

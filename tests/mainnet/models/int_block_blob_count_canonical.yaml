@@ -4,6 +4,9 @@ external_data:
     canonical_beacon_blob_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_block_blob_count_canonical_canonical_beacon_blob_sidecar.parquet
         network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_reorg_hourly_canonical_beacon_block.parquet
+        network_column: meta_network_name
 assertions:
     - name: Row count should be greater than zero
       sql: |

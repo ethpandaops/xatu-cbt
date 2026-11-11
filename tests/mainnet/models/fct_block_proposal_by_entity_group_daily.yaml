@@ -1,0 +1,50 @@
+model: fct_block_proposal_by_entity_group_daily
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block_graffiti.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Group proposals sum no more than their member entities
+      sql: |
+        SELECT
+          (SELECT sum(block_count + orphaned_block_count + missed_slot_count) FROM fct_block_proposal_by_entity_group_daily FINAL) AS group_proposals,
+          group_proposals <= (SELECT sum(block_count + orphaned_block_count + missed_slot_count) FROM fct_block_proposal_by_entity_daily FINAL WHERE position(entity, 'lido') > 0) AS within_members,
+          (SELECT countIf(entity_group != 'lido' OR mev_block_count > block_count) FROM fct_block_proposal_by_entity_group_daily FINAL) AS bad_rows
+      assertions:
+        - type: equals
+          column: within_members
+          value: 1
+        - type: equals
+          column: bad_rows
+          value: 0

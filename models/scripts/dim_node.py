@@ -98,8 +98,8 @@ def parse_validator_ranges_data(json_data, database_name):
             start = vrange.get('start', 0)
             end = vrange.get('end', 0)
 
-            # Create a row for each validator index in the range (inclusive)
-            for validator_index in range(start, end + 1):
+            # Create a row for each validator index in the range (end is exclusive)
+            for validator_index in range(start, end):
                 validators[validator_index] = {
                     'name': node_name,
                     'groups': groups,

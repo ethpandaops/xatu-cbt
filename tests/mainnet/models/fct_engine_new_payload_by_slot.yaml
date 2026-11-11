@@ -1,6 +1,9 @@
 model: fct_engine_new_payload_by_slot
 network: mainnet
 external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_by_slot_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
     beacon_api_eth_v2_beacon_block:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_by_slot_beacon_api_eth_v2_beacon_block.parquet
         network_column: meta_network_name
@@ -74,4 +77,12 @@ assertions:
       assertions:
         - type: equals
           column: count
+          value: 0
+    - name: Every observation in int_engine_new_payload is counted once
+      sql: |
+        SELECT
+            (SELECT sum(observation_count) FROM fct_engine_new_payload_by_slot FINAL) - (SELECT count() FROM int_engine_new_payload FINAL) AS difference
+      assertions:
+        - type: equals
+          column: difference
           value: 0

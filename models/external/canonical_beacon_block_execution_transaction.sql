@@ -5,7 +5,7 @@ cache:
   full_scan_interval: 24h
 interval:
   type: slot
-lag: 1920
+lag: 384
 ---
 SELECT
     {{ if .cache.is_incremental_scan }}
@@ -15,7 +15,7 @@ SELECT
     {{ end }}
     toUnixTimestamp(max(slot_start_date_time)) as max
 FROM {{ .self.helpers.from }}
-WHERE
+WHERE 
     meta_network_name = '{{ .env.NETWORK }}'
 
     -- previous_max if incremental scan and is set, otherwise default/env
@@ -29,3 +29,4 @@ WHERE
     {{- if .cache.is_incremental_scan }}
       AND slot_start_date_time <= fromUnixTimestamp({{ $ts }}) + {{ default "100000" .env.EXTERNAL_MODEL_SCAN_SIZE_TIMESTAMP }}
     {{- end }}
+

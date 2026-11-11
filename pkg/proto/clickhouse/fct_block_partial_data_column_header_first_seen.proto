@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// When sentry nodes first received the gossipsub partial data column header for a Fulu block, the eager push that lets peers verify cells before the full column arrives
+
+message FctBlockPartialDataColumnHeaderFirstSeen {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The slot number
+  uint32 slot = 12;
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 13;
+  // The epoch number containing the slot
+  uint32 epoch = 14;
+  // The wall clock time when the epoch started
+  uint32 epoch_start_date_time = 15;
+  // The beacon block root hash
+  string block_root = 16;
+  // The validator index of the block proposer, from the header
+  uint32 proposer_index = 17;
+  // Number of KZG commitments in the header
+  uint32 blob_count = 18;
+  // Time from slot start until any sentry node first received a partial data column header for the block, in milliseconds
+  uint32 seen_slot_start_diff = 19;
+  // Median across nodes of the time each node first received a header for the block, in milliseconds from slot start
+  uint32 p50_node_seen_slot_start_diff = 20;
+  // 90th percentile across nodes of the time each node first received a header for the block, in milliseconds from slot start
+  uint32 p90_node_seen_slot_start_diff = 21;
+  // Latest time a node first received a header for the block, in milliseconds from slot start
+  uint32 max_node_seen_slot_start_diff = 22;
+  // Number of sentry nodes that received a partial data column header for the block
+  uint32 node_count = 23;
+  // Name of the sentry node that received a header first
+  string first_seen_meta_client_name = 24;
+}
+
+// Request for listing fct_block_partial_data_column_header_first_seen records
+message ListFctBlockPartialDataColumnHeaderFirstSeenRequest {
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: slot)
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by block_root - The beacon block root hash (ORDER BY column 2 - optional)
+  StringFilter block_root = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by slot - The slot number (PROJECTION: p_by_slot - alternative to slot_start_date_time)
+  UInt32Filter slot = 4 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.projection_name) = "p_by_slot", (clickhouse.v1.projection_alternative_for) = "slot_start_date_time", (clickhouse.v1.required_group) = "primary_key"];
+  // Filter by epoch - The epoch number containing the slot (optional)
+  UInt32Filter epoch = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
+  UInt32Filter epoch_start_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by proposer_index - The validator index of the block proposer, from the header (optional)
+  UInt32Filter proposer_index = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by blob_count - Number of KZG commitments in the header (optional)
+  UInt32Filter blob_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by seen_slot_start_diff - Time from slot start until any sentry node first received a partial data column header for the block, in milliseconds (optional)
+  UInt32Filter seen_slot_start_diff = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_node_seen_slot_start_diff - Median across nodes of the time each node first received a header for the block, in milliseconds from slot start (optional)
+  UInt32Filter p50_node_seen_slot_start_diff = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p90_node_seen_slot_start_diff - 90th percentile across nodes of the time each node first received a header for the block, in milliseconds from slot start (optional)
+  UInt32Filter p90_node_seen_slot_start_diff = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_node_seen_slot_start_diff - Latest time a node first received a header for the block, in milliseconds from slot start (optional)
+  UInt32Filter max_node_seen_slot_start_diff = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by node_count - Number of sentry nodes that received a partial data column header for the block (optional)
+  UInt32Filter node_count = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by first_seen_meta_client_name - Name of the sentry node that received a header first (optional)
+  StringFilter first_seen_meta_client_name = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_block_partial_data_column_header_first_seen to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 15 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctBlockPartialDataColumnHeaderFirstSeen` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 16 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 17 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_block_partial_data_column_header_first_seen records
+message ListFctBlockPartialDataColumnHeaderFirstSeenResponse {
+  // The list of fct_block_partial_data_column_header_first_seen.
+  repeated FctBlockPartialDataColumnHeaderFirstSeen fct_block_partial_data_column_header_first_seen = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_block_partial_data_column_header_first_seen record by primary key
+message GetFctBlockPartialDataColumnHeaderFirstSeenRequest {
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_block_partial_data_column_header_first_seen record
+message GetFctBlockPartialDataColumnHeaderFirstSeenResponse {
+  FctBlockPartialDataColumnHeaderFirstSeen item = 1;
+}
+
+// Query fct_block_partial_data_column_header_first_seen data
+service FctBlockPartialDataColumnHeaderFirstSeenService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctBlockPartialDataColumnHeaderFirstSeenRequest) returns (ListFctBlockPartialDataColumnHeaderFirstSeenResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_partial_data_column_header_first_seen"
+    };
+  }
+  // Get record | Retrieve a single record by slot_start_date_time
+  rpc Get(GetFctBlockPartialDataColumnHeaderFirstSeenRequest) returns (GetFctBlockPartialDataColumnHeaderFirstSeenResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_partial_data_column_header_first_seen/{slot_start_date_time}"
+    };
+  }
+}

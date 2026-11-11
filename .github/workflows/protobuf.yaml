@@ -35,6 +35,7 @@ jobs:
               # Check for all three required protobuf files
               if [ ! -f "pkg/proto/clickhouse/${model_name}.proto" ] || \
                  [ ! -f "pkg/proto/clickhouse/${model_name}.go" ] || \
+                 [ ! -f "pkg/proto/clickhouse/${model_name}.row.go" ] || \
                  [ ! -f "pkg/proto/clickhouse/${model_name}.pb.go" ]; then
                 missing_protobufs="${missing_protobufs}${model_name} "
               fi

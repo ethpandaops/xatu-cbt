@@ -14,53 +14,63 @@ tags:
   - head
 dependencies:
   - "{{external}}.beacon_api_eth_v1_events_block_gossip"
-  - "{{external}}.beacon_api_eth_v1_events_block"
   - - "{{external}}.beacon_api_eth_v1_proposer_duty"
     - "{{external}}.canonical_beacon_proposer_duty"
-  - "{{external}}.libp2p_gossipsub_beacon_block"
+  # The libp2p pipeline is deployed independently of the beacon API sentries
+  # and can stop publishing (e.g. a sidecar that predates a fork's gossip
+  # changes). OR-grouping it with the block event keeps a dead gossip feed
+  # from stalling forwardfill; whichever source is fresher gates the interval.
+  - - "{{external}}.beacon_api_eth_v1_events_block"
+    - "{{external}}.libp2p_gossipsub_beacon_block"
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
--- Proposer duties are deterministic per epoch (fixed by the RANDAO seed
--- epochs in advance), so the head-event stream and the canonical table can
--- never disagree on CONTENT, only on presence. Unioning canonical in makes
--- it a backstop: at the head its range is empty (it lags finalization) and
--- it contributes nothing, while in backfilled history it fills slots whose
--- head-event duty batches were lost to sentry outages. The two duty sources
--- form an OR-group dependency, so forwardfill is not capped at canonical's
--- lag. The outer DISTINCT collapses the union back to one row per slot
--- because the sources' content is identical.
-WITH proposer_duties AS (
-    SELECT DISTINCT
+-- The table holds one row per slot, so each slot needs exactly one duty. The
+-- sources can disagree: a sentry whose beacon node is on a fork or out of
+-- sync publishes a whole epoch of duties nobody else reports. Prefer the
+-- canonical duty, which covers finalized slots, and otherwise take the duty
+-- reported by the most sentries. Ties go to the higher index, then the
+-- greater pubkey, so the rank is a total order and every run keeps the same
+-- duty. The canonical source is unioned in as a backstop for head-event
+-- batches lost to sentry outages. The two duty sources form an OR-group
+-- dependency, so forwardfill is not capped at canonical's lag.
+WITH duty_candidates AS (
+    SELECT
         slot,
         slot_start_date_time,
         epoch,
         epoch_start_date_time,
-        proposer_validator_index,
-        proposer_pubkey
-    FROM (
-        SELECT
-            slot,
-            slot_start_date_time,
-            epoch,
-            epoch_start_date_time,
-            proposer_validator_index,
-            proposer_pubkey
-        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-            AND meta_network_name = '{{ .env.NETWORK }}'
-        UNION ALL
-        SELECT
-            slot,
-            slot_start_date_time,
-            epoch,
-            epoch_start_date_time,
-            proposer_validator_index,
-            proposer_pubkey
-        FROM {{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-            AND meta_network_name = '{{ .env.NETWORK }}'
-    )
+        proposer_validator_index AS candidate_index,
+        proposer_pubkey AS candidate_pubkey,
+        (0, uniqExact(meta_client_name), proposer_validator_index, proposer_pubkey) AS candidate_rank
+    FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_proposer_duty" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time, proposer_validator_index, proposer_pubkey
+    UNION ALL
+    SELECT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        proposer_validator_index AS candidate_index,
+        proposer_pubkey AS candidate_pubkey,
+        (1, toUInt64(0), proposer_validator_index, proposer_pubkey) AS candidate_rank
+    FROM {{ index .dep "{{external}}" "canonical_beacon_proposer_duty" "helpers" "from" }} FINAL
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+        AND meta_network_name = '{{ .env.NETWORK }}'
+),
+
+proposer_duties AS (
+    SELECT
+        slot,
+        slot_start_date_time,
+        epoch,
+        epoch_start_date_time,
+        argMax(candidate_index, candidate_rank) AS proposer_validator_index,
+        argMax(candidate_pubkey, candidate_rank) AS proposer_pubkey
+    FROM duty_candidates
+    GROUP BY slot, slot_start_date_time, epoch, epoch_start_date_time
 ),
 
 -- Sentries publish a whole epoch's proposer duties as one batch around the
@@ -117,6 +127,30 @@ gate AS (
         ) - toInt64((SELECT count() FROM duty_slots)) AS missing_slots
 ),
 
+-- A block root counts only if at least two beacon nodes accepted it. block_gossip fires after gossip
+-- validation and block after import. libp2p sentries record gossip before validating it, and some
+-- relays (gnode-beacon) re-encode blocks, which changes the root and breaks the proposer signature.
+-- One beacon node (a Prysm node, 2026-09-16 to 09-30) emitted block_gossip for those re-encoded
+-- roots too, so a single node's word is not enough.
+accepted_roots AS (
+    SELECT block_root
+    FROM (
+        SELECT toString(block) AS block_root, meta_client_name
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+
+        UNION ALL
+
+        SELECT toString(block) AS block_root, meta_client_name
+        FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }}
+        WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
+            AND meta_network_name = '{{ .env.NETWORK }}'
+    )
+    GROUP BY block_root
+    HAVING uniqExact(meta_client_name) >= 2
+),
+
 block_gossip AS (
     SELECT DISTINCT
         slot,
@@ -125,8 +159,9 @@ block_gossip AS (
         epoch_start_date_time,
         block as block_root
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block_gossip" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND toString(block) GLOBAL IN (SELECT block_root FROM accepted_roots)
 ),
 
 block_events AS (
@@ -137,8 +172,9 @@ block_events AS (
         epoch_start_date_time,
         block as block_root
     FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_block" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND toString(block) GLOBAL IN (SELECT block_root FROM accepted_roots)
 ),
 
 gossipsub_blocks AS (
@@ -150,8 +186,10 @@ gossipsub_blocks AS (
         block as block_root,
         proposer_index
     FROM {{ index .dep "{{external}}" "libp2p_gossipsub_beacon_block" "helpers" "from" }} FINAL
-    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 90 SECOND AND fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
+        AND if(startsWith(block, '0x'), toString(block), concat('0x', toStringCutToZero(block)))
+            GLOBAL IN (SELECT block_root FROM accepted_roots)
 ),
 
 all_blocks AS (

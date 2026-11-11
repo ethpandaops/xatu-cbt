@@ -1,0 +1,16 @@
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_pair_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_graffiti_client_version_pair_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_payload_status_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_block_payload_status_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_engine_new_payload_duration_chunked_50ms_hourly ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_engine_new_payload_duration_chunked_50ms_hourly_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_engine_new_payload_duration_chunked_50ms_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_engine_new_payload_duration_chunked_50ms_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_engine_get_blobs_duration_chunked_50ms_hourly ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_engine_get_blobs_duration_chunked_50ms_hourly_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_engine_get_blobs_duration_chunked_50ms_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_engine_get_blobs_duration_chunked_50ms_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_epoch_summary_canonical ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_epoch_summary_canonical_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_node_last_seen ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_node_last_seen_local ON CLUSTER '{cluster}' SYNC;

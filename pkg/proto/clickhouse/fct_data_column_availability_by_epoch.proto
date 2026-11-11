@@ -9,8 +9,8 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Data column availability by epoch and column index
 
+// Custody probe results by epoch and column index, rolled up from fct_data_column_availability_by_slot. Only custody probes count. The last 19 days are recounted every hour
 message FctDataColumnAvailabilityByEpoch {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -130,7 +130,7 @@ message GetFctDataColumnAvailabilityByEpochResponse {
 
 // Query fct_data_column_availability_by_epoch data
 service FctDataColumnAvailabilityByEpochService {
-  // List records | Retrieve paginated results with optional filtering
+  // List records | Custody probe results by epoch and column index, rolled up from fct_data_column_availability_by_slot. Only custody probes count. The last 19 days are recounted every hour
   rpc List(ListFctDataColumnAvailabilityByEpochRequest) returns (ListFctDataColumnAvailabilityByEpochResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_data_column_availability_by_epoch"

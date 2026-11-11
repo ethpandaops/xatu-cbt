@@ -1,0 +1,70 @@
+model: fct_block_first_seen_by_network_weekly
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_block_first_seen_by_network_weekly FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: One row per period
+      sql: |
+        SELECT COUNT(*) - uniqExact(week_start_date) AS duplicate_rows FROM fct_block_first_seen_by_network_weekly FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: Node count and spread match the per-node medians, every node weighing the same
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT week_start_date, node_count, p10_median_seen_slot_start_diff AS p10, p50_median_seen_slot_start_diff AS p50, p90_median_seen_slot_start_diff AS p90
+          FROM fct_block_first_seen_by_network_weekly FINAL
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT week_start_date, toUInt32(count()) AS node_count, quantilesExactInclusive(0.1, 0.5, 0.9)(p50_seen_slot_start_diff) AS q
+          FROM fct_block_first_seen_by_node_weekly FINAL
+          GROUP BY week_start_date
+        ) AS b USING (week_start_date)
+        WHERE a.node_count != b.node_count OR abs(a.p10 - b.q[1]) > 0.001 OR abs(a.p50 - b.q[2]) > 0.001 OR abs(a.p90 - b.q[3]) > 0.001
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Slot count is the slots any node saw a block in
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT week_start_date, slot_count FROM fct_block_first_seen_by_network_weekly FINAL
+        ) AS a
+        INNER JOIN (
+          SELECT toMonday(slot_start_date_time) AS week_start_date, toUInt32(uniqExact(slot_start_date_time)) AS slot_count
+          FROM fct_block_first_seen_by_node FINAL
+          WHERE node_id != ''
+          GROUP BY week_start_date
+        ) AS b USING (week_start_date)
+        WHERE a.slot_count != b.slot_count
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Percentiles are ordered and counts are positive
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_network_weekly FINAL
+        WHERE p10_median_seen_slot_start_diff > p50_median_seen_slot_start_diff OR p50_median_seen_slot_start_diff > p90_median_seen_slot_start_diff OR node_count = 0 OR slot_count = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

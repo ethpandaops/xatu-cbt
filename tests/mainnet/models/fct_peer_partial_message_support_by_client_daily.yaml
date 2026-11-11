@@ -1,0 +1,64 @@
+model: fct_peer_partial_message_support_by_client_daily
+network: mainnet
+external_data:
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_peer_partial_message_support_by_client_hourly_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    libp2p_rpc_meta_subscription:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_peer_partial_message_support_by_client_hourly_libp2p_rpc_meta_subscription.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Rows exist for the fixture day
+      sql: |
+        SELECT COUNT(*) AS row_count, uniqExact(day_start_date) AS day_count, max(hour_count) AS hours
+        FROM fct_peer_partial_message_support_by_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 20
+        - type: equals
+          column: day_count
+          value: 1
+        - type: equals
+          column: hours
+          value: 1
+    - name: With one hour the averages equal the hourly counts
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT peer_implementation, peer_version, avg_connected_peer_count, avg_subscribed_peer_count, avg_requests_partial_peer_count
+          FROM fct_peer_partial_message_support_by_client_daily FINAL
+        ) AS d
+        FULL OUTER JOIN (
+          SELECT peer_implementation, peer_version, connected_peer_count, subscribed_peer_count, requests_partial_peer_count
+          FROM fct_peer_partial_message_support_by_client_hourly FINAL
+        ) AS h USING (peer_implementation, peer_version)
+        WHERE d.avg_connected_peer_count != h.connected_peer_count
+           OR d.avg_subscribed_peer_count != h.subscribed_peer_count
+           OR d.avg_requests_partial_peer_count != h.requests_partial_peer_count
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Subsets never exceed their population
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_peer_partial_message_support_by_client_daily FINAL
+        WHERE avg_gossipsub_v13_peer_count > avg_connected_peer_count
+           OR avg_requests_partial_peer_count > avg_subscribed_peer_count
+           OR avg_supports_sending_partial_peer_count > avg_subscribed_peer_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Lighthouse and Prysm peers request partial messages
+      sql: |
+        SELECT
+          sumIf(avg_requests_partial_peer_count, peer_implementation = 'lighthouse') AS lighthouse_peers,
+          sumIf(avg_requests_partial_peer_count, peer_implementation = 'prysm') AS prysm_peers
+        FROM fct_peer_partial_message_support_by_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: lighthouse_peers
+          value: 0
+        - type: greater_than
+          column: prysm_peers
+          value: 0

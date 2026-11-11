@@ -23,6 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Custody probe results by epoch and column index, rolled up from fct_data_column_availability_by_slot. Only custody probes count. The last 19 days are recounted every hour
 type FctDataColumnAvailabilityByEpoch struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
