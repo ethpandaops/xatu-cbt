@@ -20,7 +20,7 @@ ORDER BY
     (`hour_start_date_time`, `reason`)
 SETTINGS
     deduplicate_merge_projection_mode = 'rebuild'
-COMMENT 'Hourly counts of transactions that left Xatu sentry txpools without being included, by removal reason. replaced and nonce_consumed are reliable; dropped is churn-heavy';
+COMMENT 'Hourly counts of transactions that left Xatu sentry txpools without being included, by removal reason. replaced and nonce_consumed are reliable, while dropped is churn-heavy';
 
 CREATE TABLE fct_transaction_mempool_removal_hourly ON CLUSTER '{cluster}' AS fct_transaction_mempool_removal_hourly_local ENGINE = Distributed(
     '{cluster}',
