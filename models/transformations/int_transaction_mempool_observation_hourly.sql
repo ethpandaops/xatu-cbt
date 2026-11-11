@@ -21,6 +21,9 @@ dependencies:
 -- re-aggregated with complete data and replaced via ReplacingMergeTree.
 -- Identity fields are constant per hash so any() is safe. The first observer is
 -- chosen deterministically by (event_date_time, meta_client_name).
+-- Only mimicry and spageth rows are read. Xatu sentries rebuild txpool_content
+-- transactions unsigned, so their hashes never match the real ones (no sentry row
+-- has matched an included transaction since they began writing in April 2025).
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -53,6 +56,7 @@ SELECT
 FROM {{ index .dep "{{external}}" "mempool_transaction" "helpers" "from" }} m
 WHERE
     meta_network_name = '{{ .env.NETWORK }}'
+    AND (meta_client_implementation = 'spageth' OR meta_client_name LIKE '%mimicry%')
     AND event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 65 MINUTE
         AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 65 MINUTE
     AND toStartOfHour(event_date_time) >= toStartOfHour(fromUnixTimestamp({{ .bounds.start }}))
