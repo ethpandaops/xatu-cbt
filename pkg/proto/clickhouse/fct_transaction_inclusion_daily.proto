@@ -8,8 +8,8 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Daily counts of transactions included in canonical blocks, split by build path and transaction type
 
+// Daily counts of transactions included in canonical blocks, split by build path and transaction type
 message FctTransactionInclusionDaily {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -112,7 +112,7 @@ message GetFctTransactionInclusionDailyResponse {
 
 // Query fct_transaction_inclusion_daily data
 service FctTransactionInclusionDailyService {
-  // List records | Retrieve paginated results with optional filtering
+  // List records | Daily counts of transactions included in canonical blocks, split by build path and transaction type
   rpc List(ListFctTransactionInclusionDailyRequest) returns (ListFctTransactionInclusionDailyResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_transaction_inclusion_daily"

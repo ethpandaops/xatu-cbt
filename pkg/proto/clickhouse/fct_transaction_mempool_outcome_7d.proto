@@ -9,8 +9,8 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// One immutable row per transaction hash observed in the public mempool, stating its fixed-horizon outcome within 7 days of first sighting. An observation episode starts when a hash is sighted with no sightings in the preceding 7 days. A hash re-sighted after more than 7 days of silence starts a new episode and a new row
 
+// One immutable row per transaction hash observed in the public mempool, stating its fixed-horizon outcome within 7 days of first sighting. An observation episode starts when a hash is sighted with no sightings in the preceding 7 days. A hash re-sighted after more than 7 days of silence starts a new episode and a new row
 message FctTransactionMempoolOutcome7d {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -186,7 +186,7 @@ message GetFctTransactionMempoolOutcome7dResponse {
 
 // Query fct_transaction_mempool_outcome_7d data
 service FctTransactionMempoolOutcome7dService {
-  // List records | Retrieve paginated results with optional filtering
+  // List records | One immutable row per transaction hash observed in the public mempool, stating its fixed-horizon outcome within 7 days of first sighting. An observation episode starts when a hash is sighted with no sightings in the preceding 7 days. A hash re-sighted after more than 7 days of silence starts a new episode and a new row
   rpc List(ListFctTransactionMempoolOutcome7dRequest) returns (ListFctTransactionMempoolOutcome7dResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_transaction_mempool_outcome_7d"

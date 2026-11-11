@@ -21,6 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// One row per transaction hash per hour in which it was sighted in the public mempool by at least one sentry. Rows summarise the sightings within that hour only. A transaction sighted across multiple hours has multiple rows
 type IntTransactionMempoolObservationHourly struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

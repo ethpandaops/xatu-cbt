@@ -23,6 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Daily cohort outcomes for transactions first sighted in the public mempool, resolved at the fixed 7 day horizon
 type FctTransactionMempoolOutcomeDaily struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

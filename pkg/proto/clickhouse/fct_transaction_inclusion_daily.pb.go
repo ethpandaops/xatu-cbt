@@ -22,6 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Daily counts of transactions included in canonical blocks, split by build path and transaction type
 type FctTransactionInclusionDaily struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -9,8 +9,8 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// One row per transaction included in a canonical beacon block execution payload. Carries no mempool or relay context so it can cover the full post-Merge history
 
+// One row per transaction included in a canonical beacon block execution payload. Carries no mempool or relay context so it can cover the full post-Merge history
 message FctTransactionInclusion {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -155,7 +155,7 @@ message GetFctTransactionInclusionResponse {
 
 // Query fct_transaction_inclusion data
 service FctTransactionInclusionService {
-  // List records | Retrieve paginated results with optional filtering
+  // List records | One row per transaction included in a canonical beacon block execution payload. Carries no mempool or relay context so it can cover the full post-Merge history
   rpc List(ListFctTransactionInclusionRequest) returns (ListFctTransactionInclusionResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_transaction_inclusion"

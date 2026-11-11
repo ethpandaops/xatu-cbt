@@ -22,6 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Hourly counts of transactions included in canonical blocks, split by build path and transaction type
 type FctTransactionInclusionHourly struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

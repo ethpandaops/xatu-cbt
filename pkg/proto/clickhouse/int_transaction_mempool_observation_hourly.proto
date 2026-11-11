@@ -6,8 +6,8 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// One row per transaction hash per hour in which it was sighted in the public mempool by at least one sentry. Rows summarise the sightings within that hour only. A transaction sighted across multiple hours has multiple rows
 
+// One row per transaction hash per hour in which it was sighted in the public mempool by at least one sentry. Rows summarise the sightings within that hour only. A transaction sighted across multiple hours has multiple rows
 message IntTransactionMempoolObservationHourly {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -159,7 +159,7 @@ message GetIntTransactionMempoolObservationHourlyResponse {
 
 // Query int_transaction_mempool_observation_hourly data
 service IntTransactionMempoolObservationHourlyService {
-  // List records | Retrieve paginated results with optional filtering
+  // List records | One row per transaction hash per hour in which it was sighted in the public mempool by at least one sentry. Rows summarise the sightings within that hour only. A transaction sighted across multiple hours has multiple rows
   rpc List(ListIntTransactionMempoolObservationHourlyRequest) returns (ListIntTransactionMempoolObservationHourlyResponse);
   // Get record | Retrieve a single record by primary key
   rpc Get(GetIntTransactionMempoolObservationHourlyRequest) returns (GetIntTransactionMempoolObservationHourlyResponse);

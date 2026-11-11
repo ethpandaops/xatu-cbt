@@ -23,6 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// One row per transaction included in a canonical beacon block execution payload. Carries no mempool or relay context so it can cover the full post-Merge history
 type FctTransactionInclusion struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

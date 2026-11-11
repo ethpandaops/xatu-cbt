@@ -9,8 +9,8 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Daily cohort outcomes for transactions first sighted in the public mempool, resolved at the fixed 7 day horizon
 
+// Daily cohort outcomes for transactions first sighted in the public mempool, resolved at the fixed 7 day horizon
 message FctTransactionMempoolOutcomeDaily {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -149,7 +149,7 @@ message GetFctTransactionMempoolOutcomeDailyResponse {
 
 // Query fct_transaction_mempool_outcome_daily data
 service FctTransactionMempoolOutcomeDailyService {
-  // List records | Retrieve paginated results with optional filtering
+  // List records | Daily cohort outcomes for transactions first sighted in the public mempool, resolved at the fixed 7 day horizon
   rpc List(ListFctTransactionMempoolOutcomeDailyRequest) returns (ListFctTransactionMempoolOutcomeDailyResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_transaction_mempool_outcome_daily"
