@@ -19,7 +19,8 @@ dependencies:
 -- by removal reason. replaced and nonce_consumed are reliable. dropped counts hashes that
 -- left at least one sentry's pool, most of which are seen again later, so it is churn
 -- rather than eviction. The scan expands to complete hour boundaries so partial boundary
--- hours get re-aggregated and replaced.
+-- hours get re-aggregated and replaced. parallel_distributed_insert_select is off because
+-- with it this plain INSERT SELECT runs on each shard and writes one partial row per shard.
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -46,3 +47,4 @@ FROM {{ index .dep "{{transformation}}" "int_transaction_mempool_removal_hourly"
 WHERE hour_start_date_time BETWEEN toStartOfHour(fromUnixTimestamp({{ .bounds.start }}))
     AND toStartOfHour(fromUnixTimestamp({{ .bounds.end }}))
 GROUP BY hour_start_date_time, reason
+SETTINGS parallel_distributed_insert_select = 0
