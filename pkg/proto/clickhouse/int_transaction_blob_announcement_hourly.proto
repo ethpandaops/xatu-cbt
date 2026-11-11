@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// One row per blob transaction hash per hour in which mimicry clients received an announcement of it from an execution layer peer
+message IntTransactionBlobAnnouncementHourly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The start of the hour bucket the announcements fall in
+  uint32 hour_start_date_time = 12;
+  // The blob transaction hash
+  string hash = 13;
+  // Earliest announcement received this hour across mimicry clients
+  int64 first_announced_date_time = 14;
+  // Latest announcement received this hour across mimicry clients
+  int64 last_announced_date_time = 15;
+  // Peer announcements received this hour, roughly the number of announcing peers summed over mimicry clients
+  uint32 announcement_count = 16;
+  // Distinct mimicry clients that received an announcement this hour
+  uint32 unique_sentries = 17;
+  // Announced transaction size in bytes, including blobs
+  uint32 size = 18;
+  // Distinct execution clients of the announcing peers, sorted
+  repeated string peer_implementations = 19;
+  // Execution client of the peer whose announcement arrived first
+  string first_peer_implementation = 20;
+  // Client version of the peer whose announcement arrived first
+  string first_peer_version = 21;
+  // Mimicry client that received the first announcement
+  string first_sentry_name = 22;
+  // City of the mimicry client that received the first announcement
+  string first_sentry_geo_city = 23;
+  // Country code of the mimicry client that received the first announcement
+  string first_sentry_geo_country_code = 24;
+  // Continent code of the mimicry client that received the first announcement
+  string first_sentry_geo_continent_code = 25;
+}
+
+// Request for listing int_transaction_blob_announcement_hourly records
+message ListIntTransactionBlobAnnouncementHourlyRequest {
+  // Filter by hour_start_date_time - The start of the hour bucket the announcements fall in (PRIMARY KEY - required unless using alternatives: hash)
+  UInt32Filter hour_start_date_time = 1;
+
+  // Filter by hash - The blob transaction hash (ORDER BY column 2 - optional)
+  StringFilter hash = 2;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3;
+  // Filter by first_announced_date_time - Earliest announcement received this hour across mimicry clients (optional)
+  Int64Filter first_announced_date_time = 4;
+  // Filter by last_announced_date_time - Latest announcement received this hour across mimicry clients (optional)
+  Int64Filter last_announced_date_time = 5;
+  // Filter by announcement_count - Peer announcements received this hour, roughly the number of announcing peers summed over mimicry clients (optional)
+  UInt32Filter announcement_count = 6;
+  // Filter by unique_sentries - Distinct mimicry clients that received an announcement this hour (optional)
+  UInt32Filter unique_sentries = 7;
+  // Filter by size - Announced transaction size in bytes, including blobs (optional)
+  UInt32Filter size = 8;
+  // Filter by peer_implementations - Distinct execution clients of the announcing peers, sorted (optional)
+  ArrayStringFilter peer_implementations = 9;
+  // Filter by first_peer_implementation - Execution client of the peer whose announcement arrived first (optional)
+  StringFilter first_peer_implementation = 10;
+  // Filter by first_peer_version - Client version of the peer whose announcement arrived first (optional)
+  StringFilter first_peer_version = 11;
+  // Filter by first_sentry_name - Mimicry client that received the first announcement (optional)
+  StringFilter first_sentry_name = 12;
+  // Filter by first_sentry_geo_city - City of the mimicry client that received the first announcement (optional)
+  StringFilter first_sentry_geo_city = 13;
+  // Filter by first_sentry_geo_country_code - Country code of the mimicry client that received the first announcement (optional)
+  StringFilter first_sentry_geo_country_code = 14;
+  // Filter by first_sentry_geo_continent_code - Continent code of the mimicry client that received the first announcement (optional)
+  StringFilter first_sentry_geo_continent_code = 15;
+
+  // The maximum number of int_transaction_blob_announcement_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 16;
+  // A page token, received from a previous `ListIntTransactionBlobAnnouncementHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 17;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 18;
+}
+
+// Response for listing int_transaction_blob_announcement_hourly records
+message ListIntTransactionBlobAnnouncementHourlyResponse {
+  // The list of int_transaction_blob_announcement_hourly.
+  repeated IntTransactionBlobAnnouncementHourly int_transaction_blob_announcement_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_transaction_blob_announcement_hourly record by primary key
+message GetIntTransactionBlobAnnouncementHourlyRequest {
+  // The start of the hour bucket the announcements fall in
+  uint32 hour_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single int_transaction_blob_announcement_hourly record
+message GetIntTransactionBlobAnnouncementHourlyResponse {
+  IntTransactionBlobAnnouncementHourly item = 1;
+}
+
+// Query int_transaction_blob_announcement_hourly data
+service IntTransactionBlobAnnouncementHourlyService {
+  // List records | One row per blob transaction hash per hour in which mimicry clients received an announcement of it from an execution layer peer
+  rpc List(ListIntTransactionBlobAnnouncementHourlyRequest) returns (ListIntTransactionBlobAnnouncementHourlyResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntTransactionBlobAnnouncementHourlyRequest) returns (GetIntTransactionBlobAnnouncementHourlyResponse);
+}

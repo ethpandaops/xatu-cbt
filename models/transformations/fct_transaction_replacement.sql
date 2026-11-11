@@ -178,7 +178,9 @@ indexed AS (
         lagInFrame(a.gas_tip_cap) OVER w AS prev_gas_tip_cap,
         lagInFrame(a.gas_fee_cap) OVER w AS prev_gas_fee_cap
     FROM attempts a
-    WHERE (a.`from`, a.nonce) GLOBAL IN (SELECT `from`, nonce FROM multi_groups)
+    -- A join, not GLOBAL IN: GLOBAL IN against a CTE matches nothing when its left side
+    -- is also a CTE rather than a table read, which silently emptied this model.
+    GLOBAL INNER JOIN multi_groups mg ON mg.`from` = a.`from` AND mg.nonce = a.nonce
     WINDOW w AS (PARTITION BY a.`from`, a.nonce ORDER BY a.afs ASC, a.hash ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
 )
 SELECT
