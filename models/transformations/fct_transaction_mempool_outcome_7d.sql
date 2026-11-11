@@ -17,7 +17,7 @@ tags:
 dependencies:
   - "{{transformation}}.int_transaction_mempool_observation_hourly"
   - "{{transformation}}.fct_transaction_inclusion"
-  - "{{transformation}}.fct_block_mev"
+  - "{{transformation}}.int_block_mev_canonical"
   - "{{external}}.mempool_transaction"
   - "{{external}}.canonical_beacon_block_execution_transaction"
 ---
@@ -187,10 +187,9 @@ mev AS (
     SELECT DISTINCT
         slot_start_date_time,
         block_root
-    FROM {{ index .dep "{{transformation}}" "fct_block_mev" "helpers" "from" }} FINAL
+    FROM {{ index .dep "{{transformation}}" "int_block_mev_canonical" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 14 DAY
         AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 7 DAY
-        AND status = 'canonical'
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,

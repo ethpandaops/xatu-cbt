@@ -14,7 +14,7 @@ tags:
   - canonical
 dependencies:
   - "{{transformation}}.fct_transaction_inclusion"
-  - "{{transformation}}.fct_block_mev"
+  - "{{transformation}}.int_block_mev_canonical"
 ---
 -- Daily counts of transactions included in canonical blocks, split by build path
 -- and transaction type. The scan expands to complete day boundaries so partial
@@ -39,10 +39,9 @@ mev AS (
     SELECT DISTINCT
         slot_start_date_time,
         block_root
-    FROM {{ index .dep "{{transformation}}" "fct_block_mev" "helpers" "from" }} FINAL
+    FROM {{ index .dep "{{transformation}}" "int_block_mev_canonical" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 25 HOUR
         AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 25 HOUR
-        AND status = 'canonical'
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,

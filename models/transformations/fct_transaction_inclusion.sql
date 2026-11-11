@@ -14,7 +14,7 @@ tags:
   - canonical
 dependencies:
   - "{{external}}.canonical_beacon_block_execution_transaction"
-  - "{{transformation}}.fct_block"
+  - "{{transformation}}.int_block_canonical"
 ---
 -- One row per transaction included in a canonical beacon block execution payload.
 -- Carries no mempool or relay context so its processable range is not gated by
@@ -25,9 +25,8 @@ WITH blocks AS (
         slot_start_date_time,
         block_root,
         execution_payload_block_number
-    FROM {{ index .dep "{{transformation}}" "fct_block" "helpers" "from" }} FINAL
+    FROM {{ index .dep "{{transformation}}" "int_block_canonical" "helpers" "from" }} FINAL
     WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
-        AND status = 'canonical'
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
