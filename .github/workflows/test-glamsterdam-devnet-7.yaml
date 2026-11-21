@@ -52,8 +52,6 @@ jobs:
         with:
           go-version: '1.26'
           check-latest: true
-      - name: Pull Docker Hub images through the pull-through cache
-        run: ./.github/scripts/use-docker-hub-cache.sh
       - name: Build xatu-cbt
         run: make build
       - name: Create cache directory
