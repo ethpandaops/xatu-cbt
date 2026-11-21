@@ -16,6 +16,10 @@ on:
         default: 'debian-latest'
         type: string
 
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   DOCKER_REPO: ghcr.io/ethpandaops/xatu-cbt
 
