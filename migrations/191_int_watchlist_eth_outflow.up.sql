@@ -2,8 +2,8 @@
 -- Migration 191: ETH sent out of a fixed list of addresses
 -- ============================================================================
 -- Adds:
---   1. int_watchlist_eth_outflow - one row per successful call frame that sends
---      ETH from a watched address to an address outside the list. Ordered by
+--   1. int_watchlist_eth_outflow - one row per ETH transfer from a watched
+--      address to an address outside the list that the EVM kept. Ordered by
 --      recipient, so lookups by to_address and block range read a few granules.
 -- ============================================================================
 

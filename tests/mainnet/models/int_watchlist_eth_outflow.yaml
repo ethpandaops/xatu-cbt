@@ -1,0 +1,73 @@
+model: int_watchlist_eth_outflow
+network: mainnet
+external_data:
+    # Every trace in blocks 13,150,209 to 13,150,259, including duplicate rows from repeat loads.
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_watchlist_eth_outflow_canonical_execution_traces.parquet
+        network_column: meta_network_name
+assertions:
+    # Two withdrawals pay a recipient and a relayer each. The other value-bearing
+    # frames from watched addresses are a payout in a failed transaction, the
+    # proxy forwarding refunds into an ERC20 pool, a deposit into a watched pool
+    # and delegate_calls.
+    - name: Only the four payouts the EVM kept
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_watchlist_eth_outflow FINAL
+      assertions:
+        - type: equals
+          column: row_count
+          value: 4
+    - name: No payout from a failed transaction
+      sql: |
+        SELECT COUNT(*) AS failed_tx_rows FROM int_watchlist_eth_outflow FINAL
+        WHERE transaction_hash = '0xd55098957e8663075b38128ee7d13372f296ccd502f8d6ebf46888ded334cb55'
+      assertions:
+        - type: equals
+          column: failed_tx_rows
+          value: 0
+    - name: No refund forwarded into another contract's withdraw
+      sql: |
+        SELECT COUNT(*) AS forwarded_rows FROM int_watchlist_eth_outflow FINAL
+        WHERE to_address = '0x610b717796ad172b316836ac95a2ffad065ceab4'
+      assertions:
+        - type: equals
+          column: forwarded_rows
+          value: 0
+    - name: The recipient lookup finds only the payout that happened
+      sql: |
+        SELECT
+          COUNT(*) AS transfers,
+          countIf(
+            block_number = 13150209
+            AND transaction_hash = '0x859fab5895dcce7f4be993e63d6d1918705be782ebd7efb2d0f003288e781d62'
+            AND trace_address = '0_1'
+            AND from_address = '0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc'
+            AND value = 38760000000000000
+          ) AS matching
+        FROM int_watchlist_eth_outflow FINAL
+        WHERE to_address = '0xa6f78da4cd2f8cc445ab4ff2bdaf22e048f76361'
+      assertions:
+        - type: equals
+          column: transfers
+          value: 1
+        - type: equals
+          column: matching
+          value: 1
+    - name: Transfers leave the list for a lowercase address
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_watchlist_eth_outflow FINAL
+        WHERE value = 0
+            OR to_address IN (
+                '0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc',
+                '0x47ce0c6ed5b0ce3d3a51fdb1c52dc66a7c3c2936',
+                '0x910cbd523d972eb0a6f4cae4618ad62622b39dbf',
+                '0xa160cdab225685da1d56aa342ad8841c3b53f291',
+                '0x722122df12d4e14e13ac3b6895a86e84145b6967',
+                '0xd90e2f925da726b50c4ed8d0fb90ad053324f31b'
+            )
+            OR to_address != lower(to_address)
+            OR length(to_address) != 42
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
