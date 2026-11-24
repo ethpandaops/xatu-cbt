@@ -1,8 +1,8 @@
 name: Devnet release branches
 
 # Creates release/<network> from master for every devnet in the org's
-# *-devnets repositories (one per kubernetes/<dir>, network <class>-<dir>) that
-# has no branch yet. The push runs docker.yml, which publishes
+# *-devnets repositories (one per kubernetes/<dir>) that has no branch yet,
+# then dispatches docker.yml on it, which publishes
 # ethpandaops/xatu-cbt:release-<network>. Existing branches are never touched;
 # see scripts/devnet-release-branches.sh.
 
@@ -31,6 +31,9 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # create release branches
+      actions: write # dispatch docker.yml on them
     env:
       # Pull requests only report what the scheduled run would create.
       DRY_RUN: ${{ github.event_name == 'pull_request' || inputs.dry_run == true }}
@@ -42,17 +45,8 @@ jobs:
 
       - name: Create missing release branches
         env:
-          # The bot PAT lists private *-devnets repositories too, and its pushes
-          # run docker.yml as a push, which the image mirror requires for
-          # release tags. A branch the default GITHUB_TOKEN creates runs nothing.
-          # Without the secret (fork pull requests), a dry run still sees every
-          # public repository.
-          READ_TOKEN: ${{ secrets.EPOBOT_TOKEN || github.token }}
-          WRITE_TOKEN: ${{ secrets.EPOBOT_TOKEN }}
+          # GITHUB_TOKEN sees public repositories only, so private *-devnets
+          # repositories are not discovered.
+          GH_TOKEN: ${{ github.token }}
           TARGET_REPO: ${{ github.repository }}
-        run: |
-          if [ "$DRY_RUN" != "true" ] && [ -z "$WRITE_TOKEN" ]; then
-            echo "::error::The EPOBOT_TOKEN secret is not available to this repository."
-            exit 1
-          fi
-          ./scripts/devnet-release-branches.sh
+        run: ./scripts/devnet-release-branches.sh
