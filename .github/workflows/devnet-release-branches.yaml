@@ -1,0 +1,52 @@
+name: Devnet release branches
+
+# Creates release/<network> from master for every devnet in the org's
+# *-devnets repositories (one per kubernetes/<dir>) that has no branch yet,
+# then dispatches docker.yml on it, which publishes
+# ethpandaops/xatu-cbt:release-<network>. Existing branches are never touched;
+# see scripts/devnet-release-branches.sh.
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only report the branches that would be created'
+        required: false
+        default: false
+        type: boolean
+  pull_request:
+    paths:
+      - '.github/workflows/devnet-release-branches.yaml'
+      - 'scripts/devnet-release-branches.sh'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || 'sync' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create release branches
+      actions: write # dispatch docker.yml on them
+    env:
+      # Pull requests only report what the scheduled run would create.
+      DRY_RUN: ${{ github.event_name == 'pull_request' || inputs.dry_run == true }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: scripts
+
+      - name: Create missing release branches
+        env:
+          # GITHUB_TOKEN sees public repositories only, so private *-devnets
+          # repositories are not discovered.
+          GH_TOKEN: ${{ github.token }}
+          TARGET_REPO: ${{ github.repository }}
+        run: ./scripts/devnet-release-branches.sh
