@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Create a release/<network> branch for every Ethereum devnet that lacks one.
 #
-# A devnet's network name is <class>-<dir>: <class> is the repository name
-# <org>/<class>-devnets without "-devnets", and <dir> is each directory under
-# kubernetes/ on that repository's default branch (glamsterdam-devnets with
-# kubernetes/devnet-8 gives glamsterdam-devnet-8). template-devnets and archived
-# repositories are skipped.
+# Each directory <dir> under kubernetes/ on the default branch of a repository
+# <org>/<class>-devnets is a network named <class>-<dir>, or <dir> when it
+# already starts with "<class>-": glamsterdam-devnets/kubernetes/devnet-8 is
+# glamsterdam-devnet-8 and pk-devnets/kubernetes/pk-devnet-0 is pk-devnet-0.
+# template-devnets and archived repositories are skipped.
 #
 # Each missing branch is created at the current tip of BASE_BRANCH through the
 # REST API. Creating a ref fails when it already exists, so an existing branch
@@ -15,8 +15,8 @@
 # Environment:
 #   READ_TOKEN    token that lists ORG's repositories and reads their contents
 #                 (default: GH_TOKEN, then `gh auth token`)
-#   WRITE_TOKEN   token with contents: write on TARGET_REPO; its pushes must
-#                 trigger workflows, so not the Actions GITHUB_TOKEN
+#   WRITE_TOKEN   token that can push to TARGET_REPO; its pushes must trigger
+#                 workflows, so not the Actions GITHUB_TOKEN
 #                 (default: READ_TOKEN). Unused in dry-run mode.
 #   ORG           default ethpandaops
 #   TARGET_REPO   default ethpandaops/xatu-cbt
@@ -59,7 +59,9 @@ for repo in $repos; do
     continue
   fi
   for dir in $out; do
-    network="${class}-${dir}"
+    # Directories that already carry the class (pk-devnets/kubernetes/pk-devnet-0)
+    # are the network name as is.
+    if [[ $dir == "${class}-"* ]]; then network="$dir"; else network="${class}-${dir}"; fi
     # Must be a valid branch name and Docker tag (release-<network>).
     if ! [[ $network =~ ^[a-z0-9][a-z0-9._-]{0,99}$ ]]; then
       warn "skipping ${ORG}/${repo} kubernetes/${dir}: ${network} is not a valid network name"
