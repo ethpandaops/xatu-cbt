@@ -1,0 +1,79 @@
+name: Devnet release branches
+
+# Creates release/<network> from master for every devnet in the org's
+# *-devnets repositories (one per kubernetes/<dir>, network <class>-<dir>) that
+# has no branch yet. The push runs docker.yml, which publishes
+# ethpandaops/xatu-cbt:release-<network>. Existing branches are never touched;
+# see scripts/devnet-release-branches.sh.
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only report the branches that would be created'
+        required: false
+        default: false
+        type: boolean
+  pull_request:
+    paths:
+      - '.github/workflows/devnet-release-branches.yaml'
+      - 'scripts/devnet-release-branches.sh'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || 'sync' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      # Pull requests only report what the scheduled run would create.
+      DRY_RUN: ${{ github.event_name == 'pull_request' || inputs.dry_run == true }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: scripts
+
+      # Reads every repository the app is installed on, including private
+      # *-devnets repositories.
+      - name: Token to read devnet repositories
+        id: read-token
+        if: vars.DEVNET_RELEASE_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.DEVNET_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DEVNET_RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          permission-contents: read
+
+      # Creates the branches. A branch the default GITHUB_TOKEN creates does
+      # not trigger docker.yml, and the image mirror only publishes release
+      # tags from push runs, so this must be an app token.
+      - name: Token to create release branches
+        id: write-token
+        if: vars.DEVNET_RELEASE_APP_CLIENT_ID != '' && env.DRY_RUN != 'true'
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.DEVNET_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DEVNET_RELEASE_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+
+      - name: Create missing release branches
+        env:
+          # Without the app a dry run still sees every public repository.
+          READ_TOKEN: ${{ steps.read-token.outputs.token || github.token }}
+          WRITE_TOKEN: ${{ steps.write-token.outputs.token }}
+          TARGET_REPO: ${{ github.repository }}
+        run: |
+          if [ "$DRY_RUN" != "true" ] && [ -z "$WRITE_TOKEN" ]; then
+            echo "::error::Set the DEVNET_RELEASE_APP_CLIENT_ID variable and DEVNET_RELEASE_APP_PRIVATE_KEY secret to create branches."
+            exit 1
+          fi
+          ./scripts/devnet-release-branches.sh
