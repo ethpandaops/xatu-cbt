@@ -41,16 +41,11 @@ error() {
   if [ "${GITHUB_ACTIONS:-}" = "true" ]; then echo "::error::$*"; else echo "error: $*" >&2; fi
   failed=1
 }
-# TEMPORARY test hook.
-if [ -n "${NETWORKS:-}" ]; then
-  repos=""
-  read -ra networks <<<"$NETWORKS"
-else
-networks=()
 # Discover networks.
 repos=$(gh api --paginate "orgs/${ORG}/repos?type=all&per_page=100" \
   --jq '.[] | select(.archived | not) | select(.name | endswith("-devnets")) | select(.name != "template-devnets") | .name' | sort)
 
+networks=()
 for repo in $repos; do
   class="${repo%-devnets}"
   if ! out=$(gh api "repos/${ORG}/${repo}/contents/kubernetes" --jq '.[] | select(.type == "dir") | .name' 2>&1); then
@@ -71,7 +66,6 @@ for repo in $repos; do
     networks+=("$network")
   done
 done
-fi
 
 # Find the networks without a release branch.
 existing=$(gh api --paginate "repos/${TARGET_REPO}/git/matching-refs/heads/release/" --jq '.[].ref')

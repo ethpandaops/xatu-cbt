@@ -16,11 +16,6 @@ on:
         required: false
         default: false
         type: boolean
-      networks:
-        description: 'TEMPORARY test hook: create branches for these networks instead of discovering them'
-        required: false
-        default: ''
-        type: string
   pull_request:
     paths:
       - '.github/workflows/devnet-release-branches.yaml'
@@ -54,5 +49,4 @@ jobs:
           # repositories are not discovered.
           GH_TOKEN: ${{ github.token }}
           TARGET_REPO: ${{ github.repository }}
-          NETWORKS: ${{ inputs.networks }}
         run: ./scripts/devnet-release-branches.sh
