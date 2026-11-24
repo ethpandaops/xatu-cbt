@@ -1,0 +1,61 @@
+model: fct_block_graffiti_client_version_by_entity_hourly
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v3.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Counts every block once per layer
+      sql: |
+        SELECT sumIf(block_count, layer = 'consensus') AS consensus_blocks, sumIf(block_count, layer = 'execution') AS execution_blocks
+        FROM fct_block_graffiti_client_version_by_entity_hourly FINAL
+      assertions:
+        - type: equals
+          column: consensus_blocks
+          value: 623
+        - type: equals
+          column: execution_blocks
+          value: 623
+    - name: Counts match the per-block model
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT hour_start_date_time, entity, layer, client, version, commit_prefix, release_status, block_count
+          FROM fct_block_graffiti_client_version_by_entity_hourly FINAL
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, entity, lc.1 AS layer, lc.2 AS client, lc.3 AS version, lc.4 AS commit_prefix, lc.5 AS release_status, toUInt32(count()) AS block_count
+          FROM int_block_graffiti_release FINAL
+          ARRAY JOIN [
+            ('consensus', consensus_client, consensus_client_version, consensus_client_commit, consensus_client_release_status),
+            ('execution', execution_client, execution_client_version, execution_client_commit, execution_client_release_status)
+          ] AS lc
+          GROUP BY hour_start_date_time, entity, layer, client, version, commit_prefix, release_status
+        ) AS b USING (hour_start_date_time, entity, layer, client, version, commit_prefix, release_status)
+        WHERE a.block_count != b.block_count
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: "Lighthouse v8.2.3 blocks: 28 default graffiti, 36 GE3d84LH6db6 and the rest of the 6db6 codes"
+      sql: |
+        SELECT sum(block_count) AS blocks FROM fct_block_graffiti_client_version_by_entity_hourly FINAL
+        WHERE layer = 'consensus' AND client = 'lighthouse' AND version = 'v8.2.3' AND release_status = 'commit_match'
+      assertions:
+        - type: greater_than
+          column: blocks
+          value: 63
+    - name: One row per key
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT hour_start_date_time, entity, layer, client, version, commit_prefix, release_status
+          FROM fct_block_graffiti_client_version_by_entity_hourly FINAL
+          GROUP BY hour_start_date_time, entity, layer, client, version, commit_prefix, release_status
+          HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

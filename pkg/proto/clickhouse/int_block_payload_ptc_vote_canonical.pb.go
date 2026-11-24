@@ -37,11 +37,11 @@ type IntBlockPayloadPtcVoteCanonical struct {
 	EpochStartDateTime uint32 `protobuf:"varint,15,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
 	// The beacon block root being attested by the PTC
 	BlockRoot string `protobuf:"bytes,16,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
-	// The beacon block version of the containing block
+	// The beacon block version of the containing block, empty when no votes were included
 	BlockVersion string `protobuf:"bytes,17,opt,name=block_version,json=blockVersion,proto3" json:"block_version,omitempty"`
-	// Slot of the canonical block that included the payload attestations
+	// Slot of the canonical block that included the payload attestations, 0 when no votes were included
 	IncludedInSlot uint32 `protobuf:"varint,18,opt,name=included_in_slot,json=includedInSlot,proto3" json:"included_in_slot,omitempty"`
-	// Root of the canonical block that included the payload attestations
+	// Root of the canonical block that included the payload attestations, empty when no votes were included
 	IncludedInBlockRoot string `protobuf:"bytes,19,opt,name=included_in_block_root,json=includedInBlockRoot,proto3" json:"included_in_block_root,omitempty"`
 	// Total PTC validators covered by the included payload attestation aggregates
 	PtcValidators uint32 `protobuf:"varint,20,opt,name=ptc_validators,json=ptcValidators,proto3" json:"ptc_validators,omitempty"`
@@ -185,11 +185,11 @@ type ListIntBlockPayloadPtcVoteCanonicalRequest struct {
 	Epoch *UInt32Filter `protobuf:"bytes,5,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
 	EpochStartDateTime *UInt32Filter `protobuf:"bytes,6,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
-	// Filter by block_version - The beacon block version of the containing block (optional)
+	// Filter by block_version - The beacon block version of the containing block, empty when no votes were included (optional)
 	BlockVersion *StringFilter `protobuf:"bytes,7,opt,name=block_version,json=blockVersion,proto3" json:"block_version,omitempty"`
-	// Filter by included_in_slot - Slot of the canonical block that included the payload attestations (optional)
+	// Filter by included_in_slot - Slot of the canonical block that included the payload attestations, 0 when no votes were included (optional)
 	IncludedInSlot *UInt32Filter `protobuf:"bytes,8,opt,name=included_in_slot,json=includedInSlot,proto3" json:"included_in_slot,omitempty"`
-	// Filter by included_in_block_root - Root of the canonical block that included the payload attestations (optional)
+	// Filter by included_in_block_root - Root of the canonical block that included the payload attestations, empty when no votes were included (optional)
 	IncludedInBlockRoot *StringFilter `protobuf:"bytes,9,opt,name=included_in_block_root,json=includedInBlockRoot,proto3" json:"included_in_block_root,omitempty"`
 	// Filter by ptc_validators - Total PTC validators covered by the included payload attestation aggregates (optional)
 	PtcValidators *UInt32Filter `protobuf:"bytes,10,opt,name=ptc_validators,json=ptcValidators,proto3" json:"ptc_validators,omitempty"`

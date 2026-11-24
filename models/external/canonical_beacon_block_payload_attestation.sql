@@ -5,7 +5,10 @@ cache:
   full_scan_interval: 24h
 interval:
   type: slot
-lag: 1920
+# Seconds. Two epochs: int_block_payload_ptc_vote_canonical reads one slot past
+# its bounds (PTC votes for slot N land in block N+1), which can be the first
+# slot of an epoch whose insert is still in flight.
+lag: 768
 ---
 SELECT
     {{ if .cache.is_incremental_scan }}

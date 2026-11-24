@@ -1,0 +1,60 @@
+model: fct_peer_count_by_cl_client_asn_daily
+network: mainnet
+external_data:
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    libp2p_identify:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_identify.parquet
+        network_column: meta_network_name
+assertions:
+    - name: "Counts every consensus peer once and leaves crawlers out"
+      sql: |
+        SELECT
+          (SELECT sum(peer_count) FROM fct_peer_count_by_cl_client_asn_daily FINAL) AS peers,
+          peers - 6973 AS peer_diff,
+          (SELECT sumIf(peer_count, client = 'lighthouse') FROM fct_peer_count_by_cl_client_asn_daily FINAL) AS lighthouse_peers,
+          (SELECT sumIf(peer_count, client IN ('erigon', 'tysm', 'hermes', 'nebula')) FROM fct_peer_count_by_cl_client_asn_daily FINAL) AS excluded_peers
+      assertions:
+        - type: equals
+          column: peer_diff
+          value: 0
+        - type: equals
+          column: lighthouse_peers
+          value: 4399
+        - type: equals
+          column: excluded_peers
+          value: 0
+    - name: "No named autonomous system has under 3 peers"
+      sql: |
+        SELECT COUNT(*) AS small_rows FROM fct_peer_count_by_cl_client_asn_daily FINAL WHERE peer_count < 3 AND autonomous_system_organization NOT IN ('other', 'unknown')
+      assertions:
+        - type: equals
+          column: small_rows
+          value: 0
+    - name: "Hetzner and AWS are hosting, Comcast is not"
+      sql: |
+        SELECT
+          countIf(autonomous_system_number IN (24940, 16509) AND network_type != 'hosting') AS misclassified_hosting,
+          countIf(autonomous_system_number = 7922 AND network_type != 'other') AS misclassified_residential,
+          sumIf(peer_count, network_type = 'hosting') AS hosting_peers
+        FROM fct_peer_count_by_cl_client_asn_daily FINAL
+      assertions:
+        - type: equals
+          column: misclassified_hosting
+          value: 0
+        - type: equals
+          column: misclassified_residential
+          value: 0
+        - type: greater_than
+          column: hosting_peers
+          value: 1000
+    - name: "One row per key"
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT day_start_date, client, network_type, autonomous_system_organization, autonomous_system_number FROM fct_peer_count_by_cl_client_asn_daily FINAL GROUP BY day_start_date, client, network_type, autonomous_system_organization, autonomous_system_number HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

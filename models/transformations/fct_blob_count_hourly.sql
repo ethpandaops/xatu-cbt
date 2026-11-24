@@ -16,6 +16,7 @@ dependencies:
 ---
 -- Hourly aggregation of blob counts per slot.
 -- Computes percentiles, Bollinger bands, and 6-hour moving averages across all canonical slots in each hour.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 --
 -- This query expands the slot range to complete hour boundaries to handle partial
 -- hour aggregations at the head of incremental processing. For example, if we process
@@ -41,7 +42,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             blob_count
         FROM {{ index .dep "{{transformation}}" "fct_block_blob_count" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
           AND status = 'canonical'
     ),
@@ -67,10 +68,11 @@ SELECT
     round(quantile(0.50)(blob_count), 4) AS p50_blob_count,
     round(quantile(0.95)(blob_count), 4) AS p95_blob_count,
     round(stddevPop(blob_count), 4) AS stddev_blob_count,
-    -- Bollinger bands (avg +/- 2 standard deviations)
+    -- Bollinger bands (avg +/- 2 standard deviations). The lower band is floored at 0 because a blob count can't be negative.
     round(avg(blob_count) + 2 * stddevPop(blob_count), 4) AS upper_band_blob_count,
-    round(avg(blob_count) - 2 * stddevPop(blob_count), 4) AS lower_band_blob_count,
+    greatest(round(avg(blob_count) - 2 * stddevPop(blob_count), 4), 0) AS lower_band_blob_count,
     -- 6-hour moving average
     round(avg(ma_blob_count), 4) AS moving_avg_blob_count
 FROM slots_with_ma
+WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(slot_start_date_time)

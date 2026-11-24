@@ -294,36 +294,6 @@ func BuildListIntTransactionCallFrameOpcodeGasQuery(req *ListIntTransactionCallF
 		}
 	}
 
-	// Add filter for column: error_count
-	if req.ErrorCount != nil {
-		switch filter := req.ErrorCount.Filter.(type) {
-		case *UInt64Filter_Eq:
-			qb.AddCondition("error_count", "=", filter.Eq)
-		case *UInt64Filter_Ne:
-			qb.AddCondition("error_count", "!=", filter.Ne)
-		case *UInt64Filter_Lt:
-			qb.AddCondition("error_count", "<", filter.Lt)
-		case *UInt64Filter_Lte:
-			qb.AddCondition("error_count", "<=", filter.Lte)
-		case *UInt64Filter_Gt:
-			qb.AddCondition("error_count", ">", filter.Gt)
-		case *UInt64Filter_Gte:
-			qb.AddCondition("error_count", ">=", filter.Gte)
-		case *UInt64Filter_Between:
-			qb.AddBetweenCondition("error_count", filter.Between.Min, filter.Between.Max.GetValue())
-		case *UInt64Filter_In:
-			if len(filter.In.Values) > 0 {
-				qb.AddInCondition("error_count", UInt64SliceToInterface(filter.In.Values))
-			}
-		case *UInt64Filter_NotIn:
-			if len(filter.NotIn.Values) > 0 {
-				qb.AddNotInCondition("error_count", UInt64SliceToInterface(filter.NotIn.Values))
-			}
-		default:
-			// Unsupported filter type
-		}
-	}
-
 	// Add filter for column: memory_words_sum_before
 	if req.MemoryWordsSumBefore != nil {
 		switch filter := req.MemoryWordsSumBefore.Filter.(type) {
@@ -504,6 +474,36 @@ func BuildListIntTransactionCallFrameOpcodeGasQuery(req *ListIntTransactionCallF
 		}
 	}
 
+	// Add filter for column: error_count
+	if req.ErrorCount != nil {
+		switch filter := req.ErrorCount.Filter.(type) {
+		case *UInt64Filter_Eq:
+			qb.AddCondition("error_count", "=", filter.Eq)
+		case *UInt64Filter_Ne:
+			qb.AddCondition("error_count", "!=", filter.Ne)
+		case *UInt64Filter_Lt:
+			qb.AddCondition("error_count", "<", filter.Lt)
+		case *UInt64Filter_Lte:
+			qb.AddCondition("error_count", "<=", filter.Lte)
+		case *UInt64Filter_Gt:
+			qb.AddCondition("error_count", ">", filter.Gt)
+		case *UInt64Filter_Gte:
+			qb.AddCondition("error_count", ">=", filter.Gte)
+		case *UInt64Filter_Between:
+			qb.AddBetweenCondition("error_count", filter.Between.Min, filter.Between.Max.GetValue())
+		case *UInt64Filter_In:
+			if len(filter.In.Values) > 0 {
+				qb.AddInCondition("error_count", UInt64SliceToInterface(filter.In.Values))
+			}
+		case *UInt64Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				qb.AddNotInCondition("error_count", UInt64SliceToInterface(filter.NotIn.Values))
+			}
+		default:
+			// Unsupported filter type
+		}
+	}
+
 	// Add filter for column: meta_network_name
 	if req.MetaNetworkName != nil {
 		switch filter := req.MetaNetworkName.Filter.(type) {
@@ -559,7 +559,7 @@ func BuildListIntTransactionCallFrameOpcodeGasQuery(req *ListIntTransactionCallF
 	// Handle custom ordering if provided
 	var orderByClause string
 	if req.OrderBy != "" {
-		validFields := []string{"updated_date_time", "block_number", "transaction_hash", "transaction_index", "call_frame_id", "opcode", "count", "gas", "gas_cumulative", "error_count", "memory_words_sum_before", "memory_words_sum_after", "memory_words_sq_sum_before", "memory_words_sq_sum_after", "memory_expansion_gas", "cold_access_count", "meta_network_name"}
+		validFields := []string{"updated_date_time", "block_number", "transaction_hash", "transaction_index", "call_frame_id", "opcode", "count", "gas", "gas_cumulative", "memory_words_sum_before", "memory_words_sum_after", "memory_words_sq_sum_before", "memory_words_sq_sum_after", "memory_expansion_gas", "cold_access_count", "error_count", "meta_network_name"}
 		orderFields, err := ParseOrderBy(req.OrderBy, validFields)
 		if err != nil {
 			return SQLQuery{}, fmt.Errorf("invalid order_by: %w", err)
@@ -571,7 +571,7 @@ func BuildListIntTransactionCallFrameOpcodeGasQuery(req *ListIntTransactionCallF
 	}
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`transaction_hash`, repeat('\x00', 66)) AS `transaction_hash`", "transaction_index", "call_frame_id", "opcode", "count", "gas", "gas_cumulative", "error_count", "memory_words_sum_before", "memory_words_sum_after", "memory_words_sq_sum_before", "memory_words_sq_sum_after", "memory_expansion_gas", "cold_access_count", "meta_network_name"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`transaction_hash`, repeat('\x00', 66)) AS `transaction_hash`", "transaction_index", "call_frame_id", "opcode", "count", "gas", "gas_cumulative", "memory_words_sum_before", "memory_words_sum_after", "memory_words_sq_sum_before", "memory_words_sq_sum_after", "memory_expansion_gas", "cold_access_count", "error_count", "meta_network_name"}
 
 	return BuildParameterizedQuery("int_transaction_call_frame_opcode_gas", columns, qb, orderByClause, limit, offset, options...)
 }
@@ -591,7 +591,7 @@ func BuildGetIntTransactionCallFrameOpcodeGasQuery(req *GetIntTransactionCallFra
 	orderByClause := " ORDER BY block_number, transaction_hash, call_frame_id, opcode, meta_network_name"
 
 	// Build column list
-	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`transaction_hash`, repeat('\x00', 66)) AS `transaction_hash`", "transaction_index", "call_frame_id", "opcode", "count", "gas", "gas_cumulative", "error_count", "memory_words_sum_before", "memory_words_sum_after", "memory_words_sq_sum_before", "memory_words_sq_sum_after", "memory_expansion_gas", "cold_access_count", "meta_network_name"}
+	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "block_number", "NULLIF(`transaction_hash`, repeat('\x00', 66)) AS `transaction_hash`", "transaction_index", "call_frame_id", "opcode", "count", "gas", "gas_cumulative", "memory_words_sum_before", "memory_words_sum_after", "memory_words_sq_sum_before", "memory_words_sq_sum_after", "memory_expansion_gas", "cold_access_count", "error_count", "meta_network_name"}
 
 	// Return single record
 	return BuildParameterizedQuery("int_transaction_call_frame_opcode_gas", columns, qb, orderByClause, 1, 0, options...)

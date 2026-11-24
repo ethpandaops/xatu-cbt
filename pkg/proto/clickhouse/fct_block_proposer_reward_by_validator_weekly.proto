@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Consensus layer proposer rewards per proposer per week
+
+message FctBlockProposerRewardByValidatorWeekly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The start of the week (Monday, UTC)
+  string week_start_date = 12;
+  // The validator index of the proposer
+  uint32 proposer_index = 13;
+  // Canonical blocks proposed
+  uint32 block_count = 14;
+  // Total consensus layer proposer reward in Gwei
+  uint64 total = 15;
+  // Reward for included attestations in Gwei
+  uint64 attestations = 16;
+  // Reward for included sync aggregates in Gwei
+  uint64 sync_aggregate = 17;
+  // Reward for included proposer slashings in Gwei
+  uint64 proposer_slashings = 18;
+  // Reward for included attester slashings in Gwei
+  uint64 attester_slashings = 19;
+}
+
+// Request for listing fct_block_proposer_reward_by_validator_weekly records
+message ListFctBlockProposerRewardByValidatorWeeklyRequest {
+  // Filter by proposer_index - The validator index of the proposer (PRIMARY KEY - required)
+  UInt32Filter proposer_index = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by week_start_date - The start of the week (Monday, UTC) (ORDER BY column 2 - optional)
+  StringFilter week_start_date = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Canonical blocks proposed (optional)
+  UInt32Filter block_count = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by total - Total consensus layer proposer reward in Gwei (optional)
+  UInt64Filter total = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by attestations - Reward for included attestations in Gwei (optional)
+  UInt64Filter attestations = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by sync_aggregate - Reward for included sync aggregates in Gwei (optional)
+  UInt64Filter sync_aggregate = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by proposer_slashings - Reward for included proposer slashings in Gwei (optional)
+  UInt64Filter proposer_slashings = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by attester_slashings - Reward for included attester slashings in Gwei (optional)
+  UInt64Filter attester_slashings = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_block_proposer_reward_by_validator_weekly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 10 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctBlockProposerRewardByValidatorWeekly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 11 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 12 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_block_proposer_reward_by_validator_weekly records
+message ListFctBlockProposerRewardByValidatorWeeklyResponse {
+  // The list of fct_block_proposer_reward_by_validator_weekly.
+  repeated FctBlockProposerRewardByValidatorWeekly fct_block_proposer_reward_by_validator_weekly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_block_proposer_reward_by_validator_weekly record by primary key
+message GetFctBlockProposerRewardByValidatorWeeklyRequest {
+  // The validator index of the proposer
+  uint32 proposer_index = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_block_proposer_reward_by_validator_weekly record
+message GetFctBlockProposerRewardByValidatorWeeklyResponse {
+  FctBlockProposerRewardByValidatorWeekly item = 1;
+}
+
+// Query fct_block_proposer_reward_by_validator_weekly data
+service FctBlockProposerRewardByValidatorWeeklyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctBlockProposerRewardByValidatorWeeklyRequest) returns (ListFctBlockProposerRewardByValidatorWeeklyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_proposer_reward_by_validator_weekly"
+    };
+  }
+  // Get record | Retrieve a single record by proposer_index
+  rpc Get(GetFctBlockProposerRewardByValidatorWeeklyRequest) returns (GetFctBlockProposerRewardByValidatorWeeklyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_proposer_reward_by_validator_weekly/{proposer_index}"
+    };
+  }
+}

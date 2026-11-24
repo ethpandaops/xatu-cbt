@@ -1,6 +1,9 @@
 model: int_engine_new_payload_fastest_execution_by_node_class
 network: mainnet
 external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_new_payload_fastest_execution_by_node_class_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
     beacon_api_eth_v2_beacon_block:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_new_payload_fastest_beacon_api_eth_v2_beacon_block.parquet
         network_column: meta_network_name

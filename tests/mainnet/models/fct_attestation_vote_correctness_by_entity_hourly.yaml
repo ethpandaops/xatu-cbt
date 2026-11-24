@@ -1,0 +1,176 @@
+model: fct_attestation_vote_correctness_by_entity_hourly
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block_graffiti.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_committee.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_elaborated_attestation.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_beacon_api_eth_v1_beacon_committee.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_beacon_api_eth_v1_events_attestation.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_attestation_attested_head_libp2p_gossipsub_beacon_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    # The harness asserts once the model has processed one interval, while the hourly table it reads can still be
+    # filling, so checks hold at any point in the fill rather than comparing exact totals.
+    - name: Duties never exceed the per-validator table and split into attested and missed
+      sql: |
+        SELECT
+          (SELECT sum(total_duties) FROM fct_attestation_vote_correctness_by_entity_hourly FINAL) AS entity_duties,
+          entity_duties <= (SELECT sum(total_duties) FROM fct_attestation_vote_correctness_by_validator_hourly FINAL) AS within_validators,
+          (SELECT countIf(attested_count + missed_count != total_duties OR head_correct_count > attested_count OR target_correct_count > attested_count) FROM fct_attestation_vote_correctness_by_entity_hourly FINAL) AS bad_rows
+      assertions:
+        - type: greater_than
+          column: entity_duties
+          value: 10000
+        - type: equals
+          column: within_validators
+          value: 1
+        - type: equals
+          column: bad_rows
+          value: 0
+    # dim_node names 429 validators in this fixture (its ethseer_validator_entity table), 372 of which have committee
+    # duties in the fixture's hour. No hour and entity may count more validators than the per-validator table maps to it.
+    - name: Validators map to their dim_node entity
+      sql: |
+        SELECT
+          (SELECT sumIf(validator_count, entity != 'unknown') FROM fct_attestation_vote_correctness_by_entity_hourly FINAL) AS named_validators,
+          (SELECT countIf(entity = '') FROM fct_attestation_vote_correctness_by_entity_hourly FINAL) AS empty_entity,
+          (
+            SELECT countIf(e.validator_count > s.validators)
+            FROM fct_attestation_vote_correctness_by_entity_hourly AS e FINAL
+            GLOBAL LEFT JOIN (
+              SELECT v.hour_start_date_time AS hour_start_date_time, if(dn.source = '', 'unknown', dn.source) AS entity, uniqExact(v.validator_index) AS validators
+              FROM fct_attestation_vote_correctness_by_validator_hourly AS v FINAL
+              GLOBAL LEFT JOIN dim_node AS dn FINAL ON v.validator_index = dn.validator_index
+              GROUP BY hour_start_date_time, entity
+            ) AS s ON e.hour_start_date_time = s.hour_start_date_time AND e.entity = s.entity
+          ) AS overcounted_rows
+      assertions:
+        - type: greater_than
+          column: named_validators
+          value: 200
+        - type: equals
+          column: empty_entity
+          value: 0
+        - type: equals
+          column: overcounted_rows
+          value: 0
+    # source_incorrect_count on the per-validator hourly table this model reads. It can still be filling when the
+    # harness asserts, so the count is checked as never above the per-slot table rather than equal to it.
+    - name: Incorrect source votes never exceed the per-slot table or the duties
+      sql: |
+        SELECT
+          (
+            SELECT countIf(source_correct_count + source_incorrect_count > total_duties)
+            FROM fct_attestation_vote_correctness_by_validator_hourly FINAL
+          ) AS over_duties,
+          (
+            SELECT countIf(h.source_incorrect_count > ifNull(s.incorrect, 0))
+            FROM fct_attestation_vote_correctness_by_validator_hourly AS h FINAL
+            GLOBAL LEFT JOIN (
+              SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, validator_index, countIf(source_correct = false) AS incorrect
+              FROM fct_attestation_vote_correctness_by_validator FINAL
+              GROUP BY hour_start_date_time, validator_index
+            ) AS s ON h.hour_start_date_time = s.hour_start_date_time AND h.validator_index = s.validator_index
+          ) AS over_per_slot
+      assertions:
+        - type: equals
+          column: over_duties
+          value: 0
+        - type: equals
+          column: over_per_slot
+          value: 0
+    # fct_attestation_vote_correctness_by_validator reads gossip only for source_correct, and backfills before the
+    # gossip head exists. The fixture is all gossip era, so where the head has the vote source_correct must be the
+    # head's source root checked against the canonical checkpoint. The checkpoint of an epoch is the target root of
+    # its correct target votes, so only source epochs that are also target epochs here are compared.
+    - name: Where the head has the vote, source_correct is the gossip source checked against the checkpoint
+      sql: |
+        SELECT
+          countIf(h.source_root IS NULL AND v.source_correct IS NOT NULL) AS source_without_gossip,
+          countIf(h.source_root IS NOT NULL AND c.root IS NOT NULL AND v.source_correct IS NULL) AS gossip_without_source,
+          countIf(h.source_root IS NOT NULL AND c.root IS NOT NULL AND v.source_correct != (h.source_root = c.root)) AS source_mismatch,
+          countIf(h.source_root IS NOT NULL AND c.root IS NOT NULL) AS compared
+        FROM (SELECT slot, validator_index, source_correct FROM fct_attestation_vote_correctness_by_validator FINAL) AS v
+        GLOBAL LEFT JOIN (
+          SELECT slot, attesting_validator_index AS validator_index, source_epoch, source_root
+          FROM int_attestation_attested_head FINAL
+        ) AS h ON v.slot = h.slot AND v.validator_index = h.validator_index
+        GLOBAL LEFT JOIN (
+          SELECT a.target_epoch AS epoch, any(a.target_root) AS root
+          FROM int_attestation_attested_canonical AS a FINAL
+          GLOBAL INNER JOIN (
+            SELECT slot, validator_index FROM fct_attestation_vote_correctness_by_validator FINAL WHERE target_correct
+          ) AS t ON a.slot = t.slot AND a.attesting_validator_index = t.validator_index
+          GROUP BY epoch
+        ) AS c ON h.source_epoch = c.epoch
+        SETTINGS join_use_nulls = 1
+      assertions:
+        - type: equals
+          column: source_without_gossip
+          value: 0
+        - type: equals
+          column: gossip_without_source
+          value: 0
+        - type: equals
+          column: source_mismatch
+          value: 0
+        - type: greater_than
+          column: compared
+          value: 0
+    # attested and inclusion_distance come from canonical data alone, so they are computed the same way before gossip
+    # exists.
+    - name: attested and inclusion_distance follow int_attestation_attested_canonical, and head and target votes need an attestation
+      sql: |
+        SELECT
+          countIf(v.attested != (a.validator_index IS NOT NULL)) AS attested_mismatch,
+          countIf(ifNull(toString(v.inclusion_distance), 'null') != ifNull(toString(a.inclusion_distance), 'null')) AS inclusion_distance_mismatch,
+          countIf((v.head_correct IS NOT NULL OR v.target_correct IS NOT NULL) AND NOT v.attested) AS vote_without_attestation
+        FROM (SELECT slot, validator_index, attested, head_correct, target_correct, inclusion_distance FROM fct_attestation_vote_correctness_by_validator FINAL) AS v
+        GLOBAL LEFT JOIN (
+          SELECT slot, attesting_validator_index AS validator_index, any(inclusion_distance) AS inclusion_distance
+          FROM int_attestation_attested_canonical FINAL
+          GROUP BY slot, validator_index
+        ) AS a ON v.slot = a.slot AND v.validator_index = a.validator_index
+        SETTINGS join_use_nulls = 1
+      assertions:
+        - type: equals
+          column: attested_mismatch
+          value: 0
+        - type: equals
+          column: inclusion_distance_mismatch
+          value: 0
+        - type: equals
+          column: vote_without_attestation
+          value: 0

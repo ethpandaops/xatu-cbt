@@ -1,0 +1,49 @@
+model: fct_peer_fork_readiness_by_cl_client_daily
+network: mainnet
+external_data:
+    node_record_consensus:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_node_record_consensus.parquet
+        network_column: meta_network_name
+assertions:
+    - name: "Counts every consensus ENR once"
+      sql: |
+        SELECT
+          (SELECT sum(node_count) FROM fct_peer_fork_readiness_by_cl_client_daily FINAL) AS nodes,
+          nodes - 1069 AS node_diff
+      assertions:
+        - type: equals
+          column: node_diff
+          value: 0
+    - name: "Mainnet has no next fork, including Lighthouse v8.0 and v8.1 which advertise the current digest"
+      sql: |
+        SELECT
+          sumIf(node_count, next_fork_digest != '') AS advertising_next,
+          sumIf(node_count, client = 'lighthouse' AND match(version, '^v8\\.[01]\\.')) AS lighthouse_v80_v81,
+          uniqExact(fork_digest) AS digests
+        FROM fct_peer_fork_readiness_by_cl_client_daily FINAL
+      assertions:
+        - type: equals
+          column: advertising_next
+          value: 0
+        - type: greater_than
+          column: lighthouse_v80_v81
+          value: 40
+        - type: equals
+          column: digests
+          value: 1
+    - name: "Prysm ENR names carry full commits that resolve"
+      sql: |
+        SELECT sumIf(node_count, client = 'prysm' AND release_status = 'commit_match') AS prysm_resolved, sumIf(node_count, client = 'prysm') AS prysm_nodes FROM fct_peer_fork_readiness_by_cl_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: prysm_resolved
+          value: 500
+    - name: "One row per key"
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT day_start_date, client, version, release_status, fork_digest, next_fork_digest FROM fct_peer_fork_readiness_by_cl_client_daily FINAL GROUP BY day_start_date, client, version, release_status, fork_digest, next_fork_digest HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

@@ -1,0 +1,33 @@
+model: int_block_call_type_gas
+network: mainnet
+external_data:
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_transaction_resource_gas_canonical_execution_traces.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_transaction_resource_gas_canonical_execution_transaction.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction_structlog_agg:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_transaction_resource_gas_canonical_execution_transaction_structlog_agg.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_block_call_type_gas FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Call type gas matches the internal frames
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (SELECT block_number, sum(gas) AS g, sum(call_count) AS n FROM int_block_call_type_gas FINAL GROUP BY block_number) AS t
+        FULL OUTER JOIN (
+            SELECT block_number, sum(gas) AS g, count() AS n FROM int_transaction_call_frame FINAL
+            WHERE call_frame_id != 0 AND call_type != '' GROUP BY block_number
+        ) AS f USING (block_number)
+        WHERE t.g != f.g OR t.n != f.n
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

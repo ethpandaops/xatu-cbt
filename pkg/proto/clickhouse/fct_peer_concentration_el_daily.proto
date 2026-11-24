@@ -1,0 +1,159 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Daily concentration of execution nodes: countries and autonomous systems, the largest systems, the fewest countries and systems holding a third and half of the nodes, and nodes per continent. Shares are of nodes with a known country or system. Execution nodes our discovery crawler found in the day on the network genesis and its current fork, one count per node with its latest record.
+message FctPeerConcentrationElDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Execution nodes
+  uint32 peer_count = 13;
+  // Peers with a known autonomous system, the population of hosting_peer_count
+  uint32 located_peer_count = 14;
+  // Peers on a cloud or hosting provider network
+  uint32 hosting_peer_count = 15;
+  // Nodes whose record advertises an IPv6 address
+  uint32 ipv6_peer_count = 16;
+  // Countries with peers
+  uint32 country_count = 17;
+  // Fewest countries that hold a third of the peers with a known country
+  uint32 third_country_count = 18;
+  // Fewest countries that hold half of the peers with a known country
+  uint32 half_country_count = 19;
+  // Autonomous systems with nodes, counting each residential system folded into autonomous system 0 (other) on its own
+  uint32 autonomous_system_count = 20;
+  // Peers in the largest autonomous system
+  uint32 top_1_asn_peer_count = 21;
+  // Peers in the 5 largest autonomous systems
+  uint32 top_5_asn_peer_count = 22;
+  // Peers in the 10 largest autonomous systems
+  uint32 top_10_asn_peer_count = 23;
+  // Fewest autonomous systems that hold a third of the peers with a known autonomous system
+  uint32 third_asn_count = 24;
+  // Fewest autonomous systems that hold half of the peers with a known autonomous system
+  uint32 half_asn_count = 25;
+  // Peers in Africa (AF)
+  uint32 africa_peer_count = 26;
+  // Peers in Antarctica (AN)
+  uint32 antarctica_peer_count = 27;
+  // Peers in Asia (AS)
+  uint32 asia_peer_count = 28;
+  // Peers in Europe (EU)
+  uint32 europe_peer_count = 29;
+  // Peers in North America (NA)
+  uint32 north_america_peer_count = 30;
+  // Peers in Oceania (OC)
+  uint32 oceania_peer_count = 31;
+  // Peers in South America (SA)
+  uint32 south_america_peer_count = 32;
+  // Peers not geolocated to a continent
+  uint32 unknown_continent_peer_count = 33;
+}
+
+// Request for listing fct_peer_concentration_el_daily records
+message ListFctPeerConcentrationElDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by peer_count - Execution nodes (optional)
+  UInt32Filter peer_count = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by located_peer_count - Peers with a known autonomous system, the population of hosting_peer_count (optional)
+  UInt32Filter located_peer_count = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by hosting_peer_count - Peers on a cloud or hosting provider network (optional)
+  UInt32Filter hosting_peer_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by ipv6_peer_count - Nodes whose record advertises an IPv6 address (optional)
+  UInt32Filter ipv6_peer_count = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by country_count - Countries with peers (optional)
+  UInt32Filter country_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by third_country_count - Fewest countries that hold a third of the peers with a known country (optional)
+  UInt32Filter third_country_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by half_country_count - Fewest countries that hold half of the peers with a known country (optional)
+  UInt32Filter half_country_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by autonomous_system_count - Autonomous systems with nodes, counting each residential system folded into autonomous system 0 (other) on its own (optional)
+  UInt32Filter autonomous_system_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by top_1_asn_peer_count - Peers in the largest autonomous system (optional)
+  UInt32Filter top_1_asn_peer_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by top_5_asn_peer_count - Peers in the 5 largest autonomous systems (optional)
+  UInt32Filter top_5_asn_peer_count = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by top_10_asn_peer_count - Peers in the 10 largest autonomous systems (optional)
+  UInt32Filter top_10_asn_peer_count = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by third_asn_count - Fewest autonomous systems that hold a third of the peers with a known autonomous system (optional)
+  UInt32Filter third_asn_count = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by half_asn_count - Fewest autonomous systems that hold half of the peers with a known autonomous system (optional)
+  UInt32Filter half_asn_count = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by africa_peer_count - Peers in Africa (AF) (optional)
+  UInt32Filter africa_peer_count = 16 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by antarctica_peer_count - Peers in Antarctica (AN) (optional)
+  UInt32Filter antarctica_peer_count = 17 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by asia_peer_count - Peers in Asia (AS) (optional)
+  UInt32Filter asia_peer_count = 18 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by europe_peer_count - Peers in Europe (EU) (optional)
+  UInt32Filter europe_peer_count = 19 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by north_america_peer_count - Peers in North America (NA) (optional)
+  UInt32Filter north_america_peer_count = 20 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by oceania_peer_count - Peers in Oceania (OC) (optional)
+  UInt32Filter oceania_peer_count = 21 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by south_america_peer_count - Peers in South America (SA) (optional)
+  UInt32Filter south_america_peer_count = 22 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by unknown_continent_peer_count - Peers not geolocated to a continent (optional)
+  UInt32Filter unknown_continent_peer_count = 23 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_peer_concentration_el_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 24 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPeerConcentrationElDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 25 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 26 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_peer_concentration_el_daily records
+message ListFctPeerConcentrationElDailyResponse {
+  // The list of fct_peer_concentration_el_daily.
+  repeated FctPeerConcentrationElDaily fct_peer_concentration_el_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_peer_concentration_el_daily record by primary key
+message GetFctPeerConcentrationElDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_peer_concentration_el_daily record
+message GetFctPeerConcentrationElDailyResponse {
+  FctPeerConcentrationElDaily item = 1;
+}
+
+// Query fct_peer_concentration_el_daily data
+service FctPeerConcentrationElDailyService {
+  // List records | Daily concentration of execution nodes: countries and autonomous systems, the largest systems, the fewest countries and systems holding a third and half of the nodes, and nodes per continent. Shares are of nodes with a known country or system. Execution nodes our discovery crawler found in the day on the network genesis and its current fork, one count per node with its latest record.
+  rpc List(ListFctPeerConcentrationElDailyRequest) returns (ListFctPeerConcentrationElDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_concentration_el_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctPeerConcentrationElDailyRequest) returns (GetFctPeerConcentrationElDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_concentration_el_daily/{day_start_date}"
+    };
+  }
+}

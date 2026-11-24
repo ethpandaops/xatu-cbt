@@ -1,0 +1,69 @@
+model: fct_attestation_vote_by_block_root
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_beacon_committee_j0624.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_events_attestation_j0624.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_events_block_j0624.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_events_block_gossip_j0624.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_beacon_api_eth_v1_proposer_duty_j0624.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_block_j0624.parquet
+        network_column: meta_network_name
+    canonical_beacon_committee:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_committee_j0624.parquet
+        network_column: meta_network_name
+    canonical_beacon_elaborated_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_elaborated_attestation_j0624.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_canonical_beacon_proposer_duty_j0624.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_libp2p_gossipsub_beacon_attestation_j0624.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_attestation_correctness_libp2p_gossipsub_beacon_block_j0624.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_attestation_vote_by_block_root FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Votes per slot and block root match the validators in int_attestation_attested, for the slots the model has processed
+      sql: |
+        SELECT if(
+            (SELECT arraySort(groupArray(tuple(slot, block_root, toUInt64(vote_count)))) FROM fct_attestation_vote_by_block_root FINAL)
+            = (
+                SELECT arraySort(groupArray(tuple(slot, block_root, c)))
+                FROM (
+                    SELECT slot, block_root, toUInt64(count()) AS c FROM int_attestation_attested FINAL
+                    WHERE slot GLOBAL IN (SELECT slot FROM fct_attestation_vote_by_block_root FINAL)
+                    GROUP BY slot, block_root
+                )
+            ), 0, 1) AS bad_rows
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Each slot and block root has one row
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+            SELECT slot, block_root FROM fct_attestation_vote_by_block_root FINAL GROUP BY slot, block_root HAVING count() > 1
+        )
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -5,7 +5,10 @@ cache:
   full_scan_interval: 24h
 interval:
   type: slot
-lag: 1920
+# Seconds. Two epochs: slot_start_date_time is the attested slot, and an epoch's
+# attestations keep landing in the next epoch's blocks, so the epoch below the
+# newest one can still be filling while that newest epoch's insert is in flight.
+lag: 768
 ---
 SELECT
     {{ if .cache.is_incremental_scan }}

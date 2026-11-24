@@ -1,6 +1,9 @@
 model: int_engine_new_payload
 network: mainnet
 external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_new_payload_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
     beacon_api_eth_v2_beacon_block:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_new_payload_beacon_api_eth_v2_beacon_block.parquet
         network_column: meta_network_name
@@ -83,6 +86,14 @@ assertions:
       sql: |
         SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
         WHERE node_class NOT IN ('', 'eip7870-block-builder')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: No observation more than 300 seconds after its slot start
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_engine_new_payload FINAL
+        WHERE event_date_time > slot_start_date_time + INTERVAL 300 SECOND
       assertions:
         - type: equals
           column: bad_rows

@@ -26,7 +26,7 @@ message FctAttestationVoteCorrectnessByValidator {
   google.protobuf.BoolValue head_correct = 16;
   // Whether the target vote was correct. NULL if not attested
   google.protobuf.BoolValue target_correct = 17;
-  // Whether the source vote was correct. NULL if not attested
+  // Whether the source vote was correct, from the attestation seen on gossip. NULL if gossip did not see it, which is every slot before gossip collection began
   google.protobuf.BoolValue source_correct = 18;
   // Inclusion distance for the attestation. NULL if not attested
   google.protobuf.UInt32Value inclusion_distance = 19;
@@ -50,7 +50,7 @@ message ListFctAttestationVoteCorrectnessByValidatorRequest {
   NullableBoolFilter head_correct = 6 [(google.api.field_behavior) = OPTIONAL];
   // Filter by target_correct - Whether the target vote was correct. NULL if not attested (optional)
   NullableBoolFilter target_correct = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by source_correct - Whether the source vote was correct. NULL if not attested (optional)
+  // Filter by source_correct - Whether the source vote was correct, from the attestation seen on gossip. NULL if gossip did not see it, which is every slot before gossip collection began (optional)
   NullableBoolFilter source_correct = 8 [(google.api.field_behavior) = OPTIONAL];
   // Filter by inclusion_distance - Inclusion distance for the attestation. NULL if not attested (optional)
   NullableUInt32Filter inclusion_distance = 9 [(google.api.field_behavior) = OPTIONAL];

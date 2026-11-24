@@ -223,5 +223,9 @@ SELECT
 FROM enriched
 -- Filter out records without slot context (orphaned blocks or timing issues)
 -- These will be picked up in subsequent backfill runs when the CL context becomes available
+-- Count only observations made within 300 seconds of their slot start: the latest a
+-- live (5s forwardfill) run is guaranteed to see. Later events are catch-up calls after
+-- node restarts, and wide backfill or re-run bounds would otherwise pick them up.
 WHERE slot_start_date_time != toDateTime(0)
+    AND event_date_time <= slot_start_date_time + INTERVAL 300 SECOND
 GROUP BY slot_start_date_time, block_hash, meta_client_name, event_date_time

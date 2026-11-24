@@ -1,0 +1,48 @@
+model: fct_engine_get_blobs_by_el_client_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v1_beacon_blob:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_get_blobs_beacon_api_eth_v1_beacon_blob.parquet
+        network_column: meta_network_name
+    execution_engine_get_blobs:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_get_blobs_execution_engine_get_blobs.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_engine_get_blobs_by_el_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: One row per day, client, version and node class
+      sql: |
+        SELECT COUNT(*) - uniqExact(day_start_date, meta_execution_implementation, meta_execution_version, node_class) AS duplicate_rows FROM fct_engine_get_blobs_by_el_client_daily FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: Every observation in the source is counted once
+      sql: |
+        SELECT
+            (SELECT sum(observation_count) FROM fct_engine_get_blobs_by_el_client_daily FINAL) - (SELECT count() FROM int_engine_get_blobs FINAL WHERE meta_execution_implementation != '' AND toDate(slot_start_date_time) GLOBAL IN (SELECT day_start_date FROM fct_engine_get_blobs_by_el_client_daily FINAL)) AS difference
+      assertions:
+        - type: equals
+          column: difference
+          value: 0
+    - name: Durations are ordered from min_duration_ms to max_duration_ms
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_el_client_daily FINAL
+        WHERE min_duration_ms > p50_duration_ms OR p50_duration_ms > p95_duration_ms OR p95_duration_ms > max_duration_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Status counts add up to at most the observations
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_get_blobs_by_el_client_daily FINAL
+        WHERE success_count + partial_count + empty_count + unsupported_count + error_count > observation_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

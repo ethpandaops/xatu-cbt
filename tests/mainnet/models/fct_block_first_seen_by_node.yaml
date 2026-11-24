@@ -98,3 +98,25 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    - name: Gossip rows map to a consensus client
+      sql: |
+        SELECT
+          countIf(meta_consensus_implementation NOT IN ('lighthouse', 'prysm', 'teku')) AS unmapped_rows,
+          countIf(meta_consensus_implementation = 'lighthouse') AS lighthouse_rows
+        FROM fct_block_first_seen_by_node FINAL
+        WHERE startsWith(source, 'libp2p_')
+      assertions:
+        - type: equals
+          column: unmapped_rows
+          value: 0
+        - type: greater_than
+          column: lighthouse_rows
+          value: 0
+    - name: No node first seeing a block more than 300 seconds after slot start
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_first_seen_by_node FINAL
+        WHERE seen_slot_start_diff > 300000
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Daily consensus peer sync status by client, from status exchanges with our libp2p sentries: head and finalized lag against the sentry, fork digest, and block history served (earliest available slot).
+message FctPeerSyncStatusByClClientDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Consensus client from the peer agent: lighthouse, lodestar, nimbus, prysm, teku, grandine, caplin (erigon), silver or ethlambda, unknown when the agent was never seen, other for every other agent
+  string client = 13;
+  // Peers our sentries saw in the day
+  uint32 peer_count = 14;
+  // Peers that exchanged status with our sentries, the population of the head, finalized and fork digest buckets
+  uint32 status_peer_count = 15;
+  // Peers whose head trailed our sentries by at most 1 slot (median over the day)
+  uint32 head_lag_0_1_peer_count = 16;
+  // Peers whose head trailed our sentries by 2 to 32 slots
+  uint32 head_lag_2_32_peer_count = 17;
+  // Peers whose head trailed our sentries by more than 32 slots (syncing or stuck)
+  uint32 head_lag_over_32_peer_count = 18;
+  // Peers whose finalized checkpoint trailed our sentries by more than 1 epoch (median over the day)
+  uint32 finalized_lag_over_1_peer_count = 19;
+  // Peers whose latest status carried another fork digest than the most common one among all peers that day
+  uint32 other_fork_digest_peer_count = 20;
+  // Peers that sent an earliest available slot (status v2), the population of the history buckets
+  uint32 history_known_peer_count = 21;
+  // Peers serving blocks from genesis (earliest available slot 0)
+  uint32 history_full_peer_count = 22;
+  // Peers serving more than a day beyond the spec minimum of 33024 epochs of blocks, short of genesis
+  uint32 history_over_min_peer_count = 23;
+  // Peers serving the spec minimum of 33024 epochs of blocks, give or take a day
+  uint32 history_min_peer_count = 24;
+  // Peers serving more than a day less than the spec minimum of 33024 epochs of blocks
+  uint32 history_under_min_peer_count = 25;
+}
+
+// Request for listing fct_peer_sync_status_by_cl_client_daily records
+message ListFctPeerSyncStatusByClClientDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by client - Consensus client from the peer agent: lighthouse, lodestar, nimbus, prysm, teku, grandine, caplin (erigon), silver or ethlambda, unknown when the agent was never seen, other for every other agent (ORDER BY column 2 - optional)
+  StringFilter client = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by peer_count - Peers our sentries saw in the day (optional)
+  UInt32Filter peer_count = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by status_peer_count - Peers that exchanged status with our sentries, the population of the head, finalized and fork digest buckets (optional)
+  UInt32Filter status_peer_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by head_lag_0_1_peer_count - Peers whose head trailed our sentries by at most 1 slot (median over the day) (optional)
+  UInt32Filter head_lag_0_1_peer_count = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by head_lag_2_32_peer_count - Peers whose head trailed our sentries by 2 to 32 slots (optional)
+  UInt32Filter head_lag_2_32_peer_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by head_lag_over_32_peer_count - Peers whose head trailed our sentries by more than 32 slots (syncing or stuck) (optional)
+  UInt32Filter head_lag_over_32_peer_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by finalized_lag_over_1_peer_count - Peers whose finalized checkpoint trailed our sentries by more than 1 epoch (median over the day) (optional)
+  UInt32Filter finalized_lag_over_1_peer_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by other_fork_digest_peer_count - Peers whose latest status carried another fork digest than the most common one among all peers that day (optional)
+  UInt32Filter other_fork_digest_peer_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by history_known_peer_count - Peers that sent an earliest available slot (status v2), the population of the history buckets (optional)
+  UInt32Filter history_known_peer_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by history_full_peer_count - Peers serving blocks from genesis (earliest available slot 0) (optional)
+  UInt32Filter history_full_peer_count = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by history_over_min_peer_count - Peers serving more than a day beyond the spec minimum of 33024 epochs of blocks, short of genesis (optional)
+  UInt32Filter history_over_min_peer_count = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by history_min_peer_count - Peers serving the spec minimum of 33024 epochs of blocks, give or take a day (optional)
+  UInt32Filter history_min_peer_count = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by history_under_min_peer_count - Peers serving more than a day less than the spec minimum of 33024 epochs of blocks (optional)
+  UInt32Filter history_under_min_peer_count = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_peer_sync_status_by_cl_client_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 16 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPeerSyncStatusByClClientDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 17 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 18 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_peer_sync_status_by_cl_client_daily records
+message ListFctPeerSyncStatusByClClientDailyResponse {
+  // The list of fct_peer_sync_status_by_cl_client_daily.
+  repeated FctPeerSyncStatusByClClientDaily fct_peer_sync_status_by_cl_client_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_peer_sync_status_by_cl_client_daily record by primary key
+message GetFctPeerSyncStatusByClClientDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_peer_sync_status_by_cl_client_daily record
+message GetFctPeerSyncStatusByClClientDailyResponse {
+  FctPeerSyncStatusByClClientDaily item = 1;
+}
+
+// Query fct_peer_sync_status_by_cl_client_daily data
+service FctPeerSyncStatusByClClientDailyService {
+  // List records | Daily consensus peer sync status by client, from status exchanges with our libp2p sentries: head and finalized lag against the sentry, fork digest, and block history served (earliest available slot).
+  rpc List(ListFctPeerSyncStatusByClClientDailyRequest) returns (ListFctPeerSyncStatusByClClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_sync_status_by_cl_client_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctPeerSyncStatusByClClientDailyRequest) returns (GetFctPeerSyncStatusByClClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_sync_status_by_cl_client_daily/{day_start_date}"
+    };
+  }
+}

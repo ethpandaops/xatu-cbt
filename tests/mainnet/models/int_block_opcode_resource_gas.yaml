@@ -1,0 +1,27 @@
+model: int_block_opcode_resource_gas
+network: mainnet
+external_data:
+    canonical_execution_transaction_structlog_agg:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_transaction_call_frame_opcode_resource_gas_canonical_execution_transaction_structlog_agg.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_block_opcode_resource_gas FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Block totals per opcode match the frame rows
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (SELECT block_number, opcode, gas, gas_memory, count FROM int_block_opcode_resource_gas FINAL) AS b
+        FULL OUTER JOIN (
+            SELECT block_number, opcode, sum(gas) AS g, sum(gas_memory) AS m, sum(count) AS c
+            FROM int_transaction_call_frame_opcode_resource_gas FINAL GROUP BY block_number, opcode
+        ) AS f USING (block_number, opcode)
+        WHERE b.gas != f.g OR b.gas_memory != f.m OR b.count != f.c
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

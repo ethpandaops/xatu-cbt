@@ -1,0 +1,37 @@
+model: fct_prepared_block_by_node_daily
+network: mainnet
+external_data:
+    beacon_api_eth_v3_validator_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_prepared_block_beacon_api_eth_v3_validator_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_prepared_block_by_node_daily FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Counts every prepared block once
+      sql: |
+        SELECT
+          (SELECT sum(block_count) FROM fct_prepared_block_by_node_daily FINAL) - (SELECT count() FROM fct_prepared_block FINAL WHERE toDate(slot_start_date_time) GLOBAL IN (SELECT day_start_date FROM fct_prepared_block_by_node_daily FINAL)) AS difference
+      assertions:
+        - type: equals
+          column: difference
+          value: 0
+    - name: Node count matches the source
+      sql: |
+        SELECT
+          (SELECT uniqExact(day_start_date, meta_client_name) FROM fct_prepared_block_by_node_daily FINAL) - (SELECT uniqExact(toDate(slot_start_date_time), meta_client_name) FROM fct_prepared_block FINAL) AS difference
+      assertions:
+        - type: equals
+          column: difference
+          value: 0
+    - name: One row per key
+      sql: |
+        SELECT COUNT(*) - uniqExact(day_start_date, meta_client_name, meta_consensus_implementation, meta_consensus_version) AS duplicate_rows FROM fct_prepared_block_by_node_daily FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0

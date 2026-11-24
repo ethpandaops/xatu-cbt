@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Consensus peers in int_peer_daily with a peer ID, with their discv5 node ID and the order their node ID assigns custody groups in.
+message DimPeerNode {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Hash of the peer ID and network, the key shared by the libp2p tables
+  int64 peer_id_unique_key = 12;
+  // libp2p peer ID
+  string peer_id = 13;
+  // discv5 node ID (hex, the keccak256 of the uncompressed secp256k1 public key in the peer ID), empty when the peer ID holds another key type
+  string node_id = 14;
+  // All 128 custody groups in the order the node ID assigns them (get_custody_groups): a peer with custody group count n custodies the first n, and group g is data column g. Empty without a node ID
+  repeated uint32 custody_group_order = 15;
+}
+
+// Request for listing dim_peer_node records
+message ListDimPeerNodeRequest {
+  // Filter by peer_id_unique_key - Hash of the peer ID and network, the key shared by the libp2p tables (PRIMARY KEY - required)
+  Int64Filter peer_id_unique_key = 1;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2;
+  // Filter by peer_id - libp2p peer ID (optional)
+  StringFilter peer_id = 3;
+  // Filter by node_id - discv5 node ID (hex, the keccak256 of the uncompressed secp256k1 public key in the peer ID), empty when the peer ID holds another key type (optional)
+  StringFilter node_id = 4;
+  // Filter by custody_group_order - All 128 custody groups in the order the node ID assigns them (get_custody_groups): a peer with custody group count n custodies the first n, and group g is data column g. Empty without a node ID (optional)
+  ArrayUInt32Filter custody_group_order = 5;
+
+  // The maximum number of dim_peer_node to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 6;
+  // A page token, received from a previous `ListDimPeerNode` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 7;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 8;
+}
+
+// Response for listing dim_peer_node records
+message ListDimPeerNodeResponse {
+  // The list of dim_peer_node.
+  repeated DimPeerNode dim_peer_node = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single dim_peer_node record by primary key
+message GetDimPeerNodeRequest {
+  // Hash of the peer ID and network, the key shared by the libp2p tables
+  int64 peer_id_unique_key = 1; // Primary key (required)
+}
+
+// Response for getting a single dim_peer_node record
+message GetDimPeerNodeResponse {
+  DimPeerNode item = 1;
+}
+
+// Query dim_peer_node data
+service DimPeerNodeService {
+  // List records | Consensus peers in int_peer_daily with a peer ID, with their discv5 node ID and the order their node ID assigns custody groups in.
+  rpc List(ListDimPeerNodeRequest) returns (ListDimPeerNodeResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetDimPeerNodeRequest) returns (GetDimPeerNodeResponse);
+}

@@ -1,0 +1,41 @@
+model: fct_peer_fork_readiness_by_el_client_daily
+network: mainnet
+external_data:
+    node_record_execution:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_node_record_execution.parquet
+        network_column: meta_network_name
+assertions:
+    - name: "Counts every execution node on the network genesis once"
+      sql: |
+        SELECT
+          (SELECT sum(node_count) FROM fct_peer_fork_readiness_by_el_client_daily FINAL) AS nodes,
+          nodes - 7831 AS node_diff
+      assertions:
+        - type: equals
+          column: node_diff
+          value: 0
+    - name: "Most nodes are on the current fork with no next fork scheduled"
+      sql: |
+        SELECT
+          argMax(fork_id_hash, total) AS top_hash, max(total) AS top_nodes, sum(total) AS nodes,
+          sumIf(total, fork_id_next = '0') AS zero_next
+        FROM (SELECT fork_id_hash, fork_id_next, sum(node_count) AS total FROM fct_peer_fork_readiness_by_el_client_daily FINAL GROUP BY fork_id_hash, fork_id_next)
+      assertions:
+        - type: equals
+          column: top_hash
+          value: '0x07c9462e'
+        - type: greater_than
+          column: top_nodes
+          value: 7000
+        - type: equals
+          column: zero_next
+          value: 0
+    - name: "One row per key"
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT day_start_date, client, version, release_status, fork_id_hash, fork_id_next FROM fct_peer_fork_readiness_by_el_client_daily FINAL GROUP BY day_start_date, client, version, release_status, fork_id_hash, fork_id_next HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

@@ -1,0 +1,48 @@
+model: fct_node_last_seen
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_first_seen_by_node_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+assertions:
+    - name: One row per Xatu node that reported a block
+      sql: |
+        SELECT
+          (SELECT uniqExact(meta_client_name) FROM fct_block_first_seen_by_node FINAL) AS reporting_nodes,
+          (SELECT count() FROM fct_node_last_seen FINAL) - reporting_nodes AS node_diff
+      assertions:
+        - type: greater_than
+          column: reporting_nodes
+          value: 1
+        - type: equals
+          column: node_diff
+          value: 0
+    - name: Last seen is the node's latest block observation, with that observation's identity and location
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT meta_client_name, last_seen_date_time, node_id, meta_client_geo_country_code, meta_consensus_implementation
+          FROM fct_node_last_seen FINAL
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT meta_client_name, max(slot_start_date_time) AS last_seen_date_time, any(node_id) AS node_id,
+                 argMax(meta_client_geo_country_code, slot_start_date_time) AS meta_client_geo_country_code,
+                 argMax(meta_consensus_implementation, slot_start_date_time) AS meta_consensus_implementation
+          FROM fct_block_first_seen_by_node FINAL
+          GROUP BY meta_client_name
+        ) AS b USING (meta_client_name)
+        WHERE a.last_seen_date_time != b.last_seen_date_time OR a.node_id != b.node_id
+          OR a.meta_client_geo_country_code != b.meta_client_geo_country_code
+          OR a.meta_consensus_implementation != b.meta_consensus_implementation
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0

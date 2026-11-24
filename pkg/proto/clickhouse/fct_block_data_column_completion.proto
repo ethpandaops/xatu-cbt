@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// How sentry nodes completed the data columns of each block: completions by path, cells from gossip and the execution layer, and completion times
+
+message FctBlockDataColumnCompletion {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The slot number
+  uint32 slot = 12;
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 13;
+  // The epoch number containing the slot
+  uint32 epoch = 14;
+  // The wall clock time when the epoch started
+  uint32 epoch_start_date_time = 15;
+  // The beacon block root hash
+  string block_root = 16;
+  // Number of blobs in the block, the number of cells in each column
+  uint32 blob_count = 17;
+  // Distinct columns of the block that a sentry node completed
+  uint32 column_count = 18;
+  // Distinct sentry nodes that completed a column of the block
+  uint32 node_count = 19;
+  // Column completions, one per node per column
+  uint32 completion_count = 20;
+  // Completions by a full data column gossip message
+  uint32 full_gossip_completion_count = 21;
+  // Completions from cells received as gossipsub partial messages
+  uint32 partial_gossip_completion_count = 22;
+  // Completions built from blobs returned by the execution layer
+  uint32 el_completion_count = 23;
+  // Completions recovered by reconstruction from other columns
+  uint32 reconstruction_completion_count = 24;
+  // Completions by a path the node did not report
+  uint32 unknown_completion_count = 25;
+  // Cells in the completed columns, summed over completions
+  uint64 cells_total = 26;
+  // Cells received over gossip, summed over completions
+  uint64 cells_from_gossip = 27;
+  // Cells built from blobs returned by the execution layer, summed over completions
+  uint64 cells_from_el = 28;
+  // Earliest completion of any column by any node, in milliseconds from slot start
+  uint32 min_completion_slot_start_diff = 29;
+  // Median completion time across completions, in milliseconds from slot start
+  uint32 p50_completion_slot_start_diff = 30;
+  // 90th percentile completion time across completions, in milliseconds from slot start
+  uint32 p90_completion_slot_start_diff = 31;
+  // Latest completion of any column by any node, in milliseconds from slot start
+  uint32 max_completion_slot_start_diff = 32;
+  // Median across nodes of the time each node completed its last column of the block, in milliseconds from slot start
+  uint32 p50_node_last_completion_slot_start_diff = 33;
+  // 90th percentile across nodes of the time each node completed its last column of the block, in milliseconds from slot start
+  uint32 p90_node_last_completion_slot_start_diff = 34;
+}
+
+// Request for listing fct_block_data_column_completion records
+message ListFctBlockDataColumnCompletionRequest {
+  // Filter by slot_start_date_time - The wall clock time when the slot started (PRIMARY KEY - required unless using alternatives: slot)
+  UInt32Filter slot_start_date_time = 1 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by block_root - The beacon block root hash (ORDER BY column 2 - optional)
+  StringFilter block_root = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by slot - The slot number (PROJECTION: p_by_slot - alternative to slot_start_date_time)
+  UInt32Filter slot = 4 [(google.api.field_behavior) = OPTIONAL, (clickhouse.v1.projection_name) = "p_by_slot", (clickhouse.v1.projection_alternative_for) = "slot_start_date_time", (clickhouse.v1.required_group) = "primary_key"];
+  // Filter by epoch - The epoch number containing the slot (optional)
+  UInt32Filter epoch = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
+  UInt32Filter epoch_start_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by blob_count - Number of blobs in the block, the number of cells in each column (optional)
+  UInt32Filter blob_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by column_count - Distinct columns of the block that a sentry node completed (optional)
+  UInt32Filter column_count = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by node_count - Distinct sentry nodes that completed a column of the block (optional)
+  UInt32Filter node_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by completion_count - Column completions, one per node per column (optional)
+  UInt32Filter completion_count = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by full_gossip_completion_count - Completions by a full data column gossip message (optional)
+  UInt32Filter full_gossip_completion_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by partial_gossip_completion_count - Completions from cells received as gossipsub partial messages (optional)
+  UInt32Filter partial_gossip_completion_count = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by el_completion_count - Completions built from blobs returned by the execution layer (optional)
+  UInt32Filter el_completion_count = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by reconstruction_completion_count - Completions recovered by reconstruction from other columns (optional)
+  UInt32Filter reconstruction_completion_count = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by unknown_completion_count - Completions by a path the node did not report (optional)
+  UInt32Filter unknown_completion_count = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by cells_total - Cells in the completed columns, summed over completions (optional)
+  UInt64Filter cells_total = 16 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by cells_from_gossip - Cells received over gossip, summed over completions (optional)
+  UInt64Filter cells_from_gossip = 17 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by cells_from_el - Cells built from blobs returned by the execution layer, summed over completions (optional)
+  UInt64Filter cells_from_el = 18 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by min_completion_slot_start_diff - Earliest completion of any column by any node, in milliseconds from slot start (optional)
+  UInt32Filter min_completion_slot_start_diff = 19 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_completion_slot_start_diff - Median completion time across completions, in milliseconds from slot start (optional)
+  UInt32Filter p50_completion_slot_start_diff = 20 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p90_completion_slot_start_diff - 90th percentile completion time across completions, in milliseconds from slot start (optional)
+  UInt32Filter p90_completion_slot_start_diff = 21 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by max_completion_slot_start_diff - Latest completion of any column by any node, in milliseconds from slot start (optional)
+  UInt32Filter max_completion_slot_start_diff = 22 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p50_node_last_completion_slot_start_diff - Median across nodes of the time each node completed its last column of the block, in milliseconds from slot start (optional)
+  UInt32Filter p50_node_last_completion_slot_start_diff = 23 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by p90_node_last_completion_slot_start_diff - 90th percentile across nodes of the time each node completed its last column of the block, in milliseconds from slot start (optional)
+  UInt32Filter p90_node_last_completion_slot_start_diff = 24 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_block_data_column_completion to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 25 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctBlockDataColumnCompletion` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 26 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 27 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_block_data_column_completion records
+message ListFctBlockDataColumnCompletionResponse {
+  // The list of fct_block_data_column_completion.
+  repeated FctBlockDataColumnCompletion fct_block_data_column_completion = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_block_data_column_completion record by primary key
+message GetFctBlockDataColumnCompletionRequest {
+  // The wall clock time when the slot started
+  uint32 slot_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_block_data_column_completion record
+message GetFctBlockDataColumnCompletionResponse {
+  FctBlockDataColumnCompletion item = 1;
+}
+
+// Query fct_block_data_column_completion data
+service FctBlockDataColumnCompletionService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctBlockDataColumnCompletionRequest) returns (ListFctBlockDataColumnCompletionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_data_column_completion"
+    };
+  }
+  // Get record | Retrieve a single record by slot_start_date_time
+  rpc Get(GetFctBlockDataColumnCompletionRequest) returns (GetFctBlockDataColumnCompletionResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_block_data_column_completion/{slot_start_date_time}"
+    };
+  }
+}

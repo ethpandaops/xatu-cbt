@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Residential (network type other or unknown) city and client cells under 3 peers roll into city other within the country. Crawlers, probes, light clients and our own sentries are excluded.
+message FctPeerCountByClClientCityDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Country code of the address, unknown when not geolocated
+  string country_code = 13;
+  // City of the address, unknown when not geolocated to a city, other for residential city and client cells with under 3 peers
+  string city = 14;
+  // hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated
+  string network_type = 15;
+  // Consensus client from the peer agent: lighthouse, lodestar, nimbus, prysm, teku, grandine, caplin (erigon), silver or ethlambda, unknown when the agent was never seen, other for every other agent
+  string client = 16;
+  // Consensus peers our libp2p sentries or our discovery crawler saw in the day
+  uint32 peer_count = 17;
+}
+
+// Request for listing fct_peer_count_by_cl_client_city_daily records
+message ListFctPeerCountByClClientCityDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by country_code - Country code of the address, unknown when not geolocated (ORDER BY column 2 - optional)
+  StringFilter country_code = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by city - City of the address, unknown when not geolocated to a city, other for residential city and client cells with under 3 peers (ORDER BY column 3 - optional)
+  StringFilter city = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by network_type - hosting for cloud and hosting providers (known ASNs and organisation names), other for the rest (mostly residential and business ISPs), unknown when not geolocated (ORDER BY column 4 - optional)
+  StringFilter network_type = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by client - Consensus client from the peer agent: lighthouse, lodestar, nimbus, prysm, teku, grandine, caplin (erigon), silver or ethlambda, unknown when the agent was never seen, other for every other agent (ORDER BY column 5 - optional)
+  StringFilter client = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by peer_count - Consensus peers our libp2p sentries or our discovery crawler saw in the day (optional)
+  UInt32Filter peer_count = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_peer_count_by_cl_client_city_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 8 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPeerCountByClClientCityDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 9 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 10 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_peer_count_by_cl_client_city_daily records
+message ListFctPeerCountByClClientCityDailyResponse {
+  // The list of fct_peer_count_by_cl_client_city_daily.
+  repeated FctPeerCountByClClientCityDaily fct_peer_count_by_cl_client_city_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_peer_count_by_cl_client_city_daily record by primary key
+message GetFctPeerCountByClClientCityDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_peer_count_by_cl_client_city_daily record
+message GetFctPeerCountByClClientCityDailyResponse {
+  FctPeerCountByClClientCityDaily item = 1;
+}
+
+// Query fct_peer_count_by_cl_client_city_daily data
+service FctPeerCountByClClientCityDailyService {
+  // List records | Daily consensus peers by country, city, network type and client, residential and hosting, from our libp2p sentries and our discovery crawler. Not crossed with autonomous system or version. Residential (network type other or unknown) city and client cells under 3 peers roll into city other within the country. Crawlers, probes, light clients and our own sentries are excluded.
+  rpc List(ListFctPeerCountByClClientCityDailyRequest) returns (ListFctPeerCountByClClientCityDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_count_by_cl_client_city_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctPeerCountByClClientCityDailyRequest) returns (GetFctPeerCountByClClientCityDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_count_by_cl_client_city_daily/{day_start_date}"
+    };
+  }
+}

@@ -47,8 +47,10 @@ filtered_probes AS (
         meta_client_geo_autonomous_system_organization,
         meta_network_name
     FROM {{ index .dep "{{external}}" "libp2p_rpc_data_column_custody_probe" "helpers" "from" }} FINAL
+    -- Half-open: the next run starts at bounds.end, so a probe at exactly bounds.end belongs to it.
     WHERE
-        event_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+        event_date_time >= fromUnixTimestamp({{ .bounds.start }})
+        AND event_date_time < fromUnixTimestamp({{ .bounds.end }})
         AND meta_network_name = '{{ .env.NETWORK }}'
 ),
 
@@ -175,16 +177,17 @@ enriched_probes AS (
         ON bb.execution_payload_block_number = bs.block_number
 )
 
--- Final aggregation
+-- One row per probe batch: a batch's columns share one event time, so the second it was sent in
+-- identifies it. A row never depends on how wide the run's window was, and reprocessing rewrites the same keys.
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
-    any(event_date_time) AS probe_date_time,
+    toDateTime(event_date_time) AS probe_date_time,
     slot,
     any(slot_start_date_time) AS slot_start_date_time,
     peer_id_unique_key,
     result,
     error,
-    groupUniqArray(column_index) AS column_indices,
+    arraySort(groupUniqArray(column_index)) AS column_indices,
     any(blob_submitters) AS blob_submitters,
     any(response_time_ms) AS response_time_ms,
     any(username) AS username,
@@ -214,6 +217,7 @@ SELECT
     any(meta_peer_geo_autonomous_system_organization) AS meta_peer_geo_autonomous_system_organization
 FROM enriched_probes
 GROUP BY
+    probe_date_time,
     slot,
     peer_id_unique_key,
     result,

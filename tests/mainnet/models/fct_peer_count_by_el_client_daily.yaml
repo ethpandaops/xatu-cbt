@@ -1,0 +1,72 @@
+model: fct_peer_count_by_el_client_daily
+network: mainnet
+external_data:
+    node_record_execution:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_node_record_execution.parquet
+        network_column: meta_network_name
+assertions:
+    - name: "Counts every execution node on the network genesis and current fork once"
+      sql: |
+        SELECT
+          (SELECT sum(peer_count) FROM fct_peer_count_by_el_client_daily FINAL) AS nodes,
+          nodes - 7462 AS node_diff,
+          (SELECT sumIf(peer_count, client = 'geth') FROM fct_peer_count_by_el_client_daily FINAL) AS geth_nodes,
+          (SELECT sumIf(peer_count, client IN ('op-reth', 'reth-bsc', 'bera-reth', 'nimbus')) FROM fct_peer_count_by_el_client_daily FINAL) AS other_chain_nodes
+      assertions:
+        - type: equals
+          column: node_diff
+          value: 0
+        - type: equals
+          column: geth_nodes
+          value: 5338
+        - type: equals
+          column: other_chain_nodes
+          value: 0
+    - name: "Commits in devp2p names resolve to releases"
+      sql: |
+        SELECT
+          sumIf(peer_count, client = 'geth' AND version = 'v1.17.5' AND release_status = 'commit_match') AS geth_v1175,
+          sumIf(peer_count, client = 'nethermind' AND version = '1.39.3' AND release_status = 'commit_match') AS nethermind_1393,
+          sumIf(peer_count, client = 'nimbusel') AS nimbusel_nodes
+        FROM fct_peer_count_by_el_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: geth_v1175
+          value: 300
+        - type: greater_than
+          column: nethermind_1393
+          value: 50
+        - type: equals
+          column: nimbusel_nodes
+          value: 8
+    - name: "A commit no release points at is a custom build: geth v1.16.7-stable-c7a5f611"
+      sql: |
+        SELECT
+          sumIf(peer_count, client = 'geth' AND version = 'v1.16.7' AND release_status = 'commit_unmatched') AS custom_geth
+        FROM fct_peer_count_by_el_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: custom_geth
+          value: 500
+    - name: "Geth agents parse -stable-<commit>: the v1.16.7 tag commit b9f3a3d9 matches, the non-upstream c7a5f611 keeps its stated version"
+      sql: |
+        SELECT
+          sumIf(peer_count, client = 'geth' AND version = 'v1.16.7' AND release_status = 'commit_match') AS tagged,
+          sumIf(peer_count, client = 'geth' AND version = 'v1.16.7' AND release_status = 'commit_unmatched') AS custom
+        FROM fct_peer_count_by_el_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: tagged
+          value: 400
+        - type: greater_than
+          column: custom
+          value: 887
+    - name: "One row per key"
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT day_start_date, client, version, release_status FROM fct_peer_count_by_el_client_daily FINAL GROUP BY day_start_date, client, version, release_status HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

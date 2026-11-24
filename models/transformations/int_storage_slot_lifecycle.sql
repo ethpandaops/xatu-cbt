@@ -29,7 +29,8 @@ WITH
 batch_touches AS (
     SELECT block_number, address, slot_key
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_next_touch" "helpers" "from" }}
-    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    -- Half-open: the next run starts at bounds.end. Reading that block here too would count its touches twice.
+    WHERE block_number >= {{ .bounds.start }} AND block_number < {{ .bounds.end }}
     GROUP BY block_number, address, slot_key
 ),
 touched_slots AS (
@@ -42,7 +43,7 @@ batch_diffs AS (
         block_number, address, slot_key,
         argMax(effective_bytes_to, updated_date_time) as effective_bytes_to
     FROM {{ index .dep "{{transformation}}" "int_storage_slot_diff_by_address_slot" "helpers" "from" }}
-    WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+    WHERE block_number >= {{ .bounds.start }} AND block_number < {{ .bounds.end }}
     GROUP BY block_number, address, slot_key
 ),
 -- Lifecycle boundaries from Model A (argMax dedup)
@@ -60,7 +61,7 @@ boundaries AS (
                effective_bytes_birth, effective_bytes_death, updated_date_time
         FROM `{{ .self.database }}`.int_storage_slot_lifecycle_boundary
         WHERE (address, slot_key) GLOBAL IN (SELECT address, slot_key FROM touched_slots)
-            AND birth_block <= {{ .bounds.end }}
+            AND birth_block < {{ .bounds.end }}
     )
     GROUP BY address, slot_key, lifecycle_number
     HAVING (death_block IS NULL OR death_block >= {{ .bounds.start }})
@@ -79,7 +80,7 @@ prev_stats AS (
         argMax(interval_max, updated_date_time) as interval_max
     FROM `{{ .self.database }}`.`{{ .self.table }}`
     WHERE (address, slot_key) GLOBAL IN (SELECT address, slot_key FROM touched_slots)
-        AND birth_block <= {{ .bounds.end }}
+        AND birth_block < {{ .bounds.end }}
     GROUP BY address, slot_key, lifecycle_number
 ),
 -- Join touches with diffs + boundaries + prev_stats

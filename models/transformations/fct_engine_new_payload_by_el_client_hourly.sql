@@ -40,6 +40,7 @@ block_context AS (
 -- Fetch external data separately to avoid cross-cluster join pushdown issues
 engine_payloads AS (
     SELECT
+        event_date_time,
         block_hash,
         duration_ms,
         status,
@@ -60,6 +61,7 @@ engine_payloads AS (
 enriched AS (
     SELECT
         COALESCE(bc.slot_start_date_time, toDateTime(0)) AS slot_start_date_time,
+        ep.event_date_time,
         ep.block_hash,
         ep.duration_ms,
         ep.status,
@@ -93,6 +95,8 @@ events_in_hours AS (
     WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
       AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
       AND slot_start_date_time != toDateTime(0)
+      -- Same 300s lateness cutoff as int_engine_new_payload
+      AND event_date_time <= slot_start_date_time + INTERVAL 300 SECOND
 )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,

@@ -19,6 +19,7 @@ dependencies:
 ---
 -- Hourly aggregation of execution layer gas limit.
 -- Computes percentiles, Bollinger bands, and 6-hour moving averages across all blocks in each hour.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 --
 -- This query expands the block range to complete hour boundaries to handle partial
 -- hour aggregations at the head of incremental processing. For example, if we process
@@ -34,6 +35,8 @@ WITH
             toStartOfHour(max(block_date_time)) AS max_hour
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+          -- Genesis is not a produced block, and on mainnet its timestamp is 0 (1970-01-01)
+          AND block_number > 0
     ),
     -- Get the actual block number range for the expanded hour boundaries
     block_range AS (
@@ -41,7 +44,8 @@ WITH
             min(block_number) AS min_block,
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
+          AND block_number > 0
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),
     -- Get all blocks within the expanded hour boundaries
@@ -51,7 +55,8 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
+          AND block_number > 0
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),
     -- Join with external table using computed block range for efficient filtering
@@ -67,6 +72,8 @@ WITH
             FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
             WHERE block_number >= (SELECT min_block FROM block_range)
               AND block_number <= (SELECT max_block FROM block_range)
+              -- The external table holds every network, so match this network's blocks only
+              AND meta_network_name = '{{ .env.NETWORK }}'
         ) eb ON b.block_number = eb.block_number
     ),
     -- Calculate 6-hour moving average for each block
@@ -98,4 +105,5 @@ SELECT
     -- 6-hour moving average
     toUInt64(round(avg(ma_gas_limit))) AS moving_avg_gas_limit
 FROM blocks_with_ma
+WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(block_date_time)

@@ -122,10 +122,10 @@ proto:
 	PASS=$${CLICKHOUSE_PASSWORD:-supersecret}; \
 	docker run --rm -v "$$(pwd):/workspace" \
 		--user "$$(id -u):$$(id -g)" \
-		--network xatu_xatu-net \
+		--network "$${XATU_CBT_PROJECT_NAME:-xatu-cbt-platform}_xatu-net" \
 		ethpandaops/clickhouse-proto-gen \
 		--dsn "clickhouse://$$USER:$$PASS@xatu-cbt-clickhouse-01:9000/$$NETWORK" \
-		--tables "admin_incremental,$$TABLES" \
+		--tables "admin_cbt_incremental,$$TABLES" \
 		--out /workspace/pkg/proto/clickhouse \
 		--package cbt \
 		--go-package github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse \

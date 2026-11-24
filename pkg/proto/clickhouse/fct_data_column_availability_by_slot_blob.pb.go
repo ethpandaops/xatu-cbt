@@ -23,6 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Custody probe results by slot and column index, repeated once per blob index of the slot. Probes are per column, so every blob of a slot carries the same counts. Recounted every 6 hours over the last 19 days
 type FctDataColumnAvailabilityBySlotBlob struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

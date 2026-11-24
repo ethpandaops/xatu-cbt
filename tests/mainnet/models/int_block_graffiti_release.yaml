@@ -1,0 +1,143 @@
+model: int_block_graffiti_release
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v3.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+assertions:
+    - name: One row per canonical block
+      sql: |
+        SELECT COUNT(*) AS row_count, uniqExact(block_root) AS blocks FROM int_block_graffiti_release FINAL
+      assertions:
+        - type: equals
+          column: row_count
+          value: 623
+        - type: equals
+          column: blocks
+          value: 623
+    - name: "Lighthouse default graffiti resolves its commit: Lighthouse/v8.2.3-6db6ae9"
+      sql: |
+        SELECT
+          COUNT(*) AS blocks,
+          countIf(consensus_client = 'lighthouse' AND consensus_client_version = 'v8.2.3' AND consensus_client_release_status = 'commit_match') AS resolved
+        FROM int_block_graffiti_release FINAL
+        WHERE graffiti_format = 'version_string' AND block_root GLOBAL IN (
+          SELECT block_root FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Lighthouse/v8.2.3-6db6ae9'
+        )
+      assertions:
+        - type: equals
+          column: blocks
+          value: 28
+        - type: equals
+          column: resolved
+          value: 28
+    - name: "4 character codes resolve both layers: GE3d84LH6db6 is geth v1.17.6 and lighthouse v8.2.3"
+      sql: |
+        SELECT
+          COUNT(*) AS blocks,
+          countIf(consensus_client_version = 'v8.2.3' AND consensus_client_release_status = 'commit_match'
+            AND execution_client = 'geth' AND execution_client_version = 'v1.17.6' AND execution_client_release_status = 'commit_match') AS resolved
+        FROM int_block_graffiti_release FINAL
+        WHERE block_root GLOBAL IN (SELECT block_root FROM fct_block_graffiti FINAL WHERE graffiti_text = 'GE3d84LH6db6')
+      assertions:
+        - type: equals
+          column: blocks
+          value: 36
+        - type: equals
+          column: resolved
+          value: 36
+    - name: "A commit shared by a release and its rc picks the release: PMfea2 is prysm v7.2.1"
+      sql: |
+        SELECT
+          COUNT(*) AS blocks,
+          countIf(consensus_client = 'prysm' AND consensus_client_version = 'v7.2.1' AND consensus_client_release_status = 'commit_match'
+            AND execution_client_version = 'v1.17.8') AS resolved
+        FROM int_block_graffiti_release FINAL
+        WHERE block_root GLOBAL IN (SELECT block_root FROM fct_block_graffiti FINAL WHERE graffiti_text = 'ssv.network GEa579PMfea2')
+      assertions:
+        - type: equals
+          column: blocks
+          value: 16
+        - type: equals
+          column: resolved
+          value: 16
+    - name: "A commit no release points at is a custom build: PMca93"
+      sql: |
+        SELECT
+          COUNT(*) AS blocks,
+          countIf(consensus_client = 'prysm' AND consensus_client_version = '' AND consensus_client_release_status = 'commit_unmatched'
+            AND execution_client_version = 'v1.17.3') AS unmatched
+        FROM int_block_graffiti_release FINAL
+        WHERE block_root GLOBAL IN (SELECT block_root FROM fct_block_graffiti FINAL WHERE graffiti_text = 'GE117ePMca93')
+      assertions:
+        - type: equals
+          column: blocks
+          value: 23
+        - type: equals
+          column: unmatched
+          value: 23
+    - name: "Nimbus default graffiti resolves a 6 character commit: Nimbus/v26.7.0-4110bc-stateofus"
+      sql: |
+        SELECT countIf(consensus_client_version = 'v26.7.0' AND consensus_client_release_status = 'commit_match') AS resolved
+        FROM int_block_graffiti_release FINAL
+        WHERE block_root GLOBAL IN (SELECT block_root FROM fct_block_graffiti FINAL WHERE graffiti_text = 'Nimbus/v26.7.0-4110bc-stateofus')
+      assertions:
+        - type: equals
+          column: resolved
+          value: 17
+    - name: "A release branch commit takes the release it builds on: CN8b41 / EG8b41 is erigon release/3.7 after v3.7.1"
+      sql: |
+        SELECT
+          COUNT(*) AS blocks,
+          countIf(consensus_client = 'caplin' AND consensus_client_version = 'v3.7.1' AND consensus_client_release_status = 'commit_untagged'
+            AND execution_client = 'erigon' AND execution_client_version = 'v3.7.1' AND execution_client_release_status = 'commit_untagged') AS resolved
+        FROM int_block_graffiti_release FINAL
+        WHERE consensus_client_commit = '8b41'
+      assertions:
+        - type: equals
+          column: blocks
+          value: 2
+        - type: equals
+          column: resolved
+          value: 2
+    - name: Commits that do not resolve keep the version the graffiti states, and only those
+      sql: |
+        SELECT
+          countIf(execution_client_release_status = 'commit_zero') AS zero_commits,
+          countIf(consensus_client_release_status = 'codes_min') AS codes_min,
+          countIf(consensus_client_release_status IN ('commit_zero', 'commit_unmatched', 'commit_ambiguous', 'commit_short', 'version_unmatched', 'codes_min', 'no_commit', 'none')
+            AND replaceRegexpOne(consensus_client_version, '^v', '') != replaceRegexpOne(stated_version, '^v', '')) AS not_stated,
+          countIf(consensus_client_release_status = 'commit_unmatched' AND stated_version != '' AND consensus_client_version != '') AS unmatched_with_stated
+        FROM (SELECT block_root, consensus_client_version, consensus_client_release_status, execution_client_release_status FROM int_block_graffiti_release FINAL) AS r
+        GLOBAL INNER JOIN (SELECT block_root, consensus_client_version AS stated_version FROM fct_block_graffiti FINAL) AS g USING (block_root)
+      assertions:
+        - type: equals
+          column: zero_commits
+          value: 3
+        - type: greater_than
+          column: codes_min
+          value: 20
+        - type: equals
+          column: not_stated
+          value: 0
+        - type: greater_than
+          column: unmatched_with_stated
+          value: 0
+    - name: Status and version agree
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_graffiti_release FINAL
+        WHERE (consensus_client_release_status IN ('commit_match', 'commit_mismatch', 'version_match') AND consensus_client_version = '')
+           OR (execution_client_release_status = 'commit_match' AND execution_client_version = '')
+           OR (execution_client_release_status NOT IN ('commit_match', 'commit_untagged') AND execution_client_version != '')
+           OR (consensus_client = 'unknown' AND consensus_client_release_status != 'none')
+           OR (execution_client = 'unknown' AND execution_client_release_status != 'none')
+           OR (graffiti_format = 'codes_short' AND consensus_client_release_status NOT IN ('commit_short', 'none'))
+           OR (graffiti_format = 'codes_min' AND consensus_client != 'unknown' AND consensus_client_release_status != 'codes_min')
+           OR (consensus_client_commit != '' AND consensus_client_release_status IN ('codes_min', 'no_commit', 'none'))
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -1,0 +1,47 @@
+model: fct_block_graffiti_client_by_entity_group_daily
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/canonical_beacon_block_graffiti_v3.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Group counts match the sum of the member entities, an entity is a member when its name contains lido
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT day_start_date, entity_group, consensus_client, execution_client, entity_count, block_count
+          FROM fct_block_graffiti_client_by_entity_group_daily FINAL
+          WHERE block_count > 0
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT day_start_date, 'lido' AS entity_group, consensus_client, execution_client, toUInt32(uniqExact(entity)) AS member_entities, toUInt32(sum(block_count)) AS member_blocks
+          FROM fct_block_graffiti_client_by_entity_daily FINAL
+          WHERE position(entity, 'lido') > 0 AND block_count > 0
+          GROUP BY day_start_date, entity_group, consensus_client, execution_client
+        ) AS b USING (day_start_date, entity_group, consensus_client, execution_client)
+        WHERE a.block_count != b.member_blocks OR a.entity_count != b.member_entities
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Only the lido group, no more entities than blocks
+      sql: |
+        SELECT countIf(entity_group != 'lido' OR entity_count > block_count) AS bad_rows FROM fct_block_graffiti_client_by_entity_group_daily FINAL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: One row per key
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT day_start_date, entity_group, consensus_client, execution_client
+          FROM fct_block_graffiti_client_by_entity_group_daily FINAL
+          GROUP BY day_start_date, entity_group, consensus_client, execution_client
+          HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

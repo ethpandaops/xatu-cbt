@@ -324,7 +324,7 @@ func BuildListFctBlockProposerHeadQuery(req *ListFctBlockProposerHeadRequest, op
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY slot_start_date_time" + ", proposer_validator_index"
+		orderByClause = " ORDER BY slot_start_date_time"
 	}
 
 	// Build column list
@@ -345,7 +345,7 @@ func BuildGetFctBlockProposerHeadQuery(req *GetFctBlockProposerHeadRequest, opti
 	qb.AddCondition("slot_start_date_time", "=", req.SlotStartDateTime)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY slot_start_date_time, proposer_validator_index"
+	orderByClause := " ORDER BY slot_start_date_time"
 
 	// Build column list
 	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "slot", "toUnixTimestamp(`slot_start_date_time`) AS `slot_start_date_time`", "epoch", "toUnixTimestamp(`epoch_start_date_time`) AS `epoch_start_date_time`", "proposer_validator_index", "proposer_pubkey", "block_root"}

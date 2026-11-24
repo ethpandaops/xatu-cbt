@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS int_block_transaction_contract_gas ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_transaction_contract_gas_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_contract_gas ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_contract_gas_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_call_type_gas ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_call_type_gas_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_transaction_summary ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_transaction_summary_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_opcode_resource_gas ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_block_opcode_resource_gas_local ON CLUSTER '{cluster}' SYNC;

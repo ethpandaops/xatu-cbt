@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Daily locally built block counts per Xatu node and consensus client version, from fct_prepared_block
+message FctPreparedBlockByNodeDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period, by slot
+  string day_start_date = 12;
+  // Name of the node that built the blocks
+  string meta_client_name = 13;
+  // Consensus client implementation of the node
+  string meta_consensus_implementation = 14;
+  // Consensus client version of the node
+  string meta_consensus_version = 15;
+  // Locally built blocks (rows in fct_prepared_block) from the node with this consensus client version in the day
+  uint32 block_count = 16;
+}
+
+// Request for listing fct_prepared_block_by_node_daily records
+message ListFctPreparedBlockByNodeDailyRequest {
+  // Filter by day_start_date - Start of the day period, by slot (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by meta_client_name - Name of the node that built the blocks (ORDER BY column 2 - optional)
+  StringFilter meta_client_name = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by meta_consensus_implementation - Consensus client implementation of the node (ORDER BY column 3 - optional)
+  StringFilter meta_consensus_implementation = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by meta_consensus_version - Consensus client version of the node (ORDER BY column 4 - optional)
+  StringFilter meta_consensus_version = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Locally built blocks (rows in fct_prepared_block) from the node with this consensus client version in the day (optional)
+  UInt32Filter block_count = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_prepared_block_by_node_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 7 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPreparedBlockByNodeDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 8 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 9 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_prepared_block_by_node_daily records
+message ListFctPreparedBlockByNodeDailyResponse {
+  // The list of fct_prepared_block_by_node_daily.
+  repeated FctPreparedBlockByNodeDaily fct_prepared_block_by_node_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_prepared_block_by_node_daily record by primary key
+message GetFctPreparedBlockByNodeDailyRequest {
+  // Start of the day period, by slot
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_prepared_block_by_node_daily record
+message GetFctPreparedBlockByNodeDailyResponse {
+  FctPreparedBlockByNodeDaily item = 1;
+}
+
+// Query fct_prepared_block_by_node_daily data
+service FctPreparedBlockByNodeDailyService {
+  // List records | Daily locally built block counts per Xatu node and consensus client version, from fct_prepared_block
+  rpc List(ListFctPreparedBlockByNodeDailyRequest) returns (ListFctPreparedBlockByNodeDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_prepared_block_by_node_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctPreparedBlockByNodeDailyRequest) returns (GetFctPreparedBlockByNodeDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_prepared_block_by_node_daily/{day_start_date}"
+    };
+  }
+}

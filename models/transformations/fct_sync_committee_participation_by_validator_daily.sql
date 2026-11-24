@@ -23,7 +23,10 @@ WITH
     -- Find the day boundaries for the current slot range
     day_bounds AS (
         SELECT
-            toDate(min(hour_start_date_time)) AS min_day,
+            -- Reach back one hour so the interval holding a day's first hour start also
+            -- rebuilds the previous day, whose last hour was still filling when its own
+            -- last hour start was processed.
+            toDate(min(hour_start_date_time) - INTERVAL 1 HOUR) AS min_day,
             toDate(max(hour_start_date_time)) AS max_day
         FROM {{ index .dep "{{transformation}}" "fct_sync_committee_participation_by_validator_hourly" "helpers" "from" }}
         WHERE hour_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})

@@ -1,0 +1,80 @@
+model: fct_data_column_completion_by_path_hourly
+network: mainnet
+external_data:
+    libp2p_data_column_completed:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_data_column_completion_by_slot_libp2p_data_column_completed.parquet
+        network_column: meta_network_name
+assertions:
+    - name: One row per bucket, sentry client and completion path
+      sql: |
+        SELECT COUNT(*) AS row_count, uniqExact(hour_start_date_time, meta_consensus_implementation, completed_via) AS key_count, uniqExact(hour_start_date_time) AS bucket_count
+        FROM fct_data_column_completion_by_path_hourly FINAL
+      assertions:
+        - type: equals
+          column: row_count
+          value: 5
+        - type: equals
+          column: key_count
+          value: 5
+        - type: equals
+          column: bucket_count
+          value: 1
+    - name: Completions add up to every source completion
+      sql: |
+        SELECT SUM(completion_count) AS completions, SUM(cells_total) AS cells FROM fct_data_column_completion_by_path_hourly FINAL
+      assertions:
+        - type: equals
+          column: completions
+          value: 9343
+        - type: greater_than
+          column: cells
+          value: 0
+    - name: Lighthouse sentries complete columns by partial gossip and the EL
+      sql: |
+        SELECT
+          sumIf(completion_count, meta_consensus_implementation = 'lighthouse' AND completed_via = 'PARTIAL_GOSSIP') AS partial_gossip,
+          sumIf(completion_count, meta_consensus_implementation = 'lighthouse' AND completed_via = 'EL') AS el,
+          sumIf(completion_count, meta_consensus_implementation = 'prysm' AND completed_via = 'FULL_GOSSIP') AS prysm_full_gossip,
+          countIf(meta_consensus_implementation NOT IN ('lighthouse', 'prysm')) AS unmapped_rows
+        FROM fct_data_column_completion_by_path_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: partial_gossip
+          value: 0
+        - type: greater_than
+          column: el
+          value: 0
+        - type: greater_than
+          column: prysm_full_gossip
+          value: 0
+        - type: equals
+          column: unmapped_rows
+          value: 0
+    - name: Cells by source never exceed the completed cells
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_data_column_completion_by_path_hourly FINAL
+        WHERE cells_from_gossip + cells_from_el > cells_total
+           OR (completed_via = 'FULL_GOSSIP' AND cells_from_el > 0)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Completion time percentiles are ordered
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_data_column_completion_by_path_hourly FINAL
+        WHERE NOT (min_completion_slot_start_diff <= p50_completion_slot_start_diff
+          AND p50_completion_slot_start_diff <= p90_completion_slot_start_diff
+          AND p90_completion_slot_start_diff <= p99_completion_slot_start_diff
+          AND p99_completion_slot_start_diff <= max_completion_slot_start_diff)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Hours are aligned
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_data_column_completion_by_path_hourly FINAL
+        WHERE toStartOfHour(hour_start_date_time) != hour_start_date_time
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

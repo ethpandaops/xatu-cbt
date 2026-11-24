@@ -1,0 +1,40 @@
+model: int_block_transaction_summary
+network: mainnet
+external_data:
+    canonical_execution_traces:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_transaction_resource_gas_canonical_execution_traces.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_transaction_resource_gas_canonical_execution_transaction.parquet
+        network_column: meta_network_name
+    canonical_execution_transaction_structlog_agg:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_transaction_resource_gas_canonical_execution_transaction_structlog_agg.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM int_block_transaction_summary FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: One row per transaction with its frame count
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (SELECT block_number, transaction_hash, call_frame_count, receipt_gas_used FROM int_block_transaction_summary FINAL) AS s
+        FULL OUTER JOIN (
+            SELECT block_number, transaction_hash, count() AS n, anyIf(receipt_gas_used, call_frame_id = 0) AS r
+            FROM int_transaction_call_frame FINAL GROUP BY block_number, transaction_hash
+        ) AS f USING (block_number, transaction_hash)
+        WHERE s.call_frame_count != f.n OR NOT (s.receipt_gas_used <=> f.r)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Root call type is set
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM int_block_transaction_summary FINAL WHERE root_call_type = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

@@ -15,12 +15,14 @@ tags:
   - opcode
   - gas
 dependencies:
+  - "{{external}}.canonical_execution_block"
   - "{{transformation}}.int_block_opcode_gas"
   - "{{transformation}}.int_execution_block_by_date"
 ---
 -- Daily aggregation of opcode execution rate (ops/sec).
 -- Uses actual block time gaps instead of assumed 12-second slots for accurate ops/sec calculation.
 -- Computes percentiles, Bollinger bands, and 7-day moving averages across all blocks in each day.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 --
 -- This query expands the block range to complete day boundaries to handle partial
 -- day aggregations at the head of incremental processing. For example, if we process
@@ -44,7 +46,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Calculate time since previous block for each block
@@ -70,7 +72,35 @@ WITH
         WHERE block_number GLOBAL IN (SELECT block_number FROM blocks_in_days)
         GROUP BY block_number
     ),
-    -- Join blocks with opcode counts and calculate per-block ops/sec
+    -- First and last block with opcode data in each day
+    day_coverage AS (
+        SELECT
+            toDate(b.block_date_time) AS day,
+            min(b.block_number) AS first_block,
+            max(b.block_number) AS last_block
+        FROM blocks_in_days b
+        GLOBAL INNER JOIN opcode_per_block o ON b.block_number = o.block_number
+        GROUP BY day
+    ),
+    -- Empty blocks (gas_used = 0 means no transactions, so zero opcodes) between the
+    -- first and last block with opcode data in their day
+    empty_blocks AS (
+        SELECT b.block_number
+        FROM blocks_in_days b
+        GLOBAL INNER JOIN day_coverage c ON toDate(b.block_date_time) = c.day
+        WHERE b.block_number BETWEEN c.first_block AND c.last_block
+          AND b.block_number GLOBAL IN (
+                SELECT block_number
+                FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
+                WHERE block_number GLOBAL IN (SELECT block_number FROM blocks_in_days)
+                  AND meta_network_name = '{{ .env.NETWORK }}'
+                  AND gas_used = 0
+          )
+    ),
+    -- Join blocks with opcode counts and calculate per-block ops/sec. A block missing
+    -- from int_block_opcode_gas is a source gap (e.g. before opcode indexing started),
+    -- not a zero, so it is skipped unless it is an empty block within its day's
+    -- opcode data. Days without opcode data produce no row.
     blocks_with_ops AS (
         SELECT
             b.block_number,
@@ -87,6 +117,8 @@ WITH
         GLOBAL LEFT JOIN opcode_per_block o ON b.block_number = o.block_number
         WHERE b.block_time_seconds IS NOT NULL  -- Skip first block (no previous to calculate gap)
           AND b.block_time_seconds > 0          -- Skip zero-time blocks
+          AND (o.opcode_count > 0
+               OR b.block_number GLOBAL IN (SELECT block_number FROM empty_blocks))
     ),
     -- Calculate 7-day moving average for each block
     blocks_with_ma AS (
@@ -122,4 +154,5 @@ SELECT
     -- 7-day moving average
     round(avg(ma_ops), 4) AS moving_avg_ops
 FROM blocks_with_ma
+WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
 GROUP BY toDate(block_date_time)

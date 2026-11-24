@@ -25,7 +25,10 @@ WITH
     -- Find the day boundaries for the current slot range
     day_bounds AS (
         SELECT
-            toDate(min(hour_start_date_time)) AS min_day,
+            -- Reach back one hour so the interval holding a day's first hour start also
+            -- rebuilds the previous day, whose last hour was still filling when its own
+            -- last hour start was processed.
+            toDate(min(hour_start_date_time) - INTERVAL 1 HOUR) AS min_day,
             toDate(max(hour_start_date_time)) AS max_day
         FROM {{ index .dep "{{transformation}}" "fct_attestation_vote_correctness_by_validator_hourly" "helpers" "from" }}
         WHERE hour_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
@@ -43,6 +46,7 @@ WITH
             argMax(head_correct_count, updated_date_time) AS h_head_correct_count,
             argMax(target_correct_count, updated_date_time) AS h_target_correct_count,
             argMax(source_correct_count, updated_date_time) AS h_source_correct_count,
+            argMax(source_incorrect_count, updated_date_time) AS h_source_incorrect_count,
             argMax(avg_inclusion_distance, updated_date_time) AS h_avg_inclusion_distance
         FROM {{ index .dep "{{transformation}}" "fct_attestation_vote_correctness_by_validator_hourly" "helpers" "from" }}
         WHERE hour_start_date_time >= toDateTime((SELECT min_day FROM day_bounds))
@@ -64,6 +68,8 @@ SELECT
     -- Weighted average: sum(avg * count) / sum(count)
     if(sum(h_attested_count) > 0,
        toFloat32(sum(h_avg_inclusion_distance * h_attested_count) / sum(h_attested_count)),
-       NULL) AS avg_inclusion_distance
+       NULL) AS avg_inclusion_distance,
+    -- Last, as the column was added at the end of the table
+    toUInt32(sum(h_source_incorrect_count)) AS source_incorrect_count
 FROM per_hour
 GROUP BY day_start_date, validator_index

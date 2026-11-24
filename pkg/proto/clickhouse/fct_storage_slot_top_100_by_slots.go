@@ -409,7 +409,7 @@ func BuildListFctStorageSlotTop100BySlotsQuery(req *ListFctStorageSlotTop100BySl
 		orderByClause = BuildOrderByClause(orderFields)
 	} else {
 		// Default sorting by primary key
-		orderByClause = " ORDER BY rank" + ", ifNull(expiry_policy" + ", ''"
+		orderByClause = " ORDER BY rank" + ", ifNull(expiry_policy, '')"
 	}
 
 	// Build column list
@@ -430,7 +430,7 @@ func BuildGetFctStorageSlotTop100BySlotsQuery(req *GetFctStorageSlotTop100BySlot
 	qb.AddCondition("rank", "=", req.Rank)
 
 	// Build ORDER BY clause
-	orderByClause := " ORDER BY rank, ifNull(expiry_policy, ''"
+	orderByClause := " ORDER BY rank, ifNull(expiry_policy, '')"
 
 	// Build column list
 	columns := []string{"toUnixTimestamp(`updated_date_time`) AS `updated_date_time`", "expiry_policy", "rank", "contract_address", "active_slots", "effective_bytes", "owner_key", "account_owner", "contract_name", "factory_contract", "labels"}

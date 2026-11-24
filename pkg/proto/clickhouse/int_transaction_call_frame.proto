@@ -6,8 +6,8 @@ import "common.proto";
 import "google/protobuf/wrappers.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Aggregated call frame activity per transaction for call tree analysis
 
+// Aggregated call frame activity per transaction for call tree analysis
 message IntTransactionCallFrame {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -39,10 +39,12 @@ message IntTransactionCallFrame {
   uint64 gas_cumulative = 24;
   // Total accumulated refund. Only populated for root frame, only for successful txs (refund not applied on failure).
   google.protobuf.UInt64Value gas_refund = 25;
-  // Intrinsic tx cost (21000 + calldata). Only populated for root frame of successful txs.
+  // Intrinsic tx cost from the transaction: 21000 (53000 for a creation) + calldata + initcode words + access list + EIP-7702 authorizations. Excludes refunds and the calldata floor. Only populated for root frame (call_frame_id=0).
   google.protobuf.UInt64Value intrinsic_gas = 26;
   // Actual gas used from transaction receipt. Only populated for root frame (call_frame_id=0). Source of truth for total gas display.
   google.protobuf.UInt64Value receipt_gas_used = 27;
+  // EIP-7623 calldata floor, 21000 + 10 * (zero input bytes + 4 * non-zero input bytes). The receipt is max(intrinsic_gas + gas_cumulative - min(gas_refund, (intrinsic_gas + gas_cumulative) / 5), calldata_floor_gas). Only populated for root frame (call_frame_id=0) from Prague, NULL before
+  google.protobuf.UInt64Value calldata_floor_gas = 28;
 }
 
 // Request for listing int_transaction_call_frame records
@@ -80,22 +82,24 @@ message ListIntTransactionCallFrameRequest {
   UInt64Filter gas_cumulative = 14;
   // Filter by gas_refund - Total accumulated refund. Only populated for root frame, only for successful txs (refund not applied on failure). (optional)
   NullableUInt64Filter gas_refund = 15;
-  // Filter by intrinsic_gas - Intrinsic tx cost (21000 + calldata). Only populated for root frame of successful txs. (optional)
+  // Filter by intrinsic_gas - Intrinsic tx cost from the transaction: 21000 (53000 for a creation) + calldata + initcode words + access list + EIP-7702 authorizations. Excludes refunds and the calldata floor. Only populated for root frame (call_frame_id=0). (optional)
   NullableUInt64Filter intrinsic_gas = 16;
   // Filter by receipt_gas_used - Actual gas used from transaction receipt. Only populated for root frame (call_frame_id=0). Source of truth for total gas display. (optional)
   NullableUInt64Filter receipt_gas_used = 17;
+  // Filter by calldata_floor_gas - EIP-7623 calldata floor, 21000 + 10 * (zero input bytes + 4 * non-zero input bytes). The receipt is max(intrinsic_gas + gas_cumulative - min(gas_refund, (intrinsic_gas + gas_cumulative) / 5), calldata_floor_gas). Only populated for root frame (call_frame_id=0) from Prague, NULL before (optional)
+  NullableUInt64Filter calldata_floor_gas = 18;
 
   // The maximum number of int_transaction_call_frame to return.
   // If unspecified, at most 100 items will be returned.
   // The maximum value is 10000; values above 10000 will be coerced to 10000.
-  int32 page_size = 18;
+  int32 page_size = 19;
   // A page token, received from a previous `ListIntTransactionCallFrame` call.
   // Provide this to retrieve the subsequent page.
-  string page_token = 19;
+  string page_token = 20;
   // The order of results. Format: comma-separated list of fields.
   // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
   // If unspecified, results will be returned in the default order.
-  string order_by = 20;
+  string order_by = 21;
 }
 
 // Response for listing int_transaction_call_frame records
@@ -120,7 +124,7 @@ message GetIntTransactionCallFrameResponse {
 
 // Query int_transaction_call_frame data
 service IntTransactionCallFrameService {
-  // List records | Retrieve paginated results with optional filtering
+  // List records | Aggregated call frame activity per transaction for call tree analysis
   rpc List(ListIntTransactionCallFrameRequest) returns (ListIntTransactionCallFrameResponse);
   // Get record | Retrieve a single record by primary key
   rpc Get(GetIntTransactionCallFrameRequest) returns (GetIntTransactionCallFrameResponse);

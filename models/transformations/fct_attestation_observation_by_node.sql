@@ -68,4 +68,8 @@ SELECT
     argMin(meta_consensus_implementation, seen_slot_start_diff) AS meta_consensus_implementation
 FROM {{ index .dep "{{transformation}}" "int_attestation_first_seen" "helpers" "from" }} FINAL
 WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    -- Ignore observations more than 300 seconds after slot start, the same cutoff as the
+    -- engine models. Later ones come from nodes replaying history or with broken clocks.
+    -- A clock running ahead wraps the UInt32 diff to ~4.29e9 ms.
+    AND seen_slot_start_diff <= 300000
 GROUP BY slot_start_date_time, meta_client_name

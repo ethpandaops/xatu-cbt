@@ -19,6 +19,7 @@ dependencies:
 ---
 -- Daily aggregation of execution layer gas used.
 -- Computes percentiles, Bollinger bands, and 7-day moving averages across all blocks in each day.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 --
 -- This query expands the block range to complete day boundaries to handle partial
 -- day aggregations at the head of incremental processing. For example, if we process
@@ -34,6 +35,8 @@ WITH
             toDate(max(block_date_time)) AS max_day
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
         WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+          -- Genesis is not a produced block, and on mainnet its timestamp is 0 (1970-01-01)
+          AND block_number > 0
     ),
     -- Get the actual block number range for the expanded day boundaries
     block_range AS (
@@ -41,7 +44,8 @@ WITH
             min(block_number) AS min_block,
             max(block_number) AS max_block
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
+          AND block_number > 0
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Get all blocks within the expanded day boundaries
@@ -51,7 +55,8 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
+          AND block_number > 0
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Join with external table using computed block range for efficient filtering
@@ -67,6 +72,8 @@ WITH
             FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
             WHERE block_number >= (SELECT min_block FROM block_range)
               AND block_number <= (SELECT max_block FROM block_range)
+              -- The external table holds every network, so match this network's blocks only
+              AND meta_network_name = '{{ .env.NETWORK }}'
         ) eb ON b.block_number = eb.block_number
     ),
     -- Calculate 7-day moving average for each block
@@ -96,6 +103,7 @@ WITH
             toInt64(round(avg(gas_used) - 2 * stddevPop(gas_used))) AS lower_band_gas_used,
             toUInt64(round(avg(ma_gas_used))) AS moving_avg_gas_used
         FROM blocks_with_ma
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
         GROUP BY day
     ),
     -- Get previous cumulative total

@@ -52,9 +52,9 @@ type IntAttestationAttested struct {
 	BlockRoot string `protobuf:"bytes,22,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
 	// The index of the validator attesting
 	AttestingValidatorIndex uint32 `protobuf:"varint,23,opt,name=attesting_validator_index,json=attestingValidatorIndex,proto3" json:"attesting_validator_index,omitempty"`
-	// The distance from the slot when the attestation was included on-chain. Taken from the canonical variant; null when only the head variant recorded the attestation.
+	// The distance from the slot when the attestation was included on-chain. Taken from the canonical variant. Null when only the head variant recorded the attestation.
 	InclusionDistance *wrapperspb.UInt32Value `protobuf:"bytes,24,opt,name=inclusion_distance,json=inclusionDistance,proto3" json:"inclusion_distance,omitempty"`
-	// The distance from the slot when the attestation was propagated over gossip. 0 means the attestation was propagated within the same slot as its duty was assigned, 1 means the next slot, etc. Taken from the head variant; null when only the canonical variant recorded the attestation.
+	// The distance from the slot when the attestation was propagated over gossip. 0 means the attestation was propagated within the same slot as its duty was assigned, 1 means the next slot, etc. Taken from the head variant. Null when only the canonical variant recorded the attestation.
 	PropagationDistance *wrapperspb.UInt32Value `protobuf:"bytes,25,opt,name=propagation_distance,json=propagationDistance,proto3" json:"propagation_distance,omitempty"`
 }
 
@@ -227,9 +227,9 @@ type ListIntAttestationAttestedRequest struct {
 	TargetEpochStartDateTime *UInt32Filter `protobuf:"bytes,12,opt,name=target_epoch_start_date_time,json=targetEpochStartDateTime,proto3" json:"target_epoch_start_date_time,omitempty"`
 	// Filter by target_root - The target beacon block root hash in the attestation group (optional)
 	TargetRoot *StringFilter `protobuf:"bytes,13,opt,name=target_root,json=targetRoot,proto3" json:"target_root,omitempty"`
-	// Filter by inclusion_distance - The distance from the slot when the attestation was included on-chain. Taken from the canonical variant; null when only the head variant recorded the attestation. (optional)
+	// Filter by inclusion_distance - The distance from the slot when the attestation was included on-chain. Taken from the canonical variant. Null when only the head variant recorded the attestation. (optional)
 	InclusionDistance *NullableUInt32Filter `protobuf:"bytes,14,opt,name=inclusion_distance,json=inclusionDistance,proto3" json:"inclusion_distance,omitempty"`
-	// Filter by propagation_distance - The distance from the slot when the attestation was propagated over gossip. 0 means the attestation was propagated within the same slot as its duty was assigned, 1 means the next slot, etc. Taken from the head variant; null when only the canonical variant recorded the attestation. (optional)
+	// Filter by propagation_distance - The distance from the slot when the attestation was propagated over gossip. 0 means the attestation was propagated within the same slot as its duty was assigned, 1 means the next slot, etc. Taken from the head variant. Null when only the canonical variant recorded the attestation. (optional)
 	PropagationDistance *NullableUInt32Filter `protobuf:"bytes,15,opt,name=propagation_distance,json=propagationDistance,proto3" json:"propagation_distance,omitempty"`
 	// The maximum number of int_attestation_attested to return.
 	// If unspecified, at most 100 items will be returned.

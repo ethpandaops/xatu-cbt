@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+// Activation and exit queues and the Electra pending queues, one snapshot per week
+
+message FctValidatorQueueWeekly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The start of the week (Monday, UTC)
+  string week_start_date = 12;
+  // Epoch of the snapshot: the last epoch of the week, or the latest epoch for the current week
+  uint32 epoch = 13;
+  // Wall clock time when the snapshot epoch started
+  uint32 epoch_start_date_time = 14;
+  // Validators with status pending_initialized (deposited, not yet eligible for activation)
+  uint32 pending_initialized_count = 15;
+  // Balance of pending_initialized validators in Gwei
+  uint64 pending_initialized_balance = 16;
+  // Validators with status pending_queued (eligible, waiting for activation)
+  uint32 activation_queue_count = 17;
+  // Effective balance of pending_queued validators in Gwei
+  uint64 activation_queue_effective_balance = 18;
+  // Validators with an exit started but not yet exited (active_exiting, active_slashed)
+  uint32 exit_queue_count = 19;
+  // Effective balance of validators in the exit queue in Gwei
+  uint64 exit_queue_effective_balance = 20;
+  // Entries in the pending deposit queue (Electra). 0 before Electra
+  uint32 pending_deposit_count = 21;
+  // Amount in the pending deposit queue in Gwei
+  uint64 pending_deposit_amount = 22;
+  // Entries in the pending consolidation queue (Electra). 0 before Electra
+  uint32 pending_consolidation_count = 23;
+  // Effective balance of the queued consolidations' source validators in Gwei
+  uint64 pending_consolidation_source_effective_balance = 24;
+  // Entries in the pending partial withdrawal queue (Electra). 0 before Electra
+  uint32 pending_partial_withdrawal_count = 25;
+  // Amount in the pending partial withdrawal queue in Gwei
+  uint64 pending_partial_withdrawal_amount = 26;
+}
+
+// Request for listing fct_validator_queue_weekly records
+message ListFctValidatorQueueWeeklyRequest {
+  // Filter by week_start_date - The start of the week (Monday, UTC) (PRIMARY KEY - required)
+  StringFilter week_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch - Epoch of the snapshot: the last epoch of the week, or the latest epoch for the current week (optional)
+  UInt32Filter epoch = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by epoch_start_date_time - Wall clock time when the snapshot epoch started (optional)
+  UInt32Filter epoch_start_date_time = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by pending_initialized_count - Validators with status pending_initialized (deposited, not yet eligible for activation) (optional)
+  UInt32Filter pending_initialized_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by pending_initialized_balance - Balance of pending_initialized validators in Gwei (optional)
+  UInt64Filter pending_initialized_balance = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by activation_queue_count - Validators with status pending_queued (eligible, waiting for activation) (optional)
+  UInt32Filter activation_queue_count = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by activation_queue_effective_balance - Effective balance of pending_queued validators in Gwei (optional)
+  UInt64Filter activation_queue_effective_balance = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by exit_queue_count - Validators with an exit started but not yet exited (active_exiting, active_slashed) (optional)
+  UInt32Filter exit_queue_count = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by exit_queue_effective_balance - Effective balance of validators in the exit queue in Gwei (optional)
+  UInt64Filter exit_queue_effective_balance = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by pending_deposit_count - Entries in the pending deposit queue (Electra). 0 before Electra (optional)
+  UInt32Filter pending_deposit_count = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by pending_deposit_amount - Amount in the pending deposit queue in Gwei (optional)
+  UInt64Filter pending_deposit_amount = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by pending_consolidation_count - Entries in the pending consolidation queue (Electra). 0 before Electra (optional)
+  UInt32Filter pending_consolidation_count = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by pending_consolidation_source_effective_balance - Effective balance of the queued consolidations' source validators in Gwei (optional)
+  UInt64Filter pending_consolidation_source_effective_balance = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by pending_partial_withdrawal_count - Entries in the pending partial withdrawal queue (Electra). 0 before Electra (optional)
+  UInt32Filter pending_partial_withdrawal_count = 15 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by pending_partial_withdrawal_amount - Amount in the pending partial withdrawal queue in Gwei (optional)
+  UInt64Filter pending_partial_withdrawal_amount = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_validator_queue_weekly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 17 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctValidatorQueueWeekly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 18 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 19 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_validator_queue_weekly records
+message ListFctValidatorQueueWeeklyResponse {
+  // The list of fct_validator_queue_weekly.
+  repeated FctValidatorQueueWeekly fct_validator_queue_weekly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_validator_queue_weekly record by primary key
+message GetFctValidatorQueueWeeklyRequest {
+  // The start of the week (Monday, UTC)
+  string week_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_validator_queue_weekly record
+message GetFctValidatorQueueWeeklyResponse {
+  FctValidatorQueueWeekly item = 1;
+}
+
+// Query fct_validator_queue_weekly data
+service FctValidatorQueueWeeklyService {
+  // List records | Retrieve paginated results with optional filtering
+  rpc List(ListFctValidatorQueueWeeklyRequest) returns (ListFctValidatorQueueWeeklyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_validator_queue_weekly"
+    };
+  }
+  // Get record | Retrieve a single record by week_start_date
+  rpc Get(GetFctValidatorQueueWeeklyRequest) returns (GetFctValidatorQueueWeeklyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_validator_queue_weekly/{week_start_date}"
+    };
+  }
+}

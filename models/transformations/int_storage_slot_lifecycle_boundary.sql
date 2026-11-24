@@ -37,7 +37,8 @@ batch_events AS (
             argMax(effective_bytes_from, updated_date_time) as effective_bytes_from,
             argMax(effective_bytes_to, updated_date_time) as effective_bytes_to
         FROM {{ index .dep "{{transformation}}" "int_storage_slot_diff_by_address_slot" "helpers" "from" }}
-        WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
+        -- Half-open: the next run starts at bounds.end. Reading that block here too would count its births twice.
+        WHERE block_number >= {{ .bounds.start }} AND block_number < {{ .bounds.end }}
         GROUP BY block_number, address, slot_key
     )
     WHERE (effective_bytes_from = 0 AND effective_bytes_to > 0)
@@ -56,7 +57,7 @@ prev_state AS (
         argMax(effective_bytes_birth, (lifecycle_number, updated_date_time)) as eb_birth
     FROM `{{ .self.database }}`.`{{ .self.table }}`
     WHERE (address, slot_key) GLOBAL IN (SELECT address, slot_key FROM event_slots)
-        AND birth_block <= {{ .bounds.end }}
+        AND birth_block < {{ .bounds.end }}
     GROUP BY address, slot_key
 ),
 -- Assign lifecycle_number = prev_lnum + cumulative births in batch

@@ -1,0 +1,52 @@
+model: fct_engine_new_payload_duration_histogram_hourly
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_duration_chunked_50ms_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    execution_engine_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_engine_new_payload_duration_chunked_50ms_execution_engine_new_payload.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_engine_new_payload_duration_histogram_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: Observations per period match int_engine_new_payload
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (SELECT hour_start_date_time, sum(observation_count) AS n FROM fct_engine_new_payload_duration_histogram_hourly FINAL GROUP BY hour_start_date_time) AS h
+        FULL OUTER JOIN (SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, count() AS n FROM int_engine_new_payload FINAL GROUP BY hour_start_date_time) AS e USING (hour_start_date_time)
+        WHERE h.n != e.n
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Every client, status and node class with observations has histogram counts
+      sql: |
+        SELECT COUNT(*) AS bad_rows
+        FROM (
+            SELECT toStartOfHour(slot_start_date_time) AS hour_start_date_time, duration_ms, meta_execution_implementation, status, node_class FROM int_engine_new_payload FINAL
+        ) AS e
+        LEFT JOIN (
+            SELECT hour_start_date_time, meta_execution_implementation, status, node_class, sum(observation_count) AS n
+            FROM fct_engine_new_payload_duration_histogram_hourly FINAL GROUP BY hour_start_date_time, meta_execution_implementation, status, node_class
+        ) AS h USING (hour_start_date_time, meta_execution_implementation, status, node_class)
+        WHERE h.n = 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Bucket bounds are increasing
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_new_payload_duration_histogram_hourly FINAL WHERE bucket_lower_ms >= bucket_upper_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

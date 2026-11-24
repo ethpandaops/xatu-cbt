@@ -22,6 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Blob count of every block that carries blobs, canonical blocks from int_block_blob_count_canonical and orphaned ones from the unfinalized chain
 type FctBlockBlobCount struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -41,7 +42,7 @@ type FctBlockBlobCount struct {
 	BlockRoot string `protobuf:"bytes,16,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
 	// The number of blobs in the block
 	BlobCount uint32 `protobuf:"varint,17,opt,name=blob_count,json=blobCount,proto3" json:"blob_count,omitempty"`
-	// Can be "canonical" or "orphaned"
+	// canonical when the block is on the finalized chain, orphaned when the finalized chain has a different block or none at its slot
 	Status string `protobuf:"bytes,18,opt,name=status,proto3" json:"status,omitempty"`
 }
 
@@ -153,7 +154,7 @@ type ListFctBlockBlobCountRequest struct {
 	EpochStartDateTime *UInt32Filter `protobuf:"bytes,6,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
 	// Filter by blob_count - The number of blobs in the block (optional)
 	BlobCount *UInt32Filter `protobuf:"bytes,7,opt,name=blob_count,json=blobCount,proto3" json:"blob_count,omitempty"`
-	// Filter by status - Can be "canonical" or "orphaned" (optional)
+	// Filter by status - canonical when the block is on the finalized chain, orphaned when the finalized chain has a different block or none at its slot (optional)
 	Status *StringFilter `protobuf:"bytes,8,opt,name=status,proto3" json:"status,omitempty"`
 	// The maximum number of fct_block_blob_count to return.
 	// If unspecified, at most 100 items will be returned.

@@ -37,24 +37,16 @@ jobs:
   syntax:
     name: clickhouse syntax check
     runs-on: ubuntu-latest
-    env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
     steps:
       - name: checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      # Authenticated pulls avoid Docker Hub anonymous rate limits. Skipped on
-      # forks (no secrets); the pull then falls back to anonymous.
-      - name: Log in to Docker Hub
-        if: env.DOCKERHUB_USERNAME != ''
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # Pulled through the ethquokkaops Docker Hub pull-through cache, which is
+      # anonymous, so there are no Docker Hub rate limits or credentials.
       - name: Validate migrations parse (clickhouse format)
         run: |
           docker run --rm \
             -e GITHUB_ACTIONS=true \
             -v "$PWD":/work -w /work \
             --entrypoint /bin/bash \
-            "clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}" \
+            "docker.ethquokkaops.io/dh/clickhouse/clickhouse-server:${CLICKHOUSE_VERSION:-26.2.5.45}" \
             scripts/check-migrations-syntax.sh migrations

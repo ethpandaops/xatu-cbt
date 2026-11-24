@@ -47,7 +47,10 @@ dependencies:
 -- History cost. Block Size absorbs the rounding residual as the remainder.
 -- This keeps all columns UInt64 while preserving exact calldata totals.
 --
--- Access list cost: all to Address Access.
+-- Access list cost: all to Address Access. xatu does not store access lists, so the
+-- cost is what is left of intrinsic_gas, which structlog_agg computes from the
+-- transaction, after the base, calldata and initcode word costs. For EIP-7702
+-- transactions this also holds 25,000 gas per authorization.
 -- EIP-3860 initcode word cost: all to Compute.
 --
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
@@ -134,7 +137,7 @@ intrinsic AS (
         AND cf.transaction_hash = tx.transaction_hash
     WHERE cf.block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
         AND cf.call_frame_id = 0  -- Root frame only
-        AND cf.intrinsic_gas IS NOT NULL  -- Successful transactions only
+        AND cf.intrinsic_gas IS NOT NULL
 )
 
 -- =============================================================================
@@ -157,7 +160,7 @@ SELECT
     coalesce(o.gas_memory, toUInt64(0)) AS gas_memory,
 
     -- gas_address_access: opcode access + intrinsic access + access list cost
-    -- Access list cost = intrinsic_gas - base_cost - input_data_cost - initcode_word_cost
+    -- Access list cost (+ EIP-7702 authorizations) = intrinsic_gas - base_cost - input_data_cost - initcode_word_cost
     coalesce(o.gas_address_access, toUInt64(0))
         + if(i.is_create, toUInt64(2800), toUInt64(300))
         + toUInt64(i.intrinsic_gas - i.base_cost - i.input_data_cost - i.initcode_word_cost)

@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Daily execution nodes by client, without versions, with hosting and IPv6 counts. Execution nodes our discovery crawler found in the day on the network genesis and its current fork, one count per node with its latest record.
+message FctPeerHostingByElClientDaily {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the day period
+  string day_start_date = 12;
+  // Execution client from the node devp2p name: geth, nethermind, besu, erigon, reth, ethrex, nimbusel, ethereumjs or trin-execution, other for every other name
+  string client = 13;
+  // Execution nodes
+  uint32 peer_count = 14;
+  // Peers on a cloud or hosting provider network
+  uint32 hosting_peer_count = 15;
+  // Peers with a known autonomous system, the population of hosting_peer_count
+  uint32 located_peer_count = 16;
+  // Nodes whose record advertises an IPv6 address
+  uint32 ipv6_peer_count = 17;
+}
+
+// Request for listing fct_peer_hosting_by_el_client_daily records
+message ListFctPeerHostingByElClientDailyRequest {
+  // Filter by day_start_date - Start of the day period (PRIMARY KEY - required)
+  StringFilter day_start_date = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by client - Execution client from the node devp2p name: geth, nethermind, besu, erigon, reth, ethrex, nimbusel, ethereumjs or trin-execution, other for every other name (ORDER BY column 2 - optional)
+  StringFilter client = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by peer_count - Execution nodes (optional)
+  UInt32Filter peer_count = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by hosting_peer_count - Peers on a cloud or hosting provider network (optional)
+  UInt32Filter hosting_peer_count = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by located_peer_count - Peers with a known autonomous system, the population of hosting_peer_count (optional)
+  UInt32Filter located_peer_count = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by ipv6_peer_count - Nodes whose record advertises an IPv6 address (optional)
+  UInt32Filter ipv6_peer_count = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_peer_hosting_by_el_client_daily to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 8 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctPeerHostingByElClientDaily` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 9 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 10 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_peer_hosting_by_el_client_daily records
+message ListFctPeerHostingByElClientDailyResponse {
+  // The list of fct_peer_hosting_by_el_client_daily.
+  repeated FctPeerHostingByElClientDaily fct_peer_hosting_by_el_client_daily = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_peer_hosting_by_el_client_daily record by primary key
+message GetFctPeerHostingByElClientDailyRequest {
+  // Start of the day period
+  string day_start_date = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_peer_hosting_by_el_client_daily record
+message GetFctPeerHostingByElClientDailyResponse {
+  FctPeerHostingByElClientDaily item = 1;
+}
+
+// Query fct_peer_hosting_by_el_client_daily data
+service FctPeerHostingByElClientDailyService {
+  // List records | Daily execution nodes by client, without versions, with hosting and IPv6 counts. Execution nodes our discovery crawler found in the day on the network genesis and its current fork, one count per node with its latest record.
+  rpc List(ListFctPeerHostingByElClientDailyRequest) returns (ListFctPeerHostingByElClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_hosting_by_el_client_daily"
+    };
+  }
+  // Get record | Retrieve a single record by day_start_date
+  rpc Get(GetFctPeerHostingByElClientDailyRequest) returns (GetFctPeerHostingByElClientDailyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_peer_hosting_by_el_client_daily/{day_start_date}"
+    };
+  }
+}

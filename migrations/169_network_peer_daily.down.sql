@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS fct_peer_count_by_source_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_peer_count_by_source_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_peer_daily_order_by_peer_id ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_peer_daily_order_by_peer_id_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_peer_reachability_by_cl_client_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_peer_reachability_by_cl_client_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_peer_sync_status_by_cl_client_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS fct_peer_sync_status_by_cl_client_daily_local ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_peer_daily ON CLUSTER '{cluster}' SYNC;
+DROP TABLE IF EXISTS int_peer_daily_local ON CLUSTER '{cluster}' SYNC;

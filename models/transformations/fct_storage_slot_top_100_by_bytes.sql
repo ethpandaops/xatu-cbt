@@ -9,15 +9,17 @@ dependencies:
   - "{{transformation}}.int_storage_slot_state_by_address"
   - "{{transformation}}.int_storage_slot_state_with_expiry_by_address"
 ---
--- Get the top 100 contracts by raw effective_bytes, then show their values
+-- Get the top 100 contracts by raw storage size, then show their values
 -- under each expiry policy. Rank is always based on raw state (NULL expiry_policy).
+-- Storage size is active_slots * 65 + effective_bytes, the size Lab shows for a
+-- contract, so the ranking matches the sizes displayed next to it.
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 WITH
 -- Get top 100 by raw state
 top_100_raw AS (
     SELECT
-        row_number() OVER (ORDER BY effective_bytes DESC, address ASC) as rank,
+        row_number() OVER (ORDER BY active_slots * 65 + effective_bytes DESC, address ASC) as rank,
         address as contract_address,
         effective_bytes,
         active_slots

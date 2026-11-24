@@ -12,10 +12,22 @@ tags:
   - mev
   - bid
 dependencies:
-  - "{{external}}.mev_relay_bid_trace"
+  # Relay bid traces, or from Gloas (ePBS) builder bids on gossip with the
+  # builder pubkey from the builder registry.
+  - [
+    "{{external}}.mev_relay_bid_trace",
+    "{{external}}.beacon_api_eth_v1_events_execution_payload_bid"
+  ]
+  - [
+    "{{external}}.mev_relay_bid_trace",
+    "{{external}}.canonical_beacon_state_builder"
+  ]
 ---
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
+-- Gloas bids are observed on gossip rather than at a relay: the earliest
+-- sentry observation stands in for the relay timestamp, relay_names is empty,
+-- and value is the bid value plus its execution payment, Gwei on the wire.
 WITH bids AS (
   SELECT
       slot_start_date_time,
@@ -117,6 +129,66 @@ max_bid_details AS (
     ON bc.slot = ra.slot
     AND bc.builder_pubkey = ra.builder_pubkey
     AND bc.block_hash = ra.block_hash
+),
+gossip_bids AS (
+  SELECT
+      slot_start_date_time,
+      slot,
+      epoch,
+      epoch_start_date_time,
+      builder_index,
+      block_hash,
+      (toUInt128(any(`value`)) + toUInt128(any(execution_payment))) * 1000000000 AS bid_value,
+      min(toInt64(propagation_slot_start_diff)) AS earliest_slot_start_diff,
+      min(event_date_time) AS earliest_bid_date_time
+  FROM {{ index .dep "{{external}}" "beacon_api_eth_v1_events_execution_payload_bid" "helpers" "from" }} FINAL
+  WHERE slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
+    AND builder_index IS NOT NULL
+    AND propagation_slot_start_diff >= -12000
+    AND propagation_slot_start_diff < 12000
+  GROUP BY slot_start_date_time, slot, epoch, epoch_start_date_time, builder_index, block_hash
+),
+gossip_chunk_max AS (
+  SELECT
+      slot_start_date_time,
+      slot,
+      epoch,
+      epoch_start_date_time,
+      builder_index,
+      floor(earliest_slot_start_diff / 50) * 50 AS chunk_slot_start_diff,
+      max(bid_value) AS max_value,
+      argMax(block_hash, bid_value) AS max_block_hash,
+      argMax(earliest_bid_date_time, bid_value) AS max_earliest_bid_date_time
+  FROM gossip_bids
+  GROUP BY slot_start_date_time, slot, epoch, epoch_start_date_time, builder_index, chunk_slot_start_diff
+),
+builders AS (
+  SELECT
+      epoch,
+      builder_index,
+      toString(any(pubkey)) AS builder_pubkey
+  FROM {{ index .dep "{{external}}" "canonical_beacon_state_builder" "helpers" "from" }} FINAL
+  -- The epoch holding the first slot starts up to one epoch before it.
+  WHERE epoch_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 384 SECOND
+      AND fromUnixTimestamp({{ .bounds.end }})
+    AND meta_network_name = '{{ .env.NETWORK }}'
+  GROUP BY epoch, builder_index
+),
+gossip_max_bid_details AS (
+  SELECT
+      g.slot_start_date_time AS slot_start_date_time,
+      g.slot AS slot,
+      g.epoch AS epoch,
+      g.epoch_start_date_time AS epoch_start_date_time,
+      g.builder_index AS builder_index,
+      g.chunk_slot_start_diff AS chunk_slot_start_diff,
+      g.max_value AS max_value,
+      g.max_block_hash AS max_block_hash,
+      g.max_earliest_bid_date_time AS max_earliest_bid_date_time,
+      bu.builder_pubkey AS builder_pubkey
+  FROM gossip_chunk_max g
+  GLOBAL INNER JOIN builders bu ON g.epoch = bu.epoch AND g.builder_index = bu.builder_index
 )
 
 SELECT
@@ -132,3 +204,19 @@ SELECT
     builder_pubkey,
     transaction_value AS value
 FROM max_bid_details
+
+UNION ALL
+
+SELECT
+    fromUnixTimestamp({{ .task.start }}) as updated_date_time,
+    slot,
+    slot_start_date_time,
+    epoch,
+    epoch_start_date_time,
+    chunk_slot_start_diff,
+    max_earliest_bid_date_time AS earliest_bid_date_time,
+    CAST([], 'Array(String)') AS relay_names,
+    max_block_hash AS block_hash,
+    builder_pubkey,
+    max_value AS value
+FROM gossip_max_bid_details

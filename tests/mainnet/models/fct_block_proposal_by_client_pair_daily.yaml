@@ -1,0 +1,101 @@
+model: fct_block_proposal_by_client_pair_daily
+network: mainnet
+external_data:
+    canonical_beacon_block_graffiti:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block_graffiti.parquet
+        network_column: meta_network_name
+    ethseer_validator_entity:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_block_graffiti_ethseer_validator_entity.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_proposer_duty:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_proposer_duty.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_block_gossip:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_block_gossip.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v1_events_head:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_beacon_api_eth_v1_events_head.parquet
+        network_column: meta_network_name
+    libp2p_gossipsub_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_libp2p_gossipsub_beacon_block.parquet
+        network_column: meta_network_name
+    mev_relay_bid_trace:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_mev_relay_bid_trace.parquet
+        network_column: meta_network_name
+    mev_relay_proposer_payload_delivered:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_mev_relay_proposer_payload_delivered.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Every canonical block counts once
+      sql: |
+        SELECT
+          (SELECT count() FROM fct_block_graffiti FINAL) AS graffiti_blocks,
+          (SELECT sum(block_count) FROM fct_block_proposal_by_client_pair_daily FINAL) - graffiti_blocks AS block_diff
+      assertions:
+        - type: greater_than
+          column: graffiti_blocks
+          value: 40
+        - type: equals
+          column: block_diff
+          value: 0
+    - name: Block counts per pair match the graffiti, with unknown kept on either side
+      sql: |
+        SELECT
+          (SELECT COUNT(*) FROM (
+            SELECT day_start_date, consensus_client, execution_client, block_count FROM fct_block_proposal_by_client_pair_daily FINAL WHERE block_count > 0
+          ) AS a
+          FULL OUTER JOIN (
+            SELECT toDate(slot_start_date_time) AS day_start_date, consensus_client, execution_client, toUInt32(count()) AS block_count
+            FROM fct_block_graffiti FINAL GROUP BY day_start_date, consensus_client, execution_client
+          ) AS b USING (day_start_date, consensus_client, execution_client)
+          WHERE a.block_count != b.block_count) AS mismatched,
+          (SELECT countIf(block_count > 0 AND consensus_client != 'unknown' AND execution_client = 'unknown') FROM fct_block_proposal_by_client_pair_daily FINAL) AS known_cl_unknown_el
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+        - type: greater_than
+          column: known_cl_unknown_el
+          value: 0
+    - name: MEV blocks are the relay-delivered canonical blocks
+      sql: |
+        SELECT
+          (SELECT sum(mev_block_count) FROM fct_block_proposal_by_client_pair_daily FINAL) - (SELECT count() FROM int_block_mev_canonical FINAL) AS mev_diff,
+          (SELECT countIf(mev_block_count > block_count) FROM fct_block_proposal_by_client_pair_daily FINAL) AS bad_rows
+      assertions:
+        - type: equals
+          column: mev_diff
+          value: 0
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Orphaned blocks and missed slots are all attributed to a pair
+      sql: |
+        SELECT
+          (SELECT sum(orphaned_block_count + missed_slot_count) FROM fct_block_proposal_by_client_pair_daily FINAL)
+            - (SELECT countIf(status IN ('orphaned', 'missed')) FROM fct_block_proposer FINAL) AS failed_diff
+      assertions:
+        - type: equals
+          column: failed_diff
+          value: 0
+    - name: Payload and propagation metrics are set for pairs with blocks
+      sql: |
+        SELECT countIf(block_count > 0 AND (avg_gas_used IS NULL OR avg_blob_count IS NULL OR block_first_seen_p50_ms IS NULL)) AS bad_rows,
+               countIf(block_first_seen_p50_ms > block_first_seen_p90_ms) AS unordered_rows
+        FROM fct_block_proposal_by_client_pair_daily FINAL
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+        - type: equals
+          column: unordered_rows
+          value: 0

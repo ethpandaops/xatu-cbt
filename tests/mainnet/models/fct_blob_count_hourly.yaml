@@ -13,6 +13,10 @@ external_data:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_hourly_canonical_beacon_blob_sidecar.parquet
         network_column: meta_network_name
         optional: true
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_blocks_canonical_beacon_block.parquet
+        network_column: meta_network_name
+        optional: true
     libp2p_gossipsub_blob_sidecar:
         url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/fct_blob_count_hourly_libp2p_gossipsub_blob_sidecar.parquet
         network_column: meta_network_name
@@ -81,6 +85,14 @@ assertions:
       sql: |
         SELECT COUNT(*) AS bad_rows FROM fct_blob_count_hourly FINAL
         WHERE upper_band_blob_count < lower_band_blob_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Lower Bollinger band should not be negative
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_blob_count_hourly FINAL
+        WHERE lower_band_blob_count < 0
       assertions:
         - type: equals
           column: bad_rows

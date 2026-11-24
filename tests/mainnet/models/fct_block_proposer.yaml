@@ -90,3 +90,41 @@ assertions:
         - type: equals
           column: duplicate_count
           value: 0
+    - name: Where the head has the slot, status and block_root match the head and canonical models
+      sql: |
+        SELECT COUNT(*) AS mismatch_count
+        FROM (SELECT slot, status, block_root FROM fct_block_proposer FINAL) AS p
+        GLOBAL INNER JOIN (
+            SELECT slot, any(block_root) AS block_root FROM int_block_proposer_canonical FINAL GROUP BY slot
+        ) AS c ON p.slot = c.slot
+        GLOBAL INNER JOIN (
+            SELECT slot, any(block_root) AS block_root FROM fct_block_proposer_head FINAL GROUP BY slot
+        ) AS h ON p.slot = h.slot
+        WHERE p.status != multiIf(c.block_root IS NOT NULL, 'canonical', h.block_root IS NOT NULL, 'orphaned', 'missed')
+            OR ifNull(p.block_root, '') != ifNull(coalesce(c.block_root, h.block_root), '')
+        SETTINGS join_use_nulls = 1
+      assertions:
+        - type: equals
+          column: mismatch_count
+          value: 0
+    - name: Every canonical slot from the head's first slot has a row
+      sql: |
+        SELECT COUNT(*) AS missing_count
+        FROM int_block_proposer_canonical FINAL
+        WHERE slot >= (SELECT min(slot) FROM fct_block_proposer_head FINAL)
+            AND slot <= (SELECT max(slot) FROM fct_block_proposer FINAL)
+            AND slot GLOBAL NOT IN (SELECT slot FROM fct_block_proposer FINAL)
+      assertions:
+        - type: equals
+          column: missing_count
+          value: 0
+    - name: Orphaned only where the head has the slot
+      sql: |
+        SELECT COUNT(*) AS invalid_count
+        FROM fct_block_proposer FINAL
+        WHERE status = 'orphaned'
+            AND slot GLOBAL NOT IN (SELECT slot FROM fct_block_proposer_head FINAL WHERE block_root IS NOT NULL)
+      assertions:
+        - type: equals
+          column: invalid_count
+          value: 0

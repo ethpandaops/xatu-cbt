@@ -66,6 +66,8 @@ SELECT
     toUInt32(countIf(source_correct = true)) AS source_correct_count,
     if(countIf(inclusion_distance IS NOT NULL) > 0,
        toFloat32(avgIf(inclusion_distance, inclusion_distance IS NOT NULL)),
-       NULL) AS avg_inclusion_distance
+       NULL) AS avg_inclusion_distance,
+    -- Last, as the column was added at the end of the table
+    toUInt32(countIf(source_correct = false)) AS source_incorrect_count
 FROM per_slot
 GROUP BY hour_start_date_time, validator_index

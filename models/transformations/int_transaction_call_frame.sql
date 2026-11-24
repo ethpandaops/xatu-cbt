@@ -48,14 +48,14 @@ dependencies:
 -- GAS MODEL EXPLANATION
 -- =============================================================================
 --
--- Transaction gas has three components:
+-- Transaction gas has three components, plus a floor:
 --
---   1. INTRINSIC GAS (derived from receipt - includes ALL components)
+--   1. INTRINSIC GAS (structlog_agg computes it from the transaction)
 --      - Base cost: 21,000 gas
 --      - Calldata: 4 gas/zero byte + 16 gas/non-zero byte
---      - Contract creation: +32,000 gas (if to_address is NULL)
+--      - Contract creation: +32,000 gas (if to_address is NULL), +2 gas per initcode word (EIP-3860)
 --      - Access list: 2,400/address + 1,900/storage key (EIP-2930)
---      We derive this from receipt_gas rather than calculating, so access lists are included.
+--      - Authorizations: 25,000 each (EIP-7702)
 --
 --   2. EVM EXECUTION GAS (this table - root frame's gas_cumulative)
 --      - All opcode execution costs
@@ -65,6 +65,11 @@ dependencies:
 --   3. GAS REFUND (from SSTORE operations clearing storage)
 --      - Accumulated during execution
 --      - Capped at 20% of total gas consumed (EIP-3529)
+--
+--   4. CALLDATA FLOOR (EIP-7623, from Prague)
+--      - 21,000 + 10 * (zero bytes + 4 * non-zero bytes)
+--      - The receipt is charged at least this much:
+--        receipt_gas_used = max(intrinsic_gas + gas_cumulative - min(gas_refund, (intrinsic_gas + gas_cumulative) / 5), calldata_floor_gas)
 --
 -- =============================================================================
 -- CONTRACT CREATION CODE DEPOSIT COST
@@ -84,10 +89,6 @@ dependencies:
 --   1. Detecting CREATE transactions (action_type = 'create' in traces)
 --   2. Getting deployed bytecode from traces.result_code
 --   3. Adding code_deposit = len(bytecode) * 200 to gas and gas_cumulative
---   4. Recalculating intrinsic_gas with the corrected gas_cumulative
---
--- Without this correction, the code deposit cost would incorrectly appear as
--- intrinsic gas (since intrinsic = receipt - gas_cumulative + refund).
 --
 -- =============================================================================
 -- COLUMN DEFINITIONS
@@ -108,17 +109,18 @@ dependencies:
 --                   Refund is applied once at transaction end, not per-frame.
 --                   For simple transfers: NULL
 --
---   intrinsic_gas:  Transaction intrinsic cost (only populated for root frame).
---                   Derived from: receipt_gas, gas_cumulative, gas_refund
---                   Formula handles both capped and uncapped refund cases.
---                   INCLUDES access list costs (derived, not calculated).
---                   NULL for failed transactions (refund not applied, formula invalid).
---                   For simple transfers: equals receipt gas_used (all gas is intrinsic)
+--   intrinsic_gas:  Transaction intrinsic cost (only populated for root frame), as
+--                   structlog_agg computes it from the transaction (see GAS MODEL above).
+--                   For simple transfers without structlog_agg rows: receipt gas_used.
 --
 --   receipt_gas_used: Actual gas used from transaction receipt (only for root frame).
 --                     This is the source of truth for "Total Gas Used" display.
---                     For successful txs: intrinsic + gas_cumulative - gas_refund = receipt_gas_used
+--                     For successful txs: max(intrinsic + gas_cumulative - capped refund, calldata_floor_gas)
 --                     For failed txs: all gas consumed (formula doesn't apply)
+--
+--   calldata_floor_gas: EIP-7623 calldata floor. Only populated for the root frame of
+--                       blocks at or after PRAGUE_BLOCK_NUMBER (0, the default, for chains
+--                       that start at Prague or later), NULL elsewhere.
 --
 -- =============================================================================
 INSERT INTO `{{ .self.database }}`.`{{ .self.table }}`
@@ -136,7 +138,9 @@ all_transactions AS (
     gas_used as receipt_gas_used,
     to_address,
     input,
-    success
+    success,
+    n_input_zero_bytes,
+    n_input_nonzero_bytes
   FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }}
   WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
     AND meta_network_name = '{{ .env.NETWORK }}'
@@ -162,7 +166,9 @@ simple_transfers AS (
     t.receipt_gas_used,
     t.to_address,
     t.input,
-    t.success
+    t.success,
+    t.n_input_zero_bytes,
+    t.n_input_nonzero_bytes
   FROM all_transactions t
   GLOBAL LEFT JOIN structlog_tx_keys s
     ON t.block_number = s.block_number
@@ -207,20 +213,12 @@ structlog_frames AS (
        agg.gas_cumulative + toUInt64(intDiv(length(tr.result_code) - 2, 2) * 200),
        agg.gas_cumulative) as gas_cumulative,
     agg.gas_refund,
-    -- Recalculate intrinsic_gas with corrected gas_cumulative for CREATE transactions
-    -- Use Int64 arithmetic to avoid UInt64 subtraction promotion issues, then cast result
-    if(agg.call_frame_id = 0,
-       if(tr.action_type = 'create' AND tr.result_code IS NOT NULL AND length(tr.result_code) > 2,
-          CAST(
-            toInt64(tx.receipt_gas_used)
-            - toInt64(agg.gas_cumulative)
-            - toInt64(intDiv(length(tr.result_code) - 2, 2) * 200)
-            + toInt64(coalesce(agg.gas_refund, toUInt64(0)))
-          AS Nullable(UInt64)),
-          agg.intrinsic_gas),
-       NULL) as intrinsic_gas,
+    if(agg.call_frame_id = 0, agg.intrinsic_gas, NULL) as intrinsic_gas,
     -- Receipt gas used from transaction table (only for root frame)
-    if(agg.call_frame_id = 0, tx.receipt_gas_used, NULL) as receipt_gas_used
+    if(agg.call_frame_id = 0, tx.receipt_gas_used, NULL) as receipt_gas_used,
+    if(agg.call_frame_id = 0 AND agg.block_number >= {{ default "0" .env.PRAGUE_BLOCK_NUMBER }},
+       toUInt64(21000) + toUInt64(10) * (toUInt64(tx.n_input_zero_bytes) + toUInt64(4) * toUInt64(tx.n_input_nonzero_bytes)),
+       NULL) as calldata_floor_gas
   FROM {{ index .dep "{{external}}" "canonical_execution_transaction_structlog_agg" "helpers" "from" }} agg
   -- GLOBAL LEFT ANY JOIN: evaluates subquery once, broadcasts result, uses first match only
   GLOBAL LEFT ANY JOIN (
@@ -243,7 +241,9 @@ structlog_frames AS (
     SELECT
       block_number,
       transaction_hash,
-      gas_used as receipt_gas_used
+      gas_used as receipt_gas_used,
+      n_input_zero_bytes,
+      n_input_nonzero_bytes
     FROM {{ index .dep "{{external}}" "canonical_execution_transaction" "helpers" "from" }}
     WHERE block_number BETWEEN {{ .bounds.start }} AND {{ .bounds.end }}
       AND meta_network_name = '{{ .env.NETWORK }}'
@@ -288,7 +288,10 @@ simple_transfer_frames AS (
     -- For simple transfers, all gas is intrinsic (only if success)
     if(st.success, toUInt64(st.receipt_gas_used), NULL) as intrinsic_gas,
     -- Receipt gas used (always populated for root frame)
-    toUInt64(st.receipt_gas_used) as receipt_gas_used
+    toUInt64(st.receipt_gas_used) as receipt_gas_used,
+    if(st.block_number >= {{ default "0" .env.PRAGUE_BLOCK_NUMBER }},
+       toUInt64(21000) + toUInt64(10) * (toUInt64(st.n_input_zero_bytes) + toUInt64(4) * toUInt64(st.n_input_nonzero_bytes)),
+       NULL) as calldata_floor_gas
   FROM simple_transfers st
 )
 

@@ -8,50 +8,57 @@ import (
 )
 
 // BuildListFctAttestationLivenessByEntityQuery constructs a parameterized SQL query from a ListFctAttestationLivenessByEntityRequest
+//
+// Available projections:
+//   - p_by_slot (primary key: slot)
+//
+// Use WithProjection() option to select a specific projection.
 func BuildListFctAttestationLivenessByEntityQuery(req *ListFctAttestationLivenessByEntityRequest, options ...QueryOption) (SQLQuery, error) {
 	// Validate that at least one primary key is provided
 	// Primary keys can come from base table or projections
-	if req.SlotStartDateTime == nil {
-		return SQLQuery{}, fmt.Errorf("primary key field slot_start_date_time is required")
+	if req.Slot == nil && req.SlotStartDateTime == nil {
+		return SQLQuery{}, fmt.Errorf("at least one primary key field is required: slot, slot_start_date_time")
 	}
 
 	// Build query using QueryBuilder
 	qb := NewQueryBuilder()
 
 	// Add primary key filter
-	switch filter := req.SlotStartDateTime.Filter.(type) {
-	case *UInt32Filter_Eq:
-		qb.AddCondition("slot_start_date_time", "=", DateTimeValue{filter.Eq})
-	case *UInt32Filter_Ne:
-		qb.AddCondition("slot_start_date_time", "!=", DateTimeValue{filter.Ne})
-	case *UInt32Filter_Lt:
-		qb.AddCondition("slot_start_date_time", "<", DateTimeValue{filter.Lt})
-	case *UInt32Filter_Lte:
-		qb.AddCondition("slot_start_date_time", "<=", DateTimeValue{filter.Lte})
-	case *UInt32Filter_Gt:
-		qb.AddCondition("slot_start_date_time", ">", DateTimeValue{filter.Gt})
-	case *UInt32Filter_Gte:
-		qb.AddCondition("slot_start_date_time", ">=", DateTimeValue{filter.Gte})
-	case *UInt32Filter_Between:
-		qb.AddBetweenCondition("slot_start_date_time", DateTimeValue{filter.Between.Min}, DateTimeValue{filter.Between.Max.GetValue()})
-	case *UInt32Filter_In:
-		if len(filter.In.Values) > 0 {
-			converted := make([]interface{}, len(filter.In.Values))
-			for i, v := range filter.In.Values {
-				converted[i] = DateTimeValue{v}
+	if req.SlotStartDateTime != nil {
+		switch filter := req.SlotStartDateTime.Filter.(type) {
+		case *UInt32Filter_Eq:
+			qb.AddCondition("slot_start_date_time", "=", DateTimeValue{filter.Eq})
+		case *UInt32Filter_Ne:
+			qb.AddCondition("slot_start_date_time", "!=", DateTimeValue{filter.Ne})
+		case *UInt32Filter_Lt:
+			qb.AddCondition("slot_start_date_time", "<", DateTimeValue{filter.Lt})
+		case *UInt32Filter_Lte:
+			qb.AddCondition("slot_start_date_time", "<=", DateTimeValue{filter.Lte})
+		case *UInt32Filter_Gt:
+			qb.AddCondition("slot_start_date_time", ">", DateTimeValue{filter.Gt})
+		case *UInt32Filter_Gte:
+			qb.AddCondition("slot_start_date_time", ">=", DateTimeValue{filter.Gte})
+		case *UInt32Filter_Between:
+			qb.AddBetweenCondition("slot_start_date_time", DateTimeValue{filter.Between.Min}, DateTimeValue{filter.Between.Max.GetValue()})
+		case *UInt32Filter_In:
+			if len(filter.In.Values) > 0 {
+				converted := make([]interface{}, len(filter.In.Values))
+				for i, v := range filter.In.Values {
+					converted[i] = DateTimeValue{v}
+				}
+				qb.AddInCondition("slot_start_date_time", converted)
 			}
-			qb.AddInCondition("slot_start_date_time", converted)
-		}
-	case *UInt32Filter_NotIn:
-		if len(filter.NotIn.Values) > 0 {
-			converted := make([]interface{}, len(filter.NotIn.Values))
-			for i, v := range filter.NotIn.Values {
-				converted[i] = DateTimeValue{v}
+		case *UInt32Filter_NotIn:
+			if len(filter.NotIn.Values) > 0 {
+				converted := make([]interface{}, len(filter.NotIn.Values))
+				for i, v := range filter.NotIn.Values {
+					converted[i] = DateTimeValue{v}
+				}
+				qb.AddNotInCondition("slot_start_date_time", converted)
 			}
-			qb.AddNotInCondition("slot_start_date_time", converted)
+		default:
+			// Unsupported filter type
 		}
-	default:
-		// Unsupported filter type
 	}
 
 	// Add filter for column: updated_date_time

@@ -1,0 +1,65 @@
+model: fct_engine_new_payload_by_node_hourly
+network: mainnet
+external_data:
+    beacon_api_eth_v1_events_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_new_payload_beacon_api_eth_v1_events_block.parquet
+        network_column: meta_network_name
+    beacon_api_eth_v2_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_new_payload_beacon_api_eth_v2_beacon_block.parquet
+        network_column: meta_network_name
+    execution_engine_new_payload:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/int_engine_new_payload_execution_engine_new_payload.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Row count should be greater than zero
+      sql: |
+        SELECT COUNT(*) AS row_count FROM fct_engine_new_payload_by_node_hourly FINAL
+      assertions:
+        - type: greater_than
+          column: row_count
+          value: 0
+    - name: One row per period and node
+      sql: |
+        SELECT COUNT(*) - uniqExact(hour_start_date_time, node_id) AS duplicate_rows FROM fct_engine_new_payload_by_node_hourly FINAL
+      assertions:
+        - type: equals
+          column: duplicate_rows
+          value: 0
+    - name: No empty node IDs
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_new_payload_by_node_hourly FINAL WHERE node_id = ''
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Every call in the source is counted once
+      sql: |
+        SELECT
+            (SELECT sum(call_count) FROM fct_engine_new_payload_by_node_hourly FINAL) - (SELECT count() FROM int_engine_new_payload FINAL WHERE meta_client_name != '' AND toStartOfHour(slot_start_date_time) GLOBAL IN (SELECT hour_start_date_time FROM fct_engine_new_payload_by_node_hourly FINAL)) AS difference
+      assertions:
+        - type: equals
+          column: difference
+          value: 0
+    - name: Percentiles are ordered from p50_duration_ms to max_duration_ms
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_new_payload_by_node_hourly FINAL
+        WHERE p50_duration_ms > p90_duration_ms OR p90_duration_ms > p95_duration_ms OR p95_duration_ms > max_duration_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Hour start date time should be aligned to hour boundaries
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_new_payload_by_node_hourly FINAL WHERE hour_start_date_time != toStartOfHour(hour_start_date_time)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Status counts add up to the calls
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_engine_new_payload_by_node_hourly FINAL
+        WHERE valid_count + invalid_count + syncing_count + accepted_count > call_count
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

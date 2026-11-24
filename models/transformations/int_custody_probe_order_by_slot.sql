@@ -55,5 +55,7 @@ SELECT
     meta_peer_geo_autonomous_system_number,
     meta_peer_geo_autonomous_system_organization
 FROM {{ index .dep "{{transformation}}" "int_custody_probe" "helpers" "from" }} FINAL
+-- Half-open: the next run starts at bounds.end, so a row at exactly bounds.end belongs to it.
 WHERE
-    probe_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) AND fromUnixTimestamp({{ .bounds.end }})
+    probe_date_time >= fromUnixTimestamp({{ .bounds.start }})
+    AND probe_date_time < fromUnixTimestamp({{ .bounds.end }})

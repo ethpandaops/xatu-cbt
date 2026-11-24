@@ -15,12 +15,14 @@ tags:
   - opcode
   - gas
 dependencies:
+  - "{{external}}.canonical_execution_block"
   - "{{transformation}}.int_block_opcode_gas"
   - "{{transformation}}.int_execution_block_by_date"
 ---
 -- Hourly aggregation of opcode execution rate (ops/sec).
 -- Uses actual block time gaps instead of assumed 12-second slots for accurate ops/sec calculation.
 -- Computes percentiles, Bollinger bands, and 6-hour moving averages across all blocks in each hour.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 --
 -- This query expands the block range to complete hour boundaries to handle partial
 -- hour aggregations at the head of incremental processing. For example, if we process
@@ -44,7 +46,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE block_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND block_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),
     -- Calculate time since previous block for each block
@@ -70,7 +72,35 @@ WITH
         WHERE block_number GLOBAL IN (SELECT block_number FROM blocks_in_hours)
         GROUP BY block_number
     ),
-    -- Join blocks with opcode counts and calculate per-block ops/sec
+    -- First and last block with opcode data in each hour
+    hour_coverage AS (
+        SELECT
+            toStartOfHour(b.block_date_time) AS hour,
+            min(b.block_number) AS first_block,
+            max(b.block_number) AS last_block
+        FROM blocks_in_hours b
+        GLOBAL INNER JOIN opcode_per_block o ON b.block_number = o.block_number
+        GROUP BY hour
+    ),
+    -- Empty blocks (gas_used = 0 means no transactions, so zero opcodes) between the
+    -- first and last block with opcode data in their hour
+    empty_blocks AS (
+        SELECT b.block_number
+        FROM blocks_in_hours b
+        GLOBAL INNER JOIN hour_coverage c ON toStartOfHour(b.block_date_time) = c.hour
+        WHERE b.block_number BETWEEN c.first_block AND c.last_block
+          AND b.block_number GLOBAL IN (
+                SELECT block_number
+                FROM {{ index .dep "{{external}}" "canonical_execution_block" "helpers" "from" }} FINAL
+                WHERE block_number GLOBAL IN (SELECT block_number FROM blocks_in_hours)
+                  AND meta_network_name = '{{ .env.NETWORK }}'
+                  AND gas_used = 0
+          )
+    ),
+    -- Join blocks with opcode counts and calculate per-block ops/sec. A block missing
+    -- from int_block_opcode_gas is a source gap (e.g. before opcode indexing started),
+    -- not a zero, so it is skipped unless it is an empty block within its hour's
+    -- opcode data. Hours without opcode data produce no row.
     blocks_with_ops AS (
         SELECT
             b.block_number,
@@ -87,6 +117,8 @@ WITH
         GLOBAL LEFT JOIN opcode_per_block o ON b.block_number = o.block_number
         WHERE b.block_time_seconds IS NOT NULL  -- Skip first block (no previous to calculate gap)
           AND b.block_time_seconds > 0          -- Skip zero-time blocks
+          AND (o.opcode_count > 0
+               OR b.block_number GLOBAL IN (SELECT block_number FROM empty_blocks))
     ),
     -- Calculate 6-hour moving average for each block
     blocks_with_ma AS (
@@ -122,4 +154,5 @@ SELECT
     -- 6-hour moving average
     round(avg(ma_ops), 4) AS moving_avg_ops
 FROM blocks_with_ma
+WHERE block_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(block_date_time)

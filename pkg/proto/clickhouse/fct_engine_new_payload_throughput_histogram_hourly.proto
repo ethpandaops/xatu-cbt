@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+import "google/protobuf/wrappers.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "clickhouse/annotations.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Per-block engine_newPayload throughput histogram (Mgas/s, buckets about 4% wide) of VALID payloads of at least 5 Mgas per hour, node scope and execution client
+message FctEngineNewPayloadThroughputHistogramHourly {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // Start of the hour
+  uint32 hour_start_date_time = 12;
+  // Which Xatu nodes the timings come from: reference for reference nodes (node_class eip7870-block-builder), all for every Xatu node
+  string node_scope = 13;
+  // Execution client, lowercased, with go-ethereum as geth
+  string client = 14;
+  // Throughput bucket k, covering 1.04^k to 1.04^(k+1) Mgas/s
+  int32 bucket_index = 15;
+  // Lower bound of the bucket in Mgas/s, inclusive
+  float bucket_lower_mgas_per_second = 16;
+  // Upper bound of the bucket in Mgas/s, exclusive
+  float bucket_upper_mgas_per_second = 17;
+  // Number of blocks of at least 5 Mgas whose throughput falls in the bucket
+  uint32 block_count = 18;
+}
+
+// Request for listing fct_engine_new_payload_throughput_histogram_hourly records
+message ListFctEngineNewPayloadThroughputHistogramHourlyRequest {
+  // Filter by hour_start_date_time - Start of the hour (PRIMARY KEY - required)
+  UInt32Filter hour_start_date_time = 1 [(google.api.field_behavior) = REQUIRED, (clickhouse.v1.required_group) = "primary_key"];
+
+  // Filter by node_scope - Which Xatu nodes the timings come from: reference for reference nodes (node_class eip7870-block-builder), all for every Xatu node (ORDER BY column 2 - optional)
+  StringFilter node_scope = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by client - Execution client, lowercased, with go-ethereum as geth (ORDER BY column 3 - optional)
+  StringFilter client = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by bucket_index - Throughput bucket k, covering 1.04^k to 1.04^(k+1) Mgas/s (ORDER BY column 4 - optional)
+  Int32Filter bucket_index = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by bucket_lower_mgas_per_second - Lower bound of the bucket in Mgas/s, inclusive (optional)
+  google.protobuf.FloatValue bucket_lower_mgas_per_second = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by bucket_upper_mgas_per_second - Upper bound of the bucket in Mgas/s, exclusive (optional)
+  google.protobuf.FloatValue bucket_upper_mgas_per_second = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Filter by block_count - Number of blocks of at least 5 Mgas whose throughput falls in the bucket (optional)
+  UInt32Filter block_count = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // The maximum number of fct_engine_new_payload_throughput_histogram_hourly to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 9 [(google.api.field_behavior) = OPTIONAL];
+  // A page token, received from a previous `ListFctEngineNewPayloadThroughputHistogramHourly` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 10 [(google.api.field_behavior) = OPTIONAL];
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 11 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for listing fct_engine_new_payload_throughput_histogram_hourly records
+message ListFctEngineNewPayloadThroughputHistogramHourlyResponse {
+  // The list of fct_engine_new_payload_throughput_histogram_hourly.
+  repeated FctEngineNewPayloadThroughputHistogramHourly fct_engine_new_payload_throughput_histogram_hourly = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single fct_engine_new_payload_throughput_histogram_hourly record by primary key
+message GetFctEngineNewPayloadThroughputHistogramHourlyRequest {
+  // Start of the hour
+  uint32 hour_start_date_time = 1; // Primary key (required)
+}
+
+// Response for getting a single fct_engine_new_payload_throughput_histogram_hourly record
+message GetFctEngineNewPayloadThroughputHistogramHourlyResponse {
+  FctEngineNewPayloadThroughputHistogramHourly item = 1;
+}
+
+// Query fct_engine_new_payload_throughput_histogram_hourly data
+service FctEngineNewPayloadThroughputHistogramHourlyService {
+  // List records | Per-block engine_newPayload throughput histogram (Mgas/s, buckets about 4% wide) of VALID payloads of at least 5 Mgas per hour, node scope and execution client
+  rpc List(ListFctEngineNewPayloadThroughputHistogramHourlyRequest) returns (ListFctEngineNewPayloadThroughputHistogramHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_engine_new_payload_throughput_histogram_hourly"
+    };
+  }
+  // Get record | Retrieve a single record by hour_start_date_time
+  rpc Get(GetFctEngineNewPayloadThroughputHistogramHourlyRequest) returns (GetFctEngineNewPayloadThroughputHistogramHourlyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/fct_engine_new_payload_throughput_histogram_hourly/{hour_start_date_time}"
+    };
+  }
+}

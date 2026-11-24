@@ -16,6 +16,7 @@ dependencies:
 ---
 -- Hourly aggregation of missed slot rate.
 -- Computes the percentage of missed slots per hour with a 6-hour moving average.
+-- The scan reaches back one window before the first hour so the moving average covers the full 6 hours.
 -- A missed slot is any slot with no block in the canonical chain (block_root
 -- IS NULL). Sourced from int_block_proposer_canonical rather than the head path
 -- so the metric reaches genesis. The trade-off is that orphaned slots (a block
@@ -37,7 +38,7 @@ WITH
             toUnixTimestamp(slot_start_date_time) AS slot_timestamp,
             if(block_root IS NULL, 1, 0) AS is_missed
         FROM {{ index .dep "{{transformation}}" "int_block_proposer_canonical" "helpers" "from" }} FINAL
-        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
+        WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds) - INTERVAL 6 HOUR
           AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
     ),
     slots_with_ma AS (
@@ -56,4 +57,5 @@ SELECT
     round(sum(is_missed) / count() * 100, 4) AS missed_rate,
     round(avg(ma_missed_rate), 4) AS moving_avg_missed_rate
 FROM slots_with_ma
+WHERE slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
 GROUP BY toStartOfHour(slot_start_date_time)

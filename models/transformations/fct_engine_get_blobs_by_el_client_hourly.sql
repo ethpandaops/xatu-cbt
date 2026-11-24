@@ -30,8 +30,9 @@ WITH
 blob_context AS (
     SELECT
         versioned_hash,
+        slot_start_date_time,
+        toDateTime64(slot_start_date_time, 3) AS slot_start_date_time64,
         any(slot) AS slot,
-        any(slot_start_date_time) AS slot_start_date_time,
         any(block_root) AS block_root
     FROM (
         SELECT *
@@ -40,7 +41,7 @@ blob_context AS (
             AND slot_start_date_time BETWEEN fromUnixTimestamp({{ .bounds.start }}) - INTERVAL 65 MINUTE
                 AND fromUnixTimestamp({{ .bounds.end }}) + INTERVAL 65 MINUTE
     )
-    GROUP BY versioned_hash
+    GROUP BY versioned_hash, slot_start_date_time
 ),
 engine_get_blobs AS (
     SELECT
@@ -68,10 +69,13 @@ enriched AS (
         eg.meta_client_name,
         eg.meta_execution_implementation,
         eg.meta_execution_version,
-        COALESCE(any(bc.slot_start_date_time), toDateTime(0)) AS slot_start_date_time,
-        COALESCE(any(bc.block_root), '') AS block_root
+        argMinIf(bc.slot_start_date_time, bc.slot_start_date_time, bc.slot_start_date_time != toDateTime(0)) AS slot_start_date_time,
+        argMinIf(bc.block_root, bc.slot_start_date_time, bc.slot_start_date_time != toDateTime(0)) AS block_root
     FROM engine_get_blobs eg
-    GLOBAL LEFT JOIN blob_context bc ON eg.vh = bc.versioned_hash
+    -- A versioned hash can be included in more than one slot (re-included or spammed blobs).
+    -- Match each hash to the latest slot at or before the call, then take the earliest of
+    -- those across the call's hashes: the block that held all of them.
+    GLOBAL ASOF LEFT JOIN blob_context bc ON eg.vh = bc.versioned_hash AND eg.event_date_time >= bc.slot_start_date_time64
     GROUP BY
         eg.event_date_time,
         eg.duration_ms,
@@ -108,6 +112,8 @@ events_in_hours AS (
         END AS node_class
     FROM enriched
     WHERE slot_start_date_time != toDateTime(0)
+        -- Same 300s lateness cutoff as int_engine_get_blobs
+        AND event_date_time <= slot_start_date_time + INTERVAL 300 SECOND
         AND slot_start_date_time >= (SELECT min_hour FROM hour_bounds)
         AND slot_start_date_time < (SELECT max_hour FROM hour_bounds) + INTERVAL 1 HOUR
         AND meta_execution_implementation != ''

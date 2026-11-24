@@ -9,8 +9,8 @@ import "google/api/field_behavior.proto";
 import "clickhouse/annotations.proto";
 
 option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
-// Data column availability by slot and column index
 
+// Custody probe results by slot and column index. Only custody probes count towards success, failure, missing and availability. Gossipsub sightings are counted separately in gossipsub_count. Probes keep arriving for about 18 days after a slot, so the last 19 days are recounted every hour
 message FctDataColumnAvailabilityBySlot {
   // Timestamp when the record was last updated
   uint32 updated_date_time = 11;
@@ -22,31 +22,31 @@ message FctDataColumnAvailabilityBySlot {
   uint32 epoch = 14;
   // The wall clock time when the epoch started
   uint32 epoch_start_date_time = 15;
-  // The wallclock slot when the request was sent
+  // The slot the probes tested, the same as slot
   uint32 wallclock_request_slot = 16;
-  // The start time for the slot when the request was sent
+  // The start time of the slot the probes tested, the same as slot_start_date_time
   uint32 wallclock_request_slot_start_date_time = 17;
-  // The wallclock epoch when the request was sent
+  // The epoch of the slot the probes tested, the same as epoch
   uint32 wallclock_request_epoch = 18;
-  // The start time for the wallclock epoch when the request was sent
+  // The start time of the epoch the probes tested, the same as epoch_start_date_time
   uint32 wallclock_request_epoch_start_date_time = 19;
   // Column index being probed (0-127)
   uint64 column_index = 20;
-  // Beacon block root for this slot (from earliest observation, handles reorgs, NULL if unavailable)
+  // Beacon block root from the earliest gossipsub sighting of the column, NULL when it was not gossiped
   google.protobuf.StringValue beacon_block_root = 21;
-  // Number of unique block roots observed (>1 indicates reorg/fork)
+  // Number of block roots in the gossipsub sightings (more than 1 means a fork), 0 when not gossiped
   uint32 beacon_block_root_variants = 22;
-  // Number of blobs in the slot (max column_rows_count)
+  // Number of blobs in the slot, from the probes and the gossipsub sightings
   uint32 blob_count = 23;
-  // Count of successful probes
+  // Number of custody probes that returned the column
   uint32 success_count = 24;
-  // Count of failed probes (result = failure)
+  // Number of custody probes that failed (result = failure)
   uint32 failure_count = 25;
-  // Count of missing probes (result = missing)
+  // Number of custody probes the peer answered without the column (result = missing)
   uint32 missing_count = 26;
-  // Total count of probes
+  // Number of custody probes of the column for this slot
   uint32 probe_count = 27;
-  // Availability percentage (success / total * 100) rounded to 2 decimal places
+  // Share of custody probes that returned the column (success / probe_count * 100), rounded to 2 decimal places
   double availability_pct = 28;
   // Minimum response time in milliseconds for successful probes only
   uint32 min_response_time_ms = 29;
@@ -58,15 +58,15 @@ message FctDataColumnAvailabilityBySlot {
   uint32 p99_response_time_ms = 32;
   // Maximum response time in milliseconds for successful probes only
   uint32 max_response_time_ms = 33;
-  // Count of unique peers probed
+  // Number of distinct P2P peers probed
   uint32 unique_peer_count = 34;
-  // Count of unique client names
+  // Number of distinct Xatu nodes that sent the probes
   uint32 unique_client_count = 35;
-  // Count of unique client implementations
+  // Number of distinct client implementations that sent the probes
   uint32 unique_implementation_count = 36;
-  // Count of observations from active RPC custody probes
+  // Number of custody probes, the same as probe_count
   uint32 custody_probe_count = 37;
-  // Count of observations from passive gossipsub propagation
+  // Number of gossipsub sightings of the column, which do not count towards availability
   uint32 gossipsub_count = 38;
 }
 
@@ -86,29 +86,29 @@ message ListFctDataColumnAvailabilityBySlotRequest {
   UInt32Filter epoch = 5 [(google.api.field_behavior) = OPTIONAL];
   // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
   UInt32Filter epoch_start_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by wallclock_request_slot - The wallclock slot when the request was sent (optional)
+  // Filter by wallclock_request_slot - The slot the probes tested, the same as slot (optional)
   UInt32Filter wallclock_request_slot = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by wallclock_request_slot_start_date_time - The start time for the slot when the request was sent (optional)
+  // Filter by wallclock_request_slot_start_date_time - The start time of the slot the probes tested, the same as slot_start_date_time (optional)
   UInt32Filter wallclock_request_slot_start_date_time = 8 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by wallclock_request_epoch - The wallclock epoch when the request was sent (optional)
+  // Filter by wallclock_request_epoch - The epoch of the slot the probes tested, the same as epoch (optional)
   UInt32Filter wallclock_request_epoch = 9 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by wallclock_request_epoch_start_date_time - The start time for the wallclock epoch when the request was sent (optional)
+  // Filter by wallclock_request_epoch_start_date_time - The start time of the epoch the probes tested, the same as epoch_start_date_time (optional)
   UInt32Filter wallclock_request_epoch_start_date_time = 10 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by beacon_block_root - Beacon block root for this slot (from earliest observation, handles reorgs, NULL if unavailable) (optional)
+  // Filter by beacon_block_root - Beacon block root from the earliest gossipsub sighting of the column, NULL when it was not gossiped (optional)
   NullableStringFilter beacon_block_root = 11 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by beacon_block_root_variants - Number of unique block roots observed (>1 indicates reorg/fork) (optional)
+  // Filter by beacon_block_root_variants - Number of block roots in the gossipsub sightings (more than 1 means a fork), 0 when not gossiped (optional)
   UInt32Filter beacon_block_root_variants = 12 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by blob_count - Number of blobs in the slot (max column_rows_count) (optional)
+  // Filter by blob_count - Number of blobs in the slot, from the probes and the gossipsub sightings (optional)
   UInt32Filter blob_count = 13 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by success_count - Count of successful probes (optional)
+  // Filter by success_count - Number of custody probes that returned the column (optional)
   UInt32Filter success_count = 14 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by failure_count - Count of failed probes (result = failure) (optional)
+  // Filter by failure_count - Number of custody probes that failed (result = failure) (optional)
   UInt32Filter failure_count = 15 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by missing_count - Count of missing probes (result = missing) (optional)
+  // Filter by missing_count - Number of custody probes the peer answered without the column (result = missing) (optional)
   UInt32Filter missing_count = 16 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by probe_count - Total count of probes (optional)
+  // Filter by probe_count - Number of custody probes of the column for this slot (optional)
   UInt32Filter probe_count = 17 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by availability_pct - Availability percentage (success / total * 100) rounded to 2 decimal places (optional)
+  // Filter by availability_pct - Share of custody probes that returned the column (success / probe_count * 100), rounded to 2 decimal places (optional)
   google.protobuf.DoubleValue availability_pct = 18 [(google.api.field_behavior) = OPTIONAL];
   // Filter by min_response_time_ms - Minimum response time in milliseconds for successful probes only (optional)
   UInt32Filter min_response_time_ms = 19 [(google.api.field_behavior) = OPTIONAL];
@@ -120,15 +120,15 @@ message ListFctDataColumnAvailabilityBySlotRequest {
   UInt32Filter p99_response_time_ms = 22 [(google.api.field_behavior) = OPTIONAL];
   // Filter by max_response_time_ms - Maximum response time in milliseconds for successful probes only (optional)
   UInt32Filter max_response_time_ms = 23 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by unique_peer_count - Count of unique peers probed (optional)
+  // Filter by unique_peer_count - Number of distinct P2P peers probed (optional)
   UInt32Filter unique_peer_count = 24 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by unique_client_count - Count of unique client names (optional)
+  // Filter by unique_client_count - Number of distinct Xatu nodes that sent the probes (optional)
   UInt32Filter unique_client_count = 25 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by unique_implementation_count - Count of unique client implementations (optional)
+  // Filter by unique_implementation_count - Number of distinct client implementations that sent the probes (optional)
   UInt32Filter unique_implementation_count = 26 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by custody_probe_count - Count of observations from active RPC custody probes (optional)
+  // Filter by custody_probe_count - Number of custody probes, the same as probe_count (optional)
   UInt32Filter custody_probe_count = 27 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by gossipsub_count - Count of observations from passive gossipsub propagation (optional)
+  // Filter by gossipsub_count - Number of gossipsub sightings of the column, which do not count towards availability (optional)
   UInt32Filter gossipsub_count = 28 [(google.api.field_behavior) = OPTIONAL];
 
   // The maximum number of fct_data_column_availability_by_slot to return.
@@ -166,7 +166,7 @@ message GetFctDataColumnAvailabilityBySlotResponse {
 
 // Query fct_data_column_availability_by_slot data
 service FctDataColumnAvailabilityBySlotService {
-  // List records | Retrieve paginated results with optional filtering
+  // List records | Custody probe results by slot and column index. Only custody probes count towards success, failure, missing and availability. Gossipsub sightings are counted separately in gossipsub_count. Probes keep arriving for about 18 days after a slot, so the last 19 days are recounted every hour
   rpc List(ListFctDataColumnAvailabilityBySlotRequest) returns (ListFctDataColumnAvailabilityBySlotResponse) {
     option (google.api.http) = {
       get: "/api/v1/fct_data_column_availability_by_slot"

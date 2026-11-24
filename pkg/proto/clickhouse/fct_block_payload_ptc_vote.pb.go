@@ -40,11 +40,11 @@ type FctBlockPayloadPtcVote struct {
 	EpochStartDateTime uint32 `protobuf:"varint,15,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
 	// The beacon block root being attested by the PTC
 	BlockRoot string `protobuf:"bytes,16,opt,name=block_root,json=blockRoot,proto3" json:"block_root,omitempty"`
-	// The beacon block version of the containing block, empty for orphaned rows
+	// The beacon block version of the containing block, empty for orphaned rows and for canonical blocks whose votes were never included
 	BlockVersion string `protobuf:"bytes,17,opt,name=block_version,json=blockVersion,proto3" json:"block_version,omitempty"`
-	// Slot of the canonical block that included the payload attestations, null for orphaned rows
+	// Slot of the canonical block that included the payload attestations, null for orphaned rows and for canonical blocks whose votes were never included
 	IncludedInSlot *wrapperspb.UInt32Value `protobuf:"bytes,18,opt,name=included_in_slot,json=includedInSlot,proto3" json:"included_in_slot,omitempty"`
-	// Root of the canonical block that included the payload attestations, null for orphaned rows
+	// Root of the canonical block that included the payload attestations, null for orphaned rows and for canonical blocks whose votes were never included
 	IncludedInBlockRoot *wrapperspb.StringValue `protobuf:"bytes,19,opt,name=included_in_block_root,json=includedInBlockRoot,proto3" json:"included_in_block_root,omitempty"`
 	// Total PTC validators covered: on-chain aggregate counts for canonical rows, distinct validators seen on the live stream for orphaned rows
 	PtcValidators uint32 `protobuf:"varint,20,opt,name=ptc_validators,json=ptcValidators,proto3" json:"ptc_validators,omitempty"`
@@ -197,11 +197,11 @@ type ListFctBlockPayloadPtcVoteRequest struct {
 	Epoch *UInt32Filter `protobuf:"bytes,5,opt,name=epoch,proto3" json:"epoch,omitempty"`
 	// Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
 	EpochStartDateTime *UInt32Filter `protobuf:"bytes,6,opt,name=epoch_start_date_time,json=epochStartDateTime,proto3" json:"epoch_start_date_time,omitempty"`
-	// Filter by block_version - The beacon block version of the containing block, empty for orphaned rows (optional)
+	// Filter by block_version - The beacon block version of the containing block, empty for orphaned rows and for canonical blocks whose votes were never included (optional)
 	BlockVersion *StringFilter `protobuf:"bytes,7,opt,name=block_version,json=blockVersion,proto3" json:"block_version,omitempty"`
-	// Filter by included_in_slot - Slot of the canonical block that included the payload attestations, null for orphaned rows (optional)
+	// Filter by included_in_slot - Slot of the canonical block that included the payload attestations, null for orphaned rows and for canonical blocks whose votes were never included (optional)
 	IncludedInSlot *NullableUInt32Filter `protobuf:"bytes,8,opt,name=included_in_slot,json=includedInSlot,proto3" json:"included_in_slot,omitempty"`
-	// Filter by included_in_block_root - Root of the canonical block that included the payload attestations, null for orphaned rows (optional)
+	// Filter by included_in_block_root - Root of the canonical block that included the payload attestations, null for orphaned rows and for canonical blocks whose votes were never included (optional)
 	IncludedInBlockRoot *NullableStringFilter `protobuf:"bytes,9,opt,name=included_in_block_root,json=includedInBlockRoot,proto3" json:"included_in_block_root,omitempty"`
 	// Filter by ptc_validators - Total PTC validators covered: on-chain aggregate counts for canonical rows, distinct validators seen on the live stream for orphaned rows (optional)
 	PtcValidators *UInt32Filter `protobuf:"bytes,10,opt,name=ptc_validators,json=ptcValidators,proto3" json:"ptc_validators,omitempty"`

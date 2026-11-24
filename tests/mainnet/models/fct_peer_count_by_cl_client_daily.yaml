@@ -1,0 +1,105 @@
+model: fct_peer_count_by_cl_client_daily
+network: mainnet
+external_data:
+    libp2p_synthetic_heartbeat:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_synthetic_heartbeat.parquet
+        network_column: meta_network_name
+    libp2p_identify:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_identify.parquet
+        network_column: meta_network_name
+    libp2p_handle_metadata:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_libp2p_handle_metadata.parquet
+        network_column: meta_network_name
+    node_record_consensus:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/mainnet/clients_census_node_record_consensus.parquet
+        network_column: meta_network_name
+assertions:
+    - name: "Counts every consensus peer once and leaves crawlers out"
+      sql: |
+        SELECT
+          (SELECT sum(peer_count) FROM fct_peer_count_by_cl_client_daily FINAL) AS peers,
+          peers - 6973 AS peer_diff,
+          (SELECT sumIf(peer_count, client = 'lighthouse') FROM fct_peer_count_by_cl_client_daily FINAL) AS lighthouse_peers,
+          (SELECT sumIf(peer_count, client IN ('erigon', 'tysm', 'hermes', 'nebula')) FROM fct_peer_count_by_cl_client_daily FINAL) AS excluded_peers
+      assertions:
+        - type: equals
+          column: peer_diff
+          value: 0
+        - type: equals
+          column: lighthouse_peers
+          value: 4399
+        - type: equals
+          column: excluded_peers
+          value: 0
+    - name: "Caplin is reported from erigon agents"
+      sql: |
+        SELECT sumIf(peer_count, client = 'caplin') AS caplin_peers FROM fct_peer_count_by_cl_client_daily FINAL
+      assertions:
+        - type: equals
+          column: caplin_peers
+          value: 282
+    - name: "Lighthouse and Lodestar commits resolve to their releases"
+      sql: |
+        SELECT
+          sumIf(peer_count, client = 'lighthouse' AND version = 'v8.2.3' AND release_status = 'commit_match') AS lighthouse_v823,
+          sumIf(peer_count, client = 'lodestar' AND version = 'v1.50.1' AND release_status = 'commit_match') AS lodestar_v1501,
+          sumIf(peer_count, client = 'lodestar') AS lodestar_peers,
+          sumIf(peer_count, client = 'lodestar' AND release_status = 'commit_match') AS lodestar_resolved
+        FROM fct_peer_count_by_cl_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: lighthouse_v823
+          value: 300
+        - type: greater_than
+          column: lodestar_v1501
+          value: 50
+        - type: greater_than
+          column: lodestar_resolved
+          value: 180
+    - name: "Prysm commits come from the peer ENR, Teku and Nimbus have none"
+      sql: |
+        SELECT
+          sumIf(peer_count, client = 'prysm' AND release_status = 'commit_match') AS prysm_resolved,
+          sumIf(peer_count, client = 'teku' AND release_status = 'version_match' AND version = '26.10.3') AS teku_v26103,
+          sumIf(peer_count, client = 'nimbus' AND (release_status != 'none' OR version != '')) AS nimbus_versioned
+        FROM fct_peer_count_by_cl_client_daily FINAL
+      assertions:
+        - type: greater_than
+          column: prysm_resolved
+          value: 50
+        - type: greater_than
+          column: teku_v26103
+          value: 50
+        - type: equals
+          column: nimbus_versioned
+          value: 0
+    - name: "Subsets never exceed their population"
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_peer_count_by_cl_client_daily FINAL
+        WHERE dialled_peer_count > peer_count OR quic_connected_peer_count > peer_count OR custody_known_peer_count > peer_count
+           OR custody_4_peer_count + custody_5_8_peer_count + custody_9_127_peer_count + custody_128_peer_count != custody_known_peer_count
+           OR latency_p50_ms > latency_p90_ms
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: "Custody group counts come from outbound metadata"
+      sql: |
+        SELECT sum(custody_known_peer_count) AS known, sum(custody_128_peer_count) AS supernodes
+        FROM fct_peer_count_by_cl_client_daily FINAL
+      assertions:
+        - type: equals
+          column: known
+          value: 3583
+        - type: equals
+          column: supernodes
+          value: 369
+    - name: "One row per key"
+      sql: |
+        SELECT COUNT(*) AS duplicate_keys FROM (
+          SELECT day_start_date, client, version, release_status FROM fct_peer_count_by_cl_client_daily FINAL GROUP BY day_start_date, client, version, release_status HAVING COUNT(*) > 1
+        )
+      assertions:
+        - type: equals
+          column: duplicate_keys
+          value: 0

@@ -1,0 +1,52 @@
+model: fct_block_payload_status_daily
+network: glamsterdam-devnet-7
+external_data:
+    beacon_api_eth_v1_events_payload_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_ptc_vote_beacon_api_eth_v1_events_payload_attestation.parquet
+        network_column: meta_network_name
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_ptc_vote_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_payload_attestation:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_ptc_vote_canonical_beacon_block_payload_attestation.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Every block with PTC votes counts once
+      sql: |
+        SELECT
+          (SELECT countIf(ptc_validators > 0) FROM fct_block_payload_ptc_vote FINAL) AS voted_blocks,
+          (SELECT sum(slot_count) FROM fct_block_payload_status_daily FINAL) - voted_blocks AS block_diff
+      assertions:
+        - type: greater_than
+          column: voted_blocks
+          value: 0
+        - type: equals
+          column: block_diff
+          value: 0
+    - name: Delivered and absent counts match the PTC majority per day
+      sql: |
+        SELECT COUNT(*) AS mismatched FROM (
+          SELECT day_start_date, status, slot_count FROM fct_block_payload_status_daily FINAL WHERE slot_count > 0
+        ) AS a
+        FULL OUTER JOIN (
+          SELECT toDate(slot_start_date_time) AS day_start_date,
+                 if(payload_present_votes * 2 >= ptc_validators, 'delivered', 'absent') AS status,
+                 toUInt32(count()) AS slot_count
+          FROM fct_block_payload_ptc_vote FINAL
+          WHERE ptc_validators > 0
+          GROUP BY day_start_date, status
+        ) AS b USING (day_start_date, status)
+        WHERE a.slot_count != b.slot_count
+      assertions:
+        - type: equals
+          column: mismatched
+          value: 0
+    - name: Both statuses exist for every day
+      sql: |
+        SELECT countIf(statuses != 2) AS bad_days FROM (
+          SELECT day_start_date, uniqExact(status) AS statuses FROM fct_block_payload_status_daily FINAL GROUP BY day_start_date
+        )
+      assertions:
+        - type: equals
+          column: bad_days
+          value: 0

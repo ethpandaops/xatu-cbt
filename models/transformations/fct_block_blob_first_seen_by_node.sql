@@ -93,4 +93,8 @@ SELECT
     argMin(meta_consensus_version, propagation_slot_start_diff) AS meta_consensus_version,
     argMin(meta_consensus_implementation, propagation_slot_start_diff) AS meta_consensus_implementation
 FROM combined_events
+-- Ignore observations more than 300 seconds after slot start, the same cutoff as the
+-- engine models. Later ones come from nodes replaying history or with broken clocks
+-- (up to days late). A clock running ahead wraps the UInt32 diff to ~4.29e9 ms.
+WHERE propagation_slot_start_diff <= 300000
 GROUP BY slot_start_date_time, meta_client_name, block_root, blob_index

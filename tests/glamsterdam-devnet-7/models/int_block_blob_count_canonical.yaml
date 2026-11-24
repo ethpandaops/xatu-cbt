@@ -1,0 +1,24 @@
+model: int_block_blob_count_canonical
+network: glamsterdam-devnet-7
+external_data:
+    canonical_beacon_block:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/int_block_payload_ptc_vote_canonical_canonical_beacon_block.parquet
+        network_column: meta_network_name
+    canonical_beacon_block_execution_payload_bid:
+        url: https://data.ethpandaops.io/xatu-cbt/tests/glamsterdam-devnet-7/fct_block_payload_bid_canonical_beacon_block_execution_payload_bid.parquet
+        network_column: meta_network_name
+assertions:
+    - name: Gloas blocks without blob sidecars take their count from the bid (fixture has 25 blocks and 252 bid commitments)
+      sql: |
+        SELECT count() AS blocks, sum(blob_count) AS blobs, countIf(blob_count = 0) AS empty
+        FROM int_block_blob_count_canonical FINAL
+      assertions:
+        - type: equals
+          column: blocks
+          value: 25
+        - type: equals
+          column: blobs
+          value: 252
+        - type: equals
+          column: empty
+          value: 0

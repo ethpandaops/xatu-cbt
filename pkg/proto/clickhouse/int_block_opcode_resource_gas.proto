@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package cbt;
+
+import "common.proto";
+
+option go_package = "github.com/ethpandaops/xatu-cbt/pkg/proto/clickhouse";
+
+// Per-opcode resource gas per block, summed over every transaction and call frame in the block
+message IntBlockOpcodeResourceGas {
+  // Timestamp when the record was last updated
+  uint32 updated_date_time = 11;
+  // The block number
+  uint64 block_number = 12;
+  // The EVM opcode name (e.g., SLOAD, ADD, CALL)
+  string opcode = 13;
+  // Number of times this opcode was executed in the block
+  uint64 count = 14;
+  // Total gas consumed by this opcode in the block
+  uint64 gas = 15;
+  // Gas attributed to pure computation
+  uint64 gas_compute = 16;
+  // Gas attributed to memory expansion
+  uint64 gas_memory = 17;
+  // Gas attributed to cold address and storage access (EIP-2929)
+  uint64 gas_address_access = 18;
+  // Gas attributed to state growth (new storage slots, contract creation)
+  uint64 gas_state_growth = 19;
+  // Gas attributed to history and log data storage
+  uint64 gas_history = 20;
+  // Gas attributed to bloom filter topic indexing
+  uint64 gas_bloom_topics = 21;
+  // Gas attributed to block size (always 0 at opcode level)
+  uint64 gas_block_size = 22;
+  // The name of the network
+  string meta_network_name = 23;
+}
+
+// Request for listing int_block_opcode_resource_gas records
+message ListIntBlockOpcodeResourceGasRequest {
+  // Filter by block_number - The block number (PRIMARY KEY - required)
+  UInt64Filter block_number = 1;
+
+  // Filter by opcode - The EVM opcode name (e.g., SLOAD, ADD, CALL) (ORDER BY column 2 - optional)
+  StringFilter opcode = 2;
+
+  // Filter by meta_network_name - The name of the network (ORDER BY column 3 - optional)
+  StringFilter meta_network_name = 3;
+
+  // Filter by updated_date_time - Timestamp when the record was last updated (optional)
+  UInt32Filter updated_date_time = 4;
+  // Filter by count - Number of times this opcode was executed in the block (optional)
+  UInt64Filter count = 5;
+  // Filter by gas - Total gas consumed by this opcode in the block (optional)
+  UInt64Filter gas = 6;
+  // Filter by gas_compute - Gas attributed to pure computation (optional)
+  UInt64Filter gas_compute = 7;
+  // Filter by gas_memory - Gas attributed to memory expansion (optional)
+  UInt64Filter gas_memory = 8;
+  // Filter by gas_address_access - Gas attributed to cold address and storage access (EIP-2929) (optional)
+  UInt64Filter gas_address_access = 9;
+  // Filter by gas_state_growth - Gas attributed to state growth (new storage slots, contract creation) (optional)
+  UInt64Filter gas_state_growth = 10;
+  // Filter by gas_history - Gas attributed to history and log data storage (optional)
+  UInt64Filter gas_history = 11;
+  // Filter by gas_bloom_topics - Gas attributed to bloom filter topic indexing (optional)
+  UInt64Filter gas_bloom_topics = 12;
+  // Filter by gas_block_size - Gas attributed to block size (always 0 at opcode level) (optional)
+  UInt64Filter gas_block_size = 13;
+
+  // The maximum number of int_block_opcode_resource_gas to return.
+  // If unspecified, at most 100 items will be returned.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
+  int32 page_size = 14;
+  // A page token, received from a previous `ListIntBlockOpcodeResourceGas` call.
+  // Provide this to retrieve the subsequent page.
+  string page_token = 15;
+  // The order of results. Format: comma-separated list of fields.
+  // Example: "foo,bar" or "foo desc,bar" for descending order on foo.
+  // If unspecified, results will be returned in the default order.
+  string order_by = 16;
+}
+
+// Response for listing int_block_opcode_resource_gas records
+message ListIntBlockOpcodeResourceGasResponse {
+  // The list of int_block_opcode_resource_gas.
+  repeated IntBlockOpcodeResourceGas int_block_opcode_resource_gas = 1;
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request for getting a single int_block_opcode_resource_gas record by primary key
+message GetIntBlockOpcodeResourceGasRequest {
+  // The block number
+  uint64 block_number = 1; // Primary key (required)
+}
+
+// Response for getting a single int_block_opcode_resource_gas record
+message GetIntBlockOpcodeResourceGasResponse {
+  IntBlockOpcodeResourceGas item = 1;
+}
+
+// Query int_block_opcode_resource_gas data
+service IntBlockOpcodeResourceGasService {
+  // List records | Per-opcode resource gas per block, summed over every transaction and call frame in the block
+  rpc List(ListIntBlockOpcodeResourceGasRequest) returns (ListIntBlockOpcodeResourceGasResponse);
+  // Get record | Retrieve a single record by primary key
+  rpc Get(GetIntBlockOpcodeResourceGasRequest) returns (GetIntBlockOpcodeResourceGasResponse);
+}

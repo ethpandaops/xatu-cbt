@@ -24,11 +24,11 @@ message FctBlockPayloadPtcVote {
   uint32 epoch_start_date_time = 15;
   // The beacon block root being attested by the PTC
   string block_root = 16;
-  // The beacon block version of the containing block, empty for orphaned rows
+  // The beacon block version of the containing block, empty for orphaned rows and for canonical blocks whose votes were never included
   string block_version = 17;
-  // Slot of the canonical block that included the payload attestations, null for orphaned rows
+  // Slot of the canonical block that included the payload attestations, null for orphaned rows and for canonical blocks whose votes were never included
   google.protobuf.UInt32Value included_in_slot = 18;
-  // Root of the canonical block that included the payload attestations, null for orphaned rows
+  // Root of the canonical block that included the payload attestations, null for orphaned rows and for canonical blocks whose votes were never included
   google.protobuf.StringValue included_in_block_root = 19;
   // Total PTC validators covered: on-chain aggregate counts for canonical rows, distinct validators seen on the live stream for orphaned rows
   uint32 ptc_validators = 20;
@@ -56,11 +56,11 @@ message ListFctBlockPayloadPtcVoteRequest {
   UInt32Filter epoch = 5 [(google.api.field_behavior) = OPTIONAL];
   // Filter by epoch_start_date_time - The wall clock time when the epoch started (optional)
   UInt32Filter epoch_start_date_time = 6 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by block_version - The beacon block version of the containing block, empty for orphaned rows (optional)
+  // Filter by block_version - The beacon block version of the containing block, empty for orphaned rows and for canonical blocks whose votes were never included (optional)
   StringFilter block_version = 7 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by included_in_slot - Slot of the canonical block that included the payload attestations, null for orphaned rows (optional)
+  // Filter by included_in_slot - Slot of the canonical block that included the payload attestations, null for orphaned rows and for canonical blocks whose votes were never included (optional)
   NullableUInt32Filter included_in_slot = 8 [(google.api.field_behavior) = OPTIONAL];
-  // Filter by included_in_block_root - Root of the canonical block that included the payload attestations, null for orphaned rows (optional)
+  // Filter by included_in_block_root - Root of the canonical block that included the payload attestations, null for orphaned rows and for canonical blocks whose votes were never included (optional)
   NullableStringFilter included_in_block_root = 9 [(google.api.field_behavior) = OPTIONAL];
   // Filter by ptc_validators - Total PTC validators covered: on-chain aggregate counts for canonical rows, distinct validators seen on the live stream for orphaned rows (optional)
   UInt32Filter ptc_validators = 10 [(google.api.field_behavior) = OPTIONAL];

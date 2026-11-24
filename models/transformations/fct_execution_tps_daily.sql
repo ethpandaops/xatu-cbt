@@ -21,6 +21,7 @@ dependencies:
 -- Daily aggregation of execution layer TPS (transactions per second).
 -- Uses actual block time gaps instead of assumed 12-second slots for accurate TPS calculation.
 -- Computes percentiles, Bollinger bands, and 7-day moving averages across all blocks in each day.
+-- The scan reaches back one window before the first day so the moving average covers the full 7 days.
 --
 -- This query expands the block range to complete day boundaries to handle partial
 -- day aggregations at the head of incremental processing. For example, if we process
@@ -44,7 +45,7 @@ WITH
             block_date_time,
             toUnixTimestamp(block_date_time) AS block_timestamp
         FROM {{ index .dep "{{transformation}}" "int_execution_block_by_date" "helpers" "from" }} FINAL
-        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
+        WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds) - INTERVAL 7 DAY
           AND toDate(block_date_time) <= (SELECT max_day FROM day_bounds)
     ),
     -- Calculate time since previous block for each block
@@ -95,8 +96,10 @@ WITH
             tx_count,
             tps,
             -- 7-day (604800 seconds) moving average of TPS
-            avg(tps) OVER (ORDER BY block_timestamp RANGE BETWEEN 604800 PRECEDING AND CURRENT ROW) AS ma_tps
+            -- Transactions over seconds in the window, so short block gaps don't inflate it
+            sum(tx_count) OVER w / sum(block_time_seconds) OVER w AS ma_tps
         FROM blocks_with_tps
+        WINDOW w AS (ORDER BY block_timestamp RANGE BETWEEN 604800 PRECEDING AND CURRENT ROW)
     )
 SELECT
     fromUnixTimestamp({{ .task.start }}) AS updated_date_time,
@@ -118,4 +121,5 @@ SELECT
     -- 7-day moving average
     round(avg(ma_tps), 4) AS moving_avg_tps
 FROM blocks_with_ma
+WHERE toDate(block_date_time) >= (SELECT min_day FROM day_bounds)
 GROUP BY toDate(block_date_time)
