@@ -7,6 +7,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/tmp-epobot-token-check.yaml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,10 +19,13 @@ jobs:
       - name: Check EPOBOT_TOKEN
         env:
           TOKEN: ${{ secrets.EPOBOT_TOKEN }}
+          # Control: an org secret docker.yml already reads in this repository.
+          MIRROR_URL: ${{ secrets.IMAGE_MIRROR_URL }}
           REPO: ${{ github.repository }}
           REF: tmp/epobot-token-check-${{ github.run_id }}
         run: |
           set -euo pipefail
+          echo "event: ${GITHUB_EVENT_NAME}; IMAGE_MIRROR_URL is ${#MIRROR_URL} characters"
           if [ -z "$TOKEN" ]; then
             echo "::error::EPOBOT_TOKEN is empty in ${REPO}"
             exit 1
