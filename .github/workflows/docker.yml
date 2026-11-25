@@ -91,8 +91,10 @@ jobs:
             type=ref,event=pr
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=cbt-${{ steps.cbt_tag.outputs.tag }}
-            type=raw,value=cbt-${{ steps.cbt_tag.outputs.tag }}-${{ steps.cbt_digest.outputs.digest }}
+            # Shared across branches: release/** builds run concurrently and would
+            # move these under each other, failing the mirror's digest check.
+            type=raw,value=cbt-${{ steps.cbt_tag.outputs.tag }},enable={{is_default_branch}}
+            type=raw,value=cbt-${{ steps.cbt_tag.outputs.tag }}-${{ steps.cbt_digest.outputs.digest }},enable={{is_default_branch}}
             type=raw,value={{branch}}-cbt-${{ steps.cbt_digest.outputs.digest }}
 
       - name: Build and push Docker image
