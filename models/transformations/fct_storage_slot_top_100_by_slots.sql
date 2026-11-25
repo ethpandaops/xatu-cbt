@@ -84,4 +84,8 @@ DELETE FROM
 {{ if .clickhouse.cluster }}
   ON CLUSTER '{{ .clickhouse.cluster }}'
 {{ end }}
-WHERE updated_date_time != fromUnixTimestamp({{ .task.start }});
+WHERE updated_date_time != fromUnixTimestamp({{ .task.start }})
+{{ if .clickhouse.cluster }}
+-- Finish the ON CLUSTER task without waiting for every replica, so a replica that is down can't leave it stuck in the DDL queue
+SETTINGS lightweight_deletes_sync = 0
+{{ end }};

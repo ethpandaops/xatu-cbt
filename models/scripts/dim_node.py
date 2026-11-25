@@ -331,11 +331,14 @@ def main():
             # This allows re-processing of the same data with newer timestamps
             print(f"Cleaning up old entries...")
 
-            # Build DELETE query with ON CLUSTER if needed
+            # Build DELETE query with ON CLUSTER if needed. The ON CLUSTER task finishes
+            # without waiting for every replica, so a replica that is down can't leave it
+            # stuck in the DDL queue.
             if cluster:
                 delete_query = f"""
                 DELETE FROM `{target_db}`.`{target_table}{local_suffix}` ON CLUSTER '{cluster}'
                 WHERE updated_date_time != fromUnixTimestamp({task_start})
+                SETTINGS lightweight_deletes_sync = 0
                 """
             else:
                 delete_query = f"""
