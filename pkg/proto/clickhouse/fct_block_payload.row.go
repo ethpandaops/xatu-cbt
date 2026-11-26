@@ -3,6 +3,10 @@
 
 package clickhouse
 
+import (
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+)
+
 // FctBlockPayloadRow is a ClickHouse-scannable result row for the fct_block_payload table.
 // Field types match the SELECT column expressions produced by
 // BuildListFctBlockPayloadQuery and BuildGetFctBlockPayloadQuery: DateTime columns are unix
@@ -17,7 +21,7 @@ type FctBlockPayloadRow struct {
 	EpochStartDateTime uint32 `ch:"epoch_start_date_time" json:"epoch_start_date_time"`
 	BlockRoot string `ch:"block_root" json:"block_root"`
 	BlockVersion string `ch:"block_version" json:"block_version"`
-	BuilderIndex uint64 `ch:"builder_index" json:"builder_index"`
+	BuilderIndex *uint64 `ch:"builder_index" json:"builder_index"`
 	BlockHash *string `ch:"block_hash" json:"block_hash"`
 	ParentBlockHash *string `ch:"parent_block_hash" json:"parent_block_hash"`
 	Value string `ch:"value" json:"value"`
@@ -27,6 +31,7 @@ type FctBlockPayloadRow struct {
 	TransactionsTotalBytes uint64 `ch:"transactions_total_bytes" json:"transactions_total_bytes"`
 	TransactionsTotalGasLimit uint64 `ch:"transactions_total_gas_limit" json:"transactions_total_gas_limit"`
 	BlobTransactionsCount uint32 `ch:"blob_transactions_count" json:"blob_transactions_count"`
+	PayloadStatus string `ch:"payload_status" json:"payload_status"`
 }
 
 // TableName returns the ClickHouse table this row maps to.
@@ -45,7 +50,9 @@ func (r *FctBlockPayloadRow) ToProto() *FctBlockPayload {
 	p.EpochStartDateTime = r.EpochStartDateTime
 	p.BlockRoot = r.BlockRoot
 	p.BlockVersion = r.BlockVersion
-	p.BuilderIndex = r.BuilderIndex
+	if r.BuilderIndex != nil {
+		p.BuilderIndex = wrapperspb.UInt64(*r.BuilderIndex)
+	}
 	if r.BlockHash != nil {
 		p.BlockHash = *r.BlockHash
 	}
@@ -59,5 +66,6 @@ func (r *FctBlockPayloadRow) ToProto() *FctBlockPayload {
 	p.TransactionsTotalBytes = r.TransactionsTotalBytes
 	p.TransactionsTotalGasLimit = r.TransactionsTotalGasLimit
 	p.BlobTransactionsCount = r.BlobTransactionsCount
+	p.PayloadStatus = r.PayloadStatus
 	return p
 }

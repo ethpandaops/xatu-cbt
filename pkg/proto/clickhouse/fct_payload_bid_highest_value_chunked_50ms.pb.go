@@ -43,7 +43,7 @@ type FctPayloadBidHighestValueChunked50Ms struct {
 	EarliestBidDateTime int64 `protobuf:"varint,17,opt,name=earliest_bid_date_time,json=earliestBidDateTime,proto3" json:"earliest_bid_date_time,omitempty"`
 	// The execution block hash committed to in the leading bid
 	BlockHash string `protobuf:"bytes,18,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	// Validator index of the builder leading this chunk
+	// Index of the builder in the builder registry leading this chunk. Self-build bids are never gossiped, so this is always a registry builder
 	BuilderIndex uint64 `protobuf:"varint,19,opt,name=builder_index,json=builderIndex,proto3" json:"builder_index,omitempty"`
 	// The best bid value across all builders in this chunk, in wei
 	Value string `protobuf:"bytes,20,opt,name=value,proto3" json:"value,omitempty"`
@@ -173,7 +173,7 @@ type ListFctPayloadBidHighestValueChunked50MsRequest struct {
 	EarliestBidDateTime *Int64Filter `protobuf:"bytes,7,opt,name=earliest_bid_date_time,json=earliestBidDateTime,proto3" json:"earliest_bid_date_time,omitempty"`
 	// Filter by block_hash - The execution block hash committed to in the leading bid (optional)
 	BlockHash *StringFilter `protobuf:"bytes,8,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	// Filter by builder_index - Validator index of the builder leading this chunk (optional)
+	// Filter by builder_index - Index of the builder in the builder registry leading this chunk. Self-build bids are never gossiped, so this is always a registry builder (optional)
 	BuilderIndex *UInt64Filter `protobuf:"bytes,9,opt,name=builder_index,json=builderIndex,proto3" json:"builder_index,omitempty"`
 	// Filter by value - The best bid value across all builders in this chunk, in wei (optional)
 	Value *StringFilter `protobuf:"bytes,10,opt,name=value,proto3" json:"value,omitempty"`

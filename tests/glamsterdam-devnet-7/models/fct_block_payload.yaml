@@ -87,3 +87,44 @@ assertions:
         - type: equals
           column: bad_rows
           value: 0
+    - name: Payload status is full, empty or unknown
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE payload_status NOT IN ('full', 'empty', 'unknown')
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Payload status is resolved for every block with a canonical child in range
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE payload_status = 'unknown'
+          AND slot < (SELECT max(slot) FROM fct_block_payload FINAL)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Payload is full exactly when the next canonical block builds on it
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM (
+          SELECT
+            payload_status,
+            block_hash,
+            leadInFrame(parent_block_hash) OVER (ORDER BY slot ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING) AS next_parent_block_hash,
+            leadInFrame(slot) OVER (ORDER BY slot ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING) AS next_slot
+          FROM fct_block_payload FINAL
+        )
+        WHERE next_slot != 0
+          AND (payload_status = 'full') != (next_parent_block_hash = block_hash)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
+    - name: Self-builds keep a NULL builder index and bid nothing
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload FINAL
+        WHERE builder_index IS NULL AND `value` != 0
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0

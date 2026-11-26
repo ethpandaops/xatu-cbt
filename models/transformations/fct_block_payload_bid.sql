@@ -19,8 +19,9 @@ dependencies:
 INSERT INTO
   `{{ .self.database }}`.`{{ .self.table }}`
 -- Gloas (ePBS): the winning execution payload bid committed in each canonical
--- beacon block (one per block). A bid whose builder index equals the block
--- proposer's validator index is a self-build. Bid amounts are Gwei on the
+-- beacon block (one per block). builder_index indexes the builder registry
+-- (separate from validators). Self-builds carry BUILDER_INDEX_SELF_BUILD,
+-- which xatu stores as NULL and is kept NULL here. Bid amounts are Gwei on the
 -- wire and stored as wei to match the mev_relay bid tables.
 SELECT
     fromUnixTimestamp({{ .task.start }}) as updated_date_time,

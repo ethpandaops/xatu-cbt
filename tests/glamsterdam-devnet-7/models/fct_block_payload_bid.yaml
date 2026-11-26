@@ -86,3 +86,11 @@ assertions:
         - type: equals
           column: duplicate_roots
           value: 0
+    - name: Self-builds keep a NULL builder index and bid nothing
+      sql: |
+        SELECT COUNT(*) AS bad_rows FROM fct_block_payload_bid FINAL
+        WHERE builder_index IS NULL AND (`value` != 0 OR execution_payment != 0)
+      assertions:
+        - type: equals
+          column: bad_rows
+          value: 0
